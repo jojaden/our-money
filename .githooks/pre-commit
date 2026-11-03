@@ -1,0 +1,5 @@
+#!/bin/sh
+# 커밋 전 검사. 켜기: git config core.hooksPath .githooks   (급할 때 건너뛰기: git commit --no-verify — CI 는 그래도 막는다)
+#   비밀값·연결 정보·키 파일·개인 이메일 (scripts/secret_check.py)
+top="$(git rev-parse --show-toplevel)"
+python3 "$top/scripts/secret_check.py" --staged || exit 1

@@ -1,0 +1,7 @@
+# gitleaks 설정 — 기본 규칙에 저장소에서 쓰는 예외만 더한다 (CI: .github/workflows/test.yml)
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "의존성 잠금 파일의 무결성 해시, 생성된 이미지"
+paths = ['''(^|/)package-lock\.json$''', '''\.(png|jpe?g|ico|woff2?)$''']
