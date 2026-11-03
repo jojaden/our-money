@@ -40,7 +40,8 @@ jobs:
           grep " $file\$" "gitleaks_${GITLEAKS_VERSION}_checksums.txt" | sha256sum -c -
           tar xzf "$file" gitleaks
       - name: 전체 커밋 기록 (gitleaks)
-        run: "$RUNNER_TEMP/gitleaks" git . --config .gitleaks.toml --redact --no-banner --exit-code 1
+        run: |
+          "$RUNNER_TEMP/gitleaks" git . --config .gitleaks.toml --redact --no-banner --exit-code 1
 
   web:
     name: 웹 빌드
