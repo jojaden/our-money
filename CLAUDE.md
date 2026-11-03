@@ -49,6 +49,7 @@ Use the `android-skills` plugin (install: `/plugin install android-skills@androi
 ## Rules
 - Keep calc logic identical in `apps/web/src/lib/calc.ts` and `apps/mobile/core/.../calc/Calc.kt`; add a `core` test for any change.
 - Schema changes: add a new file in `supabase/migrations/` and mirror it in `schema.sql` (PR check enforces).
+- Writes: send back the `rev` you read (optimistic lock; a stale rev fails with SQLSTATE 40001 → reload). Never send `rev: null` (Kotlin Json `explicitNulls = false`). `created_*`, `updated_*`, `rev` and `history` are filled by triggers; don't write them yourself.
 - Shared logic and UI live in `core`/`ui`; platform-only features (card notification listener, widgets) go in `androidApp`/`iosApp`.
 - iOS targets build only on macOS (`-Pios`).
 - Never commit secrets or connection info: `.env*`, keystores, `local.properties`, `google-services.json`, `.vercel/`, Supabase keys/URL, real emails. Only the anon key goes in the app; never the service_role key.

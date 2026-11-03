@@ -45,6 +45,8 @@ export function SpendingSheet({ open, onOpenChange, editing }: { open: boolean; 
   const [touched, setTouched] = useState({ category: false, owner: false, pay: false });
   const [autoCat, setAutoCat] = useState(false);
   const [autoOwner, setAutoOwner] = useState(false);
+  // 자주 쓰는 지출 버튼으로 시작한 기록인지 (spendings.source)
+  const [fromPreset, setFromPreset] = useState(false);
 
   /** 결제수단으로 누구 돈인지 추측: 공동 카드·공동 통장이면 공동, 아니면 그 사람(내 지갑은 나) */
   const inferOwner = (kind: PayKind, acc: string | null): Owner => {
@@ -97,6 +99,7 @@ export function SpendingSheet({ open, onOpenChange, editing }: { open: boolean; 
     setTouched({ category: false, owner: false, pay: false });
     setAutoCat(false);
     setAutoOwner(Boolean(card && card.owner === "joint"));
+    setFromPreset(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, editing, cards, today, me]);
 
@@ -114,6 +117,7 @@ export function SpendingSheet({ open, onOpenChange, editing }: { open: boolean; 
   };
 
   const usePreset = (p: Preset) => {
+    setFromPreset(true);
     setMemo(p.memo);
     setAmount(p.amount);
     setCategory(p.category_id);
@@ -189,6 +193,8 @@ export function SpendingSheet({ open, onOpenChange, editing }: { open: boolean; 
       paid_by: paidBy,
       memo: memo.trim(),
       created_at: editing?.created_at ?? new Date().toISOString(),
+      // 고칠 때는 읽은 rev 를 그대로 (다른 폰이 그사이 고쳤으면 서버가 거절), 새 기록은 어떻게 시작했는지
+      ...(editing ? { rev: editing.rev } : { source: fromPreset ? "preset" : "manual" }),
     };
   }
 

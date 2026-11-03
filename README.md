@@ -87,7 +87,9 @@
 - **로그인:** 구글 로그인을 써요. DB 의 `members` 표에 있는 두 이메일만 데이터를 읽고 쓸 수 있어요.
 - **계정별 이름과 용돈:** 로그인하면 그 계정의 `users` 줄이 생겨요(`ensure_user()`). 화면의 이름은 각 계정의 이름이고, 이름은 본인만 바꿀 수 있어요(DB 가 `name` 열의 본인 줄 수정만 허용). 홈과 가계부의 용돈 카드는 로그인한 사람의 용돈이에요.
 - **실시간:** 한 사람이 체크하거나 기록하면 다른 폰에 바로 반영돼요. 바뀐 테이블만 다시 읽고, 200ms 안에 몰린 변경은 한 번에 처리해요. 앱으로 돌아왔을 때 30초 넘게 지났으면 전체를 다시 읽어요.
-- **빠르게 보이기:** 체크와 기록은 화면에 먼저 반영하고 서버에 저장해요(낙관적 업데이트).
+- **빠르게 보이기:** 체크와 기록은 화면에 먼저 반영하고 서버에 저장해요(낙관적 업데이트). 다른 폰에서 바뀐 내용은 바뀐 줄만 받아서 붙여요(테이블을 다시 읽지 않음).
+- **동시에 고치면:** 줄마다 `rev`(버전)가 있어서, 내가 읽은 뒤 다른 폰이 먼저 고친 줄을 저장하면 서버가 거절하고 앱이 최신 내용을 다시 불러와요. 저장은 순서대로 하나씩 보내고, 내가 방금 저장한 rev 는 이어서 맞춰요(빠른 연속 수정·되돌리기). 내용이 같은 저장은 쓰지 않아요.
+- **기록:** 모든 줄에 누가·언제 만들고 고쳤는지(`created_by`, `updated_at`, `updated_by`)가 남고, `history` 에 추가·수정·삭제의 바뀐 칸이 쌓여요. 모두 DB 트리거가 채워서 앱이 바꿀 수 없어요.
 - **데모 모드:** Supabase 설정 없이 열면 가상 예시 데이터로 모든 화면을 써 볼 수 있어요. 데이터는 그 브라우저에만 저장돼요.
 - **내보내기:** 설정에서 전체 지출을 CSV 로 받을 수 있어요(1,000줄씩 나눠 받음).
 
@@ -173,10 +175,19 @@ erDiagram
     text pay_kind "card, cash, transfer"
     text owner "a, b, joint"
     text paid_by "a 또는 b"
+    text source "manual, preset, notification, import"
+    text approval_no "카드 승인번호 (중복 방지)"
+  }
+  history {
+    bigint id PK
+    text table_name
+    text row_id
+    text op "insert, update, delete"
+    jsonb after "바뀐 칸만"
   }
 ```
 
-전체 정의는 [`supabase/schema.sql`](supabase/schema.sql)에 있어요. 테이블 9개, RLS 정책, Realtime 등록, 기본 분류가 들어 있어요.
+모든 데이터 테이블에는 `rev`, `created_at/by`, `updated_at/by` 가 있어요(그림에서는 생략). 전체 정의는 [`supabase/schema.sql`](supabase/schema.sql)에 있어요. 테이블 10개, RLS 정책, 트리거, 외래키, Realtime 등록, 기본 분류가 들어 있어요.
 
 ### 보안
 
@@ -188,6 +199,9 @@ erDiagram
 
 - RLS 함수를 `(select …)` 로 감싸서 쿼리마다 한 번만 실행돼요(initPlan). 이메일은 소문자로 저장해서 기본키 인덱스로 바로 찾아요.
 - 지출은 `(date desc, created_at desc)` 인덱스를 쓰고, 처음에는 최근 400일만 받아요. 더 지난 달을 열면 그 기간만 더 받아요.
+- 카드·계좌별 지출은 `(account_id, date desc)`, 분류별은 `(category_id, date desc)` 부분 인덱스로 찾아요. 외래키가 걸린 칸에는 인덱스가 있어서 참조 확인이 빨라요.
+- 수정은 모두 기본키(`id`) 하나로 찾아요. 같은 내용의 저장은 트리거가 건너뛰어서 쓰기·기록·실시간 알림이 늘지 않아요.
+- `history` 는 `(at desc)` 와 `(table_name, row_id, at desc)` 인덱스로 "최근 바뀐 것", "이 줄의 이력"을 찾아요.
 - 이 변경을 이미 쓰던 DB 에 적용하는 방법은 [`supabase/migrations/002_performance.sql`](supabase/migrations/002_performance.sql)에 있어요.
 
 ## 저장소 구조

@@ -96,6 +96,7 @@ export function ItemSheet({
       paid_at: item?.paid_at ?? null,
       paid_by: item?.paid_by ?? null,
       ...fields,
+      rev: item?.rev,
     };
     onOpenChange(false);
     await upsert("month_items", [row]);
