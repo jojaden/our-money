@@ -132,6 +132,15 @@ export interface Member {
   person: Person;
 }
 
+/** 로그인한 계정 (supabase/migrations/003_users.sql). 이름은 그 계정 본인만 바꾼다. */
+export interface User {
+  /** auth.users.id (데모는 `demo-a`) */
+  id: string;
+  email: string;
+  person: Person;
+  name: string;
+}
+
 export interface Data {
   settings: Settings;
   accounts: Account[];
@@ -141,6 +150,7 @@ export interface Data {
   checks: Check[];
   categories: Category[];
   spendings: Spending[];
+  users: User[];
 }
 
 export type TableName = Exclude<keyof Data, "settings"> | "settings";

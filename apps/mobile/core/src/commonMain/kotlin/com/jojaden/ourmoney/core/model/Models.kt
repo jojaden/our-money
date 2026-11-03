@@ -193,6 +193,16 @@ data class Spending(
 @Serializable
 data class Member(val email: String, val person: Person)
 
+/** 로그인한 계정 (supabase/migrations/003_users.sql). 이름은 그 계정 본인만 바꾼다. */
+@Serializable
+data class User(
+    /** auth.users.id */
+    val id: String,
+    val email: String,
+    val person: Person,
+    val name: String = "",
+)
+
 /** 앱이 한 번에 들고 있는 전체 데이터 */
 data class AppData(
     val settings: Settings = Settings(),
@@ -203,6 +213,7 @@ data class AppData(
     val checks: List<Check> = emptyList(),
     val categories: List<Category> = emptyList(),
     val spendings: List<Spending> = emptyList(),
+    val users: List<User> = emptyList(),
 )
 
 val GROUP_ORDER = listOf(Group.FIXED, Group.LIVING, Group.ALLOWANCE, Group.SAVING)

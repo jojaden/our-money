@@ -3,7 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { Check, Data, Month, MonthItem, Person, Row, Spending, TableName } from "./types";
 import { getRepo, hasSupabase, currentMember, supabase, LIST_TABLES } from "./repo";
-import { addMonths, currentMonth, itemsFromMonth, latestMonthBefore, monthRow, periodOf, snapshotItems } from "./calc";
+import { addMonths, currentMonth, itemsFromMonth, latestMonthBefore, monthRow, periodOf, snapshotItems, withUserNames } from "./calc";
 import { haptic } from "./native";
 
 type Auth =
@@ -35,6 +35,8 @@ interface Store {
   startMonth: (month: string, opts?: { from?: string | null; oneOffs?: boolean }) => Promise<void>;
   toggleCheck: (c: Omit<Check, "done_at" | "done_by">, done: boolean) => Promise<void>;
   togglePaid: (item: MonthItem) => Promise<void>;
+  /** 로그인한 사람(me)의 이름 바꾸기 — 다른 사람 이름은 그 사람만 바꾼다 */
+  setMyName: (name: string) => Promise<void>;
   toasts: Toast[];
   toast: (text: string, undo?: () => void) => void;
   dismissToast: (id: number) => void;
@@ -237,6 +239,29 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     [repo, reload, toast],
   );
 
+  const setMyName = useCallback(
+    async (name: string) => {
+      if (!repo) return;
+      const next = name.trim().slice(0, 20);
+      setData((d) => {
+        if (!d) return d;
+        const has = d.users.some((u) => u.person === me);
+        const users = has
+          ? d.users.map((u) => (u.person === me ? { ...u, name: next } : u))
+          : [...d.users, { id: `local-${me}`, email: "", person: me, name: next }];
+        return { ...d, users };
+      });
+      try {
+        await repo.updateMyName(me, next);
+      } catch (e) {
+        toast(`이름을 바꾸지 못했어요: ${e instanceof Error ? e.message : e}`);
+        await reload();
+        throw e;
+      }
+    },
+    [repo, me, reload, toast],
+  );
+
   const remove = useCallback(
     async (table: TableName, ids: string[]) => {
       if (!repo) return;
@@ -310,9 +335,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     [upsert, me],
   );
 
+  // 화면에는 각자 계정의 이름을 쓴다 (계산과 저장은 원본 data 로)
+  const view = useMemo(() => (data ? withUserNames(data) : null), [data]);
+
   const value: Store = {
     auth,
-    data,
+    data: view,
     error,
     me,
     setMe,
@@ -326,6 +354,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     startMonth,
     toggleCheck,
     togglePaid,
+    setMyName,
     toasts,
     toast,
     dismissToast,

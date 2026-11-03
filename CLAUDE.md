@@ -41,4 +41,4 @@ Use the `android-skills` plugin (install: `/plugin install android-skills@androi
 
 ## Status
 - Done: web app, Supabase + Google login, Vercel deploy, monorepo, mobile scaffold + calc port (tests pass, debug APK builds), public repo with secret checks and versioning (v0.1.0).
-- Pending: run `supabase/migrations/002_performance.sql`; port the screens to Compose; Android Google login (Android OAuth client + SHA-1); card-notification auto-logging, widget, push; Play Console internal testing.
+- Pending: run `supabase/migrations/002_performance.sql` and `003_users.sql`; port the screens to Compose; Android Google login (Android OAuth client + SHA-1); card-notification auto-logging, widget, push; Play Console internal testing.

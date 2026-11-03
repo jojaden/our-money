@@ -36,7 +36,7 @@ A household money plan built around the couple's real money flow: each partner r
 - Per-account balance tracking is explicitly NOT wanted now.
 - Must cover: pooled income → allocation buckets (고정비, 공동 생활비, 용돈, 저축·투자); monthly transfer plan + done checks; fixed-cost payment checks; card vs cash vs transfer per spending; card bill preparation per card.
 - Both partners see each other's changes live.
-- Display names: real names, editable in settings (not yet given).
+- Display names: each Google account has a `users` row; each partner edits only their own name. Settings names are the fallback before first login.
 
 ## Brand Commitments
 
