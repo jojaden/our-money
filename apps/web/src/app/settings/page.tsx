@@ -41,7 +41,7 @@ export default function SettingsPage() {
   const save = async (patch: Partial<Settings>) => {
     const next = { ...draft, ...patch };
     setDraft(next);
-    await upsert("settings", [next]);
+    if (!(await upsert("settings", [next]))) return;
     toast("저장했어요");
   };
   const commit = (key: keyof Settings) => {

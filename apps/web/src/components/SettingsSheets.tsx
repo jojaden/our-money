@@ -6,7 +6,7 @@ import type { Account, AccountKind, Category, Owner } from "@/lib/types";
 import { useData } from "@/lib/store";
 import { nameOf } from "@/lib/calc";
 import { eul } from "@/lib/format";
-import { AmountInput, Seg, Sheet } from "./ui";
+import { AmountInput, MAX_SPENDING, Seg, Sheet } from "./ui";
 
 function newId(prefix: string) {
   return `${prefix}-${typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID().slice(0, 8) : Date.now().toString(36)}`;
@@ -50,14 +50,14 @@ export function AccountSheet({ open, onOpenChange, account, kind: initialKind }:
       rev: account?.rev,
     };
     onOpenChange(false);
-    await upsert("accounts", [row]);
+    if (!(await upsert("accounts", [row]))) return;
     toast("저장했어요");
   };
 
   const archive = async () => {
     if (!account) return;
     onOpenChange(false);
-    await upsert("accounts", [{ ...account, archived: true }]);
+    if (!(await upsert("accounts", [{ ...account, archived: true }]))) return;
     toast(`${eul(account.name)} 숨겼어요`, () => void upsert("accounts", [account]));
   };
 
@@ -162,7 +162,7 @@ export function CategorySheet({ open, onOpenChange, category }: { open: boolean;
             onClick={async () => {
               const backup = category;
               onOpenChange(false);
-              await remove("categories", [category.id]);
+              if (!(await remove("categories", [category.id]))) return;
               toast("분류를 지웠어요. 기존 기록은 미분류가 돼요.", () => void upsert("categories", [backup]));
             }}
           >
@@ -177,10 +177,10 @@ export function CategorySheet({ open, onOpenChange, category }: { open: boolean;
           disabled={!name.trim()}
           onClick={async () => {
             onOpenChange(false);
-            await upsert("categories", [
+            const ok = await upsert("categories", [
               { id: category?.id ?? newId("cat"), name: name.trim(), budget, sort: category?.sort ?? Math.max(0, ...data.categories.map((c) => c.sort)) + 1, rev: category?.rev },
             ]);
-            toast("저장했어요");
+            if (ok) toast("저장했어요");
           }}
         >
           저장
@@ -193,7 +193,7 @@ export function CategorySheet({ open, onOpenChange, category }: { open: boolean;
       </div>
       <div className="field">
         <label htmlFor="cat-budget">한 달 예산</label>
-        <AmountInput id="cat-budget" value={budget} onChange={setBudget} />
+        <AmountInput id="cat-budget" value={budget} onChange={setBudget} max={MAX_SPENDING} />
         <p className="help">비워두면 예산 없이 사용액만 보여줘요.</p>
       </div>
     </Sheet>

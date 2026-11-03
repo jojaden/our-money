@@ -108,9 +108,9 @@ function Gate({ children }: { children: React.ReactNode }) {
       <main className="gate">
         <div className="box">
           <Mark size={48} />
-          <h1>데이터를 불러오지 못했어요</h1>
+          <h1>{auth.state === "loading" ? "연결할 수 없어요" : "데이터를 불러오지 못했어요"}</h1>
           <p>{error}</p>
-          <button type="button" className="btn block" onClick={() => void reload()}>
+          <button type="button" className="btn block" onClick={() => (auth.state === "loading" ? window.location.reload() : void reload())}>
             다시 시도
           </button>
         </div>

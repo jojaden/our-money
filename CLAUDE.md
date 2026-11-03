@@ -49,11 +49,15 @@ Use the `android-skills` plugin (install: `/plugin install android-skills@androi
 ## Rules
 - Keep calc logic identical in `apps/web/src/lib/calc.ts` and `apps/mobile/core/.../calc/Calc.kt`; add a `core` test for any change.
 - Schema changes: add a new file in `supabase/migrations/` and mirror it in `schema.sql` (PR check enforces).
-- Writes: send back the `rev` you read (optimistic lock; a stale rev fails with SQLSTATE 40001 → reload). Never send `rev: null` (Kotlin Json `explicitNulls = false`). `created_*`, `updated_*`, `rev` and `history` are filled by triggers; don't write them yourself.
+- Writes: send back the `rev` you read (optimistic lock; a stale rev fails with SQLSTATE `OM409` → reload, don't retry). Never send `rev: null` (Kotlin Json `explicitNulls = false`). `created_*`, `updated_*`, `rev` and `history` are filled by triggers; don't write them yourself, and strip them when copying a row into a new one.
+- Writes that must land together (month + items, plan item + month item, delete + deactivate) go in one `apply_batch` call (web: `store.batch([upsertOp(…), deleteOp(…)])`). Send full rows, sorted by id. Limits: 500 rows per batch, 200 rows per UPDATE/DELETE statement (`OM413`).
+- Retry only `RetryableError` (network, 5xx, 429, 40001, 40P01) with capped backoff and jitter; re-sending is safe because writes are id upserts and identical content is skipped before the rev check. Keep unsent writes in the outbox, never drop them.
+- Reads: PostgREST returns at most 1000 rows. Page every list with keyset (`id`, or `date, id` for spendings), never OFFSET.
+- Value limits live in DB CHECKs (`migrations/005`); mirror them in inputs (`MAX_SPENDING`, `MAX_AMOUNT`, `MAX_GOAL` in `components/ui.tsx`).
 - Shared logic and UI live in `core`/`ui`; platform-only features (card notification listener, widgets) go in `androidApp`/`iosApp`.
 - iOS targets build only on macOS (`-Pios`).
 - Never commit secrets or connection info: `.env*`, keystores, `local.properties`, `google-services.json`, `.vercel/`, Supabase keys/URL, real emails. Only the anon key goes in the app; never the service_role key.
 
 ## Status
 - Done: web app, Supabase + Google login, Vercel deploy, monorepo, mobile scaffold + calc port (tests pass, debug APK builds), public repo with secret checks and versioning (v0.1.0).
-- Pending: run `supabase/migrations/002_performance.sql` and `003_users.sql`; port the screens to Compose; Android Google login (Android OAuth client + SHA-1); card-notification auto-logging, widget, push; Play Console internal testing.
+- Pending: run `supabase/migrations/004_history_and_conflicts.sql` and `005_limits_and_batches.sql` (and `002_performance.sql` if it was never run); port the screens to Compose; Android Google login (Android OAuth client + SHA-1); card-notification auto-logging, widget, push; Play Console internal testing.

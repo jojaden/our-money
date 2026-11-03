@@ -92,7 +92,7 @@ export function FirstRun() {
               type="button"
               className="btn"
               onClick={async () => {
-                await startMonth(month, { from, oneOffs });
+                if (!(await startMonth(month, { from, oneOffs }))) return;
                 toast(`${monthLabel(from)} 플랜을 그대로 가져왔어요`);
               }}
             >
@@ -103,7 +103,7 @@ export function FirstRun() {
                 type="button"
                 className="btn secondary"
                 onClick={async () => {
-                  await startMonth(month);
+                  if (!(await startMonth(month))) return;
                   toast(`반복 항목 ${activeCount}개로 만들었어요`);
                 }}
               >
@@ -119,7 +119,7 @@ export function FirstRun() {
             type="button"
             className="btn"
             onClick={async () => {
-              await startMonth(month);
+              if (!(await startMonth(month))) return;
               toast(`${monthLabel(month)} 플랜을 만들었어요`);
             }}
           >
