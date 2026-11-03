@@ -30,7 +30,13 @@ Household budget app for a couple (person `a` = repo owner, `b` = partner). Kore
 Run the Cloudflare `security-audit` skill in **full audit mode with the `standard` profile** on the repo (install if missing: `npx skills add cloudflare/security-audit-skill`). Fix or get the user's sign-off on every confirmed finding before deploying, and report the run directory.
 
 ## Android work
-Use the `android-skills` plugin (install: `/plugin install android-skills@android-skills`). Load the matching skill before writing code, e.g. `edge-to-edge`, `jetpack-compose-performance`, `adaptive`, `navigation-3`, `glance-canonical-layouts` / `glance-appwidget-updates-and-memory` (widget), `android-permissions-security` / `android-intent-security` (notification listener, intents), `testing-setup`, `agp-9-upgrade`, `r8-analyzer`, `play-policy-insights` (before Play submission).
+Use the `android-skills` plugin (install: `/plugin install android-skills@android-skills`). Invoke the matching skill with the Skill tool before writing code:
+- UI: `android-skills:edge-to-edge`, `android-skills:adaptive`, `android-skills:navigation-3`, `android-skills:navigation-event`, `android-skills:jetpack-compose-performance`
+- Widget: `android-skills:glance-canonical-layouts`, `android-skills:glance-appwidget-updates-and-memory`
+- Security (notification listener, intents, permissions): `android-skills:android-permissions-security`, `android-skills:android-intent-security`
+- Build, tests, release: `android-skills:testing-setup`, `android-skills:r8-analyzer`, `android-skills:anr-audit-and-fix`, `android-skills:android-cli`
+- Before a Play upload: `android-skills:play-policy-insights`
+- Note: `android-skills:agp-9-upgrade` does not support KMP projects; don't use it here.
 
 ## Rules
 - Keep calc logic identical in `apps/web/src/lib/calc.ts` and `apps/mobile/core/.../calc/Calc.kt`; add a `core` test for any change.
