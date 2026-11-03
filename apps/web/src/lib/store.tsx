@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { Check, Data, Month, MonthItem, Person, Row, Spending, TableName } from "./types";
-import { getRepo, hasSupabase, currentMember, supabase, LIST_TABLES, ConflictError, type Change } from "./repo";
+import { getRepo, hasSupabase, currentMember, supabase, LIST_TABLES, ConflictError, RetryableError, upsertOp, deleteOp, type Change, type Op } from "./repo";
 import { addMonths, currentMonth, itemsFromMonth, latestMonthBefore, monthRow, periodOf, snapshotItems, withUserNames } from "./calc";
 import { haptic } from "./native";
 
@@ -30,9 +30,17 @@ interface Store {
   today: string;
   reload: (table?: TableName) => Promise<void>;
   exportSpendings: () => Promise<Spending[]>;
-  upsert: <T extends TableName>(table: T, rows: Row<T>[], opts?: { ignoreDuplicates?: boolean }) => Promise<void>;
-  remove: (table: TableName, ids: string[]) => Promise<void>;
-  startMonth: (month: string, opts?: { from?: string | null; oneOffs?: boolean }) => Promise<void>;
+  /**
+   * 저장들. 화면에는 바로 반영하고 서버로 보낸다. 거절하지 않고 결과만 돌려준다:
+   * true = 저장됨(또는 연결 문제로 폰에 보관, 나중에 보냄), false = 충돌·잘못된 값으로 못 함(알림과 다시 읽기는 이미 했음)
+   */
+  upsert: <T extends TableName>(table: T, rows: Row<T>[], opts?: { ignoreDuplicates?: boolean }) => Promise<boolean>;
+  remove: (table: TableName, ids: string[]) => Promise<boolean>;
+  /** 여러 저장을 한 번에 — 전부 되거나 전부 안 된다 (upsertOp / deleteOp 로 만든다) */
+  batch: (ops: Op[]) => Promise<boolean>;
+  /** 보내지 못하고 폰에 보관 중인 저장 수 (연결되면 자동으로 보낸다). 보내는 중인 것은 세지 않는다 */
+  pending: number;
+  startMonth: (month: string, opts?: { from?: string | null; oneOffs?: boolean }) => Promise<boolean>;
   toggleCheck: (c: Omit<Check, "done_at" | "done_by">, done: boolean) => Promise<void>;
   togglePaid: (item: MonthItem) => Promise<void>;
   /** 로그인한 사람(me)의 이름 바꾸기 — 다른 사람 이름은 그 사람만 바꾼다 */
@@ -77,6 +85,37 @@ function applyLocal<T extends TableName>(d: Data, table: T, rows: Row<T>[], igno
   }
   return { ...d, [key]: list };
 }
+
+/** 저장을 화면에 먼저 반영한다 (서버 응답 전, 그리고 서버에서 다시 읽은 뒤 아직 못 보낸 저장을 다시 얹을 때) */
+function applyOpsLocal(d: Data, ops: Op[], only?: TableName): Data {
+  for (const o of ops) {
+    if (only && o.table !== only) continue;
+    if (o.op === "upsert") d = applyLocal(d, o.table, o.rows as never, o.ignore_duplicates);
+    else if (o.table !== "settings") {
+      const key = o.table as (typeof LIST_TABLES)[number];
+      d = { ...d, [key]: (d[key] as unknown as { id: string }[]).filter((x) => !o.ids.includes(x.id)) };
+    }
+  }
+  return d;
+}
+
+/** 다른 줄에서 복사해 새로 만드는 줄: rev·만든 시각 같은 기록 칸은 서버가 새로 채우게 뺀다 */
+export function fresh<T extends object>(row: T): T {
+  const out = { ...row } as Record<string, unknown>;
+  for (const k of ["rev", "created_at", "created_by", "updated_at", "updated_by"]) delete out[k];
+  return out as T;
+}
+
+/** 보내지 못한 저장 (폰에 보관, 연결되면 순서대로 다시 보낸다) */
+interface Pending {
+  seq: number;
+  ops: Op[];
+}
+const OUTBOX_KEY = "our-money-outbox";
+const MAX_TRIES = 3;
+/** 다시 보내기 전 기다림: 0.5·1·2초 … 에 무작위(지터)를 섞어 두 폰이 같은 순간에 몰리지 않게 */
+const backoff = (attempt: number) => Math.min(8000, 500 * 2 ** attempt) * (0.5 + Math.random() * 0.5);
+const sleep = (ms: number) => new Promise((r) => window.setTimeout(r, ms));
 
 type Revved = { id: string | number; rev?: number };
 
@@ -135,6 +174,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     })(),
   );
   const lastFull = useRef(0);
+  const outbox = useRef<Pending[]>([]);
+  const [pending, setPending] = useState(0);
 
   const reload = useCallback(
     async (table?: TableName) => {
@@ -143,12 +184,16 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         if (table) {
           // 바뀐 테이블만 다시 불러온다
           const rows = await repo.loadTable(table, { spendingsFrom: spendingsFrom.current });
-          setData((d) => (d ? (table === "settings" ? { ...d, settings: rows as Data["settings"] } : { ...d, [table]: rows }) : d));
+          const pend = outbox.current.flatMap((p) => p.ops);
+          setData((d) =>
+            d ? applyOpsLocal(table === "settings" ? { ...d, settings: rows as Data["settings"] } : { ...d, [table]: rows }, pend, table) : d,
+          );
           return;
         }
         const d = await repo.load({ spendingsFrom: spendingsFrom.current });
         lastFull.current = Date.now();
-        setData(d);
+        // 아직 보내지 못한 저장은 다시 얹는다 (서버 내용으로 덮어 입력이 사라지지 않게)
+        setData(applyOpsLocal(d, outbox.current.flatMap((p) => p.ops)));
         setError(null);
         setMonthState((m) => {
           if (m) return m;
@@ -180,8 +225,16 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }
     let alive = true;
     const check = async () => {
-      const res = await currentMember();
+      let res: Awaited<ReturnType<typeof currentMember>>;
+      try {
+        res = await currentMember();
+      } catch (e) {
+        // 연결이 안 돼 확인하지 못함: 로그인 상태는 그대로 두고, 연결이 돌아오면 다시 확인한다
+        if (alive) setError(`연결할 수 없어요. 인터넷 연결을 확인해 주세요 (${e instanceof Error ? e.message : e})`);
+        return;
+      }
       if (!alive) return;
+      setError(null);
       if (!res) setAuth({ state: "signed-out" });
       else if (!res.member) setAuth({ state: "not-member", email: res.email });
       else {
@@ -191,9 +244,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     };
     void check();
     const sub = supabase()?.auth.onAuthStateChange(() => void check());
+    const online = () => void check();
+    window.addEventListener("online", online);
     return () => {
       alive = false;
       sub?.data.subscription.unsubscribe();
+      window.removeEventListener("online", online);
     };
   }, [repo]);
 
@@ -253,13 +309,6 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     } catch {}
   }, []);
 
-  // 저장은 한 번에 하나씩 순서대로 (같은 줄을 빠르게 두 번 고쳐도, 외래키 순서도 지켜지게)
-  const queue = useRef<Promise<unknown>>(Promise.resolve());
-  const enqueue = useCallback(<R,>(job: () => Promise<R>): Promise<R> => {
-    const p = queue.current.then(job, job);
-    queue.current = p.catch(() => undefined);
-    return p;
-  }, []);
   // 내가 저장한 rev 의 이어짐: 저장 전 rev → 서버가 준 rev. 옛 rev 로 만든 줄(빠른 연속 수정, 되돌리기)을 내 최신 rev 로 맞춘다
   const myRevs = useRef(new Map<string, Map<number, number>>());
   const rebase = useCallback((table: TableName, row: Revved): Revved => {
@@ -280,30 +329,158 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const upsert = useCallback(
-    async <T extends TableName>(table: T, rows: Row<T>[], opts?: { ignoreDuplicates?: boolean }) => {
-      if (!repo) return;
-      setData((d) => (d ? applyLocal(d, table, rows, opts?.ignoreDuplicates) : d));
-      await enqueue(async () => {
-        const sent = (rows as unknown as Revved[]).map((r) => rebase(table, r));
+  /*
+   * 저장 대기열 (outbox). 모든 저장은 여기 줄을 서고 한 번에 하나씩 순서대로 나간다
+   * (같은 줄을 빠르게 두 번 고쳐도, 외래키 순서도 지켜지게).
+   * - 네트워크·서버 문제(RetryableError): 기다렸다가 최대 3번 다시 보낸다. 그래도 안 되면 폰에 보관하고
+   *   연결이 돌아오거나 앱으로 돌아올 때 다시 보낸다. 같은 저장을 여러 번 보내도 안전하다:
+   *   id 로 upsert 하고, 내용이 같은 수정은 DB 가 건너뛰고(rev 확인 전에), 지운 줄을 또 지우면 0줄이다.
+   * - 충돌(ConflictError)·잘못된 값: 다시 보내지 않고 서버 내용으로 다시 읽는다.
+   */
+  const waiters = useRef(new Map<number, { resolve: () => void; reject: (e: unknown) => void }>());
+  const seq = useRef(0);
+  const flushing = useRef(false);
+  const parkedToast = useRef(0);
+  const authEmail = useRef<string | null>(null);
+  const persist = useCallback(() => {
+    setPending((n) => (outbox.current.length === 0 ? 0 : n > 0 ? outbox.current.length : n));
+    if (!hasSupabase) return;
+    try {
+      if (outbox.current.length === 0) localStorage.removeItem(OUTBOX_KEY);
+      else localStorage.setItem(OUTBOX_KEY, JSON.stringify({ email: authEmail.current, items: outbox.current }));
+    } catch {}
+  }, []);
+
+  /** 지웠는데 서버에 아직 남아 있으면 되살리고 알린다 */
+  const verifyDeleted = useCallback(
+    async (table: TableName, ids: string[]) => {
+      if (!repo || table === "settings") return;
+      try {
+        const rows = (await repo.loadTable(table, { spendingsFrom: spendingsFrom.current })) as unknown as { id: string }[];
+        setData((d) => (d ? applyOpsLocal({ ...d, [table]: rows }, outbox.current.flatMap((p) => p.ops), table) : d));
+        if (rows.some((r) => ids.includes(r.id))) toast("지우지 못했어요. 로그인 상태를 확인해 주세요");
+      } catch {}
+    },
+    [repo, toast],
+  );
+
+  const flush = useCallback(async () => {
+    if (!repo || flushing.current) return;
+    flushing.current = true;
+    try {
+      let attempt = 0;
+      while (outbox.current.length > 0) {
+        const head = outbox.current[0];
+        const sent: Op[] = head.ops.map((o) =>
+          o.op === "upsert" ? { ...o, rows: o.rows.map((r) => rebase(o.table, r as Revved) as unknown as Record<string, unknown>) } : o,
+        );
+        const done = (err?: unknown) => {
+          outbox.current = outbox.current.filter((p) => p.seq !== head.seq);
+          persist();
+          const w = waiters.current.get(head.seq);
+          waiters.current.delete(head.seq);
+          if (err === undefined) w?.resolve();
+          else w?.reject(err);
+        };
         try {
-          const saved = (await repo.upsert(table, sent as unknown as Row<T>[], opts)) as unknown as Revved[];
-          remember(table, sent, saved);
-          if (saved.length) setData((d) => (d ? mergeServer(d, table, saved) : d));
+          const results = await repo.apply(sent);
+          results.forEach((res, i) => {
+            const o = sent[i];
+            if (o?.op === "upsert" && res.rows) {
+              remember(o.table, o.rows as Revved[], res.rows as Revved[]);
+              if (res.rows.length) setData((d) => (d ? mergeServer(d, o.table, res.rows as Revved[]) : d));
+            }
+            // 지우려던 줄보다 적게 지워졌으면: 이미 다른 폰이 지웠거나, 권한이 없어 지워지지 않았다 → 서버 내용으로 확인
+            if (o?.op === "delete" && (res.deleted ?? o.ids.length) < o.ids.length) void verifyDeleted(o.table, o.ids);
+          });
+          attempt = 0;
+          done();
         } catch (e) {
+          if (e instanceof RetryableError) {
+            if (attempt < MAX_TRIES) {
+              await sleep(backoff(attempt++));
+              continue;
+            }
+            // 3번 다 실패: 보관해 두고 멈춘다. 다음 저장·연결 복구·앱 복귀 때 다시 시도
+            if (Date.now() - parkedToast.current > 60_000) {
+              parkedToast.current = Date.now();
+              toast("연결이 불안정해요. 저장할 내용을 폰에 보관했다가 연결되면 보낼게요");
+            }
+            setPending(outbox.current.length);
+            for (const p of outbox.current) {
+              waiters.current.get(p.seq)?.resolve();
+              waiters.current.delete(p.seq);
+            }
+            return;
+          }
+          done(e);
+          const tables = [...new Set(head.ops.map((o) => o.table))];
           if (e instanceof ConflictError) {
             toast("다른 폰에서 먼저 바꿨어요. 최신 내용으로 다시 불러왔어요");
-            await reload(table);
+            for (const t of tables) await reload(t);
           } else {
             toast(`저장하지 못했어요: ${e instanceof Error ? e.message : e}`);
             await reload();
           }
-          throw e;
         }
-      });
+      }
+    } finally {
+      flushing.current = false;
+    }
+  }, [repo, rebase, remember, persist, reload, toast, verifyDeleted]);
+
+  const batch = useCallback(
+    async (ops: Op[]) => {
+      if (!repo) return false;
+      const real = ops.filter((o) => (o.op === "upsert" ? o.rows.length > 0 : o.ids.length > 0));
+      if (real.length === 0) return true;
+      setData((d) => (d ? applyOpsLocal(d, real) : d));
+      const p: Pending = { seq: ++seq.current, ops: real };
+      outbox.current = [...outbox.current, p];
+      persist();
+      const settled = new Promise<boolean>((resolve) =>
+        waiters.current.set(p.seq, { resolve: () => resolve(true), reject: () => resolve(false) }),
+      );
+      void flush();
+      return settled;
     },
-    [repo, reload, toast, enqueue, rebase, remember],
+    [repo, persist, flush],
   );
+
+  const upsert = useCallback(
+    <T extends TableName>(table: T, rows: Row<T>[], opts?: { ignoreDuplicates?: boolean }) => batch([upsertOp(table, rows, opts)]),
+    [batch],
+  );
+  const remove = useCallback((table: TableName, ids: string[]) => batch([deleteOp(table, ids)]), [batch]);
+
+  // 보관해 둔 저장: 로그인한 같은 계정이면 이어서 보내고, 연결이 돌아오면·앱으로 돌아오면 다시 시도
+  useEffect(() => {
+    if (!repo || auth.state !== "member") return;
+    authEmail.current = auth.email;
+    try {
+      const raw = localStorage.getItem(OUTBOX_KEY);
+      if (raw && outbox.current.length === 0) {
+        const saved = JSON.parse(raw) as { email?: string; items?: Pending[] };
+        if (saved.email === auth.email && Array.isArray(saved.items) && saved.items.length > 0) {
+          outbox.current = saved.items.map((p) => ({ ...p, seq: ++seq.current }));
+          setData((d) => (d ? applyOpsLocal(d, outbox.current.flatMap((x) => x.ops)) : d));
+          setPending(outbox.current.length);
+        } else localStorage.removeItem(OUTBOX_KEY);
+      }
+    } catch {}
+    void flush();
+    const retry = () => void flush();
+    window.addEventListener("online", retry);
+    window.addEventListener("focus", retry);
+    const timer = window.setInterval(() => {
+      if (outbox.current.length > 0) retry();
+    }, 30_000);
+    return () => {
+      window.removeEventListener("online", retry);
+      window.removeEventListener("focus", retry);
+      window.clearInterval(timer);
+    };
+  }, [repo, auth, flush]);
 
   const setMyName = useCallback(
     async (name: string) => {
@@ -328,32 +505,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     [repo, me, reload, toast],
   );
 
-  const remove = useCallback(
-    async (table: TableName, ids: string[]) => {
-      if (!repo) return;
-      setData((d) => {
-        if (!d || table === "settings") return d;
-        const key = table as (typeof LIST_TABLES)[number];
-        return { ...d, [key]: (d[key] as unknown as { id: string }[]).filter((x) => !ids.includes(x.id)) };
-      });
-      await enqueue(async () => {
-        try {
-          await repo.remove(table, ids);
-        } catch (e) {
-          toast(`삭제하지 못했어요: ${e instanceof Error ? e.message : e}`);
-          await reload();
-        }
-      });
-    },
-    [repo, reload, toast, enqueue],
-  );
-
   /**
    * 달 플랜 만들기. from 을 주면 그 달 플랜을 그대로 이어받고(수입 포함), 없으면 반복 항목으로 새로 만든다.
    */
   const startMonth = useCallback(
     async (m: string, opts: { from?: string | null; oneOffs?: boolean } = {}) => {
-      if (!data) return;
+      if (!data) return false;
       const src = opts.from ? monthRow(data, opts.from) : monthRow(data, addMonths(m, -1));
       const row: Month = {
         id: m,
@@ -363,11 +520,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         extra_note: "",
         created_at: new Date().toISOString(),
       };
-      const items = opts.from ? itemsFromMonth(data, opts.from, m, { oneOffs: opts.oneOffs }) : snapshotItems(m, data.plan_items);
-      await upsert("months", [row], { ignoreDuplicates: true });
-      await upsert("month_items", items, { ignoreDuplicates: true });
+      const items = (opts.from ? itemsFromMonth(data, opts.from, m, { oneOffs: opts.oneOffs }) : snapshotItems(m, data.plan_items)).map(fresh);
+      // 달과 항목을 한 트랜잭션으로: 달만 생기고 항목이 빠진 반쪽 달이 남지 않게
+      return batch([upsertOp("months", [row], { ignoreDuplicates: true }), upsertOp("month_items", items, { ignoreDuplicates: true })]);
     },
-    [data, upsert],
+    [data, batch],
   );
 
   // 새 달이 시작되면 지난 플랜을 그대로 이어받아 자동으로 만든다 (앱을 열 때 한 번)
@@ -379,7 +536,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     const from = latestMonthBefore(data, cur);
     if (!from) return;
     autoStarted.current = cur;
-    void startMonth(cur, { from }).then(() => {
+    void startMonth(cur, { from }).then((ok) => {
+      if (!ok) return;
       const label = (k: string) => `${Number(k.slice(5))}월`;
       toast(`${label(cur)}이 시작돼서 ${label(from)} 플랜을 그대로 이어받았어요`);
     });
@@ -419,6 +577,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     exportSpendings,
     upsert,
     remove,
+    batch,
+    pending,
     startMonth,
     toggleCheck,
     togglePaid,

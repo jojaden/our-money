@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useData } from "@/lib/store";
+import { fresh, useData } from "@/lib/store";
 import { itemsOf, missingFromMonth } from "@/lib/calc";
 import { GROUP_LABEL } from "@/lib/types";
 import { monthLabel } from "@/lib/format";
@@ -33,9 +33,9 @@ export function ImportSheet({ open, onOpenChange }: { open: boolean; onOpenChang
           className="btn block"
           disabled={missing.length === 0}
           onClick={async () => {
-            const added = missing;
+            const added = missing.map(fresh);
             onOpenChange(false);
-            await upsert("month_items", added, { ignoreDuplicates: true });
+            if (!(await upsert("month_items", added, { ignoreDuplicates: true }))) return;
             toast(`${added.length}개 항목을 가져왔어요`, () => void remove("month_items", added.map((i) => i.id)));
           }}
         >

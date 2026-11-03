@@ -8,7 +8,7 @@ import { allowanceStatus, livingStatus, monthOf, nameOf } from "@/lib/calc";
 import { categoryVisual, guessFromMemo, presetsOf, type Preset } from "@/lib/categories";
 import { num, parseYmd, rase, ymd } from "@/lib/format";
 import { haptic } from "@/lib/native";
-import { CategoryIcon, Seg, Sheet } from "./ui";
+import { CategoryIcon, MAX_SPENDING, Seg, Sheet } from "./ui";
 
 const LAST_CARD = "our-money-last-card";
 const MINE = "__mine";
@@ -208,7 +208,7 @@ export function SpendingSheet({ open, onOpenChange, editing }: { open: boolean; 
     }
     haptic(14);
     onOpenChange(false);
-    await upsert("spendings", [row]);
+    if (!(await upsert("spendings", [row]))) return;
     toast(`${editing ? "수정했어요" : `${num(amount)}원 기록했어요`} · ${remainingText(data, row)}`);
   };
 
@@ -217,7 +217,7 @@ export function SpendingSheet({ open, onOpenChange, editing }: { open: boolean; 
     const backup = editing;
     haptic([8, 30, 8]);
     onOpenChange(false);
-    await remove("spendings", [editing.id]);
+    if (!(await remove("spendings", [editing.id]))) return;
     toast("기록을 지웠어요", () => void upsert("spendings", [backup]));
   };
 
@@ -254,7 +254,7 @@ export function SpendingSheet({ open, onOpenChange, editing }: { open: boolean; 
           autoFocus={!editing}
           enterKeyHint="done"
           value={amount ? num(amount) : ""}
-          onChange={(e) => setAmount(Number(e.target.value.replace(/[^\d]/g, "")) || 0)}
+          onChange={(e) => setAmount(Math.min(MAX_SPENDING, Number(e.target.value.replace(/[^\d]/g, "")) || 0))}
           onKeyDown={(e) => {
             if (e.key === "Enter") void save();
           }}
@@ -263,7 +263,7 @@ export function SpendingSheet({ open, onOpenChange, editing }: { open: boolean; 
       </div>
       <div className="quick">
         {[10_000, 50_000, 100_000].map((v) => (
-          <button key={v} type="button" onClick={() => setAmount((a) => a + v)}>
+          <button key={v} type="button" onClick={() => setAmount((a) => Math.min(MAX_SPENDING, a + v))}>
             +{v / 10_000}만
           </button>
         ))}

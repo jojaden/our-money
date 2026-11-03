@@ -5,8 +5,9 @@ import { Trash2 } from "lucide-react";
 import type { Group, Method, MonthItem, Owner, PlanItem } from "@/lib/types";
 import { GROUP_LABEL, METHOD_LABEL } from "@/lib/types";
 import { useData } from "@/lib/store";
+import { deleteOp, upsertOp, type Op } from "@/lib/repo";
 import { nameOf } from "@/lib/calc";
-import { AmountInput, Seg, Sheet, Toggle } from "./ui";
+import { AmountInput, MAX_GOAL, Seg, Sheet, Toggle } from "./ui";
 
 function newId(prefix: string) {
   return `${prefix}-${typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID().slice(0, 8) : Date.now().toString(36)}`;
@@ -23,7 +24,7 @@ export function ItemSheet({
   item?: MonthItem;
   group?: Group;
 }) {
-  const { data, month, upsert, remove, toast } = useData();
+  const { data, month, batch, toast } = useData();
   const s = data.settings;
   const plan = item?.plan_item_id ? data.plan_items.find((p) => p.id === item.plan_item_id) : undefined;
   const cards = useMemo(() => data.accounts.filter((a) => a.kind === "card" && !a.archived).sort((a, b) => a.sort - b.sort), [data.accounts]);
@@ -73,6 +74,8 @@ export function ItemSheet({
       due_day: dueDay,
       note: note.trim(),
     };
+    // 플랜 항목과 이번 달 항목을 한 트랜잭션으로 (하나만 저장되고 끝나지 않게)
+    const ops: Op[] = [];
     let planId = item?.plan_item_id ?? null;
     if (forward) {
       planId = planId ?? newId("pi");
@@ -84,7 +87,11 @@ export function ItemSheet({
         goal_amount: null,
         goal_start: null,
       };
-      await upsert("plan_items", [{ ...base, ...fields, active: true, goal_amount: group === "saving" && goal > 0 ? goal : null, goal_start: group === "saving" && goal > 0 ? goalStart : null }]);
+      ops.push(
+        upsertOp("plan_items", [
+          { ...base, ...fields, active: true, goal_amount: group === "saving" && goal > 0 ? goal : null, goal_start: group === "saving" && goal > 0 ? goalStart : null },
+        ]),
+      );
     }
     const id = item?.id ?? (planId ? `${month}:${planId}` : `${month}:${newId("one")}`);
     const row: MonthItem = {
@@ -98,8 +105,9 @@ export function ItemSheet({
       ...fields,
       rev: item?.rev,
     };
+    ops.push(upsertOp("month_items", [row]));
     onOpenChange(false);
-    await upsert("month_items", [row]);
+    if (!(await batch(ops))) return;
     toast(forward ? "저장했어요 · 다음 달부터도 적용" : "이번 달만 바꿨어요");
   };
 
@@ -108,11 +116,10 @@ export function ItemSheet({
     const backup = item;
     const planBackup = plan;
     onOpenChange(false);
-    await remove("month_items", [item.id]);
-    if (forward && plan) await upsert("plan_items", [{ ...plan, active: false }]);
+    // 이번 달에서 빼기와 다음 달부터 끄기를 한 트랜잭션으로
+    if (!(await batch([deleteOp("month_items", [item.id]), ...(forward && plan ? [upsertOp("plan_items", [{ ...plan, active: false }])] : [])]))) return;
     toast(forward && plan ? "이번 달과 다음 달부터 뺐어요" : "이번 달에서 뺐어요", () => {
-      void upsert("month_items", [backup]);
-      if (planBackup) void upsert("plan_items", [planBackup]);
+      void batch([...(planBackup ? [upsertOp("plan_items", [planBackup])] : []), upsertOp("month_items", [backup])]);
     });
   };
 
@@ -216,11 +223,11 @@ export function ItemSheet({
         <div className="inline-fields field">
           <div className="field">
             <label htmlFor="it-goal">목표 금액 (선택)</label>
-            <AmountInput id="it-goal" value={goal} onChange={setGoal} />
+            <AmountInput id="it-goal" value={goal} onChange={setGoal} max={MAX_GOAL} />
           </div>
           <div className="field" style={{ marginTop: 0 }}>
             <label htmlFor="it-goal-start">지금까지 모은 돈</label>
-            <AmountInput id="it-goal-start" value={goalStart} onChange={setGoalStart} />
+            <AmountInput id="it-goal-start" value={goalStart} onChange={setGoalStart} max={MAX_GOAL} />
           </div>
         </div>
       )}
@@ -270,7 +277,7 @@ export function IncomeSheet({ open, onOpenChange }: { open: boolean; onOpenChang
           className="btn block"
           onClick={async () => {
             onOpenChange(false);
-            await upsert("months", [{ ...m, income_a: a, income_b: b, extra_income: extra, extra_note: note.trim() }]);
+            if (!(await upsert("months", [{ ...m, income_a: a, income_b: b, extra_income: extra, extra_note: note.trim() }]))) return;
             toast("수입을 저장했어요");
           }}
         >

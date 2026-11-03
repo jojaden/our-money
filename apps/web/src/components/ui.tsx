@@ -347,9 +347,14 @@ export function Sheet({
 }
 
 export function Toasts() {
-  const { toasts, dismissToast } = useStore();
+  const { toasts, dismissToast, pending } = useStore();
   return (
     <div className="toasts" aria-live="polite">
+      {pending > 0 && (
+        <div className="toast" role="status">
+          <span>보내지 못한 저장 {pending}건 · 연결되면 자동으로 보내요</span>
+        </div>
+      )}
       {toasts.map((t) => (
         <div className="toast" key={t.id} role="status">
           <span>{t.text}</span>
@@ -370,7 +375,24 @@ export function Toasts() {
   );
 }
 
-export function AmountInput({ value, onChange, id, placeholder = "0" }: { value: number; onChange: (n: number) => void; id?: string; placeholder?: string }) {
+/** DB 한도와 같은 금액 상한 (migrations/005) */
+export const MAX_AMOUNT = 1_000_000_000;
+export const MAX_SPENDING = 100_000_000;
+export const MAX_GOAL = 10_000_000_000;
+
+export function AmountInput({
+  value,
+  onChange,
+  id,
+  placeholder = "0",
+  max = MAX_AMOUNT,
+}: {
+  value: number;
+  onChange: (n: number) => void;
+  id?: string;
+  placeholder?: string;
+  max?: number;
+}) {
   return (
     <input
       id={id}
@@ -379,7 +401,7 @@ export function AmountInput({ value, onChange, id, placeholder = "0" }: { value:
       autoComplete="off"
       placeholder={placeholder}
       value={value ? num(value) : ""}
-      onChange={(e) => onChange(Number(e.target.value.replace(/[^\d]/g, "")) || 0)}
+      onChange={(e) => onChange(Math.min(max, Number(e.target.value.replace(/[^\d]/g, "")) || 0))}
     />
   );
 }
