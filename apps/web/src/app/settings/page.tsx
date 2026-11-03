@@ -16,9 +16,23 @@ function csv(rows: (string | number)[][]) {
 }
 
 export default function SettingsPage() {
-  const { data, upsert, toast, auth, me, setMe, reload, exportSpendings } = useData();
+  const { data, upsert, toast, auth, me, setMe, reload, exportSpendings, setMyName } = useData();
   const s = data.settings;
   const [draft, setDraft] = useState<Settings>(s);
+  const myName = nameOf(s, me);
+  const [nameDraft, setNameDraft] = useState(myName);
+  useEffect(() => setNameDraft(myName), [myName]);
+  const commitName = async () => {
+    const next = nameDraft.trim();
+    if (!next) return setNameDraft(myName);
+    if (next === myName) return;
+    try {
+      await setMyName(next);
+      toast("이름을 바꿨어요");
+    } catch {
+      setNameDraft(myName);
+    }
+  };
   const [acc, setAcc] = useState<{ open: boolean; account?: Account; kind?: AccountKind }>({ open: false });
   const [cat, setCat] = useState<{ open: boolean; category?: Category }>({ open: false });
 
@@ -90,23 +104,40 @@ export default function SettingsPage() {
         <section className="set-sec" aria-labelledby="people-h">
           <div className="head">
             <h2 id="people-h">두 사람</h2>
-            <p>이름과 평소 월급(실수령), 월급이 들어오는 통장. 새 달을 만들 때 기본값으로 써요.</p>
+            <p>이름은 각자 자기 계정에서 바꿔요. 평소 월급(실수령)과 월급통장은 새 달을 만들 때 기본값으로 써요.</p>
           </div>
           <div className="card">
             {(["a", "b"] as Person[]).map((p, idx) => {
-              const nameKey = p === "a" ? "name_a" : "name_b";
               const salKey = p === "a" ? "salary_a" : "salary_b";
               const accKey = p === "a" ? "salary_account_a" : "salary_account_b";
               return (
                 <div key={p} style={{ marginTop: idx ? 24 : 0 }}>
                   <div className="lane-head" style={{ marginBottom: 12 }}>
                     <Who owner={p} s={draft} size="sm" />
-                    <span className="name">{p === "a" ? "첫 번째 사람" : "두 번째 사람"}</span>
+                    <span className="name">{p === me ? "나" : "배우자"}</span>
+                    {p !== me && (
+                      <span id={`n-${p}-hint`} className="help" style={{ marginLeft: "auto" }}>
+                        {auth.state === "demo" ? "아래에서 사람을 바꿔 고쳐요" : "이름은 본인이 바꿔요"}
+                      </span>
+                    )}
                   </div>
                   <div className="inline-fields">
                     <div className="field">
-                      <label htmlFor={`n-${p}`}>이름</label>
-                      <input id={`n-${p}`} className="input" value={draft[nameKey]} maxLength={10} onChange={(e) => setDraft({ ...draft, [nameKey]: e.target.value })} onBlur={() => commit(nameKey)} />
+                      <label htmlFor={`n-${p}`}>{p === me ? "내 이름" : "이름"}</label>
+                      {p === me ? (
+                        <input
+                          id={`n-${p}`}
+                          className="input"
+                          value={nameDraft}
+                          maxLength={10}
+                          autoComplete="nickname"
+                          onChange={(e) => setNameDraft(e.target.value)}
+                          onBlur={() => void commitName()}
+                          onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+                        />
+                      ) : (
+                        <input id={`n-${p}`} className="input" value={nameOf(s, p)} readOnly aria-describedby={`n-${p}-hint`} title="이름은 본인이 바꿔요" />
+                      )}
                     </div>
                     <div className="field" style={{ marginTop: 0 }}>
                       <label htmlFor={`s-${p}`}>월급</label>
@@ -131,7 +162,7 @@ export default function SettingsPage() {
             })}
             <div className="card-foot">
               <span />
-              <button type="button" className="btn sm" disabled={draft.salary_a === s.salary_a && draft.salary_b === s.salary_b && draft.name_a === s.name_a && draft.name_b === s.name_b} onClick={() => void save({})}>
+              <button type="button" className="btn sm" disabled={draft.salary_a === s.salary_a && draft.salary_b === s.salary_b} onClick={() => void save({})}>
                 저장
               </button>
             </div>

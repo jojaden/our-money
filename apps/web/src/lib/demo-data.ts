@@ -1,6 +1,6 @@
 // 데모 모드용 예시 데이터. 이름·금액·계좌는 모두 가상이며 실제 설정으로 바꿔야 한다.
 
-import type { Account, Category, Check, Data, Month, MonthItem, PlanItem, Settings, Spending } from "./types";
+import type { Account, Category, Check, Data, Month, MonthItem, PlanItem, Settings, Spending, User } from "./types";
 import { addMonths, checkId, currentMonth, periodOf, snapshotItems, transfersOf } from "./calc";
 import { parseYmd, ymd } from "./format";
 
@@ -17,6 +17,12 @@ const settings: Settings = {
   cycle_start: 25,
   payday: 25,
 };
+
+// 로그인한 두 계정 (가상). 이름은 각자 설정에서 바꾼다.
+const users: User[] = [
+  { id: "demo-a", email: "hyunbin@example.com", person: "a", name: "현빈" },
+  { id: "demo-b", email: "yejin@example.com", person: "b", name: "예진" },
+];
 
 const bank = (id: string, name: string, owner: Account["owner"], institution: string, sort: number): Account => ({
   id, name, kind: "bank", owner, institution, billing_account_id: null, pay_day: null, sort, archived: false,
@@ -199,6 +205,7 @@ export function buildDemoData(today = ymd(new Date())): Data {
     checks,
     categories,
     spendings: spendings.filter((s) => s.date <= today && s.date >= periodOf(prev, 25).start),
+    users,
   };
 }
 

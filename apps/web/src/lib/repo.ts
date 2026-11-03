@@ -2,7 +2,7 @@
 // 두 구현 모두 같은 테이블 단위 연산만 제공한다.
 
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import type { Data, Member, Row, Spending, TableName } from "./types";
+import type { Data, Member, Person, Row, Spending, TableName, User } from "./types";
 import { buildDemoData } from "./demo-data";
 
 export const LIST_TABLES = [
@@ -13,6 +13,7 @@ export const LIST_TABLES = [
   "checks",
   "categories",
   "spendings",
+  "users",
 ] as const satisfies readonly TableName[];
 
 export interface LoadOpts {
@@ -31,6 +32,8 @@ export interface Repo {
   exportSpendings(): Promise<Spending[]>;
   upsert<T extends TableName>(table: T, rows: Row<T>[], opts?: { ignoreDuplicates?: boolean }): Promise<void>;
   remove(table: TableName, ids: string[]): Promise<void>;
+  /** 로그인한 사람(me)의 이름 — 본인 줄만 바꿀 수 있다 */
+  updateMyName(me: Person, name: string): Promise<void>;
   /** 다른 기기·탭에서 바뀌면 호출 */
   subscribe(onChange: (table: TableName) => void): () => void;
 }
@@ -60,6 +63,8 @@ class SupabaseRepo implements Repo {
 
   private query(table: (typeof LIST_TABLES)[number], opts?: LoadOpts) {
     const q = this.db.from(table).select("*");
+    // 003 마이그레이션 전이면 users 가 없다 → 빈 목록 (이름은 settings 로)
+    if (table === "users") return q.then((r) => (r.error && isMissingTable(r.error) ? { ...r, error: null, data: [] } : r));
     // spendings (date desc, created_at desc) 인덱스를 타는 기간 조건
     if (table === "spendings" && opts?.spendingsFrom) return q.gte("date", opts.spendingsFrom).order("date", { ascending: false });
     return q;
@@ -117,6 +122,21 @@ class SupabaseRepo implements Repo {
     if (error) throw new Error(error.message);
   }
 
+  async updateMyName(me: Person, name: string) {
+    const { data } = await this.db.auth.getSession();
+    const uid = data.session?.user.id;
+    if (!uid) throw new Error("로그인이 필요해요");
+    const res = await this.db.from("users").update({ name }).eq("id", uid).select("id");
+    if (res.error && isMissingTable(res.error)) {
+      // 003 마이그레이션 전: 예전처럼 settings 의 이름을 바꾼다
+      const { error } = await this.db.from("settings").update({ [me === "a" ? "name_a" : "name_b"]: name }).eq("id", 1);
+      if (error) throw new Error(error.message);
+      return;
+    }
+    if (res.error) throw new Error(res.error.message);
+    if (!res.data?.length) throw new Error("내 계정 정보를 찾지 못했어요. 다시 로그인해 주세요.");
+  }
+
   subscribe(onChange: (table: TableName) => void) {
     const channel = this.db.channel("household");
     for (const t of [...LIST_TABLES, "settings"] as TableName[]) {
@@ -127,6 +147,10 @@ class SupabaseRepo implements Repo {
       void this.db.removeChannel(channel);
     };
   }
+}
+
+function isMissingTable(e: { code?: string; message: string }) {
+  return e.code === "42P01" || e.code === "PGRST205" || /relation .* does not exist|Could not find the table/i.test(e.message);
 }
 
 export function defaultSettings(): Data["settings"] {
@@ -159,6 +183,8 @@ class LocalRepo implements Repo {
       const raw = localStorage.getItem(STORE_KEY);
       if (raw) {
         this.data = JSON.parse(raw) as Data;
+        // users 가 생기기 전에 저장된 데모 데이터
+        if (!this.data.users) this.data.users = demoUsers(this.data.settings);
         return this.data;
       }
     } catch {
@@ -220,6 +246,14 @@ class LocalRepo implements Repo {
     this.write();
   }
 
+  async updateMyName(me: Person, name: string) {
+    const d = this.read();
+    d.users = d.users.some((u) => u.person === me)
+      ? d.users.map((u) => (u.person === me ? { ...u, name } : u))
+      : [...d.users, ...demoUsers(d.settings).filter((u) => u.person === me).map((u) => ({ ...u, name }))];
+    this.write();
+  }
+
   subscribe(onChange: (table: TableName) => void) {
     const handler = (e: StorageEvent) => {
       if (e.key === STORE_KEY) {
@@ -235,6 +269,10 @@ class LocalRepo implements Repo {
     this.data = buildDemoData();
     this.write();
   }
+}
+
+export function demoUsers(s: Data["settings"]): User[] {
+  return (["a", "b"] as const).map((p) => ({ id: `demo-${p}`, email: "", person: p, name: p === "a" ? s.name_a : s.name_b }));
 }
 
 let repo: Repo | null = null;
@@ -263,6 +301,8 @@ export async function currentMember(): Promise<{ email: string; member: Member |
   let { data: row } = await db.from("members").select("email, person").eq("email", email.toLowerCase()).maybeSingle();
   // 002 마이그레이션 전(대문자로 저장된 이메일)에도 로그인되게
   if (!row) ({ data: row } = await db.from("members").select("email, person").ilike("email", email).maybeSingle());
+  // 로그인한 계정의 users 줄을 만들거나 맞춘다 (003 마이그레이션 전이면 조용히 넘어간다)
+  if (row) await db.rpc("ensure_user");
   return { email, member: (row as Member | null) ?? null };
 }
 

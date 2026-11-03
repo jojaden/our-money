@@ -77,6 +77,18 @@ export function dateInMonth(key: string, day: number, cycleStart: number): strin
 
 /* ---------- 사람과 비율 ---------- */
 
+/**
+ * 화면에 쓰는 두 사람 이름을 로그인한 계정(users)의 이름으로 맞춘다.
+ * 아직 로그인하지 않았거나 이름이 비어 있는 사람은 settings 의 이름을 그대로 쓴다.
+ */
+export function withUserNames(data: Data): Data {
+  const nameFor = (p: Person) => data.users.find((u) => u.person === p)?.name.trim() ?? "";
+  const a = nameFor("a") || data.settings.name_a;
+  const b = nameFor("b") || data.settings.name_b;
+  if (a === data.settings.name_a && b === data.settings.name_b) return data;
+  return { ...data, settings: { ...data.settings, name_a: a, name_b: b } };
+}
+
 export function nameOf(s: Settings, o: Owner): string {
   if (o === "a") return s.name_a || "A";
   if (o === "b") return s.name_b || "B";

@@ -85,6 +85,7 @@
 ### 6. 두 사람이 함께 쓰기
 
 - **로그인:** 구글 로그인을 써요. DB 의 `members` 표에 있는 두 이메일만 데이터를 읽고 쓸 수 있어요.
+- **계정별 이름과 용돈:** 로그인하면 그 계정의 `users` 줄이 생겨요(`ensure_user()`). 화면의 이름은 각 계정의 이름이고, 이름은 본인만 바꿀 수 있어요(DB 가 `name` 열의 본인 줄 수정만 허용). 홈과 가계부의 용돈 카드는 로그인한 사람의 용돈이에요.
 - **실시간:** 한 사람이 체크하거나 기록하면 다른 폰에 바로 반영돼요. 바뀐 테이블만 다시 읽고, 200ms 안에 몰린 변경은 한 번에 처리해요. 앱으로 돌아왔을 때 30초 넘게 지났으면 전체를 다시 읽어요.
 - **빠르게 보이기:** 체크와 기록은 화면에 먼저 반영하고 서버에 저장해요(낙관적 업데이트).
 - **데모 모드:** Supabase 설정 없이 열면 가상 예시 데이터로 모든 화면을 써 볼 수 있어요. 데이터는 그 브라우저에만 저장돼요.
@@ -135,9 +136,15 @@ erDiagram
   accounts ||--o{ plan_items : "돈이 있어야 하는 계좌"
   accounts ||--o{ spendings : "쓴 카드·계좌"
   categories ||--o{ spendings : "분류"
+  members ||--o| users : "로그인한 계정"
   members {
     text email PK "소문자"
     text person "a 또는 b"
+  }
+  users {
+    uuid id PK "auth.users.id"
+    text person "a 또는 b"
+    text name "본인만 수정"
   }
   settings {
     int id PK "한 줄"
@@ -169,7 +176,7 @@ erDiagram
   }
 ```
 
-전체 정의는 [`supabase/schema.sql`](supabase/schema.sql)에 있어요. 테이블 8개, RLS 정책, Realtime 등록, 기본 분류가 들어 있어요.
+전체 정의는 [`supabase/schema.sql`](supabase/schema.sql)에 있어요. 테이블 9개, RLS 정책, Realtime 등록, 기본 분류가 들어 있어요.
 
 ### 보안
 

@@ -32,6 +32,17 @@ class CalcTest {
     )
     private val month = Month("2026-11", incomeA = 3_800_000, incomeB = 3_200_000)
 
+    @Test fun user_names_override_settings() {
+        val data = AppData(settings = settings, users = listOf(User("u-a", "a@example.com", Person.A, " 빈이 ")))
+        val named = data.withUserNames()
+        assertEquals("빈이", named.settings.nameOf(Person.A))
+        assertEquals("예진", named.settings.nameOf(Person.B)) // 로그인 전이면 settings 이름
+        val blank = AppData(settings = settings, users = listOf(User("u-b", "b@example.com", Person.B, "")))
+        assertEquals("예진", blank.withUserNames().settings.nameB) // 빈 이름이면 settings 이름
+        val plain = AppData(settings = settings)
+        assertTrue(plain.withUserNames() === plain) // 바뀔 게 없으면 그대로
+    }
+
     @Test fun period_with_cycle_25() {
         val p = periodOf("2026-11", 25)
         assertEquals("2026-10-25", p.start)

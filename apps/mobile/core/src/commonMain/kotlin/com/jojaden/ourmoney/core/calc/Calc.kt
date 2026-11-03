@@ -23,6 +23,18 @@ import com.jojaden.ourmoney.core.model.Spending
 
 /* ---------- 사람과 비율 ---------- */
 
+/**
+ * 화면에 쓰는 두 사람 이름을 로그인한 계정(users)의 이름으로 맞춘다.
+ * 아직 로그인하지 않았거나 이름이 비어 있는 사람은 settings 의 이름을 그대로 쓴다. (웹 withUserNames 와 같음)
+ */
+fun AppData.withUserNames(): AppData {
+    fun nameFor(p: Person) = users.firstOrNull { it.person == p }?.name?.trim().orEmpty()
+    val a = nameFor(Person.A).ifEmpty { settings.nameA }
+    val b = nameFor(Person.B).ifEmpty { settings.nameB }
+    if (a == settings.nameA && b == settings.nameB) return this
+    return copy(settings = settings.copy(nameA = a, nameB = b))
+}
+
 fun Settings.nameOf(o: Owner): String = when (o) {
     Owner.A -> nameA.ifBlank { "A" }
     Owner.B -> nameB.ifBlank { "B" }
