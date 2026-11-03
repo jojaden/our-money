@@ -1,0 +1,8 @@
+node_modules
+.next
+out
+.taste-skill
+.impeccable/review
+.impeccable/mocks
+.env.local
+*.bak

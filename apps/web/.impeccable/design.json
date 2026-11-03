@@ -1,0 +1,930 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-31T15:30:00Z",
+  "title": "Design System: 우리 집 가계부 (OUR MONEY)",
+  "extensions": {
+    "colorMeta": {
+      "system-blue": {
+        "role": "primary",
+        "displayName": "System Blue",
+        "canonical": "#0071e3",
+        "tonalRamp": [
+          "#000a21",
+          "#002453",
+          "#00428c",
+          "#0062c9",
+          "#3d89ea",
+          "#79b0fb",
+          "#b2d7ff",
+          "#d8f1ff"
+        ]
+      },
+      "system-blue-press": {
+        "role": "primary",
+        "displayName": "System Blue Pressed",
+        "canonical": "#0062c4",
+        "tonalRamp": [
+          "#010b1e",
+          "#04254e",
+          "#0b4484",
+          "#1564be",
+          "#478ae0",
+          "#7fb1f2",
+          "#b6d7ff",
+          "#daf1ff"
+        ]
+      },
+      "accent-blue": {
+        "role": "primary",
+        "displayName": "Accent Blue",
+        "canonical": "#2a78d6",
+        "tonalRamp": [
+          "#010b1d",
+          "#06264c",
+          "#104481",
+          "#1d65ba",
+          "#4b8adb",
+          "#81b1ef",
+          "#b7d7ff",
+          "#dbf1ff"
+        ]
+      },
+      "accent-blue-soft": {
+        "role": "primary",
+        "displayName": "Pale Accent",
+        "canonical": "#e6f0fc",
+        "tonalRamp": [
+          "#0a0b0d",
+          "#23272b",
+          "#40464c",
+          "#5f6770",
+          "#828a93",
+          "#a9afb6",
+          "#d0d5d9",
+          "#eceff2"
+        ]
+      },
+      "accent-blue-ink": {
+        "role": "primary",
+        "displayName": "Accent Ink",
+        "canonical": "#0b5bbf",
+        "tonalRamp": [
+          "#010a1e",
+          "#07254f",
+          "#134385",
+          "#2063bf",
+          "#4c89e1",
+          "#82b0f3",
+          "#b7d6ff",
+          "#dbf0ff"
+        ]
+      },
+      "amber-partner": {
+        "role": "secondary",
+        "displayName": "Amber Partner",
+        "canonical": "#e8890c",
+        "tonalRamp": [
+          "#170600",
+          "#401b00",
+          "#6e3300",
+          "#9f4d00",
+          "#c27415",
+          "#dc9f67",
+          "#f5cba7",
+          "#ffe9d1"
+        ]
+      },
+      "amber-partner-soft": {
+        "role": "secondary",
+        "displayName": "Pale Amber",
+        "canonical": "#fff3e0",
+        "tonalRamp": [
+          "#0d0b08",
+          "#2a261f",
+          "#4b4439",
+          "#6e6555",
+          "#918879",
+          "#b4ada2",
+          "#d8d3cc",
+          "#f1eee9"
+        ]
+      },
+      "amber-partner-ink": {
+        "role": "secondary",
+        "displayName": "Amber Ink",
+        "canonical": "#a35a00",
+        "tonalRamp": [
+          "#150700",
+          "#3c1e01",
+          "#673702",
+          "#965305",
+          "#b97840",
+          "#d4a27a",
+          "#efcdb2",
+          "#ffead8"
+        ]
+      },
+      "rose-partner": {
+        "role": "secondary",
+        "displayName": "Rose Partner",
+        "canonical": "#e8457a",
+        "tonalRamp": [
+          "#1c0108",
+          "#4a0620",
+          "#7e113a",
+          "#b51e57",
+          "#da537a",
+          "#f18aa2",
+          "#ffbecc",
+          "#ffe0e9"
+        ]
+      },
+      "rose-partner-soft": {
+        "role": "secondary",
+        "displayName": "Pale Rose",
+        "canonical": "#ffebf1",
+        "tonalRamp": [
+          "#0d0a0b",
+          "#2b2426",
+          "#4d4245",
+          "#716166",
+          "#948489",
+          "#b6aaae",
+          "#dad2d4",
+          "#f2edee"
+        ]
+      },
+      "rose-partner-ink": {
+        "role": "secondary",
+        "displayName": "Rose Ink",
+        "canonical": "#b4235a",
+        "tonalRamp": [
+          "#1b0209",
+          "#470c21",
+          "#791c3d",
+          "#af2c5a",
+          "#d35a7e",
+          "#eb8ea5",
+          "#ffc0ce",
+          "#ffe1ea"
+        ]
+      },
+      "group-fixed": {
+        "role": "tertiary",
+        "displayName": "Fixed Orange",
+        "canonical": "#eb6834",
+        "tonalRamp": [
+          "#1b0300",
+          "#471200",
+          "#782500",
+          "#ae3a00",
+          "#d2653b",
+          "#ea9577",
+          "#ffc5b0",
+          "#ffe5d7"
+        ]
+      },
+      "group-living": {
+        "role": "tertiary",
+        "displayName": "Living Blue",
+        "canonical": "#2a78d6",
+        "tonalRamp": [
+          "#010b1d",
+          "#06264c",
+          "#104481",
+          "#1d65ba",
+          "#4b8adb",
+          "#81b1ef",
+          "#b7d7ff",
+          "#dbf1ff"
+        ]
+      },
+      "group-allowance": {
+        "role": "tertiary",
+        "displayName": "Allowance Amber",
+        "canonical": "#eda100",
+        "tonalRamp": [
+          "#150800",
+          "#3c1f00",
+          "#673900",
+          "#965500",
+          "#b97b00",
+          "#d4a560",
+          "#efcfa3",
+          "#ffebcf"
+        ]
+      },
+      "group-saving": {
+        "role": "tertiary",
+        "displayName": "Saving Green",
+        "canonical": "#1baf7a",
+        "tonalRamp": [
+          "#001006",
+          "#00301c",
+          "#005534",
+          "#007c4e",
+          "#319f73",
+          "#77c09d",
+          "#b2e1c9",
+          "#d9f7e7"
+        ]
+      },
+      "group-left": {
+        "role": "tertiary",
+        "displayName": "Unallocated Grey",
+        "canonical": "#e5e5ea",
+        "tonalRamp": [
+          "#0b0b0c",
+          "#262628",
+          "#454547",
+          "#66666a",
+          "#89898c",
+          "#adadb0",
+          "#d4d4d6",
+          "#eeeef0"
+        ]
+      },
+      "grouped-ground": {
+        "role": "neutral",
+        "displayName": "Grouped Ground",
+        "canonical": "#f2f2f7",
+        "tonalRamp": [
+          "#0b0b0c",
+          "#262628",
+          "#454547",
+          "#666669",
+          "#89898c",
+          "#adadb0",
+          "#d4d4d6",
+          "#eeeef0"
+        ]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Surface",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#262626",
+          "#454545",
+          "#666666",
+          "#898989",
+          "#aeaeae",
+          "#d4d4d4",
+          "#eeeeee"
+        ]
+      },
+      "raised": {
+        "role": "neutral",
+        "displayName": "Raised",
+        "canonical": "#f9f9fb",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#262627",
+          "#454546",
+          "#666667",
+          "#89898a",
+          "#aeaeaf",
+          "#d4d4d5",
+          "#eeeeef"
+        ]
+      },
+      "well": {
+        "role": "neutral",
+        "displayName": "Well",
+        "canonical": "#efeff4",
+        "tonalRamp": [
+          "#0b0b0c",
+          "#262628",
+          "#454547",
+          "#66666a",
+          "#89898c",
+          "#adadb0",
+          "#d4d4d6",
+          "#eeeef0"
+        ]
+      },
+      "segment-track": {
+        "role": "neutral",
+        "displayName": "Segment Track",
+        "canonical": "#e9e9ee",
+        "tonalRamp": [
+          "#0b0b0c",
+          "#262628",
+          "#454547",
+          "#66666a",
+          "#89898c",
+          "#adadb0",
+          "#d4d4d6",
+          "#eeeef0"
+        ]
+      },
+      "border": {
+        "role": "neutral",
+        "displayName": "Border",
+        "canonical": "#e5e5ea",
+        "tonalRamp": [
+          "#0b0b0c",
+          "#262628",
+          "#454547",
+          "#66666a",
+          "#89898c",
+          "#adadb0",
+          "#d4d4d6",
+          "#eeeef0"
+        ]
+      },
+      "rule": {
+        "role": "neutral",
+        "displayName": "Rule",
+        "canonical": "#ececf0",
+        "tonalRamp": [
+          "#0b0b0c",
+          "#262628",
+          "#454547",
+          "#666669",
+          "#89898c",
+          "#aeaeb0",
+          "#d4d4d6",
+          "#eeeeef"
+        ]
+      },
+      "control": {
+        "role": "neutral",
+        "displayName": "Control",
+        "canonical": "#c7c7cc",
+        "tonalRamp": [
+          "#0b0b0c",
+          "#262628",
+          "#454548",
+          "#66666a",
+          "#89898d",
+          "#adadb1",
+          "#d4d4d6",
+          "#eeeef0"
+        ]
+      },
+      "label": {
+        "role": "neutral",
+        "displayName": "Label",
+        "canonical": "#1c1c1e",
+        "tonalRamp": [
+          "#0b0b0c",
+          "#262627",
+          "#454546",
+          "#666668",
+          "#89898b",
+          "#aeaeaf",
+          "#d4d4d5",
+          "#eeeeef"
+        ]
+      },
+      "secondary-label": {
+        "role": "neutral",
+        "displayName": "Secondary Label",
+        "canonical": "#48484d",
+        "tonalRamp": [
+          "#0b0b0c",
+          "#262628",
+          "#454548",
+          "#65656a",
+          "#89898d",
+          "#adadb1",
+          "#d4d4d6",
+          "#eeeef0"
+        ]
+      },
+      "tertiary-label": {
+        "role": "neutral",
+        "displayName": "Tertiary Label",
+        "canonical": "#6e6e73",
+        "tonalRamp": [
+          "#0b0b0c",
+          "#262628",
+          "#454548",
+          "#65656a",
+          "#89898d",
+          "#adadb1",
+          "#d4d4d6",
+          "#eeeef0"
+        ]
+      },
+      "switch-green": {
+        "role": "semantic",
+        "displayName": "Switch Green",
+        "canonical": "#34c759",
+        "tonalRamp": [
+          "#001101",
+          "#003204",
+          "#00570d",
+          "#007f17",
+          "#2ba348",
+          "#75c380",
+          "#b1e3b6",
+          "#d8f9db"
+        ]
+      },
+      "positive": {
+        "role": "semantic",
+        "displayName": "Positive",
+        "canonical": "#248a3d",
+        "tonalRamp": [
+          "#010f03",
+          "#062f10",
+          "#105321",
+          "#1c7a34",
+          "#4f9d5c",
+          "#86be8c",
+          "#bae0be",
+          "#def6e0"
+        ]
+      },
+      "negative": {
+        "role": "semantic",
+        "displayName": "Negative",
+        "canonical": "#d70015",
+        "tonalRamp": [
+          "#1f0000",
+          "#500003",
+          "#860008",
+          "#c10011",
+          "#e64c43",
+          "#fc877b",
+          "#ffbdb3",
+          "#ffe0d8"
+        ]
+      },
+      "pill-negative-bg": {
+        "role": "semantic",
+        "displayName": "Pill Negative Bg",
+        "canonical": "#ffeeee",
+        "tonalRamp": [
+          "#0d0a0a",
+          "#2b2525",
+          "#4c4242",
+          "#706262",
+          "#938686",
+          "#b5abab",
+          "#d9d2d2",
+          "#f2eded"
+        ]
+      },
+      "pill-negative-ink": {
+        "role": "semantic",
+        "displayName": "Pill Negative Ink",
+        "canonical": "#c0192a",
+        "tonalRamp": [
+          "#1d0102",
+          "#4b090d",
+          "#7f161d",
+          "#b8242e",
+          "#dc5755",
+          "#f38d87",
+          "#ffc0ba",
+          "#ffe1dd"
+        ]
+      },
+      "pill-warning-bg": {
+        "role": "semantic",
+        "displayName": "Pill Warning Bg",
+        "canonical": "#fff6e0",
+        "tonalRamp": [
+          "#0d0b07",
+          "#29261e",
+          "#4a4538",
+          "#6d6554",
+          "#908978",
+          "#b3aea0",
+          "#d8d4cb",
+          "#f1eee8"
+        ]
+      },
+      "pill-warning-ink": {
+        "role": "semantic",
+        "displayName": "Pill Warning Ink",
+        "canonical": "#8a4a00",
+        "tonalRamp": [
+          "#140801",
+          "#3a1f06",
+          "#643911",
+          "#91551e",
+          "#b47a4b",
+          "#d1a380",
+          "#edcdb6",
+          "#ffeadb"
+        ]
+      },
+      "pill-neutral-bg": {
+        "role": "semantic",
+        "displayName": "Pill Neutral Bg",
+        "canonical": "#efeff4",
+        "tonalRamp": [
+          "#0b0b0c",
+          "#262628",
+          "#454547",
+          "#66666a",
+          "#89898c",
+          "#adadb0",
+          "#d4d4d6",
+          "#eeeef0"
+        ]
+      },
+      "pill-neutral-ink": {
+        "role": "semantic",
+        "displayName": "Pill Neutral Ink",
+        "canonical": "#48484d",
+        "tonalRamp": [
+          "#0b0b0c",
+          "#262628",
+          "#454548",
+          "#65656a",
+          "#89898d",
+          "#adadb1",
+          "#d4d4d6",
+          "#eeeef0"
+        ]
+      }
+    },
+    "categoryHues": [
+      {
+        "name": "장보기",
+        "icon": "basket",
+        "bg": "#e5f8ef",
+        "ink": "#0d9f61"
+      },
+      {
+        "name": "외식·배달",
+        "icon": "utensils",
+        "bg": "#ffeee6",
+        "ink": "#e5561f"
+      },
+      {
+        "name": "카페",
+        "icon": "coffee",
+        "bg": "#f6efe7",
+        "ink": "#8a5a2b"
+      },
+      {
+        "name": "생활용품",
+        "icon": "package",
+        "bg": "#fff8d6",
+        "ink": "#b98900"
+      },
+      {
+        "name": "교통·차량",
+        "icon": "car",
+        "bg": "#e8f3ff",
+        "ink": "#3182f6"
+      },
+      {
+        "name": "병원·약",
+        "icon": "pill",
+        "bg": "#ffeaf1",
+        "ink": "#e0457b"
+      },
+      {
+        "name": "경조사",
+        "icon": "gift",
+        "bg": "#e0f7f5",
+        "ink": "#0f9f8f"
+      },
+      {
+        "name": "문화·여가",
+        "icon": "ticket",
+        "bg": "#eef7e3",
+        "ink": "#4f9a1e"
+      },
+      {
+        "name": "주거",
+        "icon": "home",
+        "bg": "#eef1f4",
+        "ink": "#4e5968"
+      },
+      {
+        "name": "육아",
+        "icon": "baby",
+        "bg": "#fff3e0",
+        "ink": "#d97a00"
+      },
+      {
+        "name": "반려",
+        "icon": "heart",
+        "bg": "#ffeef0",
+        "ink": "#e5484d"
+      },
+      {
+        "name": "기타",
+        "icon": "more",
+        "bg": "#f2f4f6",
+        "ink": "#6b7684"
+      }
+    ],
+    "typographyMeta": {
+      "large-title": {
+        "displayName": "Large Title",
+        "purpose": "Page h1, iOS large title on all widths (size WARN kept by user)."
+      },
+      "figure": {
+        "displayName": "Answer Figure",
+        "purpose": "BudgetCard figure, proportional numerals, unit 0.62em."
+      },
+      "figure-compact": {
+        "displayName": "Compact Figure",
+        "purpose": "Compact BudgetCard."
+      },
+      "amount-input": {
+        "displayName": "Amount Input",
+        "purpose": "Spending sheet amount."
+      },
+      "sheet-title": {
+        "displayName": "Sheet Title",
+        "purpose": "Sheet question heading."
+      },
+      "headline": {
+        "displayName": "Card Head",
+        "purpose": "Card titles."
+      },
+      "finding": {
+        "displayName": "Finding",
+        "purpose": "One sentence under the title."
+      },
+      "row-title": {
+        "displayName": "Row Title",
+        "purpose": "List row primary line."
+      },
+      "row-amount": {
+        "displayName": "Row Amount",
+        "purpose": "Tabular row amounts."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Copy."
+      },
+      "subhead": {
+        "displayName": "Subhead",
+        "purpose": "Period line under the title."
+      },
+      "small": {
+        "displayName": "Small",
+        "purpose": "Labels, asides, sub-lines."
+      },
+      "meta": {
+        "displayName": "Meta",
+        "purpose": "Row sub-lines, split labels."
+      },
+      "caption": {
+        "displayName": "Caption",
+        "purpose": "Tab labels, ring captions, axis ticks."
+      }
+    },
+    "shadows": [
+      {
+        "name": "tabbar-material",
+        "value": "background: rgb(249 249 251 / 0.78); backdrop-filter: blur(22px) saturate(180%); box-shadow: inset 0 0.5px 0 rgb(0 0 0 / 0.14)",
+        "purpose": "Phone tab bar; solid #f9f9fb under prefers-reduced-transparency."
+      },
+      {
+        "name": "rail-edge",
+        "value": "inset -0.5px 0 0 rgb(0 0 0 / 0.12)",
+        "purpose": "Desktop rail hairline."
+      },
+      {
+        "name": "segment-thumb",
+        "value": "0 3px 8px rgb(0 0 0 / 0.12), 0 3px 1px rgb(0 0 0 / 0.04)",
+        "purpose": "Floating iOS segment thumb."
+      },
+      {
+        "name": "toggle-knob",
+        "value": "0 1px 2px rgb(0 0 0 / 0.2)",
+        "purpose": "Switch knob."
+      },
+      {
+        "name": "toast-lift",
+        "value": "0 8px 24px rgb(17 24 39 / 0.2)",
+        "purpose": "Toast."
+      },
+      {
+        "name": "focus-ring",
+        "value": "0 0 0 2px #2a78d6",
+        "purpose": "Focused input."
+      },
+      {
+        "name": "sheet-scrim",
+        "value": "rgb(17 20 24 / 0.4)",
+        "purpose": "Behind sheets (background)."
+      }
+    ],
+    "motion": [
+      {
+        "name": "spring",
+        "value": "cubic-bezier(0.34, 1.36, 0.64, 1)",
+        "purpose": "Press scales 0.94-0.98, check pop, tab icon."
+      },
+      {
+        "name": "drawer",
+        "value": "cubic-bezier(0.32, 0.72, 0, 1)",
+        "purpose": "Sheets; segment thumb 420ms."
+      },
+      {
+        "name": "ease-out",
+        "value": "cubic-bezier(0.22, 1, 0.36, 1)",
+        "purpose": "Ring arc 1100ms, lane bars and daily columns 700ms, category bars 800ms, page enter 420ms; all draw in from zero via @starting-style."
+      },
+      {
+        "name": "rolling-number",
+        "value": "720ms, 1-(1-p)^4",
+        "purpose": "Figures count to their new value."
+      },
+      {
+        "name": "fresh-glow",
+        "value": "#e6f0fc to transparent, 1800ms",
+        "purpose": "Just-saved row."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "none",
+        "purpose": "Animations, ring/bar transitions and rolling disabled."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "wide-phone",
+        "value": "640px"
+      },
+      {
+        "name": "desktop",
+        "value": "1024px",
+        "purpose": "Rail, header action replaces FAB, side-by-side lanes."
+      }
+    ],
+    "dataviz": {
+      "validated": "group palette passes CVD and normal-vision separation (dataviz validator)",
+      "ring": {
+        "size": "96px default",
+        "stroke": "11px",
+        "track": "bucket hue at 16% opacity",
+        "overspend": "second lap in negative",
+        "pace": "white dot, 2px ink stroke"
+      },
+      "dailyBars": {
+        "plotHeight": "132px",
+        "barMaxWidth": "12px",
+        "average": "dashed 1.5px reference line"
+      }
+    }
+  },
+  "components": [
+    {
+      "name": "Primary Block Button",
+      "kind": "button",
+      "refersTo": "button-primary-block",
+      "description": "Full-width system-blue sheet action that repeats the amount.",
+      "html": "<button class=\"ds-block\">18,500원 기록하기</button>",
+      "css": ".ds-block{width:100%;height:52px;border:0;border-radius:14px;background:#0071e3;color:#fff;font-family:'Pretendard Variable',Pretendard,-apple-system,system-ui,sans-serif;letter-spacing:-0.005em;font-size:17px;font-weight:600;cursor:pointer;transition:transform 240ms cubic-bezier(0.34,1.36,0.64,1),background-color 160ms ease} .ds-block:hover{background:#0062c4} .ds-block:active{transform:scale(0.96);transition-duration:100ms} .ds-block:focus-visible{outline:2px solid #2a78d6;outline-offset:2px}"
+    },
+    {
+      "name": "Header Action",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Desktop 지출 기록 beside the month arrows; on phone it is the floating pill.",
+      "html": "<button class=\"ds-btn\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\"><path d=\"M12 5v14M5 12h14\"/></svg>지출 기록</button>",
+      "css": ".ds-btn{display:inline-flex;align-items:center;gap:6px;height:48px;padding:0 18px;border:0;border-radius:14px;background:#0071e3;color:#fff;font-family:'Pretendard Variable',Pretendard,-apple-system,system-ui,sans-serif;letter-spacing:-0.005em;font-size:15px;font-weight:600;cursor:pointer;transition:transform 240ms cubic-bezier(0.34,1.36,0.64,1),background-color 160ms ease} .ds-btn:hover{background:#0062c4} .ds-btn:active{transform:scale(0.96)} .ds-btn:focus-visible{outline:2px solid #2a78d6;outline-offset:2px}"
+    },
+    {
+      "name": "Filter Chips",
+      "kind": "chip",
+      "refersTo": "chip",
+      "description": "Well chips; selected turns label black.",
+      "html": "<div class=\"ds-chips\"><button class=\"ds-chip\" aria-pressed=\"true\">전체 13</button><button class=\"ds-chip\" aria-pressed=\"false\">카드 10</button><button class=\"ds-chip\" aria-pressed=\"false\">현금 3</button></div>",
+      "css": ".ds-chips{display:flex;gap:8px} .ds-chip{height:38px;padding:0 14px;border:0;border-radius:999px;background:#efeff4;color:#48484d;font-family:'Pretendard Variable',Pretendard,-apple-system,system-ui,sans-serif;letter-spacing:-0.005em;font-size:14px;font-weight:600;cursor:pointer;transition:background-color 200ms ease,color 200ms ease,transform 240ms cubic-bezier(0.34,1.36,0.64,1)} .ds-chip[aria-pressed=\"true\"]{background:#1c1c1e;color:#fff} .ds-chip:active{transform:scale(0.95)} .ds-chip:focus-visible{outline:2px solid #2a78d6;outline-offset:2px}"
+    },
+    {
+      "name": "Filled Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Strokeless well field; focus turns white with a 2px accent ring.",
+      "html": "<label class=\"ds-field\"><span>어디에 썼나요</span><input class=\"ds-input\" placeholder=\"예: 이마트, 배달의민족, 커피\"></label>",
+      "css": ".ds-field{display:grid;gap:8px;font-family:'Pretendard Variable',Pretendard,-apple-system,system-ui,sans-serif;letter-spacing:-0.005em;} .ds-field span{color:#48484d;font-size:14px;font-weight:600} .ds-input{height:52px;padding:0 14px;border:0;border-radius:14px;background:#efeff4;color:#1c1c1e;font-family:'Pretendard Variable',Pretendard,-apple-system,system-ui,sans-serif;letter-spacing:-0.005em;font-size:16px;font-weight:500;transition:background-color 160ms ease,box-shadow 160ms ease} .ds-input::placeholder{color:#6e6e73} .ds-input:focus{outline:none;background:#fff;box-shadow:0 0 0 2px #2a78d6}"
+    },
+    {
+      "name": "iOS Segmented Control",
+      "kind": "custom",
+      "refersTo": "segmented",
+      "description": "Floating white thumb slides on the drawer curve.",
+      "html": "<div class=\"ds-seg\" role=\"radiogroup\"><span class=\"ds-thumb\"></span><button role=\"radio\" aria-checked=\"true\">카드</button><button role=\"radio\" aria-checked=\"false\">현금</button><button role=\"radio\" aria-checked=\"false\">계좌이체</button></div>",
+      "css": ".ds-seg{position:relative;display:grid;grid-auto-flow:column;grid-auto-columns:1fr;padding:3px;border-radius:12px;background:#e9e9ee;font-family:'Pretendard Variable',Pretendard,-apple-system,system-ui,sans-serif;letter-spacing:-0.005em;} .ds-thumb{position:absolute;top:3px;bottom:3px;left:3px;width:calc((100% - 6px)/3);border-radius:9px;background:#fff;box-shadow:0 3px 8px rgb(0 0 0 / 0.12),0 3px 1px rgb(0 0 0 / 0.04);transition:transform 420ms cubic-bezier(0.32,0.72,0,1)} .ds-seg button{position:relative;z-index:1;height:36px;border:0;background:transparent;color:#48484d;font:inherit;font-size:14px;font-weight:600;cursor:pointer} .ds-seg button[aria-checked=\"true\"],.ds-seg button:hover{color:#1c1c1e} .ds-seg button:focus-visible{outline:2px solid #2a78d6;outline-offset:2px;border-radius:9px}"
+    },
+    {
+      "name": "Inset Grouped List",
+      "kind": "custom",
+      "refersTo": "row-pressable",
+      "description": "Rows with category circles; hairlines start past the lead mark.",
+      "html": "<div class=\"ds-card\"><button class=\"ds-row\"><span class=\"ds-ic\" style=\"background:#ffeee6;color:#e5561f\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2M7 2v20M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7\"/></svg></span><span class=\"ds-mid\"><span class=\"ds-t\">배달의민족</span><span class=\"ds-s\">외식·배달 · 공동 신용카드</span></span><span class=\"ds-r\"><span class=\"ds-m\">23,100원</span><span class=\"ds-s\">카드</span></span></button><button class=\"ds-row\"><span class=\"ds-ic\" style=\"background:#e5f8ef;color:#0d9f61\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"m15 11-1 9M19 11l-4-7M2 11h20M3.5 11l1.6 7.4a2 2 0 0 0 2 1.6h9.8a2 2 0 0 0 2-1.6l1.6-7.4M4.5 15.5h15M5 11l4-7M9 11l1 9\"/></svg></span><span class=\"ds-mid\"><span class=\"ds-t\">과일가게</span><span class=\"ds-s\">장보기 · 현금 (현빈)</span></span><span class=\"ds-r\"><span class=\"ds-m\">23,000원</span><span class=\"ds-s\">현금</span></span></button></div>",
+      "css": ".ds-card{background:#fff;border-radius:22px;padding:22px;font-family:'Pretendard Variable',Pretendard,-apple-system,system-ui,sans-serif;letter-spacing:-0.005em;color:#1c1c1e} .ds-row{position:relative;display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:12px;width:calc(100% + 20px);min-height:64px;margin:0 -10px;padding:8px 10px;border:0;border-radius:14px;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer;transition:background-color 200ms ease,transform 260ms cubic-bezier(0.34,1.36,0.64,1)} .ds-row+.ds-row::before{content:'';position:absolute;top:0;left:62px;right:10px;height:1px;background:#ececf0;transform:scaleY(0.6);transform-origin:top} .ds-row:hover{background:#f9f9fb} .ds-row:active{background:#efeff4;transform:scale(0.98)} .ds-row:focus-visible{outline:2px solid #2a78d6;outline-offset:2px} .ds-ic{display:grid;place-items:center;width:40px;height:40px;border-radius:999px} .ds-ic svg{width:20px;height:20px} .ds-mid,.ds-r{display:grid;gap:2px} .ds-r{text-align:right} .ds-t{font-size:16px;font-weight:500;letter-spacing:-0.015em} .ds-s{color:#6e6e73;font-size:13px} .ds-m{font-size:16px;font-weight:600;font-variant-numeric:tabular-nums}"
+    },
+    {
+      "name": "Budget Card with Activity Ring",
+      "kind": "card",
+      "refersTo": "ring",
+      "description": "Signature: answer figure beside a bucket-hue ring with pace dot.",
+      "html": "<section class=\"ds-bud\"><div class=\"ds-h\"><h2>현빈 용돈</h2><a href=\"#\">플랜</a></div><div class=\"ds-main\"><div><div class=\"ds-k\">남은 돈</div><div class=\"ds-kpi\">278,700<small>원</small></div><div class=\"ds-sub\">400,000원 중 121,300원 사용</div></div><div class=\"ds-ring\" role=\"img\" aria-label=\"30% 사용\"><svg width=\"96\" height=\"96\" viewBox=\"0 0 96 96\"><circle cx=\"48\" cy=\"48\" r=\"42.5\" fill=\"none\" stroke=\"#eda100\" stroke-opacity=\"0.16\" stroke-width=\"11\"/><circle class=\"ds-arc\" cx=\"48\" cy=\"48\" r=\"42.5\" fill=\"none\" stroke=\"#eda100\" stroke-width=\"11\" stroke-linecap=\"round\" stroke-dasharray=\"267.04\" stroke-dashoffset=\"186.92\" transform=\"rotate(-90 48 48)\"/><circle cx=\"82.38\" cy=\"72.98\" r=\"3\" fill=\"#fff\" stroke=\"#1c1c1e\" stroke-width=\"2\"/></svg><div class=\"ds-rc\"><b>30%</b><small>사용</small></div></div></div></section>",
+      "css": ".ds-bud{background:#fff;border-radius:22px;padding:22px;font-family:'Pretendard Variable',Pretendard,-apple-system,system-ui,sans-serif;letter-spacing:-0.005em;color:#1c1c1e} .ds-h{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px} .ds-h h2{margin:0;font-size:20px;font-weight:700;letter-spacing:-0.02em} .ds-h a{color:#6e6e73;font-size:14px;text-decoration:none} .ds-h a:hover{color:#1c1c1e} .ds-h a:focus-visible{outline:2px solid #2a78d6;outline-offset:2px} .ds-main{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:16px} .ds-k{color:#6e6e73;font-size:14px;font-weight:500;margin-bottom:4px} .ds-kpi{font-size:28px;font-weight:700;letter-spacing:-0.03em;line-height:1.1} .ds-kpi small{font-size:.62em;font-weight:600;color:#6e6e73;margin-left:2px} .ds-sub{margin-top:6px;color:#6e6e73;font-size:14px} .ds-ring{position:relative;width:96px;height:96px} .ds-ring svg{display:block;overflow:visible} .ds-arc{transition:stroke-dashoffset 1100ms cubic-bezier(0.22,1,0.36,1)} .ds-rc{position:absolute;inset:0;display:grid;place-content:center;text-align:center;line-height:1.1} .ds-rc b{font-size:17px;font-weight:700} .ds-rc small{display:block;color:#6e6e73;font-size:11px;font-weight:600}"
+    },
+    {
+      "name": "Daily Bars",
+      "kind": "custom",
+      "refersTo": "card",
+      "description": "Screen Time-style daily columns with a dashed average; hover a day to read it.",
+      "html": "<section class=\"ds-daily\"><div class=\"ds-dh\"><span>하루 평균</span><b>67,929원</b></div><div class=\"ds-plot\"><span class=\"ds-g\" style=\"bottom:100%\"></span><span class=\"ds-g\" style=\"bottom:50%\"></span><span class=\"ds-g ds-base\" style=\"bottom:0\"></span><span class=\"ds-avg\" style=\"bottom:34%\"></span><div class=\"ds-bars\"><button class=\"ds-db\" aria-label=\"1일\"><span style=\"height:22%\"></span></button><button class=\"ds-db\" aria-label=\"2일\"><span style=\"height:80%\"></span></button><button class=\"ds-db\" aria-label=\"3일\"><span style=\"height:5%\"></span></button><button class=\"ds-db\" aria-label=\"4일\"><span style=\"height:45%\"></span></button><button class=\"ds-db\" aria-label=\"5일\"><span style=\"height:26%\"></span></button><button class=\"ds-db\" aria-label=\"6일\"><span style=\"height:26%\"></span></button><button class=\"ds-db\" aria-label=\"7일\"><span style=\"height:10%\"></span></button><button class=\"ds-db ds-fut\" aria-label=\"8일\"><span style=\"height:3%\"></span></button><button class=\"ds-db ds-fut\" aria-label=\"9일\"><span style=\"height:3%\"></span></button><button class=\"ds-db ds-fut\" aria-label=\"10일\"><span style=\"height:3%\"></span></button><button class=\"ds-db ds-fut\" aria-label=\"11일\"><span style=\"height:3%\"></span></button><button class=\"ds-db ds-fut\" aria-label=\"12일\"><span style=\"height:3%\"></span></button><button class=\"ds-db ds-fut\" aria-label=\"13일\"><span style=\"height:3%\"></span></button><button class=\"ds-db ds-fut\" aria-label=\"14일\"><span style=\"height:3%\"></span></button></div></div></section>",
+      "css": ".ds-daily{background:#fff;border-radius:22px;padding:22px;font-family:'Pretendard Variable',Pretendard,-apple-system,system-ui,sans-serif;letter-spacing:-0.005em;color:#1c1c1e} .ds-dh{display:flex;align-items:baseline;gap:8px} .ds-dh span{color:#6e6e73;font-size:14px;font-weight:500} .ds-dh b{font-size:22px;font-weight:700;letter-spacing:-0.02em} .ds-plot{position:relative;height:132px;margin-top:14px} .ds-g{position:absolute;left:0;right:0;border-top:1px solid #ececf0} .ds-base{border-top-color:#e5e5ea} .ds-avg{position:absolute;left:0;right:0;border-top:1.5px dashed #6e6e73;z-index:1;pointer-events:none} .ds-bars{position:absolute;inset:0;display:flex;align-items:flex-end;gap:3px} .ds-db{flex:1;height:100%;display:flex;align-items:flex-end;justify-content:center;padding:0;border:0;background:none;cursor:pointer} .ds-db span{display:block;width:100%;max-width:12px;border-radius:4px 4px 0 0;background:#2a78d6;transition:height 700ms cubic-bezier(0.22,1,0.36,1),background-color 160ms ease,opacity 160ms ease} .ds-db.ds-fut span{background:#e5e5ea;height:3px!important;border-radius:2px} .ds-plot:hover .ds-db:not(:hover) span{opacity:.45} .ds-db:hover span,.ds-db:focus-visible span{background:#0b5bbf} .ds-db:focus-visible{outline:none} .ds-db:focus-visible span{outline:2px solid #2a78d6;outline-offset:2px}"
+    },
+    {
+      "name": "Salary Lane",
+      "kind": "custom",
+      "refersTo": "person-initial-a",
+      "description": "One partner's salary as a 12px pill of bucket segments on the shared scale.",
+      "html": "<div class=\"ds-lane\"><div class=\"ds-lh\"><span class=\"ds-who\">현</span><b>현빈</b><span class=\"ds-amt\">3,800,000원</span></div><div class=\"ds-bar\"><i style=\"flex-grow:1100;background:#eb6834\"></i><i style=\"flex-grow:700;background:#2a78d6\"></i><i style=\"flex-grow:400;background:#eda100\"></i><i style=\"flex-grow:1000;background:#1baf7a\"></i><i style=\"flex-grow:600;background:#e5e5ea\"></i></div><div class=\"ds-lf\"><span>공동 부담 2,196,450원</span><span>남음 661,550원</span></div></div>",
+      "css": ".ds-lane{background:#fff;border-radius:22px;padding:22px;font-family:'Pretendard Variable',Pretendard,-apple-system,system-ui,sans-serif;letter-spacing:-0.005em;color:#1c1c1e} .ds-lh{display:flex;align-items:center;gap:10px} .ds-lh b{font-weight:600} .ds-who{width:24px;height:24px;border-radius:999px;display:inline-grid;place-items:center;background:#fff3e0;color:#a35a00;font-size:11px;font-weight:700} .ds-amt{margin-left:auto;font-size:16px;font-weight:600;font-variant-numeric:tabular-nums} .ds-bar{display:flex;gap:2px;height:12px;margin-top:12px} .ds-bar i{display:block;min-width:2px;transition:flex-grow 700ms cubic-bezier(0.22,1,0.36,1)} .ds-bar i:first-child{border-radius:999px 0 0 999px} .ds-bar i:last-child{border-radius:0 999px 999px 0} .ds-lf{display:flex;justify-content:space-between;margin-top:8px;color:#6e6e73;font-size:13px}"
+    },
+    {
+      "name": "Translucent Tab Bar",
+      "kind": "nav",
+      "refersTo": "tabbar",
+      "description": "Phone navigation in blurred material; active tab in accent ink.",
+      "html": "<nav class=\"ds-tabs\"><a aria-current=\"page\"><svg viewBox=\"0 0 24 24\"><path d=\"M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z\"/></svg>홈</a><a><svg viewBox=\"0 0 24 24\"><path d=\"m12 3 9 5-9 5-9-5zM3 13l9 5 9-5\"/></svg>플랜</a><a><svg viewBox=\"0 0 24 24\"><path d=\"m4 7 2 2 4-4M13 7h7M4 16l2 2 4-4M13 16h7\"/></svg>체크</a><a><svg viewBox=\"0 0 24 24\"><path d=\"M6 3h12v18H6zM9 8h6M9 12h6M9 16h4\"/></svg>가계부</a><a><svg viewBox=\"0 0 24 24\"><path d=\"M4 7h10M18 7h2M4 17h4M12 17h8\"/><circle cx=\"16\" cy=\"7\" r=\"2\"/><circle cx=\"10\" cy=\"17\" r=\"2\"/></svg>설정</a></nav>",
+      "css": ".ds-tabs{display:grid;grid-template-columns:repeat(5,1fr);height:64px;background:rgb(249 249 251 / 0.78);-webkit-backdrop-filter:blur(22px) saturate(180%);backdrop-filter:blur(22px) saturate(180%);box-shadow:inset 0 0.5px 0 rgb(0 0 0 / 0.14);font-family:'Pretendard Variable',Pretendard,-apple-system,system-ui,sans-serif;letter-spacing:-0.005em;} @media (prefers-reduced-transparency: reduce){.ds-tabs{background:#f9f9fb;backdrop-filter:none;-webkit-backdrop-filter:none}} .ds-tabs a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:#6e6e73;font-size:11px;font-weight:600;cursor:pointer;transition:color 200ms ease} .ds-tabs svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;transition:transform 300ms cubic-bezier(0.34,1.36,0.64,1)} .ds-tabs a:hover{color:#1c1c1e} .ds-tabs a[aria-current=\"page\"]{color:#0b5bbf} .ds-tabs a[aria-current=\"page\"] svg{transform:scale(1.06)} .ds-tabs a:active svg{transform:scale(0.88)} .ds-tabs a:focus-visible{outline:2px solid #2a78d6;outline-offset:-4px;border-radius:6px}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Two Streams, One Pot",
+    "overview": "The month is drawn as money flowing. Two salaries, each with its own pale identity hue, run into four buckets: fixed costs, joint living money, allowances and savings. Each bucket has its own hue, and that hue follows it everywhere: the lane segments, the legend dots and the activity ring of its budget. The surface speaks the Apple idiom. There is a large title, inset grouped lists on #f2f2f7, white cards with no shadow, a translucent tab bar, iOS segmented controls and switches, and Health-style rings and Screen Time-style daily columns. The chrome stays neutral so that the data hues carry the meaning.\n\nDensity is calm and medium. On a phone it is one column with 20px edges, a translucent five-tab bar and a floating blue \"지출 기록\" pill. On a desktop it is a 56px rail beside a 12-column canvas, the floating button gives way to a \"지출 기록\" button in the header, and the two salary lanes sit side by side in one full-width card. Motion confirms touch and data. Rows and buttons press in on a spring, figures roll, rings and bars draw in from zero, and a just-saved row glows pale blue.\n\nThe lineage runs from the taste-skill `pastel-consumer` sheet (person tints, the lanes, flat cards) through a Toss refinement (Pretendard, heavy figures, filled inputs, category circles) to this Apple pass, at the user's request each time.",
+    "keyCharacteristics": [
+      "Grouped ground #f2f2f7, flat white cards at a 22px radius, and list hairlines inset past the leading icon.",
+      "Pretendard only, with tracking that tightens as size grows. Large title 32/700, answer figure 34/700 with a 0.62em unit.",
+      "System blue #0071e3 for actions. Accent blue #2a78d6 for joint money, done checks and focus. Selected filter chips are black.",
+      "Four validated bucket hues (orange, blue, amber, green) shared by lanes, legends and budget rings.",
+      "Activity rings for budgets and progress; Screen Time columns for daily spending.",
+      "Translucent tab-bar material with a solid fallback when reduced transparency is requested."
+    ],
+    "rules": [
+      {
+        "name": "The Hue Follows the Bucket Rule",
+        "body": "Each bucket keeps one hue in every chart: lane segment, legend dot and budget ring. Don't reuse a bucket hue for an unrelated meaning.",
+        "section": "colors"
+      },
+      {
+        "name": "The Neutral Chrome Rule",
+        "body": "Navigation, cards, lists and controls stay grey, white and black. Blue is the only interactive hue; the other colours belong to data, people and categories.",
+        "section": "colors"
+      },
+      {
+        "name": "The Small-Marks Rule",
+        "body": "Person tints and category hues live only inside small round marks: initials, tiles and category circles. Never tint a card, row or panel.",
+        "section": "colors"
+      },
+      {
+        "name": "The Quiet Outgoing Rule",
+        "body": "Ordinary spending is shown in label ink. Red marks only overspend and overdue.",
+        "section": "colors"
+      },
+      {
+        "name": "The Figure Reads, the Column Aligns Rule",
+        "body": "A lone answer figure uses proportional numerals with a small grey unit. Amounts stacked in rows and columns use tabular numerals. A missing value is shown as a faint en dash, never as 0.",
+        "section": "typography"
+      },
+      {
+        "name": "The One Figure Per Card Rule",
+        "body": "A card has at most one answer figure, placed under its head. Do not put a KPI strip across the top.",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat Card Rule",
+        "body": "Cards never take a border or a shadow; the grouped ground separates them.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Hairline Rule",
+        "body": "Separators are sub-pixel (0.5–0.6px) and inset. Never use a full-bleed 1px rule between list rows.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** use the 32/700 large title, then the period subhead and one finding sentence, at the top of every page.",
+      "**Do** keep cards flat white at a 22px radius on #f2f2f7, and separate list rows with hairlines inset past the lead mark.",
+      "**Do** draw every budget as an activity ring in its bucket's hue, with a red second lap for overspend and a pace dot for today.",
+      "**Do** keep each bucket's hue constant across lanes, legends and rings.",
+      "**Do** give the answer figure proportional numerals with a 0.62em grey unit, and keep tabular numerals in rows and columns.",
+      "**Do** use iOS controls as iOS draws them: a floating-thumb segmented control, a green switch, Reminders-style check rings.",
+      "**Do** provide a solid fallback for every translucent material under reduced transparency.",
+      "**Do** label every value the app guessed with a short accent-ink note beside the field label."
+    ],
+    "donts": [
+      "**Don't** add shadows or borders to cards, or full-bleed rules between list rows.",
+      "**Don't** use blue for anything but interaction, joint money and the living bucket, or let bucket hues decorate chrome.",
+      "**Don't** tint whole cards, rows or panels per person or category.",
+      "**Don't** colour ordinary outgoing amounts red. Red is for overspend and overdue only.",
+      "**Don't** show the floating action on desktop; use the header button.",
+      "**Don't** put a KPI strip across the top of a page, or use a gradient balance card."
+    ]
+  }
+}

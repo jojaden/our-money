@@ -1,0 +1,50 @@
+# ---------- 공통 ----------
+.DS_Store
+*.log
+npm-debug.log*
+
+# 비밀값: 키·서명 파일은 절대 올리지 않는다
+.env*
+!.env.example
+*.jks
+*.keystore
+keystore.properties
+google-services.json
+GoogleService-Info.plist
+
+# ---------- web (apps/web) ----------
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+next-env.d.ts
+.vercel
+.taste-skill/
+**/.impeccable/review/
+
+# ---------- mobile (apps/mobile, Kotlin Multiplatform) ----------
+.gradle/
+.kotlin/
+build/
+local.properties
+.idea/
+*.iml
+captures/
+.externalNativeBuild/
+.cxx/
+
+# iOS (나중에 apps/mobile/iosApp)
+xcuserdata/
+DerivedData/
+Pods/
+*.xcuserstate
+
+# ---------- 로컬 에이전트 도구 ----------
+.agents/
+.claude/
+skills-lock.json
+
+# 키·인증서 (scripts/secret_check.py 와 같은 기준)
+*.pem
+*.p12
+*.key

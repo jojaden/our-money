@@ -1,0 +1,314 @@
+# 우리 집 가계부 (OUR MONEY)
+
+두 사람의 월급을 어디로 나눌지 정하고, 매달 옮길 돈·고정비 납부·카드값 준비를 체크하고, 생활비 지출을 카드/현금/이체로 기록하는 부부용 가계부예요.
+
+> **공개 저장소 안내**
+> 이 앱은 저희 부부 두 사람만 쓰는 앱이에요. 기능 구성과 설계를 공유하려고 코드를 공개합니다.
+> - 저장소에는 **실제 데이터도 연결 정보도 없어요.** 금액과 지출은 Supabase DB 에만 있고, 키와 주소는 `.env.local`(무시되는 파일)에만 있어요.
+> - 화면과 예시 데이터의 이름(현빈·예진)과 금액은 모두 **가상**이에요.
+> - 배포된 앱에는 등록된 두 구글 계정만 들어갈 수 있어요 (DB 의 Row Level Security). 직접 쓰려면 아래 [직접 구축하기](#직접-구축하기)대로 자기 Supabase 프로젝트를 만들면 돼요.
+
+<table>
+  <tr>
+    <td align="center"><img src="docs/screenshots/home.png" width="200" alt="홈 화면"><br><sub>홈</sub></td>
+    <td align="center"><img src="docs/screenshots/plan.png" width="200" alt="플랜 화면"><br><sub>플랜</sub></td>
+    <td align="center"><img src="docs/screenshots/check.png" width="200" alt="체크 화면"><br><sub>체크</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/screenshots/ledger.png" width="200" alt="가계부 화면"><br><sub>가계부</sub></td>
+    <td align="center"><img src="docs/screenshots/spending.png" width="200" alt="지출 기록 시트"><br><sub>지출 기록</sub></td>
+    <td align="center"><img src="docs/screenshots/settings.png" width="200" alt="설정 화면"><br><sub>설정</sub></td>
+  </tr>
+</table>
+
+## 목차
+
+- [왜 만들었나](#왜-만들었나)
+- [기능과 동작 방식](#기능과-동작-방식)
+- [설계](#설계)
+- [저장소 구조](#저장소-구조)
+- [직접 구축하기](#직접-구축하기)
+- [개발 규칙과 버전 관리](#개발-규칙과-버전-관리)
+
+## 왜 만들었나
+
+원래 구글 시트("OUR MONEY · 우리 집 부부 가계부")로 관리했는데, 폰에서 보고 고치기가 너무 힘들었어요. 저희 집은 이렇게 돈이 움직여요.
+
+- 두 사람은 **각자 자기 통장으로 월급을 받고**, 그중 일부만 공동 통장으로 옮겨요. 월급날은 같고 금액도 거의 정해져 있어요.
+- 고정비는 카드 자동결제, 계좌 자동이체, 직접 이체로 여러 통장에서 나가요.
+- 매달 하는 일: 월급날 → 플랜 확인 → 통장끼리 이체 → 체크 → 고정비·저축이 나갔는지 확인 → 카드 결제일 전에 카드값 준비.
+
+일반 가계부 앱은 지출만 기록해요. 이 앱은 **플랜에서 "이번 달 누가 어느 통장으로 얼마를 옮겨야 하는지"를 계산**해 주는 데 초점을 맞췄어요. 통장 잔액 추적은 일부러 넣지 않았어요.
+
+## 기능과 동작 방식
+
+각 기능마다 무엇을 하는지, 어떻게 계산하는지, 코드가 어디 있는지 적었어요. 계산은 모두 `apps/web/src/lib/calc.ts` 에 있고, 모바일 `apps/mobile/core/.../calc/Calc.kt` 에 같은 규칙으로 옮겨져 있어요.
+
+### 1. 플랜: 월급이 나뉘는 곳
+
+| | |
+|---|---|
+| 하는 일 | 그달 수입을 **고정비 · 공동 생활비 · 용돈 · 저축·투자** 네 묶음에 배분해요. 항목마다 누구 돈인지(현빈/예진/공동), 나가는 방식(카드 자동결제/계좌 자동이체/직접 이체/현금), 돈이 있어야 하는 계좌, 날짜를 정해요. |
+| 화면 | 두 사람의 월급이 어디로 가는지 막대 하나로 보여 줘요(사람별 레인). 배분률, 남는 돈, 저축률도 함께 보여 줘요. 저축 항목에 목표 금액을 넣으면 진행률이 나와요. |
+| 계산 | 공동 항목은 분담 비율로 나눠요. 비율은 **정한 비율**(예: 50:50)이나 **월급 비율** 중에서 골라요. A 몫은 반올림하고, B 는 나머지를 가져가서 합이 원래 금액과 꼭 맞아요 (`split`, `shareOf`, `lanes`). |
+| 데이터 | 반복 항목은 `plan_items`(템플릿)에 두고, 달마다 `month_items` 로 복사해 그달만 바꿀 수 있어요. id 는 `${달}:${템플릿 id}` 로 정해져 있어서, 두 폰이 동시에 달을 시작해도 항목이 두 번 생기지 않아요. |
+
+### 2. 체크: 옮길 돈
+
+| | |
+|---|---|
+| 하는 일 | "현빈 급여통장 → 공동 생활비통장 781,450원"처럼 **이번 달 해야 할 이체 목록**을 자동으로 만들어요. 다 옮기면 체크해요. |
+| 계산 | 플랜 항목마다 돈이 있어야 하는 계좌를 찾아요. 카드 자동결제 항목은 그 카드의 결제계좌예요. 그다음 부담하는 사람의 월급통장 → 그 계좌로 금액을 모아 **줄 하나**로 묶어요. 같은 통장이면 옮길 필요가 없어서 빠져요 (`destinationOf`, `transfersOf`). |
+| 상태 | 날짜가 지났는데 체크하지 않은 줄은 "10/26 지남"으로 표시하고, 홈 맨 위 한 줄 요약에도 나와요. 누가 체크했는지 기록돼요(`checks.done_by`). |
+
+### 3. 체크: 고정비 납부 · 저축 · 카드값 · 정산
+
+- **고정비·저축 납부 확인:** 자동이체와 카드 자동결제 항목은 "실제로 나갔는지"를 따로 체크해요 (`needsPayCheck`, `itemDone`).
+- **카드값 준비:** 카드마다 **지난 기간에 그 카드로 쓴 지출 + 그 카드로 나가는 자동결제 고정비**를 더해서, 이번 달 결제일에 결제계좌에 있어야 할 금액을 보여 줘요 (`cardBills`).
+- **두 사람 정산:** 공동 지출을 개인 카드나 지갑으로 먼저 냈다면 상대방 몫을 계산해서 "예진 → 현빈 12,000원"처럼 보여 줘요. 공동 계좌로 낸 건 정산할 필요가 없어서 빠져요 (`settlementOf`).
+
+### 4. 가계부: 지출 기록
+
+| | |
+|---|---|
+| 하는 일 | 금액, 어디에 썼는지, 분류, 결제수단(카드/현금/계좌이체), 어떤 카드나 계좌, 누구 돈인지를 기록해요. |
+| 알아서 채워 주는 것 | **누구 돈인지는 "내 용돈"이 기본값**이에요(로그인한 사람). 메모를 치면 **같은 메모로 쓴 지난 기록**을 따라 분류를 고르고, 없으면 낱말 규칙(마트→장보기, 배달→외식)으로 골라요 (`guessFromMemo`). 최근 90일 동안 자주 쓴 지출은 버튼 하나로 다시 넣을 수 있어요 (`presetsOf`). 금액은 +1만/+5만/+10만으로 더할 수 있어요. |
+| 예산 | 공동 지출은 공동 생활비에서, 개인 지출은 그 사람 용돈에서 빠져요. 링은 사용률이고, 링 위의 점은 **오늘까지 써도 되는 예상선**이에요. "오늘까지 예상보다 61,613원 덜 썼어요"와 하루에 쓸 수 있는 금액도 보여 줘요 (`budgetStatus`, `spentToDay`). |
+| 화면 | 하루별 지출 막대와 평균선, 지난달 같은 날짜까지와 비교, 분류별 예산 대비, 결제수단·사람 필터를 보여 줘요. |
+
+### 5. 한 달 단위와 달 넘기기
+
+- **한 달 기준일:** 기준일이 25일이면 11월은 10월 25일 ~ 11월 24일이에요 (`periodOf`, `monthOf`). 월급날에 맞춰 달이 바뀌어요.
+- **자동으로 이어받기:** 새 달이 되면 가장 최근 달의 플랜을 그대로 복사해서 시작하고 "11월이 시작돼서 10월 플랜을 그대로 이어받았어요"라고 알려 줘요 (`latestMonthBefore`, `itemsFromMonth`).
+- **다른 달에서 불러오기:** 다른 달에 있고 이번 달에 없는 항목만 골라 가져와요. 되돌리기도 돼요 (`missingFromMonth`, `ImportSheet.tsx`).
+
+### 6. 두 사람이 함께 쓰기
+
+- **로그인:** 구글 로그인을 써요. DB 의 `members` 표에 있는 두 이메일만 데이터를 읽고 쓸 수 있어요.
+- **실시간:** 한 사람이 체크하거나 기록하면 다른 폰에 바로 반영돼요. 바뀐 테이블만 다시 읽고, 200ms 안에 몰린 변경은 한 번에 처리해요. 앱으로 돌아왔을 때 30초 넘게 지났으면 전체를 다시 읽어요.
+- **빠르게 보이기:** 체크와 기록은 화면에 먼저 반영하고 서버에 저장해요(낙관적 업데이트).
+- **데모 모드:** Supabase 설정 없이 열면 가상 예시 데이터로 모든 화면을 써 볼 수 있어요. 데이터는 그 브라우저에만 저장돼요.
+- **내보내기:** 설정에서 전체 지출을 CSV 로 받을 수 있어요(1,000줄씩 나눠 받음).
+
+### 7. 폰 앱처럼
+
+- **PWA:** 홈 화면에 설치하면 주소창 없이 앱처럼 열려요. 서비스워커는 앱 껍데기, 폰트, 정적 파일만 캐시하고 데이터는 항상 서버에서 받아요.
+- **화면 느낌:** 아래 탭바, 바텀시트(뒤로 가기로 닫힘), 탭 사이 스와이프, 스크롤하면 작아지는 제목, 숫자가 굴러가는 애니메이션, 진동 피드백을 넣었어요. 디자인 기준은 [`DESIGN.md`](DESIGN.md)에 있어요.
+- **앱 아이콘:** 한 지붕 아래 살구색·분홍색 동전 두 개가 겹치고, 겹친 부분(흰색)이 둘이 함께 관리하는 돈이에요 (`apps/web/scripts/icons.mjs` 로 생성).
+
+## 설계
+
+### 구조
+
+```mermaid
+flowchart LR
+  subgraph phone["두 사람의 폰"]
+    web["웹앱 PWA<br/>Next.js 정적 빌드"]
+    app["안드로이드 앱<br/>Kotlin Multiplatform (개발 중)"]
+  end
+  subgraph supabase["Supabase"]
+    auth["Google OAuth"]
+    db[("Postgres<br/>RLS: members 두 이메일")]
+    rt["Realtime"]
+  end
+  vercel["Vercel 정적 호스팅"] -->|"HTML·JS"| web
+  web -->|"supabase-js (PostgREST)"| db
+  app -->|"supabase-kt"| db
+  web -->|"로그인"| auth
+  app -->|"로그인"| auth
+  db -->|"변경 알림"| rt
+  rt -->|"구독"| web
+  rt -->|"구독"| app
+```
+
+- **백엔드 서버가 없어요.** 앱이 Supabase 의 자동 REST API(PostgREST)를 바로 불러요. 누가 무엇을 읽고 쓸 수 있는지는 DB 의 Row Level Security 가 정해요.
+- 웹은 `output: "export"` 정적 빌드라 모든 화면이 브라우저에서 그려져요. Vercel 이 아닌 다른 정적 호스팅에도 올릴 수 있어요.
+- 저장소 접근은 `Repo` 인터페이스로 감싸져 있어요. 구현은 `SupabaseRepo` 와 데모용 `LocalRepo`(localStorage) 두 가지예요 (`apps/web/src/lib/repo.ts`).
+
+### 데이터 모델
+
+```mermaid
+erDiagram
+  plan_items ||--o{ month_items : "달마다 복사"
+  months ||--o{ month_items : "그달 항목"
+  months ||--o{ checks : "이체·카드값·정산 체크"
+  accounts ||--o{ plan_items : "돈이 있어야 하는 계좌"
+  accounts ||--o{ spendings : "쓴 카드·계좌"
+  categories ||--o{ spendings : "분류"
+  members {
+    text email PK "소문자"
+    text person "a 또는 b"
+  }
+  settings {
+    int id PK "한 줄"
+    int ratio_a "공동비용 분담"
+    int cycle_start "한 달 기준일"
+  }
+  accounts {
+    text id PK
+    text kind "bank 또는 card"
+    text owner "a, b, joint"
+    text billing_account_id "카드 결제계좌"
+  }
+  plan_items {
+    text id PK
+    text group "fixed, living, allowance, saving"
+    text payer "a, b, joint"
+    text method "card_auto, account_auto, manual, cash"
+  }
+  month_items {
+    text id PK "달:템플릿id"
+    boolean paid "납부 확인"
+  }
+  spendings {
+    text id PK
+    date date
+    text pay_kind "card, cash, transfer"
+    text owner "a, b, joint"
+    text paid_by "a 또는 b"
+  }
+```
+
+전체 정의는 [`supabase/schema.sql`](supabase/schema.sql)에 있어요. 테이블 8개, RLS 정책, Realtime 등록, 기본 분류가 들어 있어요.
+
+### 보안
+
+- 모든 테이블에 `members only` 정책이 걸려 있어요: `using ((select public.is_member()))`. `is_member()` 는 로그인 토큰의 이메일이 `members` 에 있는지 확인해요.
+- 웹에 들어가는 Supabase 주소와 anon 키는 원래 공개되는 값이에요(배포된 JS 에 그대로 있어요). 이 키만으로는 RLS 를 넘을 수 없어요. 반대로 **service_role 키는 앱에도 저장소에도 절대 넣지 않아요.**
+- 저장소에는 비밀값이 들어가지 못하게 세 겹으로 막아요: 커밋 전 훅, CI 검사, GitHub push protection ([개발 규칙](#개발-규칙과-버전-관리)).
+
+### 성능
+
+- RLS 함수를 `(select …)` 로 감싸서 쿼리마다 한 번만 실행돼요(initPlan). 이메일은 소문자로 저장해서 기본키 인덱스로 바로 찾아요.
+- 지출은 `(date desc, created_at desc)` 인덱스를 쓰고, 처음에는 최근 400일만 받아요. 더 지난 달을 열면 그 기간만 더 받아요.
+- 이 변경을 이미 쓰던 DB 에 적용하는 방법은 [`supabase/migrations/002_performance.sql`](supabase/migrations/002_performance.sql)에 있어요.
+
+## 저장소 구조
+
+```
+our-money/
+├─ apps/
+│  ├─ web/                    Next.js 웹앱(PWA)
+│  │  ├─ src/lib/calc.ts         이체·카드값·정산·예산·달 넘기기 계산
+│  │  ├─ src/lib/repo.ts         저장소 (Supabase / 데모 localStorage)
+│  │  ├─ src/lib/store.tsx       상태, 낙관적 업데이트, 실시간 동기화, 새 달 자동 시작
+│  │  ├─ src/lib/categories.ts   분류 아이콘, 메모로 분류 추측, 자주 쓰는 지출
+│  │  ├─ src/lib/demo-data.ts    데모 예시 데이터 (가상)
+│  │  ├─ src/app/*/page.tsx      홈·플랜·체크·가계부·설정
+│  │  ├─ src/components/         바텀시트(지출·항목·계좌·분류·불러오기), 공용 UI(링·막대·숫자)
+│  │  └─ scripts/icons.mjs       앱 아이콘 생성
+│  └─ mobile/                 Kotlin Multiplatform — 안드로이드(지금), iOS(나중에)
+│     ├─ core/                   모델, 계산(웹과 같은 규칙), 테스트
+│     ├─ ui/                     Compose Multiplatform 화면
+│     ├─ androidApp/             안드로이드 앱 (카드 알림·위젯 같은 플랫폼 기능)
+│     └─ iosApp/                 iOS 앱 자리 (macOS 에서만 빌드)
+├─ supabase/                  schema.sql + migrations/ (웹·모바일 공통)
+├─ scripts/secret_check.py    비밀값 검사 (커밋 전 훅 · CI)
+├─ docs/screenshots/          README 화면
+├─ PRODUCT.md · DESIGN.md     제품 정의 · 디자인 시스템
+└─ CHANGELOG.md               버전별 변경 기록
+```
+
+## 직접 구축하기
+
+### 0. 데모로 먼저 보기
+
+```bash
+cd apps/web
+npm install
+npm run dev          # http://localhost:3000 — .env.local 이 없으면 데모 모드
+```
+
+> WSL 에서 `/mnt/c` 아래에 두면 파일 변경 알림이 오지 않아요. 그럴 때는 `WATCHPACK_POLLING=true npx next dev --webpack` 으로 실행하세요.
+
+### 1. Supabase 프로젝트 (DB · 로그인 · 실시간)
+
+1. https://supabase.com 에서 새 프로젝트를 만들어요. 무료 플랜이면 충분하고, 지역은 서울(Northeast Asia)을 추천해요.
+2. **SQL Editor** 에 [`supabase/schema.sql`](supabase/schema.sql) 전체를 붙여넣고 Run 해요.
+3. 맨 아래 주석 처리된 `insert into public.members …` 두 줄을 두 사람의 구글 이메일(소문자)로 바꿔서 실행해요. `'a'` 가 설정의 첫 번째 사람이에요.
+4. **Project Settings → API** 에서 `Project URL` 과 `anon`(publishable) 키를 복사해요. `service_role` 키는 쓰지 않아요.
+
+### 2. 구글 로그인
+
+1. https://console.cloud.google.com → API 및 서비스 → **OAuth 동의 화면**을 만들어요. 외부, 테스트 사용자에 두 사람의 이메일을 넣어요.
+2. **사용자 인증 정보 → OAuth 클라이언트 ID(웹 애플리케이션)** 를 만들어요.
+   - 승인된 리디렉션 URI: `https://<프로젝트>.supabase.co/auth/v1/callback`
+3. Supabase **Authentication → Sign In / Providers → Google** 을 켜고 클라이언트 ID 와 시크릿을 넣어요.
+4. Supabase **Authentication → URL Configuration**:
+   - Site URL: 배포 주소
+   - Redirect URLs: 배포 주소, `http://localhost:3000`
+
+### 3. 환경 변수
+
+`apps/web/.env.local` (로컬)과 Vercel 프로젝트의 Environment Variables 에 넣어요. 이 파일은 `.gitignore` 와 비밀값 검사가 막아서 저장소에 올라가지 않아요.
+
+```
+NEXT_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
+```
+
+### 4. 배포 (Vercel)
+
+```bash
+npx vercel login
+npx vercel deploy --prod --yes --cwd apps/web    # 저장소 루트에서
+```
+
+처음 실행하면 프로젝트를 만들고 `apps/web/.vercel` 에 연결 정보를 저장해요(저장소에는 올라가지 않아요). GitHub 저장소를 Vercel 에서 Import 할 때는 Root Directory 를 `apps/web` 으로 정해요.
+
+### 5. 폰에 설치
+
+크롬으로 배포 주소를 열고 → 메뉴(⋮) → **홈 화면에 추가** → 설치해요. 두 사람이 같은 주소로 설치하고 각자 구글 계정으로 로그인하면 돼요.
+
+### 6. 처음 설정 순서
+
+설정 탭에서 ① 이름·월급 ② 계좌와 카드(월급통장, 공동통장, 적금·증권 계좌, 카드와 결제계좌) ③ 월급통장 지정 ④ 분담 방식·한 달 기준일 순서로 정해요. 그다음 플랜 탭에서 이번 달 플랜을 시작하고 항목(월세, 보험, 통신비, 공동 생활비, 용돈, 적금…)을 넣으면 돼요.
+
+### 7. 안드로이드 앱 빌드 (개발 중)
+
+JDK 21, Android SDK(platform 37, build-tools 37)가 필요해요.
+
+```bash
+cd apps/mobile
+./gradlew :core:jvmTest              # 계산 테스트 (웹과 같은 규칙)
+./gradlew :androidApp:assembleDebug  # androidApp/build/outputs/apk/debug/
+```
+
+자세한 내용은 [`apps/mobile/README.md`](apps/mobile/README.md)에 있어요.
+
+## 개발 규칙과 버전 관리
+
+### 비밀값 막기 (세 겹)
+
+| 언제 | 무엇이 | 막는 것 |
+|---|---|---|
+| 커밋할 때 | `.githooks/pre-commit` → `scripts/secret_check.py --staged` | 커밋하려는 파일과 더하는 줄 |
+| PR · main 푸시 | GitHub Actions `test` → `비밀값 검사` | 추적 중인 모든 파일(`secret_check.py`) + **모든 커밋 기록**(gitleaks) |
+| 푸시할 때 | GitHub secret scanning push protection | 알려진 서비스 토큰이 든 푸시 |
+
+`secret_check.py` 가 막는 것:
+- **파일:** `.env*`(`.env.example` 제외), 키스토어·인증서, `local.properties`, `google-services.json`, `.vercel/`, 로컬 에이전트 폴더
+- **내용:** Supabase 키(JWT, `sb_secret_`, `sb_publishable_`)와 실제 프로젝트 주소, Google OAuth 시크릿과 API 키, GitHub·Vercel·Slack·AWS·OpenAI·Anthropic 토큰, 개인 키, 비밀번호가 든 DB 주소, 예시가 아닌 이메일 주소
+
+```bash
+git config core.hooksPath .githooks     # 클론한 뒤 한 번: 커밋 전 검사 켜기
+python3 scripts/secret_check.py         # 직접 돌려 보기
+```
+
+### 브랜치 · PR · 버전
+
+- `main` 에 바로 푸시할 수 없어요. 브랜치(`feat/…`, `fix/…`)에서 작업하고 PR 로 합쳐요. 합치려면 CI(`비밀값 검사`, `웹 빌드`, `모바일 테스트·빌드`, `PR 규칙 점검`)가 통과해야 해요.
+- 커밋 메시지는 한국어로 써요. 제목은 `무엇 — 어떻게`, 본문에는 바꾼 이유를 적어요.
+- 앱이 바뀌는 변경은 [`CHANGELOG.md`](CHANGELOG.md) "다음 버전"에 한 줄을 적어요. DB 를 바꿨다면 `supabase/migrations/` 에 새 파일을 만들고, `schema.sql` 도 고치고, "**DB 이전:**" 줄에 실행할 파일을 적어요. PR 규칙 점검이 이걸 확인해요. 알아챌 변경이 아니면 `변경기록 없음` 라벨을 붙여요.
+- **릴리스:**
+  1. "다음 버전"을 `vX.Y.Z — 날짜`로 바꿔요.
+  2. `apps/web/package.json` 의 `version` 과 안드로이드 `versionName` 을 같은 번호로 올려요(`versionCode` 도 +1).
+  3. PR 을 합쳐요.
+  4. `git tag -a vX.Y.Z && git push origin vX.Y.Z` 를 실행하면 [Releases](https://github.com/jojaden/our-money/releases)가 자동으로 만들어져요.
+
+## 기술
+
+- **웹:** Next.js 16 (App Router, 정적 export), React 19, vaul(바텀시트), lucide-react(아이콘), Pretendard(자체 호스팅)
+- **DB · 인증 · 실시간:** Supabase (Postgres + RLS + Google OAuth + Realtime)
+- **모바일:** Kotlin 2.4, Compose Multiplatform 1.12, AGP 9.5, supabase-kt 3.8, kotlinx-datetime
+- **CI:** GitHub Actions (비밀값 검사, 웹 빌드, 모바일 테스트·APK, PR 규칙, 태그 릴리스)

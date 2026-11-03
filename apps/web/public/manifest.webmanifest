@@ -1,0 +1,19 @@
+{
+  "name": "우리 집 가계부",
+  "short_name": "우리 집",
+  "description": "두 사람의 월급 배분, 이체 체크, 카드·현금 지출 기록",
+  "lang": "ko",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#18213a",
+  "theme_color": "#f2f4f6",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "지출 기록", "url": "/ledger/", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] }
+  ]
+}
