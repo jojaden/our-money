@@ -1,7 +1,7 @@
 // 데모 모드용 예시 데이터. 이름·금액·계좌는 모두 가상이며 실제 설정으로 바꿔야 한다.
 
 import type { Account, Category, Check, Data, Month, MonthItem, PlanItem, Settings, Spending, User } from "./types";
-import { addMonths, checkId, currentMonth, periodOf, snapshotItems, transfersOf } from "./calc";
+import { addMonths, checkId, currentMonth, dateInMonth, paydayDate, periodOf, snapshotItems, transfersOf } from "./calc";
 import { parseYmd, ymd } from "./format";
 
 const settings: Settings = {
@@ -16,6 +16,8 @@ const settings: Settings = {
   ratio_a: 50,
   cycle_start: 25,
   payday: 25,
+  payday_a: 25,
+  payday_b: 10,
 };
 
 // 로그인한 두 계정 (가상). 이름은 각자 설정에서 바꾼다.
@@ -173,9 +175,11 @@ export function buildDemoData(today = ymd(new Date())): Data {
   }
   const curMonth = months[1];
   for (const t of transfersOf(settings, curMonth, curItems, accounts).transfers) {
-    // ISA 와 예진 비상금 이체만 아직 안 한 상태
-    if (!(t.to === "acc-a-isa" || (t.to === "acc-emergency" && t.person === "b"))) {
-      checks.push({ id: checkId("transfer", cur, t.id), month: cur, kind: "transfer", amount: t.amount, done_at: `${curStart}T21:40:00.000Z`, done_by: t.person });
+    // 각자 월급날이 지난 이체(결제일이 월급날보다 빠른 건 지난 월급에서 미리)만 했고, 그중 ISA 와 예진 비상금 이체는 아직 안 한 상태
+    const payday = paydayDate(cur, settings, t.person);
+    const early = t.dueDay !== null && dateInMonth(cur, t.dueDay, settings.cycle_start) < payday;
+    if ((early || payday <= today) && !(t.to === "acc-a-isa" || (t.to === "acc-emergency" && t.person === "b"))) {
+      checks.push({ id: checkId("transfer", cur, t.id), month: cur, kind: "transfer", amount: t.amount, done_at: `${payday}T21:40:00.000Z`, done_by: t.person });
     }
   }
 

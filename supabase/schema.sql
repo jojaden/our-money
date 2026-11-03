@@ -29,7 +29,7 @@ create table if not exists public.settings (
   split_mode text not null default 'fixed' check (split_mode in ('fixed', 'income')),
   ratio_a int not null default 50 check (ratio_a between 0 and 100),
   cycle_start int not null default 1 check (cycle_start between 1 and 28),
-  payday int not null default 25 check (payday between 1 and 31)
+  payday int not null default 25 check (payday between 1 and 31)   -- 예전 공통 월급날. 사람별 월급날은 아래 payday_a / payday_b
 );
 insert into public.settings (id) values (1) on conflict do nothing;
 
@@ -571,6 +571,20 @@ create index if not exists spendings_date_id on public.spendings (date desc, id 
 drop index if exists public.spendings_date_created;
 
 analyze public.spendings;
+
+-- ========== 사람별 월급날 (migrations/006 와 같음) ==========
+alter table public.settings
+  add column if not exists payday_a int check (payday_a between 1 and 31),
+  add column if not exists payday_b int check (payday_b between 1 and 31);
+
+-- 처음 한 번만: 비어 있으면 예전 공통 월급날로 채운다 (SQL Editor 계정이라 rev·기록 트리거는 그대로 돈다)
+update public.settings set payday_a = coalesce(payday_a, payday), payday_b = coalesce(payday_b, payday)
+ where payday_a is null or payday_b is null;
+
+alter table public.settings alter column payday_a set default 25, alter column payday_a set not null;
+alter table public.settings alter column payday_b set default 25, alter column payday_b set not null;
+
+comment on column public.settings.payday is '예전 공통 월급날 (v0.1 앱용). 새 앱은 payday_a / payday_b 를 쓴다';
 
 -- ---------- 실시간 동기화 ----------
 do $$

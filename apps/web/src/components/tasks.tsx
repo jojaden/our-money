@@ -5,6 +5,7 @@ import type { Data, MonthItem, Person } from "@/lib/types";
 import { METHOD_LABEL } from "@/lib/types";
 import {
   accountMap,
+  addMonths,
   cardBills,
   checkId,
   dateInMonth,
@@ -13,6 +14,7 @@ import {
   monthRow,
   nameOf,
   needsPayCheck,
+  paydayDate,
   settlementOf,
   transfersOf,
   type CardBill,
@@ -36,6 +38,10 @@ export interface Task {
   amount: number;
   /** 기한 (YYYY-MM-DD) */
   due: string | null;
+  /** 이체: 옮길 사람의 이번 달 월급날 (YYYY-MM-DD) */
+  payday?: string;
+  /** 이체: 결제일이 월급날보다 빨라서 지난 월급에서 미리 옮겨야 함 */
+  early?: boolean;
   done: boolean;
   doneBy: Person | null;
   person: Person | "joint";
@@ -52,6 +58,21 @@ export function dueState(due: string | null, today: string, done: boolean): "don
   if (due < today) return "overdue";
   const diff = (parseYmd(due).getTime() - parseYmd(today).getTime()) / 86_400_000;
   return diff <= 3 ? "soon" : "later";
+}
+
+/** 월급날이 아직 안 와서 지금 할 수 없는 이체 (미리 옮겨야 하는 것은 제외) */
+export function waiting(t: Task, today: string): boolean {
+  return t.kind === "transfer" && !t.done && !t.early && Boolean(t.payday) && t.payday! > today;
+}
+
+/** 이 사람이 월급날에 할 일 */
+export interface PaydayGroup {
+  person: Person;
+  /** 이번 달 월급날 */
+  date: string;
+  /** 지난달 월급날 — 결제일이 이번 월급날보다 빠른 이체는 이 월급에서 미리 옮긴다 */
+  prevDate: string;
+  transfers: Task[];
 }
 
 export function dueText(due: string | null, today: string): string {
@@ -75,6 +96,8 @@ export function useTasks(month: string): {
   bills: Task[];
   settle: Task | null;
   issues: TransferIssue[];
+  /** 두 사람의 월급날과 그날 옮길 돈 — 이번 달에 먼저 오는 월급날부터 */
+  paydays: PaydayGroup[];
   started: boolean;
 } {
   const { data, today, toggleCheck, togglePaid } = useData();
@@ -90,26 +113,30 @@ function build(
 ) {
   const s = data.settings;
   const m = monthRow(data, month);
-  if (!m) return { tasks: [], transfers: [], pays: [], bills: [], settle: null, issues: [], started: false };
+  if (!m) return { tasks: [], transfers: [], pays: [], bills: [], settle: null, issues: [], paydays: [], started: false };
   const items = itemsOf(data, month);
   const acc = accountMap(data.accounts);
   const accName = (id: string | null) => (id ? acc.get(id)?.name ?? "삭제된 계좌" : "계좌 미지정");
-  const payday = dateInMonth(month, s.payday, s.cycle_start);
-
   const { transfers: tr, issues } = transfersOf(s, m, items, data.accounts);
   const transfers: Task[] = tr.map((t) => {
     const id = checkId("transfer", month, t.id);
     const c = findCheck(data.checks, id);
-    const due = t.dueDay ? dateInMonth(month, t.dueDay, s.cycle_start) : null;
+    // 각자 자기 월급날에 옮긴다. 결제일이 월급날보다 늦으면 그 결제일이 기한,
+    // 월급날보다 빠르면 이번 월급으로는 늦으니 지난 월급에서 미리 옮겨 둬야 한다
+    const payday = paydayDate(month, s, t.person);
+    const pay = t.dueDay ? dateInMonth(month, t.dueDay, s.cycle_start) : null;
+    const early = pay !== null && pay < payday;
     return {
       key: id,
       kind: "transfer",
       title: `${accName(t.from)} → ${accName(t.to)}`,
       from: accName(t.from),
       to: accName(t.to),
-      sub: names(t.parts),
+      sub: early ? `${names(t.parts)} · 결제일 ${shortDate(pay!)}이 월급날보다 빨라요` : names(t.parts),
       amount: t.amount,
-      due: due && due >= payday ? due : payday,
+      due: pay ?? payday,
+      payday,
+      early,
       done: Boolean(c),
       doneBy: c?.done_by ?? null,
       person: t.person,
@@ -175,8 +202,17 @@ function build(
     };
   }
 
+  const paydays: PaydayGroup[] = (["a", "b"] as Person[])
+    .map((p) => ({
+      person: p,
+      date: paydayDate(month, s, p),
+      prevDate: paydayDate(addMonths(month, -1), s, p),
+      transfers: transfers.filter((t) => t.person === p),
+    }))
+    .sort((x, y) => x.date.localeCompare(y.date) || x.person.localeCompare(y.person));
+
   const tasks = [...transfers, ...pays, ...bills, ...(settle ? [settle] : [])];
-  return { tasks, transfers, pays, bills, settle, issues, started: true };
+  return { tasks, transfers, pays, bills, settle, issues, paydays, started: true };
 }
 
 /** 할 일을 급한 순서로 */

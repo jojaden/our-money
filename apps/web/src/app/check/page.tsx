@@ -6,7 +6,8 @@ import { useData } from "@/lib/store";
 import { nameOf } from "@/lib/calc";
 import { FirstRun, MonthHeader } from "@/components/MonthHeader";
 import { Money, Ring } from "@/components/ui";
-import { byUrgency, useTasks, type Task } from "@/components/tasks";
+import { byUrgency, useTasks, type PaydayGroup, type Task } from "@/components/tasks";
+import { dDay, dateWithDay, shortDate } from "@/lib/format";
 import { TaskRow } from "@/components/TaskRow";
 
 function Section({ id, title, aside, tasks, empty, expandable, children }: { id: string; title: string; aside?: React.ReactNode; tasks: Task[]; empty: string; expandable?: boolean; children?: React.ReactNode }) {
@@ -31,10 +32,64 @@ function Section({ id, title, aside, tasks, empty, expandable, children }: { id:
   );
 }
 
+/** 한 사람의 월급날: 그날 자기 월급통장에서 옮길 돈 */
+function PaydaySection({ g, today, name }: { g: PaydayGroup; today: string; name: string }) {
+  const left = g.transfers.filter((t) => !t.done);
+  const leftAmount = left.reduce((a, t) => a + t.amount, 0);
+  const arrived = g.date <= today;
+  const early = left.filter((t) => t.early);
+  let status: React.ReactNode;
+  if (g.transfers.length === 0) status = null;
+  else if (left.length === 0) status = "모두 옮겼어요.";
+  else if (!arrived) {
+    const onPay = left.filter((t) => !t.early);
+    const sum = (l: Task[]) => l.reduce((a, t) => a + t.amount, 0);
+    status = (
+      <>
+        {onPay.length > 0 && (
+          <>
+            월급이 들어오면 <strong className="num">{onPay.length}건</strong> · <Money value={sum(onPay)} />을 옮겨요.{" "}
+          </>
+        )}
+        {early.length > 0 && (
+          <>
+            결제일이 이번 월급날보다 빠른 <strong className="num">{early.length}건</strong> · <Money value={sum(early)} />은 지난 월급({shortDate(g.prevDate)})에서 미리 옮겨요.
+          </>
+        )}
+      </>
+    );
+  } else
+    status = (
+      <>
+        {g.date === today ? "오늘 월급날이에요. " : ""}남은 <strong className="num">{left.length}건</strong> · <Money value={leftAmount} />
+      </>
+    );
+  return (
+    <Section
+      id={`pay-${g.person}`}
+      title={`${name} 월급날`}
+      aside={
+        <>
+          {dateWithDay(g.date)} · <span className={arrived && left.length > 0 ? "neg" : undefined}>{dDay(g.date, today)}</span>
+        </>
+      }
+      tasks={g.transfers}
+      empty="옮길 돈이 없어요. 모두 월급통장에서 바로 나가요."
+      expandable
+    >
+      {status && (
+        <p className="kpi-sub" style={{ margin: "0 0 4px" }}>
+          {status}
+        </p>
+      )}
+    </Section>
+  );
+}
+
 export default function CheckPage() {
-  const { data, month } = useData();
+  const { data, month, today } = useData();
   const s = data.settings;
-  const { tasks, transfers, pays, bills, settle, issues, started } = useTasks(month);
+  const { tasks, pays, bills, settle, issues, paydays, started } = useTasks(month);
 
   if (!started) {
     return (
@@ -47,8 +102,6 @@ export default function CheckPage() {
 
   const done = tasks.filter((t) => t.done).length;
   const left = tasks.filter((t) => !t.done);
-  const byPerson = (p: "a" | "b") => transfers.filter((t) => t.person === p);
-  const leftAmount = (list: Task[]) => list.filter((t) => !t.done).reduce((a, t) => a + t.amount, 0);
   const fixed = pays.filter((t) => t.item?.group === "fixed");
   const saving = pays.filter((t) => t.item?.group === "saving");
 
@@ -89,22 +142,8 @@ export default function CheckPage() {
 
       <div className="grid">
         <div className="col span-7">
-          {(["a", "b"] as const).map((p) => (
-            <Section
-              key={p}
-              id={`tr-${p}`}
-              title={`${nameOf(s, p)} 월급에서 옮길 돈`}
-              aside={
-                byPerson(p).length > 0 ? (
-                  <>
-                    남은 <Money value={leftAmount(byPerson(p))} />
-                  </>
-                ) : undefined
-              }
-              tasks={byPerson(p)}
-              empty="옮길 돈이 없어요. 모두 월급통장에서 바로 나가요."
-              expandable
-            />
+          {paydays.map((g) => (
+            <PaydaySection key={g.person} g={g} today={today} name={nameOf(s, g.person)} />
           ))}
         </div>
         <div className="col span-5">

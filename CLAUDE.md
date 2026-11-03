@@ -60,4 +60,5 @@ Use the `android-skills` plugin (install: `/plugin install android-skills@androi
 
 ## Status
 - Done: web app, Supabase + Google login, Vercel deploy, monorepo, mobile scaffold + calc port (tests pass, debug APK builds), public repo with secret checks and versioning (v0.1.0).
-- Pending: run `supabase/migrations/004_history_and_conflicts.sql` and `005_limits_and_batches.sql` (and `002_performance.sql` if it was never run); port the screens to Compose; Android Google login (Android OAuth client + SHA-1); card-notification auto-logging, widget, push; Play Console internal testing.
+- Paydays differ per person (`payday_a`/`payday_b`, read via `paydayOf`; the old shared `payday` is only a fallback). Transfers are grouped by the payer's payday on the check page.
+- Pending: run `supabase/migrations/006_paydays.sql`; port the screens to Compose; Android Google login (Android OAuth client + SHA-1); card-notification auto-logging, widget, push; Play Console internal testing.

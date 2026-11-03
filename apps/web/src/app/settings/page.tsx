@@ -5,7 +5,7 @@ import { Plus, Download, LogOut, RotateCcw } from "lucide-react";
 import type { Account, AccountKind, Category, Person, Settings } from "@/lib/types";
 import { PAY_KIND_LABEL } from "@/lib/types";
 import { useData } from "@/lib/store";
-import { nameOf } from "@/lib/calc";
+import { nameOf, paydayOf } from "@/lib/calc";
 import { num } from "@/lib/format";
 import { resetDemo, signOut } from "@/lib/repo";
 import { AmountInput, Money, Seg, Who } from "@/components/ui";
@@ -48,6 +48,7 @@ export default function SettingsPage() {
     if (draft[key] !== s[key]) void save({});
   };
 
+  const perPerson = s.payday_a != null && s.payday_b != null;
   const banks = data.accounts.filter((a) => a.kind === "bank" && !a.archived).sort((a, b) => a.sort - b.sort);
   const cards = data.accounts.filter((a) => a.kind === "card" && !a.archived).sort((a, b) => a.sort - b.sort);
   const cats = [...data.categories].sort((a, b) => a.sort - b.sort);
@@ -104,12 +105,14 @@ export default function SettingsPage() {
         <section className="set-sec" aria-labelledby="people-h">
           <div className="head">
             <h2 id="people-h">두 사람</h2>
-            <p>이름은 각자 자기 계정에서 바꿔요. 평소 월급(실수령)과 월급통장은 새 달을 만들 때 기본값으로 써요.</p>
+            <p>이름은 각자 자기 계정에서 바꿔요. 월급날에는 체크에서 각자 자기 월급통장에서 옮길 돈을 확인해요(그달에 없는 날이면 말일). 평소 월급(실수령)은 새 달을 만들 때 기본값으로 써요.</p>
           </div>
           <div className="card">
             {(["a", "b"] as Person[]).map((p, idx) => {
               const salKey = p === "a" ? "salary_a" : "salary_b";
               const accKey = p === "a" ? "salary_account_a" : "salary_account_b";
+              // 006 전 DB 에는 사람별 월급날 칸이 없다 → 공통 월급날을 고친다
+              const payKey = !perPerson ? "payday" : p === "a" ? "payday_a" : "payday_b";
               return (
                 <div key={p} style={{ marginTop: idx ? 24 : 0 }}>
                   <div className="lane-head" style={{ marginBottom: 12 }}>
@@ -144,18 +147,30 @@ export default function SettingsPage() {
                       <AmountInput id={`s-${p}`} value={draft[salKey]} onChange={(v) => setDraft({ ...draft, [salKey]: v })} />
                     </div>
                   </div>
-                  <div className="field">
-                    <label htmlFor={`a-${p}`}>월급통장</label>
-                    <select id={`a-${p}`} className="select" value={draft[accKey] ?? ""} onChange={(e) => void save({ [accKey]: e.target.value || null })}>
-                      <option value="">선택</option>
-                      {banks
-                        .filter((b) => b.owner === p)
-                        .map((b) => (
-                          <option key={b.id} value={b.id}>
-                            {b.name}
+                  <div className="inline-fields" style={{ marginTop: 18 }}>
+                    <div className="field">
+                      <label htmlFor={`a-${p}`}>월급통장</label>
+                      <select id={`a-${p}`} className="select" value={draft[accKey] ?? ""} onChange={(e) => void save({ [accKey]: e.target.value || null })}>
+                        <option value="">선택</option>
+                        {banks
+                          .filter((b) => b.owner === p)
+                          .map((b) => (
+                            <option key={b.id} value={b.id}>
+                              {b.name}
+                            </option>
+                          ))}
+                      </select>
+                    </div>
+                    <div className="field" style={{ marginTop: 0 }}>
+                      <label htmlFor={`pd-${p}`}>월급날</label>
+                      <select id={`pd-${p}`} className="select" value={paydayOf(draft, p)} onChange={(e) => void save({ [payKey]: Number(e.target.value) })}>
+                        {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
+                          <option key={d} value={d}>
+                            매달 {d}일
                           </option>
                         ))}
-                    </select>
+                      </select>
+                    </div>
                   </div>
                 </div>
               );
@@ -214,21 +229,10 @@ export default function SettingsPage() {
         <section className="set-sec" aria-labelledby="cycle-h">
           <div className="head">
             <h2 id="cycle-h">한 달의 기준</h2>
-            <p>월급날부터 다음 월급 전날까지를 한 달로 보면 생활비 계산이 편해요.</p>
+            <p>한 사람의 월급날부터 다음 월급 전날까지를 한 달로 보면 생활비 계산이 편해요. 두 사람 월급날이 다르면 보통 먼저 받는 사람의 월급날로 맞춰요.</p>
           </div>
           <div className="card">
-            <div className="inline-fields">
-              <div className="field">
-                <label htmlFor="payday">월급날</label>
-                <select id="payday" className="select" value={draft.payday} onChange={(e) => void save({ payday: Number(e.target.value) })}>
-                  {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
-                    <option key={d} value={d}>
-                      매달 {d}일
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="field" style={{ marginTop: 0 }}>
+            <div className="field" style={{ marginTop: 0 }}>
                 <label htmlFor="cycle">가계부 시작일</label>
                 <select id="cycle" className="select" value={draft.cycle_start} onChange={(e) => void save({ cycle_start: Number(e.target.value) })}>
                   {Array.from({ length: 28 }, (_, i) => i + 1).map((d) => (
@@ -237,7 +241,6 @@ export default function SettingsPage() {
                     </option>
                   ))}
                 </select>
-              </div>
             </div>
             <p className="help kpi-sub" style={{ marginTop: 12 }}>
               {draft.cycle_start === 1 ? "11월 = 11월 1일 ~ 11월 30일" : `11월 = 10월 ${draft.cycle_start}일 ~ 11월 ${draft.cycle_start - 1}일`}

@@ -266,12 +266,14 @@ export function defaultSettings(): Data["settings"] {
     ratio_a: 50,
     cycle_start: 1,
     payday: 25,
+    payday_a: 25,
+    payday_b: 25,
   };
 }
 
 /* ---------- 데모 (localStorage) ---------- */
 
-const STORE_KEY = "our-money-demo-v4";
+const STORE_KEY = "our-money-demo-v5";
 
 class LocalRepo implements Repo {
   mode = "demo" as const;

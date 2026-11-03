@@ -5,7 +5,8 @@ import { ArrowRight, ChevronDown } from "lucide-react";
 import { useData } from "@/lib/store";
 import { nameOf } from "@/lib/calc";
 import { CheckButton, Money } from "./ui";
-import { dueState, dueText, type Task } from "./tasks";
+import { dueState, dueText, waiting, type Task } from "./tasks";
+import { shortDate } from "@/lib/format";
 
 export function TaskRow({ task, expandable = false }: { task: Task; expandable?: boolean }) {
   const { data, today } = useData();
@@ -16,6 +17,11 @@ export function TaskRow({ task, expandable = false }: { task: Task; expandable?:
 
   const meta = task.done ? (
     <span className="s">{task.doneBy ? `${nameOf(s, task.doneBy)} 완료` : "완료"}</span>
+  ) : waiting(task, today) ? (
+    // 아직 월급날 전: 재촉하지 않고 언제 할 일인지만
+    <span className="s">{shortDate(task.payday!)} 월급날</span>
+  ) : task.early && state !== "overdue" ? (
+    <span className="pill warning">미리 · {dueText(task.due, today)}</span>
   ) : state === "overdue" ? (
     <span className="pill negative">{dueText(task.due, today)}</span>
   ) : state === "soon" ? (

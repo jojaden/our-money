@@ -39,7 +39,11 @@ export interface Settings extends Meta {
   ratio_a: number;
   /** 가계부 한 달의 시작일 (1~28). 25면 11월 = 10/25 ~ 11/24 */
   cycle_start: number;
+  /** 예전 공통 월급날 (v0.1). 사람별 월급날이 없을 때(migrations/006 전)만 쓴다 — paydayOf() 로 읽는다 */
   payday: number;
+  /** 사람별 월급날 (1~31, 그달에 없는 날이면 말일) */
+  payday_a?: number;
+  payday_b?: number;
 }
 
 export interface Account extends Meta {
