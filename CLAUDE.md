@@ -26,8 +26,16 @@ Household budget app for a couple (person `a` = repo owner, `b` = partner). Kore
 - User-visible change → one line under `## 다음 버전` in `CHANGELOG.md` plus a `- **DB 이전:**` line (migration file to run, or 없음). Otherwise label the PR `변경기록 없음`.
 - Release: rename `다음 버전` → `vX.Y.Z — YYYY-MM-DD`, add an empty `다음 버전`, bump `apps/web/package.json` version + `versionName` (and `versionCode` +1), merge, then `git tag -a vX.Y.Z` on main and push the tag (`release.yml` publishes the GitHub Release). Ask the user before tagging.
 
-## Before any deploy (web prod, Play upload)
-Run the Cloudflare `security-audit` skill in **full audit mode with the `standard` profile** on the repo (install if missing: `npx skills add cloudflare/security-audit-skill`). Fix or get the user's sign-off on every confirmed finding before deploying, and report the run directory.
+## Before any deploy or app release
+Applies to every build that reaches users:
+- web production deploy (Vercel);
+- Android: any Play track upload (internal, closed, production) or an APK/AAB handed to anyone;
+- iOS: TestFlight or App Store.
+
+Steps:
+1. Run the Cloudflare `security-audit` skill in **full audit mode with the `standard` profile** on the repo (install if missing: `npx skills add cloudflare/security-audit-skill`). Include `apps/mobile` in scope for app releases.
+2. For Android releases, also run `android-skills:android-permissions-security`, `android-skills:android-intent-security` and `android-skills:play-policy-insights`.
+3. Fix every confirmed finding or get the user's sign-off before releasing, and report the run directory.
 
 ## Android work
 Use the `android-skills` plugin (install: `/plugin install android-skills@android-skills`). Invoke the matching skill with the Skill tool before writing code:
@@ -35,7 +43,7 @@ Use the `android-skills` plugin (install: `/plugin install android-skills@androi
 - Widget: `android-skills:glance-canonical-layouts`, `android-skills:glance-appwidget-updates-and-memory`
 - Security (notification listener, intents, permissions): `android-skills:android-permissions-security`, `android-skills:android-intent-security`
 - Build, tests, release: `android-skills:testing-setup`, `android-skills:r8-analyzer`, `android-skills:anr-audit-and-fix`, `android-skills:android-cli`
-- Before a Play upload: `android-skills:play-policy-insights`
+- Before a Play upload: see "Before any deploy or app release"
 - Note: `android-skills:agp-9-upgrade` does not support KMP projects; don't use it here.
 
 ## Rules
