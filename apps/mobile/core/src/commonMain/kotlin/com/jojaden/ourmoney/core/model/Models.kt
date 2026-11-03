@@ -76,7 +76,11 @@ data class Settings(
     @SerialName("ratio_a") val ratioA: Int = 50,
     /** 가계부 한 달의 시작일 (1~28). 25면 11월 = 10/25 ~ 11/24 */
     @SerialName("cycle_start") val cycleStart: Int = 1,
+    /** 예전 공통 월급날 (v0.1). 사람별 월급날이 없을 때(migrations/006 전)만 쓴다 — paydayOf() 로 읽는다 */
     val payday: Int = 25,
+    /** 사람별 월급날 (1~31, 그달에 없는 날이면 말일) */
+    @SerialName("payday_a") val paydayA: Int? = null,
+    @SerialName("payday_b") val paydayB: Int? = null,
     @SerialName("created_at") val createdAt: String? = null,
     /** 서버가 채우는 칸 (migrations/004). rev 는 읽은 그대로 돌려보낸다 — 다른 기기가 그사이 고쳤으면 저장 거절 */
     val rev: Int? = null,

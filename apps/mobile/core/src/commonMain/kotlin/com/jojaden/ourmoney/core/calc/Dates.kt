@@ -76,10 +76,15 @@ fun periodProgress(key: String, cycleStart: Int, today: String = todayString()):
 fun dateInMonth(key: String, day: Int, cycleStart: Int): String {
     val p = periodOf(key, cycleStart)
     val (y, m) = ym(key)
-    val inThis = dayOf(y, m, day).toString()
+    // 31일처럼 그달에 없는 날은 그달 마지막 날 (11월 31일 → 11월 30일)
+    fun on(year: Int, month: Int): String {
+        val last = LocalDate(year, month, 1).plus(DatePeriod(months = 1)).plus(DatePeriod(days = -1)).day
+        return dayOf(year, month, minOf(day, last)).toString()
+    }
+    val inThis = on(y, m)
     if (inThis in p) return inThis
     val prev = LocalDate(y, m, 1).plus(DatePeriod(months = -1))
-    val inPrev = dayOf(prev.year, prev.month.number, day).toString()
+    val inPrev = on(prev.year, prev.month.number)
     if (inPrev in p) return inPrev
     return inThis
 }

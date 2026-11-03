@@ -67,10 +67,12 @@ export function periodProgress(key: string, cycleStart: number, today = ymd(new 
 export function dateInMonth(key: string, day: number, cycleStart: number): string {
   const p = periodOf(key, cycleStart);
   const [y, m] = key.split("-").map(Number);
+  // 31일처럼 그달에 없는 날은 그달 마지막 날 (11월 31일 → 11월 30일)
+  const on = (yy: number, mm: number) => ymd(new Date(yy, mm - 1, Math.min(day, new Date(yy, mm, 0).getDate())));
   // 기간이 전달 후반부터 시작하면 결제일이 전달에 있을 수 있다.
-  const inThis = ymd(new Date(y, m - 1, day));
+  const inThis = on(y, m);
   if (inPeriod(inThis, p)) return inThis;
-  const inPrev = ymd(new Date(y, m - 2, day));
+  const inPrev = on(m === 1 ? y - 1 : y, m === 1 ? 12 : m - 1);
   if (inPeriod(inPrev, p)) return inPrev;
   return inThis;
 }
@@ -121,6 +123,16 @@ export function shareOf(item: Pick<MonthItem, "amount" | "payer">, person: Perso
 
 export function salaryAccount(s: Settings, p: Person): string | null {
   return p === "a" ? s.salary_account_a : s.salary_account_b;
+}
+
+/** 이 사람의 월급날 (1~31). 사람별 월급날이 없으면(migrations/006 전) 예전 공통 월급날 */
+export function paydayOf(s: Settings, p: Person): number {
+  return (p === "a" ? s.payday_a : s.payday_b) ?? s.payday;
+}
+
+/** 이 가계부 달 안에서 이 사람의 월급날 (YYYY-MM-DD) */
+export function paydayDate(month: string, s: Settings, p: Person): string {
+  return dateInMonth(month, paydayOf(s, p), s.cycle_start);
 }
 
 export function accountMap(accounts: Account[]): Map<string, Account> {
@@ -222,6 +234,7 @@ export function transfersOf(
   const acc = accountMap(accounts);
   const map = new Map<string, Transfer>();
   const issues: TransferIssue[] = [];
+  const shared = s.salary_account_a !== null && s.salary_account_a === s.salary_account_b;
 
   for (const item of items) {
     const to = destinationOf(item, acc);
@@ -238,7 +251,8 @@ export function transfersOf(
         continue;
       }
       if (from === to) continue;
-      const id = `${from}>${to}`;
+      // 두 사람이 같은 월급통장을 쓰면 월급날이 달라도 섞이지 않게 사람별로 나눈다
+      const id = shared ? `${from}>${to}:${p}` : `${from}>${to}`;
       const t = map.get(id) ?? { id, from, to, person: p, amount: 0, parts: [], dueDay: null };
       t.amount += amount;
       t.parts.push({ item, amount });

@@ -11,13 +11,14 @@ import { CategoryIcon, LaneBar, LaneKey, Money, Ring } from "@/components/ui";
 import { spendingVisual } from "@/lib/categories";
 import { isFresh } from "@/lib/fresh";
 import { BudgetCard } from "@/components/BudgetCard";
-import { byUrgency, dueState, useTasks } from "@/components/tasks";
+import { byUrgency, dueState, useTasks, waiting } from "@/components/tasks";
+import { dDay, shortDate } from "@/lib/format";
 import { TaskRow } from "@/components/TaskRow";
 import { useSheets } from "@/components/Shell";
 
 export default function Home() {
   const { data, month, today, me } = useData();
-  const { tasks, started } = useTasks(month);
+  const { tasks, paydays, started } = useTasks(month);
   const { openSpending } = useSheets();
   const s = data.settings;
 
@@ -39,7 +40,10 @@ export default function Home() {
   const open = tasks.filter((t) => !t.done).sort(byUrgency);
   const doneCount = tasks.length - open.length;
   const overdue = open.filter((t) => dueState(t.due, today, false) === "overdue");
-  const pendingTransfers = open.filter((t) => t.kind === "transfer");
+  // 월급날이 아직 안 온 사람의 이체는 지금 할 일로 재촉하지 않는다
+  const pendingTransfers = open.filter((t) => t.kind === "transfer" && !waiting(t, today));
+  const paydayToday = paydays.find((g) => g.date === today && g.transfers.some((t) => !t.done));
+  const nextPayday = paydays.find((g) => g.date > today);
   const bills = cardBills(data, month).filter((b) => b.dueAmount > 0 || b.usingAmount > 0);
   const recent = spendingsIn(data, month).slice(0, 4);
   const catName = (id: string | null, owner: Spending["owner"] = "joint") =>
@@ -53,6 +57,18 @@ export default function Home() {
       <>
         <strong>{overdue[0].kind === "transfer" ? `${ro(overdue[0].to ?? "")} 옮길 돈` : overdue[0].title}</strong>
         {overdue.length > 1 ? ` 외 ${overdue.length - 1}건이` : iga(overdue[0].kind === "transfer" ? "돈" : overdue[0].title).slice(-1)} 기한을 넘겼어요.
+      </>
+    );
+  } else if (paydayToday) {
+    const left = paydayToday.transfers.filter((t) => !t.done);
+    finding = (
+      <>
+        <span className="nw">
+          오늘은 <strong>{nameOf(s, paydayToday.person)} 월급날</strong>이에요
+        </span>{" "}
+        <span className="nw clause">
+          <span className="sep">· </span>옮길 돈 {left.length}건 <Money value={left.reduce((a, t) => a + t.amount, 0)} />
+        </span>
       </>
     );
   } else if (pendingTransfers.length > 0) {
@@ -72,6 +88,18 @@ export default function Home() {
     finding = (
       <>
         생활비가 예상보다 <strong>{num(living.spent - living.pace)}원</strong> 빨리 나가고 있어요.
+      </>
+    );
+  } else if (nextPayday && nextPayday.transfers.some((t) => !t.done)) {
+    finding = (
+      <>
+        <span className="nw">
+          다음은 <strong>{nameOf(s, nextPayday.person)} 월급날</strong> {shortDate(nextPayday.date)}
+        </span>{" "}
+        <span className="nw clause">
+          <span className="sep">· </span>
+          {dDay(nextPayday.date, today)}
+        </span>
       </>
     );
   } else {

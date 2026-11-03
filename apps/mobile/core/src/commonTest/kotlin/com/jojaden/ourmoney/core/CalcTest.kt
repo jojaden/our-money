@@ -60,6 +60,24 @@ class CalcTest {
         assertEquals("2026-11-14", dateInMonth("2026-11", 14, 25))
     }
 
+    @Test fun paydays_per_person() {
+        val s = settings.copy(paydayA = 25, paydayB = 10)
+        assertEquals("2026-10-25", s.paydayDate("2026-11", Person.A))
+        assertEquals("2026-11-10", s.paydayDate("2026-11", Person.B))
+        // 006 전(사람별 월급날 없음)에는 공통 월급날
+        assertEquals(25, settings.paydayOf(Person.B))
+        // 그달에 없는 날은 말일
+        assertEquals("2026-11-30", dateInMonth("2026-11", 31, 1))
+        assertEquals("2027-02-28", dateInMonth("2027-02", 31, 1))
+        assertEquals("2026-10-31", dateInMonth("2026-11", 31, 25))
+    }
+
+    @Test fun shared_salary_account_splits_transfers_by_person() {
+        val s = settings.copy(salaryAccountB = "acc-a")
+        val ids = transfersOf(s, month, nov, accounts).transfers.map { it.id }.toSet()
+        assertTrue("acc-a>acc-joint:a" in ids && "acc-a>acc-joint:b" in ids)
+    }
+
     @Test fun split_rounds_half_up_and_b_takes_remainder() {
         assertEquals(49_001L to 49_000L, split(98_001, 0.5))
     }

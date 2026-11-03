@@ -65,6 +65,12 @@ fun shareOf(item: MonthItem, person: Person, rA: Double): Long = when (item.paye
 
 fun Settings.salaryAccount(p: Person): String? = if (p == Person.A) salaryAccountA else salaryAccountB
 
+/** 이 사람의 월급날 (1~31). 사람별 월급날이 없으면(migrations/006 전) 예전 공통 월급날 */
+fun Settings.paydayOf(p: Person): Int = (if (p == Person.A) paydayA else paydayB) ?: payday
+
+/** 이 가계부 달 안에서 이 사람의 월급날 (YYYY-MM-DD) */
+fun Settings.paydayDate(month: String, p: Person): String = dateInMonth(month, paydayOf(p), cycleStart)
+
 /** 이 항목의 돈이 결제일에 있어야 하는 계좌 */
 fun destinationOf(item: MonthItem, accounts: Map<String, Account>): String? {
     if (item.method == Method.CARD_AUTO && item.cardId != null) {
@@ -137,6 +143,7 @@ fun transfersOf(s: Settings, m: Month?, items: List<MonthItem>, accounts: List<A
     val acc = accounts.associateBy { it.id }
     val map = linkedMapOf<String, Transfer>()
     val issues = mutableListOf<TransferIssue>()
+    val shared = s.salaryAccountA != null && s.salaryAccountA == s.salaryAccountB
 
     for (item in items) {
         val to = destinationOf(item, acc)
@@ -153,7 +160,8 @@ fun transfersOf(s: Settings, m: Month?, items: List<MonthItem>, accounts: List<A
                 continue
             }
             if (from == to) continue
-            val id = "$from>$to"
+            // 두 사람이 같은 월급통장을 쓰면 월급날이 달라도 섞이지 않게 사람별로 나눈다
+            val id = if (shared) "$from>$to:${p.name.lowercase()}" else "$from>$to"
             val t = map[id] ?: Transfer(id, from, to, p, 0, emptyList(), null)
             val due = item.dueDay
             map[id] = t.copy(

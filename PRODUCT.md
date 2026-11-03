@@ -26,7 +26,7 @@ A household money plan built around the couple's real money flow: each partner r
 
 - Each partner is paid on the same day, with nearly fixed amounts.
 - Salaries land in each person's own account; a joint share moves to joint account(s). Fixed costs are paid by card auto-pay, account auto-debit, or manual transfer from various accounts.
-- Monthly ritual: payday → open the month → make transfers → tick them off → confirm fixed costs and savings went out → prepare card bills before each card's payment date.
+- Monthly ritual (the two paydays differ; each partner does this on their own payday): payday → open the month → move their share from their own salary account → tick it off → confirm fixed costs and savings went out → prepare card bills before each card's payment date.
 - Daily: log joint living spending with method (card / cash / transfer) and which card.
 - Joint costs are split between partners by a ratio (50:50 in the old sheet, may be income-proportional).
 

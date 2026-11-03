@@ -43,6 +43,20 @@ export function dayLabel(s: string, today = ymd(new Date())): string {
   return base;
 }
 
+/** 월급날 같은 날짜까지 남은 날: "오늘", "내일", "D-3", "3일 지남" */
+export function dDay(s: string, today: string): string {
+  const diff = Math.round((parseYmd(s).getTime() - parseYmd(today).getTime()) / 86_400_000);
+  if (diff === 0) return "오늘";
+  if (diff === 1) return "내일";
+  return diff > 0 ? `D-${diff}` : `${-diff}일 지남`;
+}
+
+/** "11월 10일 (화)" */
+export function dateWithDay(s: string): string {
+  const d = parseYmd(s);
+  return `${d.getMonth() + 1}월 ${d.getDate()}일 (${WEEK[d.getDay()]})`;
+}
+
 export function monthLabel(key: string): string {
   const [y, m] = key.split("-").map(Number);
   const thisYear = new Date().getFullYear();
