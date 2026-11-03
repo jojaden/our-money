@@ -110,6 +110,8 @@ export function fresh<T extends object>(row: T): T {
 interface Pending {
   seq: number;
   ops: Op[];
+  /** 이 저장을 만든 계정 — 다른 계정으로 로그인이 바뀌면 보내지 않는다 */
+  email?: string | null;
 }
 const OUTBOX_KEY = "our-money-outbox";
 const MAX_TRIES = 3;
@@ -175,6 +177,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   );
   const lastFull = useRef(0);
   const outbox = useRef<Pending[]>([]);
+  /** 지금 로그인한 멤버 계정 (멤버가 아니거나 로그아웃이면 null) */
+  const authEmail = useRef<string | null>(null);
   const [pending, setPending] = useState(0);
 
   const reload = useCallback(
@@ -235,6 +239,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       }
       if (!alive) return;
       setError(null);
+      if (!res || !res.member) authEmail.current = null;
       if (!res) setAuth({ state: "signed-out" });
       else if (!res.member) setAuth({ state: "not-member", email: res.email });
       else {
@@ -341,7 +346,6 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const seq = useRef(0);
   const flushing = useRef(false);
   const parkedToast = useRef(0);
-  const authEmail = useRef<string | null>(null);
   const persist = useCallback(() => {
     setPending((n) => (outbox.current.length === 0 ? 0 : n > 0 ? outbox.current.length : n));
     if (!hasSupabase) return;
@@ -371,6 +375,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       let attempt = 0;
       while (outbox.current.length > 0) {
         const head = outbox.current[0];
+        // 저장을 만든 계정과 지금 로그인한 계정이 다르면 (다른 탭에서 로그아웃·다른 계정 로그인) 보내지 않고 버린다
+        if (hasSupabase && (head.email ?? null) !== authEmail.current) {
+          outbox.current = outbox.current.slice(1);
+          persist();
+          waiters.current.get(head.seq)?.reject(new Error("account changed"));
+          waiters.current.delete(head.seq);
+          continue;
+        }
         const sent: Op[] = head.ops.map((o) =>
           o.op === "upsert" ? { ...o, rows: o.rows.map((r) => rebase(o.table, r as Revved) as unknown as Record<string, unknown>) } : o,
         );
@@ -435,7 +447,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       const real = ops.filter((o) => (o.op === "upsert" ? o.rows.length > 0 : o.ids.length > 0));
       if (real.length === 0) return true;
       setData((d) => (d ? applyOpsLocal(d, real) : d));
-      const p: Pending = { seq: ++seq.current, ops: real };
+      const p: Pending = { seq: ++seq.current, ops: real, email: authEmail.current };
       outbox.current = [...outbox.current, p];
       persist();
       const settled = new Promise<boolean>((resolve) =>
@@ -462,7 +474,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       if (raw && outbox.current.length === 0) {
         const saved = JSON.parse(raw) as { email?: string; items?: Pending[] };
         if (saved.email === auth.email && Array.isArray(saved.items) && saved.items.length > 0) {
-          outbox.current = saved.items.map((p) => ({ ...p, seq: ++seq.current }));
+          outbox.current = saved.items.map((p) => ({ ...p, seq: ++seq.current, email: auth.email }));
           setData((d) => (d ? applyOpsLocal(d, outbox.current.flatMap((x) => x.ops)) : d));
           setPending(outbox.current.length);
         } else localStorage.removeItem(OUTBOX_KEY);

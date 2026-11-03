@@ -11,8 +11,14 @@ import { resetDemo, signOut } from "@/lib/repo";
 import { AmountInput, Money, Seg, Who } from "@/components/ui";
 import { AccountSheet, CategorySheet } from "@/components/SettingsSheets";
 
+/** 스프레드시트가 수식으로 실행하지 않게 = + - @ 탭·줄바꿈으로 시작하는 글자 칸 앞에 ' 를 붙인다 */
+function cell(v: string | number) {
+  const t = String(v);
+  return typeof v === "string" && /^[=+\-@\t\r]/.test(t) ? `'${t}` : t;
+}
+
 function csv(rows: (string | number)[][]) {
-  return rows.map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
+  return rows.map((r) => r.map((v) => `"${cell(v).replace(/"/g, '""')}"`).join(",")).join("\n");
 }
 
 export default function SettingsPage() {
