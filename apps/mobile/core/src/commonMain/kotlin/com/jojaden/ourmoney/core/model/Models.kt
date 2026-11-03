@@ -4,6 +4,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 // 데이터 모델 — supabase/schema.sql 과 1:1 (웹 apps/web/src/lib/types.ts 와 같은 구조)
+// Supabase 로 보낼 때 Json 은 explicitNulls = false 로 둔다: upsert 에 rev: null 을 보내면 서버가 충돌로 거절한다 (migrations/004).
 
 @Serializable
 enum class Person {
@@ -76,6 +77,12 @@ data class Settings(
     /** 가계부 한 달의 시작일 (1~28). 25면 11월 = 10/25 ~ 11/24 */
     @SerialName("cycle_start") val cycleStart: Int = 1,
     val payday: Int = 25,
+    @SerialName("created_at") val createdAt: String? = null,
+    /** 서버가 채우는 칸 (migrations/004). rev 는 읽은 그대로 돌려보낸다 — 다른 기기가 그사이 고쳤으면 저장 거절 */
+    val rev: Int? = null,
+    @SerialName("created_by") val createdBy: Person? = null,
+    @SerialName("updated_at") val updatedAt: String? = null,
+    @SerialName("updated_by") val updatedBy: Person? = null,
 )
 
 @Serializable
@@ -91,6 +98,15 @@ data class Account(
     @SerialName("pay_day") val payDay: Int? = null,
     val sort: Int = 0,
     val archived: Boolean = false,
+    /** 카드 번호 끝 4자리 — 카드 알림 자동 기록에서 카드를 찾을 때 */
+    val last4: String? = null,
+    val note: String = "",
+    @SerialName("created_at") val createdAt: String? = null,
+    /** 서버가 채우는 칸 (migrations/004). rev 는 읽은 그대로 돌려보낸다 — 다른 기기가 그사이 고쳤으면 저장 거절 */
+    val rev: Int? = null,
+    @SerialName("created_by") val createdBy: Person? = null,
+    @SerialName("updated_at") val updatedAt: String? = null,
+    @SerialName("updated_by") val updatedBy: Person? = null,
 )
 
 /** 매달 반복되는 플랜 항목 (템플릿) */
@@ -110,6 +126,15 @@ data class PlanItem(
     val active: Boolean = true,
     @SerialName("goal_amount") val goalAmount: Long? = null,
     @SerialName("goal_start") val goalStart: Long? = null,
+    /** 이 달(YYYY-MM)부터 / 이 달까지만 — 대출·할부처럼 끝이 있는 항목 */
+    @SerialName("start_month") val startMonth: String? = null,
+    @SerialName("end_month") val endMonth: String? = null,
+    @SerialName("created_at") val createdAt: String? = null,
+    /** 서버가 채우는 칸 (migrations/004). rev 는 읽은 그대로 돌려보낸다 — 다른 기기가 그사이 고쳤으면 저장 거절 */
+    val rev: Int? = null,
+    @SerialName("created_by") val createdBy: Person? = null,
+    @SerialName("updated_at") val updatedAt: String? = null,
+    @SerialName("updated_by") val updatedBy: Person? = null,
 )
 
 @Serializable
@@ -120,7 +145,15 @@ data class Month(
     @SerialName("income_b") val incomeB: Long = 0,
     @SerialName("extra_income") val extraIncome: Long = 0,
     @SerialName("extra_note") val extraNote: String = "",
-    @SerialName("created_at") val createdAt: String = "",
+    val note: String = "",
+    /** 그달을 마감한 시각 */
+    @SerialName("closed_at") val closedAt: String? = null,
+    @SerialName("created_at") val createdAt: String? = null,
+    /** 서버가 채우는 칸 (migrations/004). rev 는 읽은 그대로 돌려보낸다 — 다른 기기가 그사이 고쳤으면 저장 거절 */
+    val rev: Int? = null,
+    @SerialName("created_by") val createdBy: Person? = null,
+    @SerialName("updated_at") val updatedAt: String? = null,
+    @SerialName("updated_by") val updatedBy: Person? = null,
 )
 
 /** 그달에 고정된 플랜 항목 */
@@ -143,6 +176,14 @@ data class MonthItem(
     val paid: Boolean = false,
     @SerialName("paid_at") val paidAt: String? = null,
     @SerialName("paid_by") val paidBy: Person? = null,
+    /** 실제로 나간 금액 (플랜 금액과 다를 때) */
+    @SerialName("paid_amount") val paidAmount: Long? = null,
+    @SerialName("created_at") val createdAt: String? = null,
+    /** 서버가 채우는 칸 (migrations/004). rev 는 읽은 그대로 돌려보낸다 — 다른 기기가 그사이 고쳤으면 저장 거절 */
+    val rev: Int? = null,
+    @SerialName("created_by") val createdBy: Person? = null,
+    @SerialName("updated_at") val updatedAt: String? = null,
+    @SerialName("updated_by") val updatedBy: Person? = null,
 )
 
 @Serializable
@@ -170,6 +211,12 @@ data class Category(
     /** 월 예산 (0이면 미설정) */
     val budget: Long = 0,
     val sort: Int = 0,
+    @SerialName("created_at") val createdAt: String? = null,
+    /** 서버가 채우는 칸 (migrations/004). rev 는 읽은 그대로 돌려보낸다 — 다른 기기가 그사이 고쳤으면 저장 거절 */
+    val rev: Int? = null,
+    @SerialName("created_by") val createdBy: Person? = null,
+    @SerialName("updated_at") val updatedAt: String? = null,
+    @SerialName("updated_by") val updatedBy: Person? = null,
 )
 
 @Serializable
@@ -187,8 +234,28 @@ data class Spending(
     /** 실제로 결제한 사람 */
     @SerialName("paid_by") val paidBy: Person,
     val memo: String = "",
-    @SerialName("created_at") val createdAt: String = "",
+    @SerialName("created_at") val createdAt: String? = null,
+    /** 어떻게 기록됐나 */
+    val source: SpendingSource = SpendingSource.MANUAL,
+    val tags: List<String> = emptyList(),
+    /** 할부 개월 (1 = 일시불) */
+    @SerialName("installment_months") val installmentMonths: Int = 1,
+    /** 카드 승인번호 — 같은 승인 건이 두 번 기록되지 않게 */
+    @SerialName("approval_no") val approvalNo: String? = null,
+    /** 서버가 채우는 칸 (migrations/004). rev 는 읽은 그대로 돌려보낸다 — 다른 기기가 그사이 고쳤으면 저장 거절 */
+    val rev: Int? = null,
+    @SerialName("created_by") val createdBy: Person? = null,
+    @SerialName("updated_at") val updatedAt: String? = null,
+    @SerialName("updated_by") val updatedBy: Person? = null,
 )
+
+@Serializable
+enum class SpendingSource {
+    @SerialName("manual") MANUAL,
+    @SerialName("preset") PRESET,
+    @SerialName("notification") NOTIFICATION,
+    @SerialName("import") IMPORT,
+}
 
 @Serializable
 data class Member(val email: String, val person: Person)

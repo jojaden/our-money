@@ -16,6 +16,15 @@ export const LIST_TABLES = [
   "users",
 ] as const satisfies readonly TableName[];
 
+/** 다른 폰이 먼저 같은 줄을 고쳐서 서버가 저장을 거절했다 (SQLSTATE 40001, migrations/004 의 rev) */
+export class ConflictError extends Error {}
+
+/** 실시간 변경 한 건. RELOAD 는 무엇이 바뀌었는지 모를 때 (데모의 다른 탭) — table 이 없으면 전부 */
+export type Change =
+  | { type: "INSERT" | "UPDATE"; table: TableName; row: Record<string, unknown> }
+  | { type: "DELETE"; table: TableName; id: string }
+  | { type: "RELOAD"; table?: TableName };
+
 export interface LoadOpts {
   /** 이 날짜(YYYY-MM-DD)부터의 지출만 불러온다. 지출만 계속 쌓이는 테이블이라 기간으로 자른다. */
   spendingsFrom?: string;
@@ -30,12 +39,13 @@ export interface Repo {
   loadSpendings(from: string, to: string): Promise<Spending[]>;
   /** 내보내기용 전체 지출 */
   exportSpendings(): Promise<Spending[]>;
-  upsert<T extends TableName>(table: T, rows: Row<T>[], opts?: { ignoreDuplicates?: boolean }): Promise<void>;
+  /** 저장하고 서버가 저장한 줄(rev·시각 포함)을 돌려준다. 내용이 같아 건너뛴 줄은 빠진다 */
+  upsert<T extends TableName>(table: T, rows: Row<T>[], opts?: { ignoreDuplicates?: boolean }): Promise<Row<T>[]>;
   remove(table: TableName, ids: string[]): Promise<void>;
   /** 로그인한 사람(me)의 이름 — 본인 줄만 바꿀 수 있다 */
   updateMyName(me: Person, name: string): Promise<void>;
   /** 다른 기기·탭에서 바뀌면 호출 */
-  subscribe(onChange: (table: TableName) => void): () => void;
+  subscribe(onChange: (change: Change) => void): () => void;
 }
 
 /* ---------- Supabase ---------- */
@@ -111,9 +121,13 @@ class SupabaseRepo implements Repo {
   }
 
   async upsert<T extends TableName>(table: T, rows: Row<T>[], opts?: { ignoreDuplicates?: boolean }) {
-    if (rows.length === 0) return;
-    const { error } = await this.db.from(table).upsert(rows as object[], { onConflict: "id", ignoreDuplicates: opts?.ignoreDuplicates });
-    if (error) throw new Error(error.message);
+    if (rows.length === 0) return [];
+    const { data, error } = await this.db
+      .from(table)
+      .upsert(rows as object[], { onConflict: "id", ignoreDuplicates: opts?.ignoreDuplicates })
+      .select();
+    if (error) throw error.code === "40001" ? new ConflictError(error.message) : new Error(error.message);
+    return (data ?? []) as Row<T>[];
   }
 
   async remove(table: TableName, ids: string[]) {
@@ -137,10 +151,16 @@ class SupabaseRepo implements Repo {
     if (!res.data?.length) throw new Error("내 계정 정보를 찾지 못했어요. 다시 로그인해 주세요.");
   }
 
-  subscribe(onChange: (table: TableName) => void) {
+  subscribe(onChange: (change: Change) => void) {
     const channel = this.db.channel("household");
     for (const t of [...LIST_TABLES, "settings"] as TableName[]) {
-      channel.on("postgres_changes", { event: "*", schema: "public", table: t }, () => onChange(t));
+      // 바뀐 줄을 그대로 받아서 붙인다 (테이블을 다시 읽지 않는다)
+      channel.on("postgres_changes", { event: "*", schema: "public", table: t }, (p) => {
+        if (p.eventType === "DELETE") {
+          const id = (p.old as { id?: unknown }).id;
+          onChange(id == null ? { type: "RELOAD", table: t } : { type: "DELETE", table: t, id: String(id) });
+        } else onChange({ type: p.eventType, table: t, row: p.new as Record<string, unknown> });
+      });
     }
     channel.subscribe();
     return () => {
@@ -236,6 +256,7 @@ class LocalRepo implements Repo {
       }
     }
     this.write();
+    return structuredClone(rows);
   }
 
   async remove(table: TableName, ids: string[]) {
@@ -254,11 +275,11 @@ class LocalRepo implements Repo {
     this.write();
   }
 
-  subscribe(onChange: (table: TableName) => void) {
+  subscribe(onChange: (change: Change) => void) {
     const handler = (e: StorageEvent) => {
       if (e.key === STORE_KEY) {
         this.data = null;
-        onChange("spendings");
+        onChange({ type: "RELOAD" });
       }
     };
     window.addEventListener("storage", handler);

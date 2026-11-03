@@ -13,7 +13,19 @@ export type PayKind = "card" | "cash" | "transfer";
 
 export type AccountKind = "bank" | "card";
 
-export interface Settings {
+/**
+ * 서버(트리거)가 채우는 칸 — supabase/migrations/004.
+ * rev 는 읽은 그대로 돌려보내야 한다: 그사이 다른 폰이 고쳤으면 서버가 저장을 거절한다(충돌).
+ */
+export interface Meta {
+  rev?: number;
+  created_at?: string;
+  created_by?: Person | null;
+  updated_at?: string;
+  updated_by?: Person | null;
+}
+
+export interface Settings extends Meta {
   id: 1;
   name_a: string;
   name_b: string;
@@ -30,7 +42,7 @@ export interface Settings {
   payday: number;
 }
 
-export interface Account {
+export interface Account extends Meta {
   id: string;
   name: string;
   kind: AccountKind;
@@ -43,9 +55,12 @@ export interface Account {
   pay_day: number | null;
   sort: number;
   archived: boolean;
+  /** 카드 번호 끝 4자리 — 카드 알림 자동 기록에서 카드를 찾을 때 */
+  last4?: string | null;
+  note?: string;
 }
 
-interface ItemFields {
+interface ItemFields extends Meta {
   group: Group;
   name: string;
   amount: number;
@@ -67,9 +82,12 @@ export interface PlanItem extends ItemFields {
   /** 저축 목표 */
   goal_amount: number | null;
   goal_start: number | null;
+  /** 이 달(YYYY-MM)부터 / 이 달까지만 — 대출·할부처럼 끝이 있는 항목 */
+  start_month?: string | null;
+  end_month?: string | null;
 }
 
-export interface Month {
+export interface Month extends Meta {
   /** YYYY-MM */
   id: string;
   income_a: number;
@@ -77,6 +95,9 @@ export interface Month {
   extra_income: number;
   extra_note: string;
   created_at: string;
+  note?: string;
+  /** 그달을 마감한 시각 */
+  closed_at?: string | null;
 }
 
 /** 그달에 고정된 플랜 항목 */
@@ -88,6 +109,8 @@ export interface MonthItem extends ItemFields {
   paid: boolean;
   paid_at: string | null;
   paid_by: Person | null;
+  /** 실제로 나간 금액 (플랜 금액과 다를 때) */
+  paid_amount?: number | null;
 }
 
 export type CheckKind = "transfer" | "card" | "settle";
@@ -102,7 +125,7 @@ export interface Check {
   done_by: Person;
 }
 
-export interface Category {
+export interface Category extends Meta {
   id: string;
   name: string;
   /** 월 예산 (0이면 미설정) */
@@ -110,7 +133,9 @@ export interface Category {
   sort: number;
 }
 
-export interface Spending {
+export type SpendingSource = "manual" | "preset" | "notification" | "import";
+
+export interface Spending extends Meta {
   id: string;
   /** YYYY-MM-DD */
   date: string;
@@ -125,6 +150,13 @@ export interface Spending {
   paid_by: Person;
   memo: string;
   created_at: string;
+  /** 어떻게 기록됐나: 직접 · 자주 쓰는 지출 · 카드 알림 · 가져오기 */
+  source?: SpendingSource;
+  tags?: string[];
+  /** 할부 개월 (1 = 일시불) */
+  installment_months?: number;
+  /** 카드 승인번호 — 같은 승인 건이 두 번 기록되지 않게 */
+  approval_no?: string | null;
 }
 
 export interface Member {

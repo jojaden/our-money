@@ -47,6 +47,7 @@ export function AccountSheet({ open, onOpenChange, account, kind: initialKind }:
       pay_day: kind === "card" ? payDay : null,
       sort: account?.sort ?? Math.max(0, ...data.accounts.map((a) => a.sort)) + 1,
       archived: false,
+      rev: account?.rev,
     };
     onOpenChange(false);
     await upsert("accounts", [row]);
@@ -177,7 +178,7 @@ export function CategorySheet({ open, onOpenChange, category }: { open: boolean;
           onClick={async () => {
             onOpenChange(false);
             await upsert("categories", [
-              { id: category?.id ?? newId("cat"), name: name.trim(), budget, sort: category?.sort ?? Math.max(0, ...data.categories.map((c) => c.sort)) + 1 },
+              { id: category?.id ?? newId("cat"), name: name.trim(), budget, sort: category?.sort ?? Math.max(0, ...data.categories.map((c) => c.sort)) + 1, rev: category?.rev },
             ]);
             toast("저장했어요");
           }}

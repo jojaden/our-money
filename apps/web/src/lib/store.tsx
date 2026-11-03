@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { Check, Data, Month, MonthItem, Person, Row, Spending, TableName } from "./types";
-import { getRepo, hasSupabase, currentMember, supabase, LIST_TABLES } from "./repo";
+import { getRepo, hasSupabase, currentMember, supabase, LIST_TABLES, ConflictError, type Change } from "./repo";
 import { addMonths, currentMonth, itemsFromMonth, latestMonthBefore, monthRow, periodOf, snapshotItems, withUserNames } from "./calc";
 import { haptic } from "./native";
 
@@ -76,6 +76,36 @@ function applyLocal<T extends TableName>(d: Data, table: T, rows: Row<T>[], igno
     } else list.push(row);
   }
   return { ...d, [key]: list };
+}
+
+type Revved = { id: string | number; rev?: number };
+
+/**
+ * 서버가 보낸 줄을 붙인다 (저장 결과, 실시간 변경). 이미 더 새 rev 를 갖고 있으면 늦게 온 옛 줄은 버린다.
+ */
+function mergeServer(d: Data, table: TableName, rows: Revved[]): Data {
+  if (table === "settings") {
+    const row = rows[0] as unknown as Data["settings"] | undefined;
+    if (!row || (d.settings.rev ?? 0) > (row.rev ?? 0)) return d;
+    return { ...d, settings: { ...d.settings, ...row } };
+  }
+  const key = table as (typeof LIST_TABLES)[number];
+  const list = [...(d[key] as unknown as Revved[])];
+  for (const row of rows) {
+    const i = list.findIndex((x) => x.id === row.id);
+    if (i < 0) list.push(row);
+    else if ((list[i].rev ?? 0) <= (row.rev ?? 0)) list[i] = { ...list[i], ...row };
+  }
+  return { ...d, [key]: list };
+}
+
+function applyChange(d: Data, c: Exclude<Change, { type: "RELOAD" }>): Data {
+  if (c.type === "DELETE") {
+    if (c.table === "settings") return d;
+    const key = c.table as (typeof LIST_TABLES)[number];
+    return { ...d, [key]: (d[key] as unknown as Revved[]).filter((x) => String(x.id) !== c.id) };
+  }
+  return mergeServer(d, c.table, [c.row as unknown as Revved]);
 }
 
 export function StoreProvider({ children }: { children: React.ReactNode }) {
@@ -171,16 +201,15 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!repo || (auth.state !== "demo" && auth.state !== "member")) return;
     void reload();
-    const pending = new Set<TableName>();
     let timer: number | undefined;
-    const unsub = repo.subscribe((t) => {
-      pending.add(t);
+    const unsub = repo.subscribe((c) => {
+      // 바뀐 줄을 바로 붙인다. 무엇이 바뀌었는지 모를 때만 다시 읽는다
+      if (c.type !== "RELOAD") {
+        setData((d) => (d ? applyChange(d, c) : d));
+        return;
+      }
       window.clearTimeout(timer);
-      timer = window.setTimeout(() => {
-        const tables = [...pending];
-        pending.clear();
-        for (const x of tables) void reload(x);
-      }, 200);
+      timer = window.setTimeout(() => void reload(c.table), 200);
     });
     // 앱으로 돌아왔을 때: 실시간 연결이 끊겼을 수 있으니 30초 이상 지났으면 전체를 다시
     const onFocus = () => {
@@ -224,19 +253,56 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     } catch {}
   }, []);
 
+  // 저장은 한 번에 하나씩 순서대로 (같은 줄을 빠르게 두 번 고쳐도, 외래키 순서도 지켜지게)
+  const queue = useRef<Promise<unknown>>(Promise.resolve());
+  const enqueue = useCallback(<R,>(job: () => Promise<R>): Promise<R> => {
+    const p = queue.current.then(job, job);
+    queue.current = p.catch(() => undefined);
+    return p;
+  }, []);
+  // 내가 저장한 rev 의 이어짐: 저장 전 rev → 서버가 준 rev. 옛 rev 로 만든 줄(빠른 연속 수정, 되돌리기)을 내 최신 rev 로 맞춘다
+  const myRevs = useRef(new Map<string, Map<number, number>>());
+  const rebase = useCallback((table: TableName, row: Revved): Revved => {
+    if (row.rev == null) return row;
+    const chain = myRevs.current.get(`${table}:${row.id}`);
+    let rev = row.rev;
+    while (chain?.has(rev)) rev = chain.get(rev)!;
+    return rev === row.rev ? row : { ...row, rev };
+  }, []);
+  const remember = useCallback((table: TableName, sent: Revved[], saved: Revved[]) => {
+    for (const s of saved) {
+      const before = sent.find((x) => x.id === s.id)?.rev;
+      if (before == null || s.rev == null || before === s.rev) continue;
+      const key = `${table}:${s.id}`;
+      const chain = myRevs.current.get(key) ?? new Map<number, number>();
+      chain.set(before, s.rev);
+      myRevs.current.set(key, chain);
+    }
+  }, []);
+
   const upsert = useCallback(
     async <T extends TableName>(table: T, rows: Row<T>[], opts?: { ignoreDuplicates?: boolean }) => {
       if (!repo) return;
       setData((d) => (d ? applyLocal(d, table, rows, opts?.ignoreDuplicates) : d));
-      try {
-        await repo.upsert(table, rows, opts);
-      } catch (e) {
-        toast(`저장하지 못했어요: ${e instanceof Error ? e.message : e}`);
-        await reload();
-        throw e;
-      }
+      await enqueue(async () => {
+        const sent = (rows as unknown as Revved[]).map((r) => rebase(table, r));
+        try {
+          const saved = (await repo.upsert(table, sent as unknown as Row<T>[], opts)) as unknown as Revved[];
+          remember(table, sent, saved);
+          if (saved.length) setData((d) => (d ? mergeServer(d, table, saved) : d));
+        } catch (e) {
+          if (e instanceof ConflictError) {
+            toast("다른 폰에서 먼저 바꿨어요. 최신 내용으로 다시 불러왔어요");
+            await reload(table);
+          } else {
+            toast(`저장하지 못했어요: ${e instanceof Error ? e.message : e}`);
+            await reload();
+          }
+          throw e;
+        }
+      });
     },
-    [repo, reload, toast],
+    [repo, reload, toast, enqueue, rebase, remember],
   );
 
   const setMyName = useCallback(
@@ -270,14 +336,16 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         const key = table as (typeof LIST_TABLES)[number];
         return { ...d, [key]: (d[key] as unknown as { id: string }[]).filter((x) => !ids.includes(x.id)) };
       });
-      try {
-        await repo.remove(table, ids);
-      } catch (e) {
-        toast(`삭제하지 못했어요: ${e instanceof Error ? e.message : e}`);
-        await reload();
-      }
+      await enqueue(async () => {
+        try {
+          await repo.remove(table, ids);
+        } catch (e) {
+          toast(`삭제하지 못했어요: ${e instanceof Error ? e.message : e}`);
+          await reload();
+        }
+      });
     },
-    [repo, reload, toast],
+    [repo, reload, toast, enqueue],
   );
 
   /**
