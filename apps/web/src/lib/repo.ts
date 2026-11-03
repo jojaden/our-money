@@ -411,9 +411,14 @@ export async function currentMember(): Promise<{ email: string; member: Member |
   // 002 마이그레이션 전(대문자로 저장된 이메일)에도 로그인되게
   if (!row) ({ data: row, error } = await db.from("members").select("email, person").ilike("email", email).maybeSingle());
   if (error) throw toError(error);
-  // 로그인한 계정의 users 줄을 만들거나 맞춘다 (003 마이그레이션 전이면 조용히 넘어간다)
-  if (row) await db.rpc("ensure_user");
-  return { email, member: (row as Member | null) ?? null };
+  if (!row) return { email, member: null };
+  // 로그인한 계정을 멤버에 묶고 users 줄을 만들거나 맞춘다 (migrations/007).
+  // 이메일이 같아도 이미 다른 계정이 묶여 있거나, 구글로 확인된 계정이 아니면 null → 멤버가 아니다.
+  // 003 전이라 함수가 없으면(오류) 예전처럼 members 줄만으로 판단한다.
+  const { data: user, error: rpcError } = await db.rpc("ensure_user");
+  if (rpcError && toError(rpcError) instanceof RetryableError) throw toError(rpcError);
+  if (!rpcError && !user) return { email, member: null };
+  return { email, member: row as Member };
 }
 
 export async function signInWithGoogle() {
@@ -426,6 +431,10 @@ export async function signInWithGoogle() {
 }
 
 export async function signOut() {
+  // 이 기기에 남은 보내지 못한 저장도 지운다 (다음에 로그인하는 다른 계정으로 보내지 않게)
+  try {
+    localStorage.removeItem("our-money-outbox");
+  } catch {}
   await supabase()?.auth.signOut();
   window.location.reload();
 }

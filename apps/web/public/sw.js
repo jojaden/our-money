@@ -1,5 +1,5 @@
 // 앱 껍데기만 캐시한다. 데이터(Supabase)는 항상 네트워크에서 가져온다.
-const CACHE = "our-money-v3";
+const CACHE = "our-money-v4";
 const SHELL = ["/", "/plan/", "/check/", "/ledger/", "/settings/", "/manifest.webmanifest", "/icon-192.png", "/fonts/pretendard/pretendard.css"];
 
 self.addEventListener("install", (e) => {
@@ -21,11 +21,14 @@ self.addEventListener("fetch", (e) => {
     e.respondWith(
       fetch(req)
         .then((res) => {
-          const copy = res.clone();
-          caches.open(CACHE).then((c) => c.put(req, copy));
+          // 정상 응답만, 주소의 ?쿼리(로그인 콜백의 code 등)는 빼고 경로로만 저장한다
+          if (res.ok) {
+            const copy = res.clone();
+            caches.open(CACHE).then((c) => c.put(url.pathname, copy));
+          }
           return res;
         })
-        .catch(() => caches.match(req).then((r) => r || caches.match("/"))),
+        .catch(() => caches.match(url.pathname).then((r) => r || caches.match("/"))),
     );
     return;
   }
@@ -36,8 +39,10 @@ self.addEventListener("fetch", (e) => {
         (hit) =>
           hit ||
           fetch(req).then((res) => {
-            const copy = res.clone();
-            caches.open(CACHE).then((c) => c.put(req, copy));
+            if (res.ok) {
+              const copy = res.clone();
+              caches.open(CACHE).then((c) => c.put(req, copy));
+            }
             return res;
           }),
       ),

@@ -94,7 +94,7 @@ function Gate({ children }: { children: React.ReactNode }) {
           <Mark size={48} />
           <h1>등록되지 않은 계정이에요</h1>
           <p>
-            {auth.email} 계정은 이 가계부의 멤버가 아니에요. Supabase 의 members 테이블에 이메일을 추가하거나 다른 계정으로 로그인해 주세요.
+            {auth.email} 계정은 이 가계부에 연결되어 있지 않아요. 멤버로 등록된 구글 계정으로 로그인해 주세요. 계정을 바꿨다면 Supabase 의 members 에서 이메일을 새 계정으로 바꿔야 해요.
           </p>
           <button type="button" className="btn block secondary" onClick={() => void signOut()}>
             다른 계정으로 로그인

@@ -1,4 +1,6 @@
 # ---------- 공통 ----------
+__pycache__/
+*.pyc
 .DS_Store
 *.log
 npm-debug.log*
