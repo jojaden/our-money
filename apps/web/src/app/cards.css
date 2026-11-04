@@ -125,6 +125,91 @@
   .step, .step-bar::after { transition: none; }
 }
 
+/* ---------- 가계부 머리: 무지개 게이지 (RainbowGauge) ---------- */
+
+/* 쓴 돈 버킷 두 겹. 하늘 머리 + 겹친 반원 + 곡선 패널은 큰 예산 카드와 같은 틀 */
+.rainbow { overflow: hidden; padding: 0; }
+.rainbow p { margin: 0; }
+.rainbow .sky { padding: 22px 0 30px; background: linear-gradient(180deg, var(--sky-100) 0%, var(--glow) 100%); }
+.rainbow .arc { position: relative; width: min(100% - 40px, 320px); margin: 0 auto; filter: drop-shadow(0 6px 10px color-mix(in srgb, var(--accent-ink) 10%, transparent)); }
+.rainbow .layer + .layer { position: absolute; inset: 0; }
+.rainbow .layer.living { --c: var(--g-living); }
+.rainbow .layer.allowance { --c: var(--g-allowance); }
+.tube.rb0 .fl .halo, .tube.rb1 .fl .halo { filter: blur(5px); }
+.rainbow .arc .pct { position: absolute; right: 0; bottom: 4px; left: 0; }
+.rainbow .pct b { font-size: 40px; line-height: 42px; }
+.rainbow .panel { position: relative; display: grid; justify-items: center; gap: 2px; margin-top: -30px; padding: 26px var(--pad) var(--pad); border-radius: 50% 50% 0 0 / 30px 30px 0 0; background: var(--surface); text-align: center; }
+.rainbow .cap, .rainbow .used { color: var(--faint); font: 500 14.5px/20px var(--font-text); }
+.rainbow .fig { font: 700 36px/42px var(--font-display); letter-spacing: -0.02em; }
+.rainbow .fig .won { margin-left: 2px; color: var(--faint); font-size: 0.62em; font-weight: 600; }
+.rainbow .pace-pill { margin-top: 14px; }
+.buckets { width: 100%; margin: 16px 0 0; padding: 0; list-style: none; text-align: left; }
+.buckets li { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 12px 0; }
+.buckets li + li { background: linear-gradient(var(--rule), var(--rule)) 22px 0 / calc(100% - 22px) 0.6px no-repeat; }
+.buckets i { width: 10px; height: 10px; border-radius: var(--radius-chip); background: var(--k); }
+.buckets .living { --k: var(--g-living); }
+.buckets .allowance { --k: var(--g-allowance); }
+.buckets .n { font: 500 16px/24px var(--font-text); letter-spacing: -0.01em; }
+.buckets .v { color: var(--faint); font: 500 12.5px/16px var(--font-text); font-variant-numeric: tabular-nums; }
+.buckets b { font: 600 17px/24px var(--font-display); font-variant-numeric: tabular-nums; }
+
+/* ---------- 이번 달 기록 (StatTiles) ---------- */
+
+.stat-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 0; padding: 0; list-style: none; }
+.stat-tiles .stat { display: flex; align-items: center; gap: 12px; min-width: 0; padding: 14px; border-radius: var(--radius-inner); background: var(--surface); box-shadow: var(--shadow-card); }
+.stat-tiles .ic { flex: none; display: grid; place-items: center; width: 36px; height: 36px; border-radius: var(--radius-chip); }
+.stat-tiles .ic svg { width: 18px; height: 18px; stroke-width: 2; }
+.stat-tiles .t1 { background: var(--pill-negative-bg); color: var(--pill-negative-ink); }
+.stat-tiles .t2 { background: var(--a-soft); color: var(--a-ink); }
+.stat-tiles .t3 { background: var(--accent-soft); color: var(--accent-ink); }
+.stat-tiles .t4 { background: var(--pill-positive-bg); color: var(--pill-positive-ink); }
+.stat-tiles .stat div { min-width: 0; }
+.stat-tiles b { display: block; overflow: hidden; font: 700 18px/24px var(--font-display); letter-spacing: -0.01em; font-variant-numeric: tabular-nums; text-overflow: ellipsis; white-space: nowrap; }
+.stat-tiles b span { margin-left: 1px; color: var(--faint); font-size: 0.72em; font-weight: 600; }
+.stat-tiles small { display: block; color: var(--faint); font: 500 12.5px/16px var(--font-text); }
+
+/* ---------- 하루별 지출 막대 (DailyBars) ---------- */
+
+/* 막대는 게이지와 같은 번짐: 바닥 옅은 생활비 색 → 위 진한 끝. 앱에서 처음 한 번만 바닥에서 자란다 */
+.daily-head { display: flex; align-items: baseline; gap: 8px; min-height: 30px; }
+.daily-head .k { color: var(--faint); font: 500 14.5px/20px var(--font-text); }
+.daily-head .v { font: 700 22px/28px var(--font-display); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.daily-plot { position: relative; height: 132px; margin: 14px 34px 0 0; }
+.daily-grid span { position: absolute; right: -34px; left: 0; height: 0; border-top: 0.6px solid var(--rule); }
+.daily-grid span:last-child { border-top: 1px solid var(--border); }
+.daily-grid i { position: absolute; top: -8px; right: 0; color: var(--faint); font: 500 11px/16px var(--font-text); font-style: normal; font-variant-numeric: tabular-nums; }
+.daily-avg { position: absolute; right: 0; left: 0; z-index: 1; height: 0; border-top: 1.5px dashed var(--muted); pointer-events: none; }
+.daily-avg i { position: absolute; top: -9px; right: -34px; padding: 0 2px; background: var(--surface); color: var(--muted); font: 600 11px/16px var(--font-text); font-style: normal; }
+.daily-bars { position: absolute; inset: 0; display: flex; align-items: flex-end; gap: 3px; }
+.db { flex: 1; display: flex; align-items: flex-end; justify-content: center; min-width: 0; height: 100%; padding: 0; border: 0; background: none; }
+.db span {
+  display: block;
+  width: 100%;
+  max-width: 10px;
+  border-radius: var(--radius-chip);
+  background: linear-gradient(0deg, color-mix(in srgb, var(--g-living) 46%, var(--surface)), var(--g-living));
+  transition: height var(--dur-ring) var(--ease-out), opacity var(--dur-press) ease;
+}
+.daily-bars.flat .db span { height: 0 !important; }
+.db.future span { height: 3px !important; background: var(--well); }
+.daily-plot:hover .db:not(.sel) span, .daily-plot:focus-within .db:not(.sel) span { opacity: 0.45; }
+.db.sel span { background: var(--accent-ink); }
+.db:focus-visible { outline: none; }
+.db:focus-visible span { outline: 2px solid var(--accent); outline-offset: 2px; }
+.daily-x { display: flex; justify-content: space-between; margin: 8px 34px 0 0; color: var(--faint); font: 500 12px/16px var(--font-text); font-variant-numeric: tabular-nums; }
+
+/* ---------- 분류 막대 (예산 눈금) ---------- */
+
+.catbar { position: relative; height: 8px; margin-top: 8px; border-radius: var(--radius-chip); background: var(--well); }
+.catbar > span { position: absolute; inset: 0 auto 0 0; border-radius: var(--radius-chip); background: linear-gradient(90deg, color-mix(in srgb, var(--g-living) 46%, var(--surface)), var(--g-living)); transition: width var(--dur-ring) var(--ease-out); }
+.rows.flat .catbar > span { width: 0 !important; }
+.catbar > span.over { background: linear-gradient(90deg, color-mix(in srgb, var(--negative) 46%, var(--surface)), var(--negative)); }
+.catbar > i { position: absolute; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; border-radius: 2px; background: var(--text); }
+
+@media (prefers-reduced-motion: reduce) {
+  .db span, .catbar > span { transition: none; }
+}
+
 /* ---------- 두 사람 월급의 흐름 (PayFlow) ---------- */
 
 .flow-lanes { display: grid; gap: 24px; }

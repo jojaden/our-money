@@ -5,9 +5,30 @@ import { useId, useLayoutEffect, useRef } from "react";
 /**
  * 빛을 머금은 튜브 게이지 (docs/design-system README "게이지와 막대").
  * 채운 호는 옅은 시작에서 진한 끝(지금 자리)으로 번지고, 굵기 방향으로 은은한 입체(안쪽 그늘·바깥쪽 빛)를 덧씌우며,
- * 둘레에 같은 색 빛이 돈다. 끝 점은 테두리 없는 흰 점. 반원(half)은 홈 첫 카드, 270°(ring)는 작은 카드에 쓴다.
+ * 둘레에 같은 색 빛이 돈다. 끝 점은 테두리 없는 흰 점. 반원(half)은 홈 첫 카드, 270°(ring)는 작은 카드,
+ * 겹친 반원(rb0 바깥·rb1 안쪽)은 가계부 무지개 게이지에 쓴다.
  */
 type Pt = [number, number];
+
+/** 무지개 게이지의 겹친 반원 한 겹 (같은 중심, 같은 viewBox) */
+function rainbow(r: number) {
+  const [cx, cy, w] = [160, 156, 18];
+  return {
+    box: "0 0 320 168",
+    d: `M${cx - r} ${cy} A${r} ${r} 0 0 1 ${cx + r} ${cy}`,
+    text: null,
+    c: [cx, cy, r],
+    w,
+    halo: 6,
+    knob: 5,
+    mile: [3.5, 1.8],
+    at: (p: number): Pt => {
+      const a = Math.PI * (1 - p);
+      return [cx + r * Math.cos(a), cy - r * Math.sin(a)];
+    },
+  } as const;
+}
+
 const ARC = {
   half: {
     box: "0 0 300 160",
@@ -38,6 +59,9 @@ const ARC = {
       return [46 + 38 * Math.cos(a), 46 + 38 * Math.sin(a)];
     },
   },
+  // 호 사이 5px
+  rb0: rainbow(136),
+  rb1: rainbow(113),
 } as const;
 export type ArcShape = keyof typeof ARC;
 
@@ -70,6 +94,7 @@ function bands(shape: ArcShape) {
 /**
  * 튜브 호 그림. 채운 호(fill)와 끝 점(knob)은 ref 로 drawArc 가 옮긴다 — React 가 프레임마다 다시 그리지 않게.
  * mile: 이정표 자리(0–1, 오늘까지 예상). mileText 는 반원에서만 호를 따라 쓴다.
+ * label 이 없으면 읽지 않는 그림이다(겹친 호를 감싼 쪽이 한 번에 읽어 준다).
  */
 export function TubeArc({
   shape,
@@ -80,7 +105,7 @@ export function TubeArc({
   knobRef,
 }: {
   shape: ArcShape;
-  label: string;
+  label?: string;
   mile?: number | null;
   mileText?: string;
   fillRef: React.Ref<SVGGElement>;
@@ -96,7 +121,7 @@ export function TubeArc({
   const { outR, at: b } = bands(shape);
   const radial = { gradientUnits: "userSpaceOnUse" as const, cx: a.c[0], cy: a.c[1], r: outR };
   return (
-    <svg className={`tube ${shape}`} viewBox={a.box} role="img" aria-label={label}>
+    <svg className={`tube ${shape}`} viewBox={a.box} {...(label ? { role: "img", "aria-label": label } : { "aria-hidden": true })}>
       <defs>
         {textAt !== null && <path id={`${id}t`} d={a.text ?? undefined} />}
         {/* 빈자리: 흰 라일락 튜브 */}
