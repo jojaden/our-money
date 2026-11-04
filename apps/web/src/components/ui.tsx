@@ -196,7 +196,7 @@ export function Track({ value, max, tick }: { value: number; max: number; tick?:
  * 안드로이드 뒤로가기로 시트를 닫는다. 열릴 때 기록을 하나 쌓고,
  * 뒤로가기(popstate)면 닫고, 화면에서 닫으면 쌓은 기록을 되돌린다.
  */
-function useBackToClose(open: boolean, onOpenChange: (v: boolean) => void) {
+export function useBackToClose(open: boolean, onOpenChange: (v: boolean) => void) {
   const pushed = useRef(false);
   const close = useRef(onOpenChange);
   close.current = onOpenChange;
@@ -227,6 +227,7 @@ export function Sheet({
   children,
   footer,
   headerAction,
+  className = "",
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
@@ -234,13 +235,14 @@ export function Sheet({
   children: React.ReactNode;
   footer?: React.ReactNode;
   headerAction?: React.ReactNode;
+  className?: string;
 }) {
   useBackToClose(open, onOpenChange);
   return (
     <Drawer.Root open={open} onOpenChange={onOpenChange}>
       <Drawer.Portal>
         <Drawer.Overlay className="sheet-overlay" />
-        <Drawer.Content className="sheet" aria-describedby={undefined}>
+        <Drawer.Content className={`sheet ${className}`} aria-describedby={undefined}>
           <div className="sheet-handle" aria-hidden="true" />
           <div className="sheet-head">
             <Drawer.Title asChild>
