@@ -185,19 +185,6 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
 .firstrun .btn { margin-top: 20px; }
 
 
-/* ---------- 로그인 ---------- */
-
-.gate {
-  display: grid;
-  place-items: center;
-  min-height: 100dvh;
-  padding: 24px;
-}
-.gate .box { width: min(400px, 100%); }
-.gate h1 { margin-top: 24px; font-size: 28px; font-weight: 700; letter-spacing: -0.02em; }
-.gate p { margin-top: 8px; color: var(--muted); }
-.gate .btn { margin-top: 28px; }
-
 /* ---------- 설정 ---------- */
 
 .set-sec { display: grid; gap: 12px; }

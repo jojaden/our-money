@@ -1,5 +1,5 @@
-/* 순간 — 100% 축하(Celebrate). 로그인·로딩의 따뜻한 무대도 여기에 둔다
-   규칙: docs/design-system README "움직임", components/Celebrate/README.md */
+/* 순간 — 100% 축하(Celebrate), 로그인·로딩의 따뜻한 무대(Login·Loading)
+   규칙: docs/design-system README "움직임", components/Celebrate·Login·Loading/README.md */
 
 /* ---------- 100% 축하 ---------- */
 
@@ -100,4 +100,83 @@
   .celebrate, .celebrate .bloom, .celebrate .rays, .celebrate .spark, .celebrate .big, .celebrate h2, .done-chips li, .celebrate .next { animation: none; }
   .celebrate .bead { display: none; }
   .celebrate.leaving { animation: celebrate-out 1ms both; }
+}
+
+/* ---------- 따뜻한 무대: 로그인·로딩·연결 실패 ---------- */
+
+/* 화면 끝까지 복숭아빛 무대를 그리고(상태 막대 색도 warm-100), 글과 버튼은 안전 영역 안에 둔다 */
+.stage-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100dvh;
+  padding: env(safe-area-inset-top, 0px) max(var(--edge), env(safe-area-inset-right, 0px)) calc(30px + env(safe-area-inset-bottom, 0px)) max(var(--edge), env(safe-area-inset-left, 0px));
+  overflow: hidden;
+  background: radial-gradient(130% 75% at 50% 36%, color-mix(in srgb, var(--warm-50) 35%, var(--surface)) 0%, var(--warm-50) 40%, var(--warm-100) 100%);
+  text-align: center;
+}
+.stage-screen .scene { position: relative; flex: none; width: min(100%, 390px); height: 250px; margin-top: 70px; }
+.stage-screen .brand { position: absolute; top: 20px; left: 50%; width: 174px; margin-left: -87px; }
+.stage-screen .roof { display: block; width: 124px; margin: 0 auto 12px; overflow: visible; }
+.stage-screen .roof polyline { fill: none; stroke: var(--primary); stroke-width: 10; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 6px 8px color-mix(in srgb, var(--primary) 28%, transparent)); }
+.stage-screen .pair { position: relative; height: 104px; }
+/* 동전: 왼쪽 위에서 빛을 받은 둥근 면. 겹친 자리는 흰 렌즈(앱 아이콘과 같음) */
+.stage-screen .coin {
+  position: absolute;
+  top: 0;
+  width: 104px;
+  height: 104px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 34% 30%, color-mix(in srgb, var(--p) 22%, var(--surface)) 0%, color-mix(in srgb, var(--p) 58%, var(--surface)) 42%, color-mix(in srgb, var(--p) 88%, var(--surface)) 100%);
+  box-shadow: inset -8px -12px 20px color-mix(in srgb, var(--q) 14%, transparent), 0 16px 26px -12px color-mix(in srgb, var(--p) 60%, transparent);
+}
+.stage-screen .coin.a { --p: var(--a); --q: var(--a-ink); left: 0; }
+.stage-screen .coin.b { --p: var(--b); --q: var(--b-ink); left: 70px; overflow: hidden; }
+.stage-screen .lens { position: absolute; top: 0; left: -70px; width: 104px; height: 104px; border-radius: 50%; background: radial-gradient(circle at 50% 40%, var(--surface) 55%, color-mix(in srgb, var(--b) 10%, var(--surface)) 100%); }
+.stage-screen .floor { position: absolute; top: 200px; left: 50%; width: 176px; height: 22px; margin-left: -88px; border-radius: 50%; background: radial-gradient(closest-side, color-mix(in srgb, var(--text) 15%, transparent), transparent); }
+/* 곁의 금빛 동전 둘: 멀리 흐린 것, 가까이 기운 것 (움직이지 않는다) */
+.stage-screen .obj { position: absolute; border-radius: 50%; background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--g-allowance) 22%, var(--surface)) 0%, color-mix(in srgb, var(--g-allowance) 70%, var(--surface)) 40%, var(--g-allowance) 78%, color-mix(in srgb, var(--g-allowance) 70%, var(--warning)) 100%); box-shadow: inset 0 0 0 4px color-mix(in srgb, var(--surface) 30%, transparent); }
+.stage-screen .obj.far { top: 22px; left: -24px; width: 76px; height: 76px; opacity: 0.8; filter: blur(5px); }
+.stage-screen .obj.near { top: 188px; right: 38px; width: 32px; height: 32px; transform: rotate(-20deg) scaleX(0.78); }
+
+/* 계속 움직이는 것은 하나: 로그인은 브랜드가 떠오르고, 로딩은 두 동전이 다가갔다 멀어진다(transform 만) */
+.scene.bob .brand { animation: stage-bob var(--dur-breathe) var(--ease-breathe) infinite; }
+.scene.bob .floor { animation: stage-shade var(--dur-breathe) var(--ease-breathe) infinite; }
+.scene.meet .coin.a { animation: stage-meet-a var(--dur-breathe) var(--ease-breathe) infinite; }
+.scene.meet .coin.b { animation: stage-meet-b var(--dur-breathe) var(--ease-breathe) infinite; }
+.scene.meet .lens { animation: stage-meet-l var(--dur-breathe) var(--ease-breathe) infinite; }
+@keyframes stage-bob { 50% { transform: translateY(-6px); } }
+@keyframes stage-shade { 50% { transform: scaleX(0.88); opacity: 0.7; } }
+@keyframes stage-meet-a { 0%, 100% { transform: translateX(-10px); } 50% { transform: none; } }
+@keyframes stage-meet-b { 0%, 100% { transform: translateX(10px); } 50% { transform: none; } }
+@keyframes stage-meet-l { 0%, 100% { transform: translateX(-20px); } 50% { transform: none; } }
+
+.stage-screen .copy { display: grid; gap: 10px; width: min(100%, 360px); margin-top: 22px; }
+.stage-screen h1 { font: 700 28px/34px var(--font-text); letter-spacing: -0.02em; text-wrap: balance; }
+.stage-screen.loading h1 { font-size: 26px; line-height: 32px; }
+.stage-screen .copy p { color: var(--muted); font: 400 17px/26px var(--font-text); text-wrap: balance; overflow-wrap: anywhere; }
+.stage-screen .mail { color: var(--text); font-weight: 600; }
+/* 버튼은 엄지가 닿는 화면 맨 아래 */
+.stage-screen .actions { display: grid; gap: 12px; width: min(100%, 400px); margin-top: auto; padding-top: 32px; }
+.stage-screen .fine { color: var(--faint); font: 500 12.5px/16px var(--font-text); }
+.stage-screen .stage-secondary { background: var(--surface); color: var(--accent-ink); box-shadow: var(--shadow-card); }
+
+/* 로딩: 1초 안에 끝나면 무대 바탕만 보이고 동전·글은 뜨지 않는다 */
+.stage-screen.loading .scene, .stage-screen.loading .copy { animation: stage-appear 320ms var(--ease-out) 1s both; }
+@keyframes stage-appear { from { opacity: 0; } }
+
+/* 낮은 화면(가로 폰): 무대를 줄이고 위 여백을 좁힌다 */
+@media (max-height: 620px) {
+  .stage-screen .scene { margin-top: 12px; margin-bottom: -70px; scale: 0.72; transform-origin: top center; }
+  .stage-screen .copy { margin-top: 8px; }
+}
+/* 넓은 화면(태블릿·데스크톱): 엄지 자리 대신 글 바로 아래에, 전체를 가운데로 */
+@media (min-width: 720px) and (min-height: 621px) {
+  .stage-screen { justify-content: center; }
+  .stage-screen .scene { margin-top: 0; }
+  .stage-screen .actions { margin-top: 0; padding-top: 36px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scene.bob .brand, .scene.bob .floor, .scene.meet .coin, .scene.meet .lens, .stage-screen.loading .scene, .stage-screen.loading .copy { animation: none; }
 }
