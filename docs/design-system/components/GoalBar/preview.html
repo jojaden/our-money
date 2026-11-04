@@ -1,0 +1,29 @@
+<!-- @dsCard group="Cards" height=210 subtitle="목표 진행: '모은 돈 / 목표'와 얇은 막대" -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alan+Sans:wght@300..900&family=Noto+Sans+KR:wght@400..800&display=swap">
+<style>
+  body { margin: 0; background: var(--ground); color: var(--text); font-family: var(--font-text); word-break: keep-all; -webkit-font-smoothing: antialiased; }
+  .stage { padding: 20px; }
+  .card { max-width: 390px; display: grid; gap: 14px; padding: var(--pad); box-sizing: border-box; background: var(--surface); border-radius: var(--radius-card); box-shadow: var(--shadow-card); }
+  .card h3 { margin: 0; font: 700 20px/28px var(--font-text); letter-spacing: -0.02em; }
+  .card p { margin: 2px 0 0; color: var(--faint); font: 500 14.5px/20px var(--font-text); }
+  .goal { display: grid; gap: 8px; padding: 14px 16px; border-radius: var(--radius-inner); box-shadow: var(--shadow-card); }
+  .head { display: flex; justify-content: space-between; align-items: baseline; }
+  .head span { font: 500 16px/24px var(--font-text); }
+  .head b { font: 700 18px/24px var(--font-display); font-variant-numeric: tabular-nums; }
+  .now { color: var(--accent-ink); font: 600 14.5px/20px var(--font-display); font-variant-numeric: tabular-nums; }
+  .now span { color: var(--faint); font-weight: 500; }
+  .bar { height: 6px; border-radius: var(--radius-chip); background: var(--well); overflow: hidden; }
+  .bar i { display: block; height: 100%; width: 57%; border-radius: inherit; background: var(--primary); transform-origin: left; animation: grow var(--dur-ring) var(--ease-out) both; }
+  @keyframes grow { from { transform: scaleX(0); } }
+  @media (prefers-reduced-motion: reduce) { .bar i { animation: none; } }
+</style>
+<div class="stage">
+  <section class="card" aria-label="전세 보증금 모으기">
+    <div><h3>전세 보증금 모으기</h3><p>공동 적금 · 2027년 3월까지</p></div>
+    <div class="goal">
+      <div class="head"><span>목표</span><b>30,000,000원</b></div>
+      <div class="now">17,000,000 <span>/ 30,000,000원 · 57%</span></div>
+      <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="30000000" aria-valuenow="17000000" aria-label="모은 돈"><i></i></div>
+    </div>
+  </section>
+</div>

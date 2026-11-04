@@ -6,7 +6,8 @@ Household budget app for a couple (person `a` = repo owner, `b` = partner). Kore
 - `apps/web` — Next.js 16 static export (PWA), live at https://our-money-sage.vercel.app
 - `apps/mobile` — Kotlin Multiplatform: `core` (models, calc, Supabase), `ui` (Compose MP), `androidApp`, `iosApp` (placeholder)
 - `supabase/` — `schema.sql` + `migrations/` (shared by web and mobile)
-- `PRODUCT.md`, `DESIGN.md` — product and design source of truth; `CHANGELOG.md` — versions
+- `PRODUCT.md` — product source of truth; `CHANGELOG.md` — versions
+- `docs/design-system/` — design source of truth: `tokens.json`, rules in `README.md`, per-component `README.md` + live `preview.html`. `DESIGN.md` still describes the current, older UI until the app is migrated.
 - `scripts/secret_check.py`, `.githooks/`, `.github/` — secret blocking, CI, PR rules, releases
 
 ## Stack
@@ -18,6 +19,7 @@ Household budget app for a couple (person `a` = repo owner, `b` = partner). Kore
 - Web deploy (user runs it; prod deploy is blocked for Claude): `npx vercel deploy --prod --yes --cwd apps/web`
 - Mobile: `cd apps/mobile && source env.sh && ./gradlew :core:jvmTest :androidApp:assembleDebug`
 - Secrets: `python3 scripts/secret_check.py` (hook: `git config core.hooksPath .githooks`)
+- Design previews: `python3 scripts/design_preview.py`, then open `docs/design-system/index.html` (generated, not committed)
 - GitHub CLI: `~/.local/bin/gh` (repo `jojaden/our-money`, public)
 
 ## Git workflow
@@ -47,6 +49,7 @@ Use the `android-skills` plugin (install: `/plugin install android-skills@androi
 - Note: `android-skills:agp-9-upgrade` does not support KMP projects; don't use it here.
 
 ## Rules
+- UI work follows `docs/design-system/`: its token names (same as the CSS variables in `globals.css`) and component rules. Mark people with the half-coin `PersonGlyph`, never initials (both names can start with the same syllable).
 - Keep calc logic identical in `apps/web/src/lib/calc.ts` and `apps/mobile/core/.../calc/Calc.kt`; add a `core` test for any change.
 - Schema changes: add a new file in `supabase/migrations/` and mirror it in `schema.sql` (PR check enforces).
 - Membership is bound to the auth account: `is_member()`/`current_person()` check `members.user_id = auth.uid()` (never the JWT email claim). `ensure_user()` binds on first login only for a confirmed Google account in `auth.users`. anon has no table privileges; keep it that way for new tables (`revoke all … from anon`).

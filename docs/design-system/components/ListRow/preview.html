@@ -1,0 +1,34 @@
+<!-- @dsCard group="Lists" height=340 subtitle="사람 동전 반쪽, 고정폭 금액, 상태 알약, 들여 그은 구분선" -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alan+Sans:wght@300..900&family=Noto+Sans+KR:wght@400..800&display=swap">
+<style>
+  body { margin: 0; background: var(--ground); color: var(--text); font-family: var(--font-text); word-break: keep-all; -webkit-font-smoothing: antialiased; }
+  .stage { padding: 20px; }
+  .list { max-width: 390px; margin: 0; padding: 4px var(--pad); list-style: none; background: var(--surface); border-radius: var(--radius-card); box-shadow: var(--shadow-card); }
+  .item { position: relative; display: flex; align-items: center; gap: 12px; min-height: var(--row); }
+  .item + .item::before { content: ""; position: absolute; top: 0; left: var(--list-inset); right: 0; border-top: .6px solid var(--rule); }
+  .lead { flex: none; display: grid; place-items: center; width: 40px; height: 40px; border-radius: var(--radius-chip); }
+  .lead svg { width: 26px; height: 26px; }
+  .lead.a { --p: var(--a); background: var(--a-soft); }
+  .lead.b { --p: var(--b); background: var(--b-soft); }
+  .lead.joint { --p: var(--joint); background: var(--joint-soft); }
+  .lead .on { fill: var(--p); stroke: none; }
+  .lead .off { fill: none; stroke: var(--control); stroke-width: 1.4; }
+  .mid { flex: 1; min-width: 0; }
+  .t { font: 500 16px/24px var(--font-text); letter-spacing: -0.01em; }
+  .s { color: var(--faint); font: 500 12.5px/16px var(--font-text); }
+  .end { display: grid; justify-items: end; gap: 3px; }
+  .amt { font: 600 16px/24px var(--font-display); font-variant-numeric: tabular-nums; }
+  .pill { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: var(--radius-chip); font: 600 12.5px/1 var(--font-text); }
+  .neg { background: var(--pill-negative-bg); color: var(--pill-negative-ink); }
+  .warn { background: var(--pill-warning-bg); color: var(--pill-warning-ink); }
+  .pos { background: var(--pill-positive-bg); color: var(--pill-positive-ink); }
+  .neutral { background: var(--pill-neutral-bg); color: var(--pill-neutral-ink); }
+</style>
+<div class="stage">
+  <ul class="list">
+    <li class="item"><span class="lead a" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="on" d="M11.2 4.6a7.4 7.4 0 0 0 0 14.8Z"/><path class="off" d="M12.8 4.6a7.4 7.4 0 0 1 0 14.8Z"/></svg></span><div class="mid"><div class="t">현빈 급여통장 → 현빈 ISA</div><div class="s">ISA 주식 · 25일</div></div><div class="end"><span class="amt">500,000원</span><span class="pill neg">10/26 지남</span></div></li>
+    <li class="item"><span class="lead joint" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="on" d="M11.2 4.6a7.4 7.4 0 0 0 0 14.8Z"/><path class="on" d="M12.8 4.6a7.4 7.4 0 0 1 0 14.8Z"/></svg></span><div class="mid"><div class="t">관리비</div><div class="s">고정비 통장 · 자동이체</div></div><div class="end"><span class="amt">215,000원</span><span class="pill warn">D-2</span></div></li>
+    <li class="item"><span class="lead b" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="off" d="M11.2 4.6a7.4 7.4 0 0 0 0 14.8Z"/><path class="on" d="M12.8 4.6a7.4 7.4 0 0 1 0 14.8Z"/></svg></span><div class="mid"><div class="t">점심</div><div class="s">예진 용돈 · 카드</div></div><div class="end"><span class="amt">12,000원</span><span class="pill neutral">오늘</span></div></li>
+    <li class="item"><span class="lead joint" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="on" d="M11.2 4.6a7.4 7.4 0 0 0 0 14.8Z"/><path class="on" d="M12.8 4.6a7.4 7.4 0 0 1 0 14.8Z"/></svg></span><div class="mid"><div class="t">전세 보증금 적금</div><div class="s">공동 적금</div></div><div class="end"><span class="amt">500,000원</span><span class="pill pos">완료</span></div></li>
+  </ul>
+</div>

@@ -1,0 +1,17 @@
+<!-- @dsCard group="Controls" height=110 subtitle="떠 있는 흰 썸" -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alan+Sans:wght@300..900&family=Noto+Sans+KR:wght@400..800&display=swap">
+<style>
+  body { margin: 0; background: var(--ground); color: var(--text); font-family: var(--font-text); word-break: keep-all; -webkit-font-smoothing: antialiased; }
+  .stage { padding: 20px; }
+  .seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; max-width: 340px; padding: 3px; background: var(--well); border-radius: var(--radius-small); }
+  .seg button { height: 36px; border: 0; border-radius: 9px; background: transparent; color: var(--muted); font: 600 14.5px/1 var(--font-text); cursor: pointer; }
+  .seg button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .seg button[aria-pressed="true"] { background: var(--surface); color: var(--text); box-shadow: var(--shadow-raise); }
+</style>
+<div class="stage">
+  <div class="seg" role="group" aria-label="결제 수단">
+    <button type="button" aria-pressed="true">카드</button>
+    <button type="button" aria-pressed="false">현금</button>
+    <button type="button" aria-pressed="false">계좌이체</button>
+  </div>
+</div>

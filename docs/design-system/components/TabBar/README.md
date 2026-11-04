@@ -1,0 +1,24 @@
+# TabBar
+
+폰 화면 아래에 떠 있는 네 칸 캡슐 메뉴로, 오른쪽에 따로 뜬 원형 "지출 기록" 버튼과 함께 씁니다.
+
+## 구성
+- **캡슐:** 화면 좌우·아래(안전 영역 위)에서 `nav-inset`만큼 떨어집니다. 높이 `nav-h`, `radius-chip`, `surface` 86% + blur 22px·saturate 180%, `shadow-nav`입니다.
+- **칸:** 홈 `House`, 플랜 `Layers`, 체크 `ListChecks`, 가계부 `ReceiptText`입니다. 아이콘 22px에 `tab-label` 글자를 둡니다.
+- **고른 칸:**
+  - `tab-active-bg` 알약이 위아래 5px 안쪽에서 감쌉니다. 아이콘은 `primary`, 글자는 `accent-ink`입니다.
+  - 칸을 바꾸면 알약이 `dur-tab`·`ease-drawer`로 미끄러집니다.
+  - 누르는 동안 아이콘이 0.88로 줄었다가 `ease-press`로 돌아옵니다.
+- **원형 기록 버튼:** 캡슐에서 `nav-gap` 떨어지고, 지름 `nav-h`입니다. `primary` 채움, 흰 `Plus` 26px, `shadow-float`이며 누르면 0.94입니다.
+- **설정:** 캡슐에서 빠지고 위쪽 막대의 내 동전 반쪽 버튼으로 옮깁니다(TopBar).
+- **투명도 줄이기:** 캡슐 바탕이 불투명한 `surface`가 됩니다.
+- **데스크톱(1024px 이상):** 56px 레일로 바꾸고 설정을 아래에 둡니다.
+
+## 쓰는 쪽이 줄 것
+- 지금 페이지(`aria-current="page"`)
+- 페이지 아래 여백: `nav-h + nav-inset × 2 + env(safe-area-inset-bottom)`
+
+## 하지 말 것
+- 칸을 네 개보다 늘리지 않습니다.
+- 원형 버튼을 캡슐 안에 넣지 않습니다.
+- 캡슐을 화면 끝에 붙이지 않습니다.

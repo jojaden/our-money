@@ -1,0 +1,121 @@
+<!-- @dsCard group="Cards" height=720 subtitle="가계부 머리: 빛을 받은 튜브처럼 겹친 네 버킷 호와 곡선 패널 — '하루 지나기'로 값이 이어지는 모습을 보세요" -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alan+Sans:wght@300..900&family=Noto+Sans+KR:wght@400..800&display=swap">
+<style>
+  body { margin: 0; background: var(--ground); color: var(--text); font-family: var(--font-text); word-break: keep-all; -webkit-font-smoothing: antialiased; }
+  p { margin: 0; }
+  .stage { padding: 20px; }
+  .card { max-width: 390px; overflow: hidden; background: var(--surface); border-radius: var(--radius-card); box-shadow: var(--shadow-card); }
+  .sky { padding-bottom: 28px; background: linear-gradient(180deg, var(--sky-100) 0%, var(--glow) 100%); }
+  .top { display: flex; justify-content: space-between; align-items: center; padding: 14px var(--edge) 0; }
+  .pill { height: 32px; padding: 0 13px; border: 0; border-radius: var(--radius-chip); background: color-mix(in srgb, var(--surface) 72%, transparent); color: var(--muted); font: 600 14px/32px var(--font-text); }
+  .pill.act { color: var(--accent-ink); cursor: pointer; transition: transform var(--dur-press) var(--ease-press); }
+  .pill.act:active { transform: scale(.96); }
+  .pill.act:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .arch { position: relative; width: min(100% - 32px, 320px); margin: 12px auto 0; }
+  .arch svg { display: block; width: 100%; overflow: visible; filter: drop-shadow(0 6px 10px color-mix(in srgb, var(--accent-ink) 10%, transparent)); }
+  .arch path { fill: none; stroke-linecap: round; }
+  /* 튜브: 테두리(rim) → 몸통(body) → 가운데 빛(hi) 세 겹. 테두리는 몸통보다 아주 조금만 진하다 */
+  .tr.rim { stroke: var(--tr-rim, color-mix(in srgb, var(--lilac) 85%, var(--surface))); }
+  .tr.body { stroke: var(--tr-body, color-mix(in srgb, var(--lilac) 42%, var(--surface))); }
+  .tr.hi { stroke: var(--surface); stroke-opacity: .9; filter: blur(1px); }
+  .fl.rim { stroke: color-mix(in srgb, var(--k) 90%, var(--text)); }
+  .fl.body { stroke: var(--k); }
+  .fl.hi { stroke: var(--surface); stroke-opacity: .5; filter: blur(.8px); }
+  .fl { stroke-dasharray: 100 100; stroke-dashoffset: 100; transition: stroke-dashoffset var(--dur-value) var(--ease-value); }
+  .first .fl { transition-duration: var(--dur-ring); transition-timing-function: var(--ease-out); }
+  .mid { position: absolute; left: 0; right: 0; bottom: 6px; display: grid; justify-items: center; }
+  .mid b { font: 800 40px/44px var(--font-display); letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+  .mid b .u { margin-left: 1px; font-size: .5em; font-weight: 700; color: var(--faint); }
+  .mid small { color: var(--faint); font: 600 12.5px/16px var(--font-text); }
+
+  .panel { position: relative; margin-top: -34px; padding: 28px var(--pad) 12px; background: var(--surface); border-radius: 50% 50% 0 0 / 30px 30px 0 0; }
+  .sum { display: grid; justify-items: center; gap: 2px; text-align: center; }
+  .cap { color: var(--faint); font: 500 14.5px/20px var(--font-text); }
+  .fig { font: 700 34px/40px var(--font-display); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .fig .won { margin-left: 2px; font-size: .62em; font-weight: 600; color: var(--faint); }
+  .rows { margin-top: 18px; }
+  .row { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 12px 0; }
+  .row + .row { box-shadow: 0 -.6px 0 var(--rule); }
+  .row i { width: 10px; height: 10px; border-radius: var(--radius-chip); background: var(--k); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--k) 70%, var(--text)); }
+  .row .n { font: 600 16px/22px var(--font-text); }
+  .row .v { color: var(--faint); font: 500 13.5px/18px var(--font-display); font-variant-numeric: tabular-nums; }
+  .row .p { font: 600 17px/22px var(--font-display); font-variant-numeric: tabular-nums; }
+  .row .p.over { color: var(--negative); }
+  @media (prefers-reduced-motion: reduce) { .fl, .pill.act { transition: none; } }
+</style>
+<div class="stage">
+  <section class="card first" id="card" aria-label="이번 달 버킷별 사용">
+    <div class="sky">
+      <div class="top"><span class="pill">11월 · 21일 남음</span><button type="button" class="pill act" id="next">하루 지나기</button></div>
+      <div class="arch">
+        <svg viewBox="0 0 320 168" role="img" id="svg"></svg>
+        <div class="mid" aria-hidden="true"><b><span id="pct">0</span><span class="u">%</span></b><small>예산 사용</small></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="sum"><p class="cap">이번 달 쓴 돈</p><p class="fig"><span id="total">0</span><span class="won">원</span></p><p class="cap" id="of"></p></div>
+      <div class="rows" id="rows"></div>
+    </div>
+  </section>
+</div>
+<script>
+  const B = [
+    { k: "fixed", n: "고정비", c: "var(--g-fixed)", budget: 1500000, used: 1320000 },
+    { k: "living", n: "생활비", c: "var(--g-living)", budget: 1400000, used: 390000 },
+    { k: "allow", n: "용돈", c: "var(--g-allowance)", budget: 800000, used: 242600 },
+    { k: "save", n: "저축", c: "var(--g-saving)", budget: 1000000, used: 1000000 },
+  ];
+  // 바깥에서 안으로 반지름, 선 14px, 호 사이 5px
+  const R = [140, 121, 102, 83], W = 14, CX = 160, BY = 158;
+  const won = (v) => Math.round(v).toLocaleString("ko-KR");
+  const arc = (r) => `M${CX - r} ${BY} A${r} ${r} 0 0 1 ${CX + r} ${BY}`;
+  const sw = { rim: W, body: W - 2, hi: W * 0.38 };
+  const svg = document.getElementById("svg");
+  svg.innerHTML = B.map((b, i) => `<g style="--k: ${b.c}">` +
+    ["rim", "body", "hi"].map((l) => `<path class="tr ${l}" d="${arc(R[i])}" stroke-width="${sw[l]}"/>`).join("") +
+    ["rim", "body", "hi"].map((l) => `<path class="fl ${l}" data-k="${b.k}" pathLength="100" d="${arc(R[i])}" stroke-width="${sw[l]}"/>`).join("") +
+    `</g>`).join("");
+  document.getElementById("rows").innerHTML = B.map((b) =>
+    `<div class="row" style="--k: ${b.c}"><i></i><div><p class="n">${b.n}</p><p class="v" data-v="${b.k}"></p></div><b class="p" data-p="${b.k}"></b></div>`).join("");
+
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const budget = B.reduce((a, b) => a + b.budget, 0);
+  let shown = 0;
+  // 금액과 가운데 %가 호와 같은 박자로 이어서 바뀐다
+  const count = (to, ms) => {
+    const from = shown, t0 = performance.now();
+    const step = (t) => {
+      const p = reduce ? 1 : Math.min(1, (t - t0) / ms), e = p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
+      shown = from + (to - from) * e;
+      document.getElementById("total").textContent = won(shown);
+      document.getElementById("pct").textContent = String(Math.round((shown / budget) * 100));
+      if (p < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  };
+  const render = (ms) => {
+    let used = 0;
+    const label = [];
+    for (const b of B) {
+      const pct = Math.round((b.used / b.budget) * 100);
+      svg.querySelectorAll(`.fl[data-k="${b.k}"]`).forEach((p) => (p.style.strokeDashoffset = String(100 - Math.min(100, pct))));
+      document.querySelector(`[data-v="${b.k}"]`).textContent = `${won(b.used)} / ${won(b.budget)}원`;
+      const el = document.querySelector(`[data-p="${b.k}"]`);
+      el.textContent = pct + "%";
+      el.classList.toggle("over", pct > 100);
+      label.push(`${b.n} ${pct}%`);
+      used += b.used;
+    }
+    svg.setAttribute("aria-label", label.join(", "));
+    document.getElementById("of").textContent = `예산 ${won(budget)}원`;
+    count(used, ms);
+  };
+  requestAnimationFrame(() => requestAnimationFrame(() => render(1100)));
+  document.getElementById("next").addEventListener("click", () => {
+    document.getElementById("card").classList.remove("first");
+    B[1].used = Math.min(B[1].budget, B[1].used + 48000 + Math.round(Math.random() * 40000));
+    B[2].used = Math.min(B[2].budget, B[2].used + 12000 + Math.round(Math.random() * 20000));
+    render(800);
+  });
+</script>

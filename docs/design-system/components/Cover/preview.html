@@ -1,0 +1,43 @@
+<!-- @dsCard height=340 -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alan+Sans:wght@300..900&family=Noto+Sans+KR:wght@400..800&display=swap">
+<style>
+  body { margin: 0; background: var(--ground); }
+  .cover { position: relative; width: 960px; height: 340px; overflow: hidden; background: var(--ground); }
+  .cover svg { position: absolute; inset: 0; }
+  .indigo { fill: var(--primary); }
+  .ink { fill: var(--text); }
+  .pa { fill: var(--a); }
+  .pb { fill: var(--b); }
+  .teal { fill: var(--g-saving); }
+  .card { rx: var(--radius-card); }
+  .track { fill: none; stroke: var(--ground); stroke-opacity: .24; stroke-width: 11; }
+  .arc { fill: none; stroke: var(--ground); stroke-width: 11; stroke-linecap: round; }
+  .text { position: absolute; left: 40px; bottom: 36px; max-width: 440px; display: grid; gap: 12px; }
+  .name { margin: 0; color: var(--text); font: 700 104px/.95 var(--font-display); letter-spacing: -0.03em; word-break: keep-all; }
+  .tag { margin: 0; color: var(--faint); font: 500 14px/20px var(--font-text); }
+</style>
+<div class="cover">
+  <svg viewBox="0 0 960 340" width="960" height="340" aria-hidden="true">
+    <!--
+      blocks: primary 384×224 slab (bleeds top·right), text 196×140 (bleeds bottom), a 152×64 pill, b ⌀64 disc, g-saving 300×64 pill (bleeds right·bottom)
+      arrangement: one tall indigo slab with satellites under it, gaps = gap (20px) vertical and 16px horizontal
+      pattern: activity-ring arcs cut from ground over the slab — the app's signature budget ring (11px stroke, round caps) is the one shape only this system has
+      scales: radius-card 24 on slab and ink block; radius-chip pills (rx = half the 64px side); ring stroke 11 with 7px gaps
+    -->
+    <rect class="indigo card" x="600" y="-24" width="384" height="224"/>
+    <circle class="track" cx="780" cy="88" r="66"/>
+    <circle class="track" cx="780" cy="88" r="48"/>
+    <circle class="track" cx="780" cy="88" r="30"/>
+    <circle class="arc" cx="780" cy="88" r="66" stroke-dasharray="323.5 414.7" transform="rotate(-90 780 88)"/>
+    <circle class="arc" cx="780" cy="88" r="48" stroke-dasharray="168.9 301.6" transform="rotate(-90 780 88)"/>
+    <circle class="arc" cx="780" cy="88" r="30" stroke-dasharray="169.6 188.5" transform="rotate(-90 780 88)"/>
+    <rect class="ink card" x="480" y="220" width="196" height="140"/>
+    <rect class="pa" x="692" y="220" width="152" height="64" rx="32"/>
+    <circle class="pb" cx="892" cy="252" r="32"/>
+    <rect class="teal" x="692" y="300" width="300" height="64" rx="32"/>
+  </svg>
+  <div class="text">
+    <p class="name">우리 집<br>가계부</p>
+    <p class="tag">두 사람의 월급이 한 달을 지나가는 길을, 다정하게</p>
+  </div>
+</div>

@@ -259,6 +259,8 @@ components:
 
 # Design System: 우리 집 가계부 (OUR MONEY)
 
+> **새 디자인으로 옮기는 중:** 이 문서는 지금 앱(Apple 스타일)을 설명합니다. 새 기준은 [`docs/design-system/`](docs/design-system/README.md)입니다. 화면을 새로 만들거나 고칠 때는 그쪽을 따르고, 앱에 적용하는 PR에서 이 문서를 그 기준으로 바꿉니다.
+
 ## Overview
 
 **Creative North Star: "Two Streams, One Pot"**

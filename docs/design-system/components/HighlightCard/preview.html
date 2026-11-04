@@ -1,0 +1,27 @@
+<!-- @dsCard group="Cards" height=240 subtitle="화면당 하나: 옅은 하늘 그라데이션과 단계 점" -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alan+Sans:wght@300..900&family=Noto+Sans+KR:wght@400..800&display=swap">
+<style>
+  body { margin: 0; background: var(--ground); color: var(--text); font-family: var(--font-text); word-break: keep-all; -webkit-font-smoothing: antialiased; }
+  .stage { padding: 20px; }
+  .hl { max-width: 390px; display: grid; gap: 8px; padding: var(--pad); box-sizing: border-box; border-radius: var(--radius-card); background: linear-gradient(115deg, var(--sky-100), var(--sky-50)); }
+  .hl h3 { margin: 0; font: 700 20px/28px var(--font-text); letter-spacing: -0.02em; }
+  .steps { display: flex; align-items: center; gap: 14px; color: var(--muted); font: 500 16px/24px var(--font-text); }
+  .dots { display: flex; align-items: center; gap: 7px; }
+  .dots i { width: 7px; height: 7px; border-radius: var(--radius-chip); background: var(--step-todo); }
+  .dots i.done { background: var(--step-done); }
+  .dots i.now { width: 12px; height: 12px; background: var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 18%, transparent); animation: halo var(--dur-breathe) var(--ease-breathe) infinite; }
+  .reward { display: flex; align-items: baseline; gap: 8px; margin-top: 4px; }
+  .reward b { font: 700 20px/28px var(--font-display); font-variant-numeric: tabular-nums; }
+  .reward span { color: var(--faint); font: 500 14.5px/20px var(--font-text); }
+  @keyframes halo { 50% { box-shadow: 0 0 0 7px color-mix(in srgb, var(--accent) 10%, transparent); } }
+  @media (prefers-reduced-motion: reduce) { .dots i.now { animation: none; } }
+</style>
+<div class="stage">
+  <section class="hl" aria-label="전세 보증금 적금">
+    <h3>전세 보증금 적금</h3>
+    <div class="steps">4회차
+      <span class="dots" role="img" aria-label="12회 중 4회차"><i class="done"></i><i class="done"></i><i class="done"></i><i class="now"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+    </div>
+    <div class="reward"><b>500,000원</b><span>· 매달 25일 공동 적금으로</span></div>
+  </section>
+</div>
