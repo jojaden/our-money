@@ -145,7 +145,7 @@ export default function LedgerPage() {
           <BudgetCard
             id="allow-h"
             className="o2"
-            color="var(--g-allowance)"
+            bucket="allowance"
             compact
             title={`${nameOf(s, me)} 용돈`}
             status={allowance}

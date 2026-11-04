@@ -1,0 +1,155 @@
+/* 카드 — 튜브 게이지, 예산 카드(BudgetCard), 두 사람 월급의 흐름(PayFlow)
+   규칙: docs/design-system README "게이지와 막대", components/BudgetCard·PayFlow/README.md */
+
+/* ---------- 튜브 게이지 ---------- */
+
+/* 버킷이 게이지 색(--c)과 이정표 글자 색(--ink)을 정한다. 예산을 넘으면 통째로 negative */
+.budget.living { --c: var(--g-living); --ink: var(--accent-ink); }
+.budget.allowance { --c: var(--g-allowance); --ink: var(--warning); }
+.task-gauge { --c: var(--accent); --ink: var(--accent-ink); }
+.budget[data-over] { --c: var(--negative); --ink: var(--pill-negative-ink); }
+
+.tube { display: block; width: 100%; overflow: visible; }
+.tube path { fill: none; stroke-linecap: round; }
+/* 세 겹: 테두리 → 몸통 → 가운데 빛. 테두리는 몸통보다 아주 조금만 진하다 */
+.tube .tr.rim { stroke: var(--tr-rim, color-mix(in srgb, var(--lilac) 85%, var(--surface))); }
+.tube .tr.body { stroke: var(--tr-body, color-mix(in srgb, var(--lilac) 42%, var(--surface))); }
+.tube .tr.hi { stroke: var(--surface); stroke-opacity: 0.9; filter: blur(1px); }
+.tube .fl path { stroke-dasharray: 100 100; stroke-dashoffset: var(--off, 100); }
+.tube .fl .rim { stroke: color-mix(in srgb, var(--c) 90%, var(--text)); }
+.tube .fl .body { stroke: var(--c); }
+.tube .fl .hi { stroke: var(--surface); stroke-opacity: 0.5; filter: blur(0.8px); }
+/* 흰 카드 위 작은 게이지는 빈자리를 조금 더 진하게 */
+.tube.ring { --tr-rim: color-mix(in srgb, var(--lilac) 92%, var(--muted)); --tr-body: color-mix(in srgb, var(--lilac) 62%, var(--surface)); }
+.tube .mile { fill: var(--surface); stroke: var(--ink); }
+.tube .mile-t { fill: var(--ink); font: 600 11px var(--font-text); letter-spacing: 0.02em; }
+.tube .knob { fill: var(--surface); stroke: var(--c); filter: drop-shadow(0 0 5px color-mix(in srgb, var(--c) 55%, transparent)); }
+
+.pct { display: grid; justify-items: center; }
+.pct b { font: 800 44px/46px var(--font-display); letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+.pct .u { margin-left: 1px; color: var(--faint); font-size: 0.5em; font-weight: 700; }
+.pct small { color: var(--faint); font: 600 12.5px/16px var(--font-text); }
+
+/* ---------- 예산 카드 ---------- */
+
+.budget { overflow: hidden; padding: 0; }
+.budget p { margin: 0; }
+.budget-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: var(--pad) var(--pad) 0; }
+.budget-head h2 { font: 700 20px/28px var(--font-text); letter-spacing: -0.02em; }
+.budget-head .aside { color: var(--faint); font: 500 14.5px/20px var(--font-text); white-space: nowrap; }
+.budget > .empty { margin: 14px var(--pad) var(--pad); }
+.budget .cap { color: var(--faint); font: 500 14.5px/20px var(--font-text); }
+.budget .fig { font: 700 36px/42px var(--font-display); letter-spacing: -0.02em; }
+.budget .fig .won { margin-left: 2px; color: var(--faint); font-size: 0.62em; font-weight: 600; }
+.budget[data-over] .fig { color: var(--negative); }
+.budget .used { color: var(--muted); font: 500 14.5px/20px var(--font-text); }
+.budget .daily { color: var(--muted); font: 500 14.5px/20px var(--font-text); }
+.budget .daily b { color: var(--text); font-weight: 700; }
+
+.pace-pill { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px; border-radius: var(--radius-chip); font: 600 14px/30px var(--font-text); white-space: nowrap; }
+.pace-pill svg { flex: none; width: 16px; height: 16px; stroke-width: 2; }
+.pace-pill.good { background: var(--pill-positive-bg); color: var(--pill-positive-ink); }
+.pace-pill.warn { background: var(--pill-warning-bg); color: var(--pill-warning-ink); }
+.pace-pill.bad { background: var(--pill-negative-bg); color: var(--pill-negative-ink); }
+
+/* 큰 카드: 하늘 머리 + 반원 호 + 곡선 패널 */
+.budget.lead .sky { padding-bottom: 28px; background: linear-gradient(180deg, var(--sky-100) 0%, var(--glow) 100%); }
+.budget.lead .arc { position: relative; width: min(100% - 40px, 300px); margin: 6px auto 0; }
+.budget.lead .arc .pct { position: absolute; right: 0; bottom: 14px; left: 0; }
+.budget.lead .panel {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  margin-top: -30px;
+  padding: 26px var(--pad) var(--pad);
+  border-radius: 50% 50% 0 0 / 30px 30px 0 0;
+  background: var(--surface);
+  text-align: center;
+}
+.budget.lead .pace-pill { margin-top: 14px; }
+.budget.lead .daily { margin-top: 8px; }
+.budget .kinds { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; width: 100%; margin: 18px 0 0; text-align: left; }
+.budget .kinds div { padding: 10px; border-radius: var(--radius-small); background: var(--well); }
+.budget .kinds dt { color: var(--faint); font: 500 12.5px/16px var(--font-text); }
+.budget .kinds dd { margin: 2px 0 0; font: 600 15px/22px var(--font-display); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.budget .kinds dd span { margin-left: 1px; color: var(--faint); font-size: 0.8em; }
+
+/* 작은 카드: 왼쪽 답 숫자 + 오른쪽 270° 게이지 */
+.budget.compact .fig { font-size: 28px; line-height: 34px; }
+.budget.compact .used { text-wrap: balance; }
+.budget-body { display: grid; grid-template-columns: minmax(0, 1fr) 96px; align-items: center; gap: 12px; padding: 14px var(--pad) 0; }
+.mini, .task-gauge { position: relative; flex: none; width: 96px; height: 96px; }
+.mini .pct, .task-gauge .pct { position: absolute; inset: 0; place-content: center; text-align: center; }
+.mini .pct b, .task-gauge .pct b { font-size: 20px; line-height: 22px; letter-spacing: -0.02em; }
+.budget-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; padding: 14px var(--pad) 0; }
+.budget .kinds-line { padding: 12px var(--pad) var(--pad); color: var(--faint); font: 500 12.5px/16px var(--font-text); }
+.budget-foot:empty { display: none; }
+
+/* 할 일 진행 (홈 할 일 카드) */
+.task-gauge { width: 80px; height: 80px; }
+.task-gauge .pct b { font-size: 16px; line-height: 18px; letter-spacing: -0.03em; }
+
+/* ---------- 두 사람 월급의 흐름 (PayFlow) ---------- */
+
+.flow-lanes { display: grid; gap: 24px; }
+.flow-who { display: flex; align-items: center; gap: 10px; }
+.flow-who .name { font: 600 16px/24px var(--font-text); }
+.flow-who .inc { margin-left: auto; font: 600 16px/24px var(--font-display); }
+.flow-who .inc .unit { color: var(--faint); font-size: 0.8em; }
+.flow-track { position: relative; margin-top: 12px; }
+/* 한 줄로 이어 붙인 튜브. 조각 사이 2px 은 카드 바탕이 비친다 */
+.flow-bar {
+  position: relative;
+  display: flex;
+  gap: 2px;
+  height: 14px;
+  overflow: hidden;
+  border-radius: var(--radius-chip);
+  background: var(--surface);
+  clip-path: inset(0 100% 0 0 round 7px);
+  transition: clip-path var(--dur-ring) var(--ease-out), width var(--dur-value) var(--ease-value);
+}
+.flow-bar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 55%, transparent) 0%, color-mix(in srgb, var(--surface) 12%, transparent) 45%, transparent 70%);
+  box-shadow: inset 0 -1.5px 2px color-mix(in srgb, var(--text) 12%, transparent);
+  pointer-events: none;
+}
+.flow-lanes.shown .flow-bar { clip-path: inset(0 0 0 0 round 7px); }
+.flow-lane + .flow-lane .flow-bar { transition-delay: 120ms, 0ms; }
+.flow-bar .seg { min-width: 4px; background: var(--k); cursor: pointer; transition: opacity var(--dur-tab) var(--ease-out), flex-grow var(--dur-value) var(--ease-value); }
+.flow-lanes.focus .seg:not(.on) { opacity: 0.22; }
+/* 배분이 월급보다 많으면 월급 자리에 눈금 */
+.flow-tick { position: absolute; top: -4px; bottom: -4px; width: 2px; margin-left: -1px; border-radius: 2px; background: var(--text); }
+.flow-foot { display: flex; justify-content: space-between; gap: 12px; margin: 8px 0 0; color: var(--muted); font: 500 14.5px/20px var(--font-text); }
+.flow-foot b { color: var(--text); font-weight: 700; }
+.flow-foot b.neg { color: var(--negative); }
+.flow-foot i { display: inline-block; width: 8px; height: 8px; margin-right: 6px; border-radius: var(--radius-chip); background: var(--k); vertical-align: 1px; }
+/* 범례가 곧 고르기 버튼 */
+.flow-key {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px;
+  margin: 22px -7px 0;
+  padding-top: 14px;
+  background: linear-gradient(var(--rule), var(--rule)) 7px 0 / calc(100% - 14px) 0.6px no-repeat;
+}
+.flow-key button { display: inline-flex; align-items: center; gap: 5px; height: 30px; padding: 0 7px; border: 0; border-radius: var(--radius-chip); background: none; color: var(--muted); font: 500 12.5px/30px var(--font-text); transition: background-color var(--dur-press) var(--ease-out), transform var(--dur-press) var(--ease-press); }
+.flow-key button:active { transform: scale(0.96); }
+.flow-key i { width: 8px; height: 8px; border-radius: var(--radius-chip); background: var(--k); }
+.flow-key i.left { box-shadow: inset 0 0 0 1px var(--control); }
+.flow-key button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent-ink); font-weight: 600; }
+.flow-note { margin: 10px 0 0; color: var(--faint); font: 500 12.5px/16px var(--font-text); }
+@media (min-width: 1024px) {
+  .flow-lanes { grid-template-columns: 1fr 1fr; column-gap: 40px; }
+  .flow-key { justify-content: flex-start; column-gap: 16px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flow-bar, .flow-bar .seg, .flow-key button { transition: none; }
+}
