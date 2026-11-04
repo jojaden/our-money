@@ -22,7 +22,7 @@ function csv(rows: (string | number)[][]) {
 }
 
 export default function SettingsPage() {
-  const { data, upsert, toast, auth, me, setMe, reload, exportSpendings, setMyName } = useData();
+  const { data, upsert, toast, auth, me, setMe, reload, exportSpendings, setMyName, pending } = useData();
   const s = data.settings;
   const [draft, setDraft] = useState<Settings>(s);
   const myName = nameOf(s, me);
@@ -77,6 +77,12 @@ export default function SettingsPage() {
     a.download = `우리집가계부-지출-${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  // 로그아웃하면 이 기기에 보관한 저장이 지워지니, 남아 있으면 먼저 묻는다
+  const logout = () => {
+    if (pending > 0 && !window.confirm(`보내지 못한 저장 ${pending}건이 있어요. 로그아웃하면 이 기기에서 지워져요. 로그아웃할까요?`)) return;
+    void signOut();
   };
 
   const accountRow = (a: Account) => (
@@ -344,7 +350,7 @@ export default function SettingsPage() {
                   <button type="button" className="btn secondary sm" onClick={() => void exportCsv()}>
                     <Download aria-hidden="true" /> 지출 CSV 내보내기
                   </button>
-                  <button type="button" className="btn danger sm" onClick={() => void signOut()}>
+                  <button type="button" className="btn danger sm" onClick={logout}>
                     <LogOut aria-hidden="true" /> 로그아웃
                   </button>
                 </div>

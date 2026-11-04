@@ -414,10 +414,11 @@ export async function currentMember(): Promise<{ email: string; member: Member |
   if (!row) return { email, member: null };
   // 로그인한 계정을 멤버에 묶고 users 줄을 만들거나 맞춘다 (migrations/007).
   // 이메일이 같아도 이미 다른 계정이 묶여 있거나, 구글로 확인된 계정이 아니면 null → 멤버가 아니다.
+  // (행을 돌려주는 함수의 null 은 PostgREST 가 모든 칸이 null 인 객체로 주므로 id 로 본다)
   // 003 전이라 함수가 없으면(오류) 예전처럼 members 줄만으로 판단한다.
   const { data: user, error: rpcError } = await db.rpc("ensure_user");
   if (rpcError && toError(rpcError) instanceof RetryableError) throw toError(rpcError);
-  if (!rpcError && !user) return { email, member: null };
+  if (!rpcError && !(user as { id?: string } | null)?.id) return { email, member: null };
   return { email, member: row as Member };
 }
 
