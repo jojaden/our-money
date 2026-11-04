@@ -10,7 +10,7 @@
 - **섹션 이름표:** 묶음 위에 `small`·`faint`로 "이번 달 기록"을 둡니다.
 - **타일:** `surface`, `radius-inner`, `shadow-card`, 안쪽 14px입니다.
 - **아이콘:** 36px 동그라미에 lucide 18px입니다. 바탕은 상태 알약 색(`pill-*-bg`/`-ink`)이나 사람·공동 색(`a-soft`, `accent-soft`)만 씁니다.
-- **숫자:** `display` 18px/700, 단위는 0.72em `faint`입니다. 아래 설명은 `meta`·`faint`입니다.
+- **숫자:** `display` 18px/700, 단위는 0.72em `faint`입니다. 아래 설명은 `meta`·`faint`입니다. 폰에서 타일이 좁으니 금액은 백만 원부터 "200만원"처럼 줄입니다.
 
 ## 쓰는 쪽이 줄 것
 - 네 개의 값, 단위, 설명, 아이콘

@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { periodOf } from "@/lib/calc";
 import { num, parseYmd, short, ymd } from "@/lib/format";
+import { useRevealOnce } from "./reveal";
 
 /** 스크린타임처럼 하루별 지출 막대 + 평균선. 막대를 누르면 그날 금액을 보여준다. */
 export function DailyBars({ rows, month, cycleStart, today }: { rows: { date: string; amount: number }[]; month: string; cycleStart: number; today: string }) {
@@ -37,6 +38,7 @@ export function DailyBars({ rows, month, cycleStart, today }: { rows: { date: st
   })();
   const top = Math.ceil(peak / step) * step;
   const [sel, setSel] = useState<number | null>(null);
+  const grown = useRevealOnce("daily");
   const shown = sel !== null ? days[sel] : null;
   const label = (s: string) => {
     const d = parseYmd(s);
@@ -76,7 +78,7 @@ export function DailyBars({ rows, month, cycleStart, today }: { rows: { date: st
             <i>평균</i>
           </div>
         )}
-        <div className="daily-bars">
+        <div className={`daily-bars ${grown ? "" : "flat"}`}>
           {days.map((d, i) => (
             <button
               key={d.date}
