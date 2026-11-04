@@ -10,14 +10,16 @@
 
 <table>
   <tr>
-    <td align="center"><img src="docs/screenshots/home.png" width="200" alt="홈 화면"><br><sub>홈</sub></td>
-    <td align="center"><img src="docs/screenshots/plan.png" width="200" alt="플랜 화면"><br><sub>플랜</sub></td>
-    <td align="center"><img src="docs/screenshots/check.png" width="200" alt="체크 화면"><br><sub>체크</sub></td>
+    <td align="center"><img src="docs/screenshots/home.png" width="180" alt="홈 화면: 남은 공동 생활비 반원 게이지"><br><sub>홈</sub></td>
+    <td align="center"><img src="docs/screenshots/plan.png" width="180" alt="플랜 화면: 두 사람 월급이 나뉘는 막대"><br><sub>플랜</sub></td>
+    <td align="center"><img src="docs/screenshots/check.png" width="180" alt="체크 화면: 월급날 옮길 돈 진행선"><br><sub>체크</sub></td>
+    <td align="center"><img src="docs/screenshots/ledger.png" width="180" alt="가계부 화면: 무지개 게이지"><br><sub>가계부</sub></td>
   </tr>
   <tr>
-    <td align="center"><img src="docs/screenshots/ledger.png" width="200" alt="가계부 화면"><br><sub>가계부</sub></td>
-    <td align="center"><img src="docs/screenshots/spending.png" width="200" alt="지출 기록 시트"><br><sub>지출 기록</sub></td>
-    <td align="center"><img src="docs/screenshots/settings.png" width="200" alt="설정 화면"><br><sub>설정</sub></td>
+    <td align="center"><img src="docs/screenshots/spending.png" width="180" alt="지출 기록 시트"><br><sub>지출 기록</sub></td>
+    <td align="center"><img src="docs/screenshots/wallet.png" width="180" alt="지갑: 카드와 통장 묶음"><br><sub>지갑</sub></td>
+    <td align="center"><img src="docs/screenshots/card.png" width="180" alt="카드 상세: 카드값·결제일·최근 사용"><br><sub>카드 상세</sub></td>
+    <td align="center"><img src="docs/screenshots/settings.png" width="180" alt="설정 화면"><br><sub>설정</sub></td>
   </tr>
 </table>
 
@@ -49,7 +51,7 @@
 | | |
 |---|---|
 | 하는 일 | 그달 수입을 **고정비 · 공동 생활비 · 용돈 · 저축·투자** 네 묶음에 배분해요. 항목마다 누구 돈인지(현빈/예진/공동), 나가는 방식(카드 자동결제/계좌 자동이체/직접 이체/현금), 돈이 있어야 하는 계좌, 날짜를 정해요. |
-| 화면 | 두 사람의 월급이 어디로 가는지 막대 하나로 보여 줘요(사람별 레인). 배분률, 남는 돈, 저축률도 함께 보여 줘요. 저축 항목에 목표 금액을 넣으면 진행률이 나와요. |
+| 화면 | 두 사람의 월급이 어디로 가는지 사람마다 막대 하나로 보여 줘요. 배분률, 남는 돈, 저축률도 함께 보여 줘요. 저축 항목에 목표 금액을 넣으면 진행률이 나와요. |
 | 계산 | 공동 항목은 분담 비율로 나눠요. 비율은 **정한 비율**(예: 50:50)이나 **월급 비율** 중에서 골라요. A 몫은 반올림하고, B 는 나머지를 가져가서 합이 원래 금액과 꼭 맞아요 (`split`, `shareOf`, `lanes`). |
 | 데이터 | 반복 항목은 `plan_items`(템플릿)에 두고, 달마다 `month_items` 로 복사해 그달만 바꿀 수 있어요. id 는 `${달}:${템플릿 id}` 로 정해져 있어서, 두 폰이 동시에 달을 시작해도 항목이 두 번 생기지 않아요. |
 
@@ -75,7 +77,7 @@
 |---|---|
 | 하는 일 | 금액, 어디에 썼는지, 분류, 결제수단(카드/현금/계좌이체), 어떤 카드나 계좌, 누구 돈인지를 기록해요. |
 | 알아서 채워 주는 것 | **누구 돈인지는 "내 용돈"이 기본값**이에요(로그인한 사람). 메모를 치면 **같은 메모로 쓴 지난 기록**을 따라 분류를 고르고, 없으면 낱말 규칙(마트→장보기, 배달→외식)으로 골라요 (`guessFromMemo`). 최근 90일 동안 자주 쓴 지출은 버튼 하나로 다시 넣을 수 있어요 (`presetsOf`). 금액은 +1만/+5만/+10만으로 더할 수 있어요. |
-| 예산 | 공동 지출은 공동 생활비에서, 개인 지출은 그 사람 용돈에서 빠져요. 링은 사용률이고, 링 위의 점은 **오늘까지 써도 되는 예상선**이에요. "오늘까지 예상보다 61,613원 덜 썼어요"와 하루에 쓸 수 있는 금액도 보여 줘요 (`budgetStatus`, `spentToDay`). |
+| 예산 | 공동 지출은 공동 생활비에서, 개인 지출은 그 사람 용돈에서 빠져요. 반원 게이지는 사용률이고, 게이지 위 "오늘" 표시는 **오늘까지 써도 되는 예상선**이에요. "오늘까지 예상보다 61,613원 덜 썼어요"와 하루에 쓸 수 있는 금액도 보여 줘요 (`budgetStatus`, `spentToDay`). |
 | 화면 | 하루별 지출 막대와 평균선, 지난달 같은 날짜까지와 비교, 분류별 예산 대비, 결제수단·사람 필터를 보여 줘요. |
 
 ### 5. 한 달 단위와 달 넘기기
@@ -101,7 +103,7 @@
 ### 7. 폰 앱처럼
 
 - **PWA:** 홈 화면에 설치하면 주소창 없이 앱처럼 열려요. 서비스워커는 앱 껍데기, 폰트, 정적 파일만 캐시하고 데이터는 항상 서버에서 받아요.
-- **화면 느낌:** 아래에 떠 있는 캡슐 메뉴와 원형 기록 버튼, 바텀시트(뒤로 가기로 닫힘), 달 사이 스와이프, 굴리면 유리로 바뀌는 위쪽 막대, 숫자가 굴러가는 애니메이션, 진동 피드백을 넣었어요. 디자인 기준은 [`docs/design-system/`](docs/design-system/README.md)이에요.
+- **화면 느낌:** 아래에 떠 있는 캡슐 메뉴와 원형 기록 버튼, 바텀시트(뒤로 가기로 닫힘), 달 사이 스와이프, 굴리면 유리로 바뀌는 위쪽 막대, 숫자가 굴러가는 애니메이션, 진동 피드백을 넣었어요. 설정의 지갑에는 카드와 통장이 실물 카드처럼 겹쳐 있고, 누르면 카드값·결제일·최근 사용이 펼쳐져요. 한 달 할 일을 다 끝내면 축하 화면이 떠요. 디자인 기준은 [`docs/design-system/`](docs/design-system/README.md)이에요.
 - **앱 아이콘:** 한 지붕 아래 살구색·분홍색 동전 두 개가 겹치고, 겹친 부분(흰색)이 둘이 함께 관리하는 돈이에요 (`apps/web/scripts/icons.mjs` 로 생성).
 
 ## 설계
@@ -229,7 +231,7 @@ our-money/
 │  │  ├─ src/lib/categories.ts   분류 아이콘, 메모로 분류 추측, 자주 쓰는 지출
 │  │  ├─ src/lib/demo-data.ts    데모 예시 데이터 (가상)
 │  │  ├─ src/app/*/page.tsx      홈·플랜·체크·가계부·설정
-│  │  ├─ src/components/         바텀시트(지출·항목·계좌·분류·불러오기), 공용 UI(링·막대·숫자)
+│  │  ├─ src/components/         바텀시트(지출·항목·카드·통장·분류·불러오기), 공용 UI(게이지·막대·숫자)
 │  │  └─ scripts/icons.mjs       앱 아이콘 생성
 │  └─ mobile/                 Kotlin Multiplatform — 안드로이드(지금), iOS(나중에)
 │     ├─ core/                   모델, 계산(웹과 같은 규칙), 테스트
