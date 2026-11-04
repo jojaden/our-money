@@ -4,6 +4,7 @@ import { RegisterSW } from "@/components/RegisterSW";
 import "./tokens.css";
 import "./globals.css";
 import "./controls.css";
+import "./cards.css";
 import "./shell.css";
 
 

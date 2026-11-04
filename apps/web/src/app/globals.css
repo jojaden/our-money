@@ -17,7 +17,6 @@
 :root {
   --fs-title: 32px;
   --fs-section: 20px;
-  --fs-kpi: 34px;
   --fs-body: 16px;
   --fs-small: 14px;
   --fs-meta: 13px;
@@ -74,9 +73,6 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
 
 /* ---------- 숫자 ---------- */
 
-.kpi-label { color: var(--muted); font-size: var(--fs-small); }
-.kpi { font-size: var(--fs-kpi); line-height: 1.15; font-weight: 600; letter-spacing: -0.02em; }
-.kpi.sm { font-size: 26px; }
 .kpi-sub { margin-top: 6px; color: var(--muted); font-size: var(--fs-small); }
 .kpi-sub strong { color: var(--text); font-weight: 600; }
 
@@ -174,27 +170,6 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
 
 /* ---------- 레인 (두 사람 월급 흐름) ---------- */
 
-.lane + .lane { margin-top: 20px; }
-.lane-head { display: flex; align-items: center; gap: 10px; }
-.lane-head .name { font-weight: 600; }
-.lane-head .money { margin-left: auto; font-size: 15px; font-weight: 600; }
-.bar {
-  display: flex;
-  gap: 2px;
-  height: 28px;
-  margin-top: 10px;
-  border-radius: 8px;
-  overflow: hidden;
-  background: var(--g-left);
-}
-.bar > span { display: block; min-width: 2px; transition: flex-grow 320ms var(--ease-out); }
-.bar .fixed { background: var(--g-fixed); }
-.bar .living { background: var(--g-living); }
-.bar .allowance { background: var(--g-allowance); }
-.bar .saving { background: var(--g-saving); }
-.bar .left { background: var(--g-left); }
-.bar .over { background: var(--negative); }
-.lane-foot { display: flex; justify-content: space-between; margin-top: 6px; color: var(--muted); font-size: var(--fs-meta); }
 .legend { display: grid; margin-top: 18px; }
 .legend .li { display: grid; grid-template-columns: 10px 1fr auto auto; align-items: center; gap: 10px; padding: 7px 0; font-size: 14px; }
 .legend .dot { width: 10px; height: 10px; border-radius: 3px; }
@@ -205,6 +180,7 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
 .dot.allowance { background: var(--g-allowance); }
 .dot.saving { background: var(--g-saving); }
 .dot.left { background: var(--g-left); box-shadow: inset 0 0 0 1px var(--control); }
+.legend .dot, .dot { border-radius: 999px; }
 
 /* 이체 화살표 줄 */
 .row .t.flow { display: flex; flex-wrap: wrap; align-items: center; column-gap: 6px; row-gap: 0; white-space: normal; overflow: visible; }
@@ -258,9 +234,6 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
 }
 
 /* 범례·순서 보정 */
-.lanekey { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 18px; color: var(--muted); font-size: var(--fs-meta); }
-.lanekey span { display: inline-flex; align-items: center; gap: 6px; }
-.lanekey .dot { display: inline-block; width: 10px; height: 10px; border-radius: 3px; }
 .keytick { display: inline-flex; align-items: center; gap: 6px; }
 .keytick::before { content: ""; width: 2px; height: 12px; border-radius: 2px; background: var(--text); }
 @media (max-width: 1023px) {
@@ -282,17 +255,12 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
   .finding .clause, .kpi-sub .clause { display: block; }
 }
 
-.kinds { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--rule); color: var(--muted); font-size: var(--fs-small); }
-.kinds .money { color: var(--text); font-weight: 600; }
 
 
 /* =====================================================================
    2차 다듬기 — 토스·애플 참고: 굵은 숫자, 파란 주 버튼, 누르는 반응, 이어지는 모션
    ===================================================================== */
 
-.kpi { font-weight: 700; letter-spacing: -0.03em; }
-.kpi.sm { font-size: 26px; }
-.kpi .money .unit { font-size: 0.8em; color: var(--muted); }
 .bigamount { border-bottom: 2px solid var(--border); transition: border-color 200ms ease; }
 .bigamount:focus-within { border-color: var(--accent); }
 .bigamount input { font-size: 36px; letter-spacing: -0.03em; }
@@ -306,7 +274,6 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
 .track { height: 12px; }
 .track > .fill { transition: transform 900ms var(--ease-out); }
 @starting-style { .track > .fill { transform: scaleX(0) !important; } }
-.bar > span { transition: flex-grow 700ms var(--ease-out); }
 .split3 { border-top-color: var(--rule); }
 .split3 > div + div { border-left-color: var(--border); }
 .split3 .v { font-size: 16px; font-weight: 700; }
@@ -339,17 +306,11 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
    3차 — 애플 스타일: 큰 제목, 묶음 목록, 반투명 탭 바, 활동 링, 스크린타임 막대
    ===================================================================== */
 
-.kpi { font-size: var(--fs-kpi); line-height: 1.1; font-weight: 700; letter-spacing: -0.03em; font-variant-numeric: proportional-nums; font-feature-settings: normal; }
-.kpi.sm { font-size: 28px; }
-.kpi .money { font-variant-numeric: proportional-nums; font-feature-settings: normal; }
-.kpi .money .unit { font-size: 0.62em; font-weight: 600; color: var(--faint); margin-left: 2px; }
-.kpi-label { color: var(--faint); font-size: 14px; font-weight: 500; margin-bottom: 4px; }
 .kpi-sub { color: var(--faint); font-size: 14px; }
 .kpi-sub .money { color: var(--muted); }
 
 
 /* ---------- 예산 카드 + 활동 링 ---------- */
-.budget-main { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 16px; }
 .ring { position: relative; flex: none; }
 .ring svg { display: block; overflow: visible; }
 .ring-arc { transition: stroke-dashoffset 1100ms var(--ease-out); }
@@ -357,28 +318,6 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
 .ring-center { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; line-height: 1.1; }
 .ring-center b { font-size: 17px; font-weight: 700; letter-spacing: -0.02em; }
 .ring-center small { display: block; color: var(--faint); font-size: 11px; font-weight: 600; }
-.pace { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin-top: 16px; color: var(--muted); font-size: 14px; }
-.pace b { color: var(--text); font-weight: 600; }
-.pace-dot { width: 10px; height: 10px; border-radius: 999px; background: var(--surface); box-shadow: inset 0 0 0 2px var(--text); flex: none; }
-.pace-day { margin-left: auto; color: var(--faint); }
-.kinds { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; margin: 16px 0 0; padding: 14px 0 0; border-top: 1px solid var(--rule); }
-.kinds > div { padding: 0 12px; }
-.kinds > div:first-child { padding-left: 0; }
-.kinds > div + div { box-shadow: inset 1px 0 0 var(--rule); }
-.kinds dt { color: var(--faint); font-size: 13px; font-weight: 500; }
-.kinds dd { margin: 2px 0 0; font-size: 16px; font-weight: 600; }
-.kinds dd .money .unit { color: var(--faint); font-size: 0.85em; }
-
-/* ---------- 두 사람 레인: 얇은 구간 막대 ---------- */
-.bar { height: 12px; gap: 2px; border-radius: 999px; background: transparent; margin-top: 12px; }
-.bar > span:first-child { border-radius: 999px 0 0 999px; }
-.bar > span:last-child { border-radius: 0 999px 999px 0; }
-.bar > span:only-child { border-radius: 999px; }
-.bar .left { background: var(--g-left); }
-.lane + .lane { margin-top: 22px; }
-.lane-foot { margin-top: 8px; color: var(--faint); }
-.lanekey { gap: 8px 16px; margin-top: 20px; }
-.lanekey .dot, .legend .dot, .dot { border-radius: 999px !important; }
 
 /* ---------- 스크린타임식 하루 막대 ---------- */
 .daily-head { display: flex; align-items: baseline; gap: 8px; min-height: 30px; }
@@ -416,10 +355,6 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
   .ring-arc, .db span, .catbar > span { transition: none !important; }
 }
 
-@media (min-width: 1024px) {
-  .lanes-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 40px; }
-  .lanes-grid .lane + .lane { margin-top: 0; }
-}
 
 /* 요약 머리 (플랜·가계부) */
 .summary { margin: -4px 0 24px; }
@@ -443,7 +378,6 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
 .todo-progress .big { font-size: 26px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.1; }
 .todo-progress .big span { font-size: 16px; font-weight: 600; color: var(--faint); letter-spacing: -0.01em; }
 .todo-progress .sub { margin-top: 4px; color: var(--faint); font-size: 14px; font-weight: 500; }
-.todo-progress .ring-center b { font-size: 14px; }
 @media (max-width: 420px) {
   .summary-stats > div { padding: 0 10px; }
   .summary-stats dd { font-size: 15px; }

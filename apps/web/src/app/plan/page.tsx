@@ -9,7 +9,8 @@ import { useData } from "@/lib/store";
 import { goalProgress, groupTotals, incomeOf, itemsOf, lanes, monthRow, nameOf, ratioA, sum } from "@/lib/calc";
 import { num, short } from "@/lib/format";
 import { FirstRun, MonthHeader } from "@/components/MonthHeader";
-import { GroupLegend, LaneBar, Money, ThinTrack, Who } from "@/components/ui";
+import { GroupLegend, Money, ThinTrack, Who } from "@/components/ui";
+import { FlowLanes } from "@/components/PayFlow";
 import { Summary } from "@/components/Summary";
 import { IncomeSheet, ItemSheet } from "@/components/ItemSheet";
 
@@ -36,7 +37,6 @@ export default function PlanPage() {
   const allocated = sum(GROUP_ORDER, (g) => totals[g]);
   const left = income - allocated;
   const ls = lanes(s, m, items);
-  const scale = Math.max(...ls.map((l) => Math.max(l.income, l.allocated)), 1);
   const rA = ratioA(s, m);
   const accName = (id: string | null) => (id ? data.accounts.find((a) => a.id === id)?.name ?? "삭제된 계좌" : null);
 
@@ -133,9 +133,7 @@ export default function PlanPage() {
               공동비용 {Math.round(rA * 100)} : {100 - Math.round(rA * 100)}
             </span>
           </div>
-          {ls.map((l) => (
-            <LaneBar key={l.person} lane={l} s={s} scale={scale} />
-          ))}
+          <FlowLanes lanes={ls} s={s} />
           <GroupLegend totals={totals} income={income} />
         </section>
         {renderGroup("fixed")}

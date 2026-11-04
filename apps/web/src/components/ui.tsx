@@ -24,7 +24,7 @@ import { Drawer } from "vaul";
 import type { Group, Owner, Settings } from "@/lib/types";
 import { GROUP_LABEL, GROUP_ORDER } from "@/lib/types";
 import { num } from "@/lib/format";
-import { nameOf, type Lane } from "@/lib/calc";
+import { nameOf } from "@/lib/calc";
 import { useStore } from "@/lib/store";
 
 export function Money({ value, className = "", sign = false, animate = false }: { value: number | null | undefined; className?: string; sign?: boolean; animate?: boolean }) {
@@ -202,41 +202,6 @@ export function ThinTrack({ value, max }: { value: number; max: number }) {
   );
 }
 
-/** 한 사람의 월급이 어디로 가는지 보여주는 막대 */
-export function LaneBar({ lane, s, scale }: { lane: Lane; s: Settings; scale: number }) {
-  const parts = GROUP_ORDER.map((g) => ({ g, v: lane.byGroup[g] })).filter((p) => p.v > 0);
-  const left = Math.max(0, lane.left);
-  const over = Math.max(0, -lane.left);
-  const base = Math.max(scale, lane.allocated);
-  const label = parts.map((p) => `${GROUP_LABEL[p.g]} ${num(p.v)}원`).join(", ");
-  return (
-    <div className="lane">
-      <div className="lane-head">
-        <Who owner={lane.person} s={s} size="sm" />
-        <span className="name">{nameOf(s, lane.person)}</span>
-        <Money value={lane.income} />
-      </div>
-      <div className="bar" role="img" aria-label={`${nameOf(s, lane.person)} 월급 ${num(lane.income)}원: ${label}, 남음 ${num(lane.left)}원`}>
-        {parts.map((p) => (
-          <span key={p.g} className={p.g} style={{ flexGrow: p.v / base }} />
-        ))}
-        {left > 0 && <span className="left" style={{ flexGrow: left / base }} />}
-        {over > 0 && <span className="over" style={{ flexGrow: over / base }} />}
-        {base < scale && <span style={{ flexGrow: (scale - base) / scale, background: "transparent" }} />}
-      </div>
-      <div className="lane-foot">
-        <span>
-          공동 부담 <Money value={lane.jointShare} />
-        </span>
-        <span>
-          {lane.left >= 0 ? "남음 " : "부족 "}
-          <Money value={Math.abs(lane.left)} className={lane.left < 0 ? "neg" : ""} />
-        </span>
-      </div>
-    </div>
-  );
-}
-
 export function GroupLegend({ totals, income }: { totals: Record<Group, number>; income: number }) {
   const allocated = GROUP_ORDER.reduce((a, g) => a + totals[g], 0);
   const left = income - allocated;
@@ -382,23 +347,6 @@ export function AmountInput({
       value={value ? num(value) : ""}
       onChange={(e) => onChange(Math.min(max, Number(e.target.value.replace(/[^\d]/g, "")) || 0))}
     />
-  );
-}
-
-export function LaneKey() {
-  return (
-    <div className="lanekey" aria-hidden="true">
-      {GROUP_ORDER.map((g) => (
-        <span key={g}>
-          <i className={`dot ${g}`} />
-          {g === "living" ? "생활비" : GROUP_LABEL[g]}
-        </span>
-      ))}
-      <span>
-        <i className="dot left" />
-        남음
-      </span>
-    </div>
   );
 }
 
