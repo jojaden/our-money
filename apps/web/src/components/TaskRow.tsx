@@ -8,7 +8,8 @@ import { CheckButton, Money } from "./ui";
 import { dueState, dueText, waiting, type Task } from "./tasks";
 import { shortDate } from "@/lib/format";
 
-export function TaskRow({ task, expandable = false }: { task: Task; expandable?: boolean }) {
+/** fromShown: 카드 머리가 이미 "OO 급여통장에서"를 말할 때 이체 줄은 도착 계좌만 쓴다 */
+export function TaskRow({ task, expandable = false, fromShown = false }: { task: Task; expandable?: boolean; fromShown?: boolean }) {
   const { data, today } = useData();
   const s = data.settings;
   const [open, setOpen] = useState(false);
@@ -35,7 +36,9 @@ export function TaskRow({ task, expandable = false }: { task: Task; expandable?:
       <div className={`row ${task.done ? "done" : ""}`}>
         <CheckButton on={task.done} onToggle={task.toggle} label={label} />
         <div style={{ minWidth: 0 }}>
-          {task.kind === "transfer" ? (
+          {task.kind === "transfer" && fromShown ? (
+            <div className="t">{task.to}</div>
+          ) : task.kind === "transfer" ? (
             <div className="t flow">
               <span className="acc">{task.from}</span>
               <span className="acc">
