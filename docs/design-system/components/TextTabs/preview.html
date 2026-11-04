@@ -1,0 +1,35 @@
+<!-- @dsCard group="Controls" height=150 subtitle="기간 고르기: 글자만, 고른 칸은 옅은 인디고 알약 — 눌러 보세요" -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alan+Sans:wght@300..900&family=Noto+Sans+KR:wght@400..800&display=swap">
+<style>
+  body { margin: 0; background: var(--ground); color: var(--text); font-family: var(--font-text); word-break: keep-all; -webkit-font-smoothing: antialiased; }
+  .stage { padding: 20px; }
+  .label { margin: 0 0 8px; color: var(--faint); font: 500 14.5px/20px var(--font-text); }
+  .tabs { display: flex; gap: 4px; }
+  .tabs button { height: 36px; padding: 0 12px; border: 0; border-radius: var(--radius-chip); background: transparent; color: var(--faint); font: 500 14.5px/1 var(--font-text); cursor: pointer; transition: background-color var(--dur-press) var(--ease-out), color var(--dur-press) var(--ease-out); }
+  .tabs button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent-ink); font-weight: 600; }
+  .tabs button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .out { margin-top: 12px; max-width: 390px; display: flex; justify-content: space-between; align-items: baseline; padding: 16px 20px; box-sizing: border-box; background: var(--surface); border-radius: var(--radius-card); box-shadow: var(--shadow-card); }
+  .out span { font: 500 16px/24px var(--font-text); }
+  .out b { font: 700 20px/28px var(--font-display); font-variant-numeric: tabular-nums; }
+  @media (prefers-reduced-motion: reduce) { .tabs button { transition: none; } }
+</style>
+<div class="stage">
+  <p class="label">지출</p>
+  <div class="tabs" role="group" aria-label="기간">
+    <button type="button" aria-pressed="false" data-v="48,000" data-n="오늘 쓴 돈">오늘</button>
+    <button type="button" aria-pressed="false" data-v="412,600" data-n="이번 주 쓴 돈">이번 주</button>
+    <button type="button" aria-pressed="true" data-v="2,952,600" data-n="이번 달 쓴 돈">이번 달</button>
+    <button type="button" aria-pressed="false" data-v="31,480,200" data-n="올해 쓴 돈">올해</button>
+  </div>
+  <div class="out"><span id="n">이번 달 쓴 돈</span><b id="v">2,952,600원</b></div>
+</div>
+<script>
+  const tabs = document.querySelector(".tabs");
+  tabs.addEventListener("click", (e) => {
+    const b = e.target.closest("button");
+    if (!b) return;
+    tabs.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+    document.getElementById("n").textContent = b.dataset.n;
+    document.getElementById("v").textContent = b.dataset.v + "원";
+  });
+</script>

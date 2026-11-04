@@ -1,0 +1,106 @@
+<!-- @dsCard group="Cards" height=500 subtitle="두 사람 월급이 어디로 가는지 이어 붙인 튜브 막대로 — 아래 범례나 조각을 누르면 그 버킷만 남고 금액이 나와요" -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alan+Sans:wght@300..900&family=Noto+Sans+KR:wght@400..800&display=swap">
+<style>
+  body { margin: 0; background: var(--ground); color: var(--text); font-family: var(--font-text); word-break: keep-all; -webkit-font-smoothing: antialiased; }
+  p { margin: 0; }
+  .stage { padding: 20px; }
+  .card { max-width: 390px; padding: var(--pad); box-sizing: border-box; background: var(--surface); border-radius: var(--radius-card); box-shadow: var(--shadow-card); }
+  .head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+  .head h3 { margin: 0; font: 700 20px/28px var(--font-text); letter-spacing: -0.02em; }
+  .aside { color: var(--faint); font: 500 14.5px/20px var(--font-text); text-decoration: none; border-radius: 6px; }
+  .aside:focus-visible, .key button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .lanes { display: grid; gap: 24px; margin-top: 20px; }
+  .who { display: flex; align-items: center; gap: 10px; }
+  /* 사람 표시: 동전 반쪽 (이름 첫 글자가 같아도 구분된다) */
+  .mark { display: grid; place-items: center; width: 30px; height: 30px; border-radius: var(--radius-chip); }
+  .mark.a { --p: var(--a); background: var(--a-soft); }
+  .mark.b { --p: var(--b); background: var(--b-soft); }
+  .mark svg { width: 20px; height: 20px; }
+  .mark .on { fill: var(--p); }
+  .mark .off { fill: none; stroke: var(--control); stroke-width: 1.4; }
+  .who .name { font: 600 16px/24px var(--font-text); }
+  .who .inc { margin-left: auto; font: 600 16px/24px var(--font-display); font-variant-numeric: tabular-nums; }
+  .who .inc span { margin-left: 1px; font-size: .8em; color: var(--faint); }
+
+  /* 한 줄로 이어 붙인 튜브. 조각 사이 2px 은 카드 바탕이 비친다 */
+  .bar { position: relative; display: flex; gap: 2px; height: 14px; margin-top: 12px; overflow: hidden; border-radius: var(--radius-chip); background: var(--surface); clip-path: inset(0 100% 0 0 round 7px); transition: clip-path var(--dur-ring) var(--ease-out); }
+  .bar::after { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 55%, transparent) 0%, color-mix(in srgb, var(--surface) 12%, transparent) 45%, transparent 70%); box-shadow: inset 0 -1.5px 2px color-mix(in srgb, var(--text) 12%, transparent); }
+  .shown .bar { clip-path: inset(0 0 0 0 round 7px); }
+  .lane + .lane .bar { transition-delay: 120ms; }
+  .seg { min-width: 4px; background: var(--k); cursor: pointer; transition: opacity var(--dur-tab) var(--ease-out), flex-grow var(--dur-value) var(--ease-value); }
+  .focus .seg:not(.on) { opacity: .22; }
+  .foot { display: flex; justify-content: space-between; gap: 12px; margin-top: 8px; color: var(--muted); font: 500 14.5px/20px var(--font-text); }
+  .foot b { color: var(--text); font-weight: 700; }
+  .foot i { display: inline-block; width: 8px; height: 8px; margin-right: 6px; border-radius: var(--radius-chip); background: var(--k); vertical-align: 1px; }
+
+  /* 범례가 곧 고르기 버튼 */
+  .key { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px; margin: 22px -7px 0; padding-top: 14px; background: linear-gradient(var(--rule), var(--rule)) 7px 0 / calc(100% - 14px) .6px no-repeat; }
+  .key button { display: inline-flex; align-items: center; gap: 5px; height: 30px; padding: 0 7px; border: 0; border-radius: var(--radius-chip); background: none; color: var(--muted); font: 500 12.5px/30px var(--font-text); cursor: pointer; transition: background-color var(--dur-press) var(--ease-out), transform var(--dur-press) var(--ease-press); }
+  .key button:active { transform: scale(.96); }
+  .key i { width: 8px; height: 8px; border-radius: var(--radius-chip); background: var(--k); }
+  .key i.left { box-shadow: inset 0 0 0 1px var(--control); }
+  .key button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent-ink); font-weight: 600; }
+  .note { margin-top: 10px; color: var(--faint); font: 500 12.5px/16px var(--font-text); }
+  @media (prefers-reduced-motion: reduce) { .bar, .seg, .key button { transition: none; } }
+</style>
+<div class="stage">
+  <section class="card" aria-labelledby="flow-h">
+    <div class="head"><h3 id="flow-h">두 사람 월급의 흐름</h3><a class="aside" href="#">플랜 보기 ›</a></div>
+    <div class="lanes" id="lanes"></div>
+    <div class="key" id="key" role="group" aria-label="버킷 골라 보기"></div>
+    <p class="note" id="note"></p>
+  </section>
+</div>
+<script>
+  const won = (v) => v.toLocaleString("ko-KR");
+  const LABEL = { fixed: "고정비", living: "생활비", allowance: "용돈", saving: "저축", left: "남음" };
+  const COLOR = { fixed: "var(--g-fixed)", living: "var(--g-living)", allowance: "var(--g-allowance)", saving: "var(--g-saving)", left: "var(--g-left)" };
+  // 동전 반쪽: a 는 왼쪽, b 는 오른쪽이 채워진다
+  const HALF_L = "M11.2 4.6a7.4 7.4 0 0 0 0 14.8Z", HALF_R = "M12.8 4.6a7.4 7.4 0 0 1 0 14.8Z";
+  const glyph = (p) => `<svg viewBox="0 0 24 24" aria-hidden="true"><path class="${p === "a" ? "on" : "off"}" d="${HALF_L}"/><path class="${p === "b" ? "on" : "off"}" d="${HALF_R}"/></svg>`;
+  const LANES = [
+    { p: "a", name: "현빈", income: 3800000, joint: 2196450, by: { fixed: 930000, living: 700000, allowance: 400000, saving: 1108450 } },
+    { p: "b", name: "예진", income: 3200000, joint: 2196450, by: { fixed: 930000, living: 700000, allowance: 400000, saving: 905450 } },
+  ];
+  for (const l of LANES) l.left = l.income - Object.values(l.by).reduce((a, v) => a + v, 0);
+  // 두 막대를 같은 자로 잰다: 많은 쪽 월급(또는 배분)이 막대 끝
+  const SCALE = Math.max(...LANES.map((l) => Math.max(l.income, l.income - l.left)));
+
+  const foot = (l, g) => {
+    if (g) {
+      const v = g === "left" ? Math.max(0, l.left) : l.by[g];
+      return `<span><i style="--k: ${COLOR[g]}"></i>${LABEL[g]} <b>${won(v)}원</b> · 월급의 ${Math.round((v / l.income) * 100)}%</span>`;
+    }
+    return `<span>공동 부담 <b>${won(l.joint)}원</b></span><span>남음 <b>${won(l.left)}원</b></span>`;
+  };
+  const lanes = document.getElementById("lanes");
+  lanes.innerHTML = LANES.map((l) => {
+    const parts = Object.entries(l.by).filter(([, v]) => v > 0);
+    if (l.left > 0) parts.push(["left", l.left]);
+    const width = Math.max(l.income, l.income - l.left) / SCALE;
+    return `<div class="lane">
+      <div class="who"><span class="mark ${l.p}">${glyph(l.p)}</span><span class="name">${l.name}</span><b class="inc">${won(l.income)}<span>원</span></b></div>
+      <div class="bar" style="width: ${(width * 100).toFixed(2)}%" role="img" aria-label="${l.name} 월급 ${won(l.income)}원: ${parts.map(([g, v]) => `${LABEL[g]} ${won(v)}원`).join(", ")}">
+        ${parts.map(([g, v]) => `<span class="seg" data-g="${g}" style="--k: ${COLOR[g]}; flex-grow: ${v}"></span>`).join("")}
+      </div>
+      <p class="foot" aria-live="polite">${foot(l, "")}</p>
+    </div>`;
+  }).join("");
+  const key = document.getElementById("key");
+  key.innerHTML = Object.entries(LABEL).map(([g, n]) => `<button type="button" data-g="${g}" aria-pressed="false"><i class="${g}" style="--k: ${COLOR[g]}"></i>${n}</button>`).join("");
+  document.getElementById("note").textContent = `막대 길이는 두 사람 중 많은 월급(${won(SCALE)}원)에 맞춰요`;
+
+  // 같은 버킷을 다시 누르면 전체로 돌아간다
+  let picked = "";
+  const pick = (g) => {
+    picked = picked === g ? "" : g;
+    for (const b of key.children) b.setAttribute("aria-pressed", String(b.dataset.g === picked));
+    lanes.classList.toggle("focus", picked !== "");
+    lanes.querySelectorAll(".seg").forEach((s) => s.classList.toggle("on", s.dataset.g === picked));
+    LANES.forEach((l, i) => (lanes.children[i].querySelector(".foot").innerHTML = foot(l, picked)));
+  };
+  key.addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) pick(b.dataset.g); });
+  lanes.addEventListener("click", (e) => { const s = e.target.closest(".seg"); if (s) pick(s.dataset.g); });
+  requestAnimationFrame(() => requestAnimationFrame(() => lanes.classList.add("shown")));
+</script>

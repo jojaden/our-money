@@ -50,3 +50,6 @@ skills-lock.json
 *.pem
 *.p12
 *.key
+
+# 디자인 시스템 미리보기 (python3 scripts/design_preview.py 가 만든다)
+docs/design-system/index.html

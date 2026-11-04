@@ -1,0 +1,47 @@
+<!-- @dsCard group="Navigation" height=260 subtitle="떠 있는 캡슐 네 칸과 따로 뜬 원형 기록 버튼 — 칸을 눌러 보세요" -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alan+Sans:wght@300..900&family=Noto+Sans+KR:wght@400..800&display=swap">
+<style>
+  body { margin: 0; background: var(--ground); color: var(--text); font-family: var(--font-text); word-break: keep-all; -webkit-font-smoothing: antialiased; }
+  .stage { padding: 20px; }
+  .phone { position: relative; max-width: 390px; height: 220px; overflow: hidden; background: var(--ground); border-radius: var(--radius-card); box-shadow: var(--shadow-card); }
+  .peek { position: absolute; left: var(--edge); right: var(--edge); top: 18px; height: 170px; background: var(--surface); border-radius: var(--radius-card); box-shadow: var(--shadow-card); }
+  .dock { position: absolute; left: var(--nav-inset); right: var(--nav-inset); bottom: var(--nav-inset); display: flex; align-items: center; gap: var(--nav-gap); }
+  .capsule { position: relative; flex: 1; display: grid; grid-template-columns: repeat(4, 1fr); height: var(--nav-h); padding: 5px; box-sizing: border-box; border-radius: var(--radius-chip); background: color-mix(in srgb, var(--surface) 86%, transparent); -webkit-backdrop-filter: blur(22px) saturate(180%); backdrop-filter: blur(22px) saturate(180%); box-shadow: var(--shadow-nav); }
+  .pill { position: absolute; top: 5px; bottom: 5px; left: 5px; width: calc((100% - 10px) / 4); border-radius: var(--radius-chip); background: var(--tab-active-bg); transform: translateX(calc(var(--i, 0) * 100%)); transition: transform var(--dur-tab) var(--ease-drawer); }
+  .tab { position: relative; z-index: 1; display: grid; justify-items: center; align-content: center; gap: 2px; border: 0; border-radius: var(--radius-chip); background: none; color: var(--muted); font: 600 12px/16px var(--font-text); cursor: pointer; }
+  .tab svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: transform var(--dur-press) var(--ease-press); }
+  .tab:active svg { transform: scale(0.88); }
+  .tab[aria-current="page"] { color: var(--accent-ink); }
+  .tab[aria-current="page"] svg { stroke: var(--primary); }
+  .tab:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .fab { flex: none; display: grid; place-items: center; width: var(--nav-h); height: var(--nav-h); border: 0; border-radius: var(--radius-chip); background: var(--primary); color: var(--on-primary); box-shadow: var(--shadow-float); cursor: pointer; transition: transform var(--dur-press) var(--ease-press); }
+  .fab:active { transform: scale(0.94); }
+  .fab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .fab svg { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 2.25; stroke-linecap: round; }
+  @media (prefers-reduced-motion: reduce) { .pill, .tab svg, .fab { transition: none; } }
+  @media (prefers-reduced-transparency: reduce) { .capsule { background: var(--surface); -webkit-backdrop-filter: none; backdrop-filter: none; } }
+</style>
+<div class="stage">
+  <div class="phone">
+    <div class="peek" aria-hidden="true"></div>
+    <div class="dock">
+      <nav class="capsule" aria-label="주 메뉴" style="--i: 0">
+        <span class="pill" aria-hidden="true"></span>
+        <button type="button" class="tab" data-i="0" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>홈</button>
+        <button type="button" class="tab" data-i="1"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z"/><path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12"/><path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17"/></svg>플랜</button>
+        <button type="button" class="tab" data-i="2"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 5h8"/><path d="M13 12h8"/><path d="M13 19h8"/><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/></svg>체크</button>
+        <button type="button" class="tab" data-i="3"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 16H8"/><path d="M14 8H8"/><path d="M16 12H8"/><path d="M4 3a1 1 0 0 1 1-1 1.3 1.3 0 0 1 .7.2l.933.6a1.3 1.3 0 0 0 1.4 0l.934-.6a1.3 1.3 0 0 1 1.4 0l.933.6a1.3 1.3 0 0 0 1.4 0l.933-.6a1.3 1.3 0 0 1 1.4 0l.934.6a1.3 1.3 0 0 0 1.4 0l.933-.6A1.3 1.3 0 0 1 19 2a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1 1.3 1.3 0 0 1-.7-.2l-.933-.6a1.3 1.3 0 0 0-1.4 0l-.934.6a1.3 1.3 0 0 1-1.4 0l-.933-.6a1.3 1.3 0 0 0-1.4 0l-.933.6a1.3 1.3 0 0 1-1.4 0l-.934-.6a1.3 1.3 0 0 0-1.4 0l-.933.6a1.3 1.3 0 0 1-.7.2 1 1 0 0 1-1-1z"/></svg>가계부</button>
+      </nav>
+      <button type="button" class="fab" aria-label="지출 기록"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg></button>
+    </div>
+  </div>
+</div>
+<script>
+  const nav = document.querySelector(".capsule");
+  nav.addEventListener("click", (e) => {
+    const tab = e.target.closest(".tab");
+    if (!tab) return;
+    nav.style.setProperty("--i", tab.dataset.i);
+    nav.querySelectorAll(".tab").forEach((b) => (b === tab ? b.setAttribute("aria-current", "page") : b.removeAttribute("aria-current")));
+  });
+</script>

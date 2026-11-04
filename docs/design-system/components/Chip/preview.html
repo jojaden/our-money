@@ -1,0 +1,24 @@
+<!-- @dsCard group="Controls" height=120 subtitle="필터 칩: 고른 것은 옅은 인디고" -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alan+Sans:wght@300..900&family=Noto+Sans+KR:wght@400..800&display=swap">
+<style>
+  body { margin: 0; background: var(--ground); color: var(--text); font-family: var(--font-text); word-break: keep-all; -webkit-font-smoothing: antialiased; }
+  .stage { display: flex; flex-wrap: wrap; gap: 8px; padding: 20px; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; height: 38px; padding: 0 14px; border: 0; border-radius: var(--radius-chip); background: var(--well); color: var(--muted); font: 600 14.5px/1 var(--font-text); cursor: pointer; transition: transform .18s cubic-bezier(0.34, 1.36, 0.64, 1); }
+  .chip:active { transform: scale(0.95); }
+  .chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .chip[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent-ink); box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--accent) 30%, transparent); }
+  .mark { display: grid; place-items: center; width: 22px; height: 22px; margin-left: -6px; border-radius: var(--radius-chip); }
+  .mark svg { width: 16px; height: 16px; }
+  .mark.a { --p: var(--a); background: var(--a-soft); }
+  .mark.b { --p: var(--b); background: var(--b-soft); }
+  .mark.joint { --p: var(--joint); background: var(--joint-soft); }
+  .mark .on { fill: var(--p); stroke: none; }
+  .mark .off { fill: none; stroke: var(--control); stroke-width: 1.4; }
+  @media (prefers-reduced-motion: reduce) { .chip { transition: none; } }
+</style>
+<div class="stage" role="group" aria-label="누구 돈">
+  <button type="button" class="chip" aria-pressed="true">전체</button>
+  <button type="button" class="chip" aria-pressed="false"><span class="mark joint"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="on" d="M11.2 4.6a7.4 7.4 0 0 0 0 14.8Z"/><path class="on" d="M12.8 4.6a7.4 7.4 0 0 1 0 14.8Z"/></svg></span>공동</button>
+  <button type="button" class="chip" aria-pressed="false"><span class="mark a"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="on" d="M11.2 4.6a7.4 7.4 0 0 0 0 14.8Z"/><path class="off" d="M12.8 4.6a7.4 7.4 0 0 1 0 14.8Z"/></svg></span>현빈</button>
+  <button type="button" class="chip" aria-pressed="false"><span class="mark b"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="off" d="M11.2 4.6a7.4 7.4 0 0 0 0 14.8Z"/><path class="on" d="M12.8 4.6a7.4 7.4 0 0 1 0 14.8Z"/></svg></span>예진</button>
+</div>
