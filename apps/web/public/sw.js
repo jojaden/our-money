@@ -1,6 +1,6 @@
 // 앱 껍데기만 캐시한다. 데이터(Supabase)는 항상 네트워크에서 가져온다.
-const CACHE = "our-money-v4";
-const SHELL = ["/", "/plan/", "/check/", "/ledger/", "/settings/", "/manifest.webmanifest", "/icon-192.png", "/fonts/pretendard/pretendard.css"];
+const CACHE = "our-money-v5";
+const SHELL = ["/", "/plan/", "/check/", "/ledger/", "/settings/", "/manifest.webmanifest", "/icon-192.png", "/fonts/pretendard/pretendard.css", "/fonts/alan-sans/alan-sans.woff2"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));

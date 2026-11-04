@@ -1,4 +1,4 @@
-<!-- @dsCard group="Navigation" height=230 subtitle="내 동전 반쪽이 설정 버튼, 가운데 달 알약, 둥근 사각 화살표, 따뜻한 띠" -->
+<!-- @dsCard group="Navigation" height=470 subtitle="내 동전 반쪽이 설정 버튼, 둥근 사각 화살표, 따뜻한 띠. 굴리면 유리 + 작은 제목, 다른 달이면 이번 달로" -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alan+Sans:wght@300..900&family=Noto+Sans+KR:wght@400..800&display=swap">
 <style>
   body { margin: 0; background: var(--ground); color: var(--text); font-family: var(--font-text); word-break: keep-all; -webkit-font-smoothing: antialiased; }
@@ -13,23 +13,44 @@
   .me svg { width: 24px; height: 24px; }
   .me .on { fill: var(--p); stroke: none; }
   .me .off { fill: none; stroke: var(--control); stroke-width: 1.4; }
-  .month { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; height: var(--topbar-btn); padding: 0 16px; border: 0; border-radius: var(--radius-chip); background: color-mix(in srgb, var(--surface) 70%, transparent); box-shadow: var(--shadow-raise); color: var(--text); font: 600 15px/1 var(--font-text); cursor: pointer; }
-  .month small { color: var(--faint); font-weight: 500; white-space: nowrap; }
-  .month svg { margin-left: auto; width: 16px; height: 16px; fill: none; stroke: var(--faint); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .sq:focus-visible, .now:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .mini { flex: 1; min-width: 0; text-align: center; font: 600 16px/1 var(--font-text); letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .band .mini { visibility: hidden; }
   h1 { margin: 0; font: 700 32px/36px var(--font-display); letter-spacing: -0.02em; }
   .sub { margin-top: 6px; color: var(--faint); font: 400 14.5px/20px var(--font-text); }
+  .finding { margin-top: 12px; font: 600 18px/28px var(--font-text); letter-spacing: -0.015em; }
+  .cap { margin: 20px 0 8px; color: var(--faint); font: 500 14.5px/20px var(--font-text); }
+  .plain { max-width: 390px; display: grid; gap: 22px; padding: 16px var(--edge) 20px; box-sizing: border-box; }
+  .title-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .now { height: 32px; padding: 0 12px; border: 0; border-radius: var(--radius-chip); background: var(--tab-active-bg); color: var(--text); font: 600 13.5px/1 var(--font-text); cursor: pointer; transition: transform var(--dur-press) var(--ease-press); }
+  .now:active { transform: scale(0.96); }
+  .glass { max-width: 390px; box-sizing: border-box; padding: 10px var(--edge); border-radius: var(--radius-control); background: color-mix(in srgb, var(--surface) 72%, transparent); -webkit-backdrop-filter: blur(20px) saturate(180%); backdrop-filter: blur(20px) saturate(180%); box-shadow: inset 0 -0.5px 0 color-mix(in srgb, var(--text) 18%, transparent); }
 </style>
 <div class="stage">
   <header class="band">
     <div class="bar">
       <button type="button" class="sq me" aria-label="설정 (현빈)"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="on" d="M11.2 4.6a7.4 7.4 0 0 0 0 14.8Z"/><path class="off" d="M12.8 4.6a7.4 7.4 0 0 1 0 14.8Z"/></svg></button>
-      <button type="button" class="month">11월 <small>· 21일 남음</small><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+      <span class="mini" aria-hidden="true">11월</span>
       <button type="button" class="sq" aria-label="지난달"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg></button>
       <button type="button" class="sq" aria-label="다음 달"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button>
     </div>
     <div>
       <h1>11월</h1>
       <div class="sub">10월 25일 – 11월 24일 · 21일 남음</div>
+      <div class="finding">현빈 ISA로 옮길 돈 외 3건이 기한을 넘겼어요.</div>
     </div>
   </header>
+
+  <div class="cap">굴려서 큰 제목이 막대 밑으로 지나가면</div>
+  <div class="bar glass">
+    <button type="button" class="sq me" aria-label="설정 (현빈)"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="on" d="M11.2 4.6a7.4 7.4 0 0 0 0 14.8Z"/><path class="off" d="M12.8 4.6a7.4 7.4 0 0 1 0 14.8Z"/></svg></button>
+    <span class="mini">11월 체크</span>
+    <button type="button" class="sq" aria-label="지난달"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg></button>
+    <button type="button" class="sq" aria-label="다음 달"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button>
+  </div>
+
+  <div class="cap">다른 달을 볼 때 (홈 밖이라 따뜻한 띠 없음)</div>
+  <div class="plain">
+    <div class="title-row"><h1>10월 체크</h1><button type="button" class="now">이번 달로</button></div>
+  </div>
 </div>

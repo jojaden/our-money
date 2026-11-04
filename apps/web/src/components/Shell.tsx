@@ -3,20 +3,21 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
-import { House, Layers, ListChecks, ReceiptText, Settings2, Plus, LogIn, X } from "lucide-react";
+import { House, Layers, ListChecks, ReceiptText, Settings2, Plus, LogIn, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { isStandalone } from "@/lib/native";
 import { StoreProvider, useStore } from "@/lib/store";
 import { signInWithGoogle, signOut } from "@/lib/repo";
+import { addMonths, nameOf } from "@/lib/calc";
 import type { Spending } from "@/lib/types";
-import { Mark, Toasts } from "./ui";
+import { Mark, PersonGlyph, Toasts } from "./ui";
 import { SpendingSheet } from "./SpendingSheet";
 
-const NAV = [
+// 설정은 탭이 아니다 — 폰은 위쪽 막대의 내 동전 버튼, 데스크톱은 레일 맨 아래
+const TABS = [
   { href: "/", label: "홈", icon: House },
   { href: "/plan", label: "플랜", icon: Layers },
   { href: "/check", label: "체크", icon: ListChecks },
   { href: "/ledger", label: "가계부", icon: ReceiptText },
-  { href: "/settings", label: "설정", icon: Settings2 },
 ];
 
 interface SheetCtx {
@@ -29,13 +30,14 @@ function norm(p: string) {
   return p !== "/" && p.endsWith("/") ? p.slice(0, -1) : p;
 }
 
-function Nav() {
+function Nav({ onRecord }: { onRecord: () => void }) {
   const path = norm(usePathname() ?? "/");
+  const at = TABS.findIndex((t) => t.href === path);
   return (
     <>
       <nav className="rail" aria-label="주요 메뉴">
         <Mark size={32} />
-        {NAV.slice(0, 4).map(({ href, label, icon: Icon }) => (
+        {TABS.map(({ href, label, icon: Icon }) => (
           <Link key={href} href={href} aria-current={path === href ? "page" : undefined} aria-label={label}>
             <Icon aria-hidden="true" />
             <span className="tip">{label}</span>
@@ -47,25 +49,32 @@ function Nav() {
           <span className="tip">설정</span>
         </Link>
       </nav>
-      <nav className="tabbar" aria-label="주요 메뉴">
-        {NAV.map(({ href, label, icon: Icon }) => (
-          <Link
-            key={href}
-            href={href}
-            className="tab"
-            aria-current={path === href ? "page" : undefined}
-            onClick={(e) => {
-              if (path === href) {
-                e.preventDefault();
-                window.scrollTo({ top: 0, behavior: "smooth" });
-              }
-            }}
-          >
-            <Icon aria-hidden="true" />
-            {label}
-          </Link>
-        ))}
-      </nav>
+      {/* 폰: 떠 있는 네 칸 캡슐 + 따로 뜬 원형 기록 버튼. 버튼은 어느 탭에서나 같은 자리라 캡슐 폭이 그대로다 */}
+      <div className="navbar">
+        <nav className={`tabbar ${at < 0 ? "none" : ""}`} aria-label="주요 메뉴" style={{ ["--i" as string]: Math.max(0, at) }}>
+          <span className="tab-pill" aria-hidden="true" />
+          {TABS.map(({ href, label, icon: Icon }) => (
+            <Link
+              key={href}
+              href={href}
+              className="tab"
+              aria-current={path === href ? "page" : undefined}
+              onClick={(e) => {
+                if (path === href) {
+                  e.preventDefault();
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }
+              }}
+            >
+              <Icon aria-hidden="true" />
+              {label}
+            </Link>
+          ))}
+        </nav>
+        <button type="button" className="fab" aria-label="지출 기록" onClick={onRecord}>
+          <Plus aria-hidden="true" />
+        </button>
+      </div>
     </>
   );
 }
@@ -214,7 +223,7 @@ function PageMotion({ path, children }: { path: string; children: React.ReactNod
       }
       shift(s0.dx < 0 ? 1 : -1);
     } else if (el) {
-      el.style.transition = "transform 420ms cubic-bezier(0.32, 0.72, 0, 1), opacity 300ms ease";
+      el.style.transition = "transform var(--dur-tab) var(--ease-drawer), opacity 300ms ease";
       el.style.transform = "translateX(0)";
       el.style.opacity = "1";
     }
@@ -236,26 +245,55 @@ function PageMotion({ path, children }: { path: string; children: React.ReactNod
   );
 }
 
-/** 스크롤하면 큰 제목이 접히고, 위에 작은 반투명 제목 바가 나타난다 (iOS 큰 제목처럼) */
-function CompactBar() {
+/**
+ * 위쪽 막대 — 내 동전 반쪽(설정), 가운데 작은 제목, 달 넘기기. 화면 위에 붙어 있다.
+ * 페이지 큰 제목이 막대 밑으로 지나가면 유리 바탕이 되고 작은 제목이 떠오른다 (굴릴 때마다가 아니라 지나갈 때 한 번).
+ */
+function TopBar({ path }: { path: string }) {
+  const { auth, data, me, month, setMonth } = useStore();
+  const bar = useRef<HTMLDivElement>(null);
+  const [glass, setGlass] = useState(false);
   const [title, setTitle] = useState("");
-  const [shown, setShown] = useState(false);
-  const path = usePathname();
   useEffect(() => {
-    const onScroll = () => {
-      const h1 = document.querySelector(".titlebar h1") as HTMLElement | null;
-      if (!h1) return setShown(false);
-      const bottom = h1.getBoundingClientRect().bottom;
-      setShown(bottom < 8);
-      setTitle(h1.textContent ?? "");
-    };
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, [path]);
+    const h1 = document.querySelector<HTMLElement>(".page-head h1");
+    if (!h1) return;
+    const h = bar.current?.offsetHeight ?? 64;
+    // 처음 한 번은 바로 불린다. 막대 아래 선을 지나 위로 올라갔을 때만 유리 (화면 아래로 벗어난 것은 아님)
+    const io = new IntersectionObserver(
+      ([e]) => {
+        setTitle(h1.textContent ?? "");
+        setGlass(!e.isIntersecting && e.boundingClientRect.top < h);
+      },
+      { rootMargin: `-${h}px 0px 0px 0px` },
+    );
+    io.observe(h1);
+    return () => io.disconnect();
+  }, [path, month]);
+  const settings = path === "/settings";
+  const name = data ? nameOf(data.settings, me) : "";
   return (
-    <div className={`compactbar ${shown ? "on" : ""}`} aria-hidden="true">
-      <span>{title}</span>
+    <div ref={bar} className={`topbar ${glass ? "glass" : ""}`}>
+      <Link href="/settings" className={`sq me ${me}`} aria-label={`설정 (${name})`} aria-current={settings ? "page" : undefined}>
+        <PersonGlyph owner={me} />
+      </Link>
+      {auth.state === "demo" && (
+        <Link href="/settings" className="pill warning">
+          예시 데이터
+        </Link>
+      )}
+      <span className="mini" aria-hidden="true">
+        {title}
+      </span>
+      {!settings && month && (
+        <>
+          <button type="button" className="sq" aria-label="지난달" onClick={() => setMonth(addMonths(month, -1))}>
+            <ChevronLeft aria-hidden="true" />
+          </button>
+          <button type="button" className="sq" aria-label="다음 달" onClick={() => setMonth(addMonths(month, 1))}>
+            <ChevronRight aria-hidden="true" />
+          </button>
+        </>
+      )}
     </div>
   );
 }
@@ -310,45 +348,29 @@ function InstallPrompt() {
   );
 }
 
-function AppBar() {
-  const { auth } = useStore();
-  const demo = auth.state === "demo";
-  return (
-    <div className={`appbar ${demo ? "demo" : ""}`}>
-      <Mark size={20} />
-      <span className="name">우리 집</span>
-      {demo && (
-        <Link href="/settings" className="pill warning">
-          예시 데이터로 보는 중
-        </Link>
-      )}
-    </div>
-  );
-}
-
 function Frame({ children }: { children: React.ReactNode }) {
   const [sheet, setSheet] = useState<{ open: boolean; editing?: Spending }>({ open: false });
   const openSpending = useCallback((s?: Spending) => setSheet({ open: true, editing: s }), []);
   const path = norm(usePathname() ?? "/");
-  const showFab = path === "/" || path === "/ledger";
   const { data } = useStore();
+
+  // 상태 막대 색을 화면 위쪽 색에 맞춘다 (홈은 따뜻한 띠, 나머지는 바탕)
+  useEffect(() => {
+    if (!data) return;
+    const color = getComputedStyle(document.documentElement).getPropertyValue(path === "/" ? "--warm-100" : "--ground").trim();
+    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", color);
+  }, [path, data]);
 
   return (
     <SheetContext.Provider value={{ openSpending }}>
       <div className={data ? "shell" : undefined}>
-        {data && <Nav />}
+        {data && <Nav onRecord={() => openSpending()} />}
         <Gate>
-          <CompactBar />
-          <main className="canvas">
-            <AppBar />
+          <main className={`canvas ${path === "/" ? "home" : ""}`}>
+            <TopBar path={path} />
             <InstallPrompt />
             <PageMotion path={path}>{children}</PageMotion>
           </main>
-          {showFab && data && (
-            <button type="button" className="btn fab" onClick={() => openSpending()}>
-              <Plus aria-hidden="true" /> 지출 기록
-            </button>
-          )}
           {data && <SpendingSheet open={sheet.open} editing={sheet.editing} onOpenChange={(open) => setSheet((s) => ({ ...s, open }))} />}
         </Gate>
       </div>

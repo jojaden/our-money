@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 """디자인 시스템 미리보기 — docs/design-system 의 토큰과 컴포넌트 미리보기를 한 페이지로 묶는다.
 
-    python3 scripts/design_preview.py      → docs/design-system/index.html 을 브라우저로 연다
+    python3 scripts/design_preview.py          → docs/design-system/index.html 을 브라우저로 연다
+    python3 scripts/design_preview.py --check  → 앱 tokens.css 가 tokens.json 과 같은지만 본다 (CI)
+
+돌릴 때마다 앱이 읽는 apps/web/src/app/tokens.css 도 tokens.json 에서 다시 만든다 (커밋한다).
 
 components/<이름>/preview.html 은 토큰 CSS 변수(--ground, --font-display …)를 쓰는 조각이라
 그대로 열면 색과 글꼴이 빠진다. tokens.json 을 CSS 변수로 바꿔 조각마다 iframe 에 넣는다.
@@ -10,21 +13,36 @@ components/<이름>/preview.html 은 토큰 CSS 변수(--ground, --font-display 
 import html
 import json
 import re
+import sys
 from pathlib import Path
 
-DS = Path(__file__).resolve().parent.parent / "docs" / "design-system"
+ROOT = Path(__file__).resolve().parent.parent
+DS = ROOT / "docs" / "design-system"
+APP_TOKENS = ROOT / "apps" / "web" / "src" / "app" / "tokens.css"
 FAMILIES = ("color", "spacing", "radius", "shadow", "easing", "duration")
 
 
-def css_vars(tokens: dict) -> str:
-    """토큰 → :root 변수. 값 안의 {이름} 은 var(--이름) 으로 바꾼다."""
+def token_decls(tokens: dict) -> list[str]:
+    """토큰 → '--이름: 값' 목록. 값 안의 {이름} 은 var(--이름) 으로 바꾼다."""
     out = []
     for fam in FAMILIES:
         for t in tokens[fam]["tokens"]:
             value = re.sub(r"\{([\w-]+)\}", r"var(--\1)", str(t["value"]))
-            out.append(f"--{t['name']}:{value}")
-    out += [f"--font-{k}:{v}" for k, v in tokens["type"]["families"].items()]
-    return ":root{" + ";".join(out) + "}"
+            out.append(f"--{t['name']}: {value}")
+    return out + [f"--font-{k}: {v}" for k, v in tokens["type"]["families"].items()]
+
+
+def css_vars(tokens: dict) -> str:
+    """미리보기 iframe 에 넣는 한 줄짜리 :root."""
+    return ":root{" + ";".join(token_decls(tokens)) + "}"
+
+
+def tokens_css(tokens: dict) -> str:
+    """앱이 읽는 tokens.css 본문."""
+    body = "".join(f"  {d};\n" for d in token_decls(tokens))
+    return ("/* docs/design-system/tokens.json 에서 만든 파일. 손으로 고치지 말고 tokens.json 을 고친 뒤\n"
+            "   python3 scripts/design_preview.py 를 돌린다 (CI 가 --check 로 어긋남을 막는다). */\n"
+            f":root {{\n{body}}}\n")
 
 
 def card(path: Path, root: str) -> tuple[str, str]:
@@ -51,6 +69,12 @@ def swatches(tokens: dict) -> str:
 
 def main() -> None:
     tokens = json.loads((DS / "tokens.json").read_text(encoding="utf-8"))
+    if "--check" in sys.argv:
+        if not APP_TOKENS.exists() or APP_TOKENS.read_text(encoding="utf-8") != tokens_css(tokens):
+            sys.exit(f"{APP_TOKENS.relative_to(ROOT)} 가 tokens.json 과 다릅니다. python3 scripts/design_preview.py 를 돌려 다시 만드세요.")
+        print("tokens.css = tokens.json")
+        return
+    APP_TOKENS.write_text(tokens_css(tokens), encoding="utf-8")
     root = css_vars(tokens)
     groups: dict[str, list[str]] = {}
     for p in sorted(DS.glob("components/*/preview.html")):
@@ -75,7 +99,7 @@ iframe{{display:block;width:100%;border:0}}
 <h2>색</h2><div class="sws">{swatches(tokens)}</div>{sections}
 </body></html>"""
     (DS / "index.html").write_text(page, encoding="utf-8")
-    print(f"{DS / 'index.html'} — 미리보기 {sum(map(len, groups.values()))}개")
+    print(f"{DS / 'index.html'} — 미리보기 {sum(map(len, groups.values()))}개, {APP_TOKENS.relative_to(ROOT)} 도 다시 만듦")
 
 
 if __name__ == "__main__":
