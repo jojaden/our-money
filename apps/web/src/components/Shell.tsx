@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
-import { House, Layers, ListChecks, ReceiptText, Settings2, Plus, LogIn, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { House, Layers, ListChecks, ReceiptText, Settings2, Plus, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { isStandalone } from "@/lib/native";
 import { StoreProvider, useStore } from "@/lib/store";
 import { signInWithGoogle, signOut } from "@/lib/repo";
@@ -11,6 +11,7 @@ import { addMonths, nameOf } from "@/lib/calc";
 import type { Spending } from "@/lib/types";
 import { Mark, PersonGlyph, Toasts } from "./ui";
 import { SpendingSheet } from "./SpendingSheet";
+import { LoadingScreen, StageScreen } from "./Stage";
 
 // 설정은 탭이 아니다 — 폰은 위쪽 막대의 내 동전 버튼, 데스크톱은 레일 맨 아래
 const TABS = [
@@ -84,72 +85,45 @@ function Gate({ children }: { children: React.ReactNode }) {
 
   if (auth.state === "signed-out") {
     return (
-      <main className="gate">
-        <div className="box">
-          <Mark size={48} />
-          <h1>우리 집 가계부</h1>
-          <p>두 사람만 들어올 수 있어요. 등록된 구글 계정으로 로그인해 주세요.</p>
-          <button type="button" className="btn block" onClick={() => void signInWithGoogle()}>
-            <LogIn aria-hidden="true" /> 구글 계정으로 로그인
-          </button>
-        </div>
-      </main>
+      <StageScreen
+        login
+        title="반가워요!"
+        body="우리 집 가계부에서 두 사람의 한 달 돈을 함께 챙겨요"
+        action="구글 계정으로 로그인"
+        onAction={() => void signInWithGoogle()}
+        fine="등록된 두 사람의 구글 계정만 들어올 수 있어요"
+      />
     );
   }
   if (auth.state === "not-member") {
+    // 관리자용 안내(members 표 바꾸기)는 README 로 — 이 화면은 두 사람이 보는 곳
     return (
-      <main className="gate">
-        <div className="box">
-          <Mark size={48} />
-          <h1>등록되지 않은 계정이에요</h1>
-          <p>
-            {auth.email} 계정은 이 가계부에 연결되어 있지 않아요. 멤버로 등록된 구글 계정으로 로그인해 주세요. 계정을 바꿨다면 Supabase 의 members 에서 이메일을 새 계정으로 바꿔야 해요.
-          </p>
-          <button type="button" className="btn block secondary" onClick={() => void signOut()}>
-            다른 계정으로 로그인
-          </button>
-        </div>
-      </main>
+      <StageScreen
+        title="등록되지 않은 계정이에요"
+        body={
+          <>
+            <span className="mail">{auth.email}</span> 계정은 이 가계부에 연결되어 있지 않아요
+          </>
+        }
+        action="다른 계정으로 로그인"
+        primary={false}
+        onAction={() => void signOut()}
+        fine="멤버로 등록된 구글 계정으로 다시 로그인해 주세요"
+      />
     );
   }
   if (error && !data) {
     return (
-      <main className="gate">
-        <div className="box">
-          <Mark size={48} />
-          <h1>{auth.state === "loading" ? "연결할 수 없어요" : "데이터를 불러오지 못했어요"}</h1>
-          <p>{error}</p>
-          <button type="button" className="btn block" onClick={() => (auth.state === "loading" ? window.location.reload() : void reload())}>
-            다시 시도
-          </button>
-        </div>
-      </main>
+      <StageScreen
+        title={auth.state === "loading" ? "연결할 수 없어요" : "데이터를 불러오지 못했어요"}
+        body={error}
+        action="다시 시도"
+        onAction={() => (auth.state === "loading" ? window.location.reload() : void reload())}
+      />
     );
   }
-  if (!data) return <Loading />;
+  if (!data) return <LoadingScreen />;
   return <>{children}</>;
-}
-
-function Loading() {
-  return (
-    <div className="canvas" aria-busy="true" aria-label="불러오는 중">
-      <span className="skeleton" style={{ width: 120, height: 34, marginBottom: 8 }} />
-      <span className="skeleton" style={{ width: 220, height: 18, marginBottom: 24 }} />
-      <div className="stack">
-        <div className="card">
-          <span className="skeleton" style={{ width: 90, height: 16 }} />
-          <span className="skeleton" style={{ width: 200, height: 36, marginTop: 10 }} />
-          <span className="skeleton" style={{ width: "100%", height: 10, marginTop: 20 }} />
-        </div>
-        <div className="card">
-          <span className="skeleton" style={{ width: 140, height: 20 }} />
-          {[0, 1, 2].map((i) => (
-            <span key={i} className="skeleton" style={{ width: "100%", height: 44, marginTop: 14 }} />
-          ))}
-        </div>
-      </div>
-    </div>
-  );
 }
 
 /** 탭을 바꾸면 아래에서, 달을 바꾸면 그 방향에서 화면이 이어서 들어온다. */
