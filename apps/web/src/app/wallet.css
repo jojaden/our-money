@@ -84,11 +84,15 @@ button.pass:focus-visible .face { outline: 2px solid var(--accent); outline-offs
 /* ---------- 카드 상세 ---------- */
 
 /* 바탕만 페이드되고, 카드는 묶음 자리에서 날아온다(FLIP, Wallet.tsx) */
-.pass-detail { position: fixed; inset: 0; z-index: 35; overflow-y: auto; overscroll-behavior: contain; }
+/* 가로로 미는 것은 가장자리 밀어 닫기가 받고, 세로는 굴리기 */
+.pass-detail { position: fixed; inset: 0; z-index: 35; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; }
+/* 상태 막대 높이의 1.2배까지 바탕색이 옅어지는 막 (브라우저 탭에서는 높이 0) */
+.status-scrim { position: fixed; top: 0; right: 0; left: 0; z-index: 3; height: calc(env(safe-area-inset-top, 0px) * 1.2); background: linear-gradient(var(--ground), color-mix(in srgb, var(--ground) 80%, transparent) 70%, transparent); pointer-events: none; }
 .pass-detail::before { content: ""; position: fixed; inset: 0; z-index: -1; background: var(--ground); animation: pd-fade var(--dur-tab) var(--ease-out) both; }
 .pass-detail.leaving::before { animation: pd-fade var(--dur-tab) var(--ease-out) reverse both; }
-.pass-bar { position: sticky; top: 0; z-index: 2; display: flex; justify-content: space-between; max-width: 512px; margin: 0 auto; padding: calc(12px + env(safe-area-inset-top, 0px)) 16px 12px; }
-.pass-body { max-width: 512px; margin: 0 auto; padding: 4px 16px calc(40px + env(safe-area-inset-bottom, 0px)); }
+/* 가로 화면의 노치·둥근 모서리도 피한다 */
+.pass-bar { position: sticky; top: 0; z-index: 4; display: flex; justify-content: space-between; max-width: 512px; margin: 0 auto; padding: calc(12px + env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) 12px max(16px, env(safe-area-inset-left, 0px)); }
+.pass-body { max-width: 512px; margin: 0 auto; padding: 4px max(16px, env(safe-area-inset-right, 0px)) calc(40px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); transition: transform var(--dur-press) var(--ease-out); }
 .pass-more { display: grid; gap: 12px; margin-top: 16px; animation: pd-rise var(--dur-tab) var(--ease-out) 120ms both; }
 .pass-detail.leaving .pass-more { animation: pd-fade 160ms var(--ease-out) reverse both; }
 .ptiles { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }

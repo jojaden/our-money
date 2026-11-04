@@ -48,6 +48,16 @@ Use the `android-skills` plugin (install: `/plugin install android-skills@androi
 - Before a Play upload: see "Before any deploy or app release"
 - Note: `android-skills:agp-9-upgrade` does not support KMP projects; don't use it here.
 
+## Design work (web and mobile)
+Before designing or changing UI layout, animation, transitions, effects, or components (the web PWA included), invoke the matching `android-skills` with the Skill tool and apply its guidance:
+- Layout across window sizes, panes, nav bar vs rail, pointer and keyboard: `android-skills:adaptive`
+- Insets, safe areas, system bar legibility, keyboard (IME) overlap: `android-skills:edge-to-edge`
+- Back gestures, predictive back, dismissing sheets and overlays with animation: `android-skills:navigation-event`
+- Screen structure, dialogs, bottom sheets, list-detail: `android-skills:navigation-3`
+- Animation and frame cost (dropped frames, recomposition): `android-skills:jetpack-compose-performance`
+
+On the web, apply the principles (window size classes, `env(safe-area-inset-*)`, history-based back, cheap compositor-only animation) rather than the Compose APIs. In each stage write-up, say which skill shaped which change.
+
 ## Rules
 - UI work follows `docs/design-system/`: its token names (CSS variables from the generated `tokens.css`; change values only in `tokens.json`) and component rules. Mark people with the half-coin `PersonGlyph`, never initials (both names can start with the same syllable).
 - Keep calc logic identical in `apps/web/src/lib/calc.ts` and `apps/mobile/core/.../calc/Calc.kt`; add a `core` test for any change.

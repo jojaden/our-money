@@ -186,6 +186,43 @@ function PassDetail({ p, from, onClose, onEdit }: { p: PassInfo; from: DOMRect; 
       fill: "forwards",
     }).onfinish = done;
   };
+  // 가장자리에서 밀어 닫기 — 안드로이드 Predictive Back 처럼 미는 만큼 화면이 줄고(최대 10%) 미는 쪽으로 밀린다.
+  // 30% 넘게 밀고 놓으면 닫고(카드가 제자리로), 덜 밀면 되돌아온다. iOS 홈 화면 앱처럼 뒤로 가기 제스처가 없는 곳의 길이기도 하다.
+  const body = useRef<HTMLDivElement>(null);
+  const swipe = useRef<{ x0: number; edge: 1 | -1; p: number } | null>(null);
+  const onPointerDown = (e: React.PointerEvent) => {
+    if (e.pointerType !== "touch" || leaving || reduce()) return;
+    const edge = e.clientX < 28 ? 1 : e.clientX > window.innerWidth - 28 ? -1 : 0;
+    if (!edge) return;
+    swipe.current = { x0: e.clientX, edge, p: 0 };
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {}
+  };
+  const onPointerMove = (e: React.PointerEvent) => {
+    const g = swipe.current;
+    const el = body.current;
+    if (!g || !el) return;
+    g.p = Math.min(1, Math.max(0, ((e.clientX - g.x0) * g.edge) / (window.innerWidth * 0.6)));
+    const shift = (window.innerWidth / 20 - 8) * g.p * g.edge;
+    el.style.transition = "none";
+    el.style.transform = `translateX(${shift}px) scale(${1 - g.p * 0.1})`;
+  };
+  const onPointerEnd = () => {
+    const g = swipe.current;
+    const el = body.current;
+    swipe.current = null;
+    if (!g || !el) return;
+    if (g.p > 0.3) {
+      // 줄어든 자리에서 바로 카드를 날려 보낸다(되돌아오는 움직임과 겹치지 않게)
+      el.style.transform = "";
+      close();
+    } else {
+      el.style.transition = "";
+      el.style.transform = "";
+    }
+  };
+
   const closeRef = useRef(close);
   useLayoutEffect(() => {
     closeRef.current = close;
@@ -363,7 +400,18 @@ function PassDetail({ p, from, onClose, onEdit }: { p: PassInfo; from: DOMRect; 
 
   const art = passArt(a, p.mix);
   return createPortal(
-    <div className={`pass-detail ${leaving ? "leaving" : ""}`} role="dialog" aria-modal="true" aria-label={`${a.name} 자세히`}>
+    <div
+      className={`pass-detail ${leaving ? "leaving" : ""}`}
+      role="dialog"
+      aria-modal="true"
+      aria-label={`${a.name} 자세히`}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerEnd}
+      onPointerCancel={onPointerEnd}
+    >
+      {/* 상태 막대 보호: 홈 화면 앱에서 굴린 내용이 상태 막대 글자 밑으로 지나갈 때 */}
+      <div className="status-scrim" aria-hidden="true" />
       <div className="pass-bar">
         <button ref={closeBtn} type="button" className="glass-btn" aria-label="지갑으로 돌아가기" onClick={close}>
           <X aria-hidden="true" />
@@ -372,7 +420,7 @@ function PassDetail({ p, from, onClose, onEdit }: { p: PassInfo; from: DOMRect; 
           <Pencil aria-hidden="true" />
         </button>
       </div>
-      <div className="pass-body">
+      <div ref={body} className="pass-body">
         <button ref={card} type="button" className={`pass open ${art.className}`} style={art.style} tabIndex={-1} aria-hidden="true" {...follow(true)}>
           <Face p={p} />
         </button>
