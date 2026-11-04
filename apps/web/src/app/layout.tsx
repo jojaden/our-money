@@ -1,7 +1,10 @@
 import type { Metadata, Viewport } from "next";
 import { Shell } from "@/components/Shell";
 import { RegisterSW } from "@/components/RegisterSW";
+import "./tokens.css";
 import "./globals.css";
+import "./controls.css";
+import "./shell.css";
 
 
 export const metadata: Metadata = {
@@ -16,7 +19,6 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#f2f4f6",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
@@ -27,7 +29,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="ko">
       <head>
+        {/* 상태 막대 색. Next 가 관리하지 않게 직접 두고, 셸이 페이지마다 바꾼다 (홈은 따뜻한 띠) */}
+        <meta name="theme-color" content="#f5f8fe" />
         <link rel="preload" href="/fonts/pretendard/pretendard.css" as="style" />
+        <link rel="preload" href="/fonts/alan-sans/alan-sans.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
         <link rel="stylesheet" href="/fonts/pretendard/pretendard.css" />
       </head>
       <body>

@@ -106,7 +106,7 @@ export default function SettingsPage() {
 
   return (
     <>
-      <header className="titlebar">
+      <header className="page-head">
         <div>
           <h1>설정</h1>
           <p className="sub">{auth.state === "demo" ? "예시 데이터 · 이 브라우저에만 저장돼요" : auth.state === "member" ? auth.email : ""}</p>

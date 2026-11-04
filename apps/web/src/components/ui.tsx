@@ -4,8 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import {
   Baby,
   Car,
-  ChevronLeft,
-  ChevronRight,
   Coffee,
   Ellipsis,
   Gift,
@@ -160,7 +158,7 @@ export function Seg<T extends string>({ value, options, onChange, label }: { val
   const n = options.length;
   return (
     <div className="seg" role="radiogroup" aria-label={label}>
-      <span className="thumb" aria-hidden="true" style={{ width: `calc((100% - 8px) / ${n})`, transform: `translateX(${idx * 100}%)` }} />
+      <span className="thumb" aria-hidden="true" style={{ width: `calc((100% - 6px) / ${n})`, transform: `translateX(${idx * 100}%)` }} />
       {options.map((o) => (
         <button key={o.value} type="button" role="radio" aria-checked={value === o.value} onClick={() => onChange(o.value)}>
           {o.label}
@@ -259,25 +257,6 @@ export function GroupLegend({ totals, income }: { totals: Record<Group, number>;
         <Money value={Math.abs(left)} className={left < 0 ? "neg" : ""} />
         <span className="pct num">{pct(Math.abs(left))}</span>
       </div>
-    </div>
-  );
-}
-
-export function MonthNav() {
-  const { month, setMonth } = useStore();
-  const shiftMonth = (n: number) => {
-    const [y, m] = month.split("-").map(Number);
-    const d = new Date(y, m - 1 + n, 1);
-    setMonth(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
-  };
-  return (
-    <div className="monthnav">
-      <button type="button" className="iconbtn" aria-label="이전 달" onClick={() => shiftMonth(-1)}>
-        <ChevronLeft />
-      </button>
-      <button type="button" className="iconbtn" aria-label="다음 달" onClick={() => shiftMonth(1)}>
-        <ChevronRight />
-      </button>
     </div>
   );
 }

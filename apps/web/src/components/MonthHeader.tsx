@@ -1,12 +1,11 @@
 "use client";
 
 import { useData } from "@/lib/store";
-import { itemsFromMonth, itemsOf, latestMonthBefore, periodOf, periodProgress } from "@/lib/calc";
+import { currentMonth, itemsFromMonth, itemsOf, latestMonthBefore, periodOf, periodProgress } from "@/lib/calc";
 import { useState } from "react";
 import { monthLabel, parseYmd } from "@/lib/format";
-import { MonthNav, Toggle } from "./ui";
+import { Toggle } from "./ui";
 import { Plus } from "lucide-react";
-import { usePathname } from "next/navigation";
 import { useSheets } from "./Shell";
 
 function rangeText(month: string, cycle: number) {
@@ -16,33 +15,37 @@ function rangeText(month: string, cycle: number) {
   return `${s.getMonth() + 1}월 ${s.getDate()}일 – ${e.getMonth() + 1}월 ${e.getDate()}일`;
 }
 
+/** 페이지 머리 — 큰 제목, 기간 줄, 결론. 달 넘기기는 위쪽 막대에 있고, 다른 달을 보면 "이번 달로"가 붙는다. */
 export function MonthHeader({ title, children }: { title?: (m: string) => string; children?: React.ReactNode }) {
-  const { data, month, today } = useData();
+  const { data, month, today, setMonth } = useData();
   const prog = periodProgress(month, data.settings.cycle_start, today);
   const tail = prog.state === "current" ? ` · ${prog.daysLeft}일 남음` : prog.state === "past" ? " · 지난 달" : " · 다가오는 달";
+  const now = currentMonth(data.settings.cycle_start, today);
   return (
-    <header className="titlebar">
+    <header className="page-head">
       <div style={{ minWidth: 0 }}>
-        <h1>{title ? title(monthLabel(month)) : monthLabel(month)}</h1>
+        <div className="title-row">
+          <h1>{title ? title(monthLabel(month)) : monthLabel(month)}</h1>
+          {month !== now && (
+            <button type="button" className="to-now" onClick={() => setMonth(now)}>
+              이번 달로
+            </button>
+          )}
+        </div>
         <p className="sub">
           {rangeText(month, data.settings.cycle_start)}
           {tail}
         </p>
         {children}
       </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 12, flex: "none" }}>
-        <HeadAction />
-        <MonthNav />
-      </div>
+      <HeadAction />
     </header>
   );
 }
 
+/** 데스크톱에서만 보이는 머리줄 "지출 기록" (폰은 하단 원형 버튼) */
 function HeadAction() {
-  const path = usePathname() ?? "/";
   const { openSpending } = useSheets();
-  const p = path !== "/" && path.endsWith("/") ? path.slice(0, -1) : path;
-  if (p !== "/" && p !== "/ledger") return null;
   return (
     <button type="button" className="btn head-action" onClick={() => openSpending()}>
       <Plus aria-hidden="true" /> 지출 기록
