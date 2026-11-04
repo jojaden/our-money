@@ -205,8 +205,9 @@ function PassDetail({ p, from, onClose, onEdit }: { p: PassInfo; from: DOMRect; 
   const week = weekDays(today).map((d) => rows.filter((r) => r.date === d).reduce((x, r) => x + r.amount, 0));
   const peak = Math.max(1, ...week);
   const weekSum = week.reduce((x, v) => x + v, 0);
-  const k1 = a.kind === "bank" ? PERSON[a.owner] : BUCKET[p.mix[0]] ?? "var(--control)";
-  const k2 = a.kind === "bank" ? PERSON[a.owner] : BUCKET[p.mix[1] ?? p.mix[0]] ?? "var(--control)";
+  const tint = a.kind === "card" && a.color ? `var(--pass-${a.color})` : null;
+  const k1 = a.kind === "bank" ? PERSON[a.owner] : tint ?? BUCKET[p.mix[0]] ?? "var(--control)";
+  const k2 = a.kind === "bank" ? PERSON[a.owner] : tint ?? BUCKET[p.mix[1] ?? p.mix[0]] ?? "var(--control)";
   const recent = spendingsIn(data, month)
     .filter((r) => r.account_id === a.id)
     .slice(0, 5);

@@ -41,6 +41,14 @@
   --tab-active-bg: #eaeced;
   --glass: #ffffffd1;
   --pass-dark: #1c1c22;
+  --pass-black: #2a2a31;
+  --pass-silver: #d5dae4;
+  --pass-gold: #e6cc92;
+  --pass-rose: #f1b4c8;
+  --pass-red: #c23d3a;
+  --pass-green: #2c7a5c;
+  --pass-blue: #3563c9;
+  --pass-purple: #6a4fd1;
   --step-done: #7fca6c;
   --step-todo: var(--border);
   --positive: #367940;

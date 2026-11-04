@@ -2,11 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { EyeOff } from "lucide-react";
-import type { Account, AccountKind, Owner } from "@/lib/types";
+import type { Account, AccountKind, Owner, PassColor } from "@/lib/types";
+import { PASS_COLORS, PASS_COLOR_LABEL } from "@/lib/types";
 import { useData } from "@/lib/store";
 import { nameOf } from "@/lib/calc";
 import { eul } from "@/lib/format";
 import { haptic } from "@/lib/native";
+import { canonicalInstitution, suggestInstitutions } from "@/lib/institutions";
+import { passArt } from "./pass";
 import { PersonGlyph, Seg, Sheet } from "./ui";
 
 function newId(prefix: string) {
@@ -29,6 +32,8 @@ export function AddPass({ open, onOpenChange, account, kind: initialKind }: { op
   const [billing, setBilling] = useState<string | null>(null);
   const [payDay, setPayDay] = useState<number | null>(null);
   const [dropping, setDropping] = useState(false);
+  const [color, setColor] = useState<PassColor | null>(null);
+  const [instFocus, setInstFocus] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -39,6 +44,7 @@ export function AddPass({ open, onOpenChange, account, kind: initialKind }: { op
     setLast4(account?.last4 ?? "");
     setBilling(account?.billing_account_id ?? null);
     setPayDay(account?.pay_day ?? null);
+    setColor(account?.color ?? null);
     setDropping(false);
   }, [open, account, initialKind]);
 
@@ -53,10 +59,12 @@ export function AddPass({ open, onOpenChange, account, kind: initialKind }: { op
       name: name.trim(),
       kind,
       owner,
-      institution: institution.trim(),
+      institution: canonicalInstitution(institution),
       billing_account_id: card ? billing : null,
       pay_day: card ? payDay : null,
       last4: card && last4.length === 4 ? last4 : null,
+      // 색은 고르거나 지울 때만 보낸다: 한 건 저장은 PostgREST upsert 라, 008 전에는 없는 칸이면 저장이 실패한다
+      ...(card && color ? { color } : account?.color ? { color: null } : {}),
       sort: account?.sort ?? Math.max(0, ...data.accounts.map((a) => a.sort)) + 1,
       archived: false,
       rev: account?.rev,
@@ -83,6 +91,8 @@ export function AddPass({ open, onOpenChange, account, kind: initialKind }: { op
   };
 
   const owners: Owner[] = ["joint", "a", "b"];
+  const suggestions = instFocus ? suggestInstitutions(kind, institution) : [];
+  const front = passArt({ kind: "card", owner, color }, []);
   return (
     <Sheet
       open={open}
@@ -106,7 +116,11 @@ export function AddPass({ open, onOpenChange, account, kind: initialKind }: { op
       <div className={`pass-preview ${dropping ? "dropping" : ""}`} aria-hidden="true">
         <div className={`flipper ${card ? "" : "flipped"}`}>
           {(["card", "bank"] as const).map((side) => (
-            <span key={side} className={`pass ${side === "card" ? "credit blank front" : "bank back"}`} style={{ ["--dot" as string]: owner === "a" ? "var(--a)" : owner === "b" ? "var(--b)" : "var(--joint)" }}>
+            <span
+              key={side}
+              className={`pass ${side === "card" ? `${front.className} front` : "bank back"}`}
+              style={{ ...front.style, ["--dot" as string]: owner === "a" ? "var(--a)" : owner === "b" ? "var(--b)" : "var(--joint)" }}
+            >
               <span className="face">
                 <span className="sheen" />
                 <span className="top">
@@ -138,8 +152,40 @@ export function AddPass({ open, onOpenChange, account, kind: initialKind }: { op
         </label>
         <label className="form-row">
           <span>{card ? "카드사" : "은행"}</span>
-          <input value={institution} onChange={(e) => setInstitution(e.target.value)} placeholder={card ? "모아카드" : "도토리은행"} maxLength={30} />
+          <input
+            value={institution}
+            onChange={(e) => setInstitution(e.target.value)}
+            onFocus={() => setInstFocus(true)}
+            onBlur={() => {
+              setInstFocus(false);
+              setInstitution((v) => canonicalInstitution(v));
+            }}
+            placeholder={card ? "몇 글자만 쳐도 골라져요" : "은행·증권사"}
+            maxLength={30}
+            autoComplete="off"
+          />
         </label>
+        {suggestions.length > 0 && (
+          <div className="form-suggest" role="listbox" aria-label={card ? "카드사 고르기" : "은행 고르기"}>
+            {suggestions.map((n) => (
+              <button
+                key={n}
+                type="button"
+                role="option"
+                aria-selected={false}
+                className="chip"
+                // 입력칸의 blur 보다 먼저 고른다
+                onPointerDown={(e) => e.preventDefault()}
+                onClick={() => {
+                  setInstitution(n);
+                  setInstFocus(false);
+                }}
+              >
+                {n}
+              </button>
+            ))}
+          </div>
+        )}
         {card && (
           <label className="form-row">
             <span>끝 4자리</span>
@@ -162,6 +208,17 @@ export function AddPass({ open, onOpenChange, account, kind: initialKind }: { op
         </div>
         {card && (
           <>
+            <div className="form-row wide">
+              <span id="ap-color">색</span>
+              <div className="swatches" role="radiogroup" aria-labelledby="ap-color">
+                <button type="button" role="radio" aria-checked={color === null} className="swatch auto" aria-label="자동: 이번 달 쓴 버킷 색" onClick={() => setColor(null)}>
+                  자동
+                </button>
+                {PASS_COLORS.map((c) => (
+                  <button key={c} type="button" role="radio" aria-checked={color === c} className="swatch" aria-label={PASS_COLOR_LABEL[c]} style={{ ["--pt" as string]: `var(--pass-${c})` }} onClick={() => setColor(c)} />
+                ))}
+              </div>
+            </div>
             <label className="form-row">
               <span>결제 계좌</span>
               <select value={billing ?? ""} onChange={(e) => setBilling(e.target.value || null)}>
@@ -187,7 +244,9 @@ export function AddPass({ open, onOpenChange, account, kind: initialKind }: { op
           </>
         )}
       </div>
-      <p className="help">공동 지출을 개인 카드·통장으로 내면 정산 대상이 돼요.{card ? " 끝 4자리는 카드 알림에서 카드를 찾는 데만 써요." : ""}</p>
+      <p className="help">
+        공동 지출을 개인 카드·통장으로 내면 정산 대상이 돼요.{card ? " 끝 4자리는 카드 알림에서 카드를 찾는 데만 써요. 색은 내 카드와 비슷하게 고르면 돼요(자동은 이번 달 쓴 버킷 색)." : ""}
+      </p>
       {account && usedBy > 0 && <p className="help">반복 항목 {usedBy}개가 이 {card ? "카드" : "통장"}를 쓰고 있어요.</p>}
     </Sheet>
   );

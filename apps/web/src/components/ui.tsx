@@ -196,6 +196,9 @@ export function Track({ value, max, tick }: { value: number; max: number; tick?:
  * 안드로이드 뒤로가기로 시트를 닫는다. 열릴 때 기록을 하나 쌓고,
  * 뒤로가기(popstate)면 닫고, 화면에서 닫으면 쌓은 기록을 되돌린다.
  */
+/** 열린 창마다 기록에 남기는 번호 — 겹쳐 연 창(상세 위의 시트)에서 뒤로 가기가 맨 위 하나만 닫게 */
+let layerSeq = 0;
+
 export function useBackToClose(open: boolean, onOpenChange: (v: boolean) => void) {
   const pushed = useRef(false);
   const close = useRef(onOpenChange);
@@ -208,10 +211,13 @@ export function useBackToClose(open: boolean, onOpenChange: (v: boolean) => void
       }
       return;
     }
-    window.history.pushState({ ...(window.history.state ?? {}), sheet: true }, "");
+    const id = ++layerSeq;
+    const prev = window.history.state ?? {};
+    window.history.pushState({ ...prev, sheet: true, layers: [...(prev.layers ?? []), id] }, "");
     pushed.current = true;
     const onPop = () => {
-      if (!pushed.current) return;
+      // 위에 겹친 창의 기록만 빠졌으면 이 창은 그대로 둔다
+      if (!pushed.current || window.history.state?.layers?.includes(id)) return;
       pushed.current = false;
       close.current(false);
     };
