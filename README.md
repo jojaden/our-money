@@ -101,7 +101,7 @@
 ### 7. 폰 앱처럼
 
 - **PWA:** 홈 화면에 설치하면 주소창 없이 앱처럼 열려요. 서비스워커는 앱 껍데기, 폰트, 정적 파일만 캐시하고 데이터는 항상 서버에서 받아요.
-- **화면 느낌:** 아래에 떠 있는 캡슐 메뉴와 원형 기록 버튼, 바텀시트(뒤로 가기로 닫힘), 달 사이 스와이프, 굴리면 유리로 바뀌는 위쪽 막대, 숫자가 굴러가는 애니메이션, 진동 피드백을 넣었어요. 디자인 기준은 [`docs/design-system/`](docs/design-system/README.md)이고, 화면을 단계별로 옮기는 중이에요(아직 안 옮긴 화면은 [`DESIGN.md`](DESIGN.md)).
+- **화면 느낌:** 아래에 떠 있는 캡슐 메뉴와 원형 기록 버튼, 바텀시트(뒤로 가기로 닫힘), 달 사이 스와이프, 굴리면 유리로 바뀌는 위쪽 막대, 숫자가 굴러가는 애니메이션, 진동 피드백을 넣었어요. 디자인 기준은 [`docs/design-system/`](docs/design-system/README.md)이에요.
 - **앱 아이콘:** 한 지붕 아래 살구색·분홍색 동전 두 개가 겹치고, 겹친 부분(흰색)이 둘이 함께 관리하는 돈이에요 (`apps/web/scripts/icons.mjs` 로 생성).
 
 ## 설계
@@ -241,7 +241,7 @@ our-money/
 ├─ scripts/design_preview.py  디자인 시스템 미리보기 페이지 만들기
 ├─ docs/design-system/        디자인 시스템 (토큰 · 컴포넌트 규칙 · 움직이는 미리보기)
 ├─ docs/screenshots/          README 화면
-├─ PRODUCT.md · DESIGN.md     제품 정의 · 지금 앱의 디자인 (새 기준으로 옮기는 중)
+├─ PRODUCT.md · DESIGN.md     제품 정의 · 디자인 길잡이 (docs/design-system 을 가리킴)
 └─ CHANGELOG.md               버전별 변경 기록
 ```
 

@@ -179,19 +179,6 @@ export function Chips<T extends string>({ value, options, onChange, label }: { v
   );
 }
 
-export function Track({ value, max, tick }: { value: number; max: number; tick?: number | null }) {
-  const ratio = max > 0 ? Math.min(1, value / max) : value > 0 ? 1 : 0;
-  const over = value > max;
-  return (
-    <div className="track-wrap">
-      <div className="track" role="img" aria-label={`${num(max)}원 중 ${num(value)}원`}>
-        <span className={`fill ${over ? "over" : ""}`} style={{ transform: `scaleX(${ratio})` }} />
-      </div>
-      {tick !== null && tick !== undefined && max > 0 && <span className="tick" style={{ left: `${Math.min(100, (tick / max) * 100)}%` }} aria-hidden="true" />}
-    </div>
-  );
-}
-
 /**
  * 안드로이드 뒤로가기로 시트를 닫는다. 열릴 때 기록을 하나 쌓고,
  * 뒤로가기(popstate)면 닫고, 화면에서 닫으면 쌓은 기록을 되돌린다.

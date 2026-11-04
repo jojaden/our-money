@@ -7,7 +7,7 @@ Household budget app for a couple (person `a` = repo owner, `b` = partner). Kore
 - `apps/mobile` — Kotlin Multiplatform: `core` (models, calc, Supabase), `ui` (Compose MP), `androidApp`, `iosApp` (placeholder)
 - `supabase/` — `schema.sql` + `migrations/` (shared by web and mobile)
 - `PRODUCT.md` — product source of truth; `CHANGELOG.md` — versions
-- `docs/design-system/` — design source of truth: `tokens.json`, rules in `README.md`, per-component `README.md` + live `preview.html`. `DESIGN.md` still describes the current, older UI until the app is migrated.
+- `docs/design-system/` — design source of truth: `tokens.json`, rules in `README.md`, per-component `README.md` + live `preview.html`. `DESIGN.md` only points into it (no values of its own).
 - `scripts/secret_check.py`, `.githooks/`, `.github/` — secret blocking, CI, PR rules, releases
 
 ## Stack

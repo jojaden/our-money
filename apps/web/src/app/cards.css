@@ -1,5 +1,6 @@
-/* 카드 — 튜브 게이지, 예산 카드(BudgetCard), 두 사람 월급의 흐름(PayFlow)
-   규칙: docs/design-system README "게이지와 막대", components/BudgetCard·PayFlow/README.md */
+/* 카드 — 튜브 게이지, 예산 카드(BudgetCard), 진행선(StepTrack), 무지개 게이지(RainbowGauge), 기록 타일(StatTiles),
+   하루·분류 막대, 모으는 목표(GoalBar), 두 사람 월급의 흐름(PayFlow)
+   규칙: docs/design-system README "게이지와 막대", components/<이름>/README.md */
 
 /* ---------- 튜브 게이지 ---------- */
 
