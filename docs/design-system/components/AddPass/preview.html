@@ -1,0 +1,145 @@
+<!-- @dsCard group="Wallet" height=860 subtitle="카드·계좌 추가 시트: 적는 대로 위 카드가 바뀌고, 신용카드↔통장을 바꾸면 카드가 뒤집혀요. '지갑에 넣기'를 누르면 카드가 지갑으로 내려가요" -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alan+Sans:wght@300..900&family=Noto+Sans+KR:wght@400..800&display=swap">
+<style>
+  body { margin: 0; background: var(--ground); color: var(--text); font-family: var(--font-text); word-break: keep-all; -webkit-font-smoothing: antialiased; }
+  p, h3 { margin: 0; }
+  .stage { padding: 20px; }
+  /* 뒤의 지갑은 어둡게 가리고, 시트가 위로 올라와 있다 */
+  .screen { position: relative; max-width: 390px; height: 820px; overflow: hidden; border-radius: var(--radius-card); background: color-mix(in srgb, var(--text) 38%, var(--ground)); box-shadow: var(--shadow-card); }
+  .sheet { position: absolute; left: 0; right: 0; top: 34px; bottom: 0; display: flex; flex-direction: column; padding: 8px var(--edge) 24px; background: var(--ground); border-radius: var(--radius-sheet) var(--radius-sheet) 0 0; }
+  .grab { align-self: center; width: 36px; height: 5px; border-radius: var(--radius-chip); background: var(--control); opacity: .5; }
+  .sh-head { display: grid; grid-template-columns: 64px 1fr 64px; align-items: center; height: 48px; margin-top: 4px; }
+  .sh-head h3 { text-align: center; font: 700 17px/22px var(--font-text); }
+  .txt { justify-self: start; height: 44px; padding: 0; border: 0; background: none; color: var(--accent-ink); font: 500 16px/44px var(--font-text); cursor: pointer; }
+  button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* 미리보기 카드: 앞면 신용카드, 뒷면 통장. 종류를 바꾸면 뒤집힌다 */
+  .preview { margin: 10px auto 18px; width: 82%; aspect-ratio: 1 / .63; perspective: 1000px; transition: transform var(--dur-tab) var(--ease-drawer), opacity var(--dur-tab) var(--ease-out); }
+  .preview.drop { transform: translateY(420px) scale(.7); opacity: 0; }
+  .flip { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; transition: transform var(--dur-pop) var(--ease-drawer); }
+  .bank-on .flip { transform: rotateY(180deg); }
+  .face { position: absolute; inset: 0; overflow: hidden; border-radius: var(--radius-pass); -webkit-backface-visibility: hidden; backface-visibility: hidden; box-shadow: var(--shadow-float), inset 0 0 0 .5px color-mix(in srgb, var(--text) 10%, transparent), inset 0 1px 0 color-mix(in srgb, var(--surface) 55%, transparent); }
+  .front { background: linear-gradient(135deg, var(--surface) 0%, var(--well) 58%, var(--surface) 100%); }
+  .back { transform: rotateY(180deg); background: var(--pass-dark); color: var(--on-primary); }
+  .back::before { content: ""; position: absolute; inset: 0; background: radial-gradient(circle, var(--dot) 0 2.1px, transparent 2.6px) 0 0 / 10px 10px; -webkit-mask: radial-gradient(52% 80% at 50% 118%, #000 0 40%, transparent 72%); mask: radial-gradient(52% 80% at 50% 118%, #000 0 40%, transparent 72%); }
+  .back .bot { text-shadow: 0 1px 2px color-mix(in srgb, var(--pass-dark) 80%, transparent); }
+  .sheen { position: absolute; inset: 0; background: radial-gradient(60% 55% at 20% 0%, color-mix(in srgb, var(--surface) 70%, transparent), transparent 70%); mix-blend-mode: soft-light; }
+  .top { position: absolute; left: 14px; right: 14px; top: 14px; display: flex; align-items: center; gap: 9px; }
+  .who { display: grid; place-items: center; flex: none; width: 26px; height: 26px; border-radius: var(--radius-chip); background: color-mix(in srgb, var(--surface) 78%, transparent); }
+  .who svg, .own svg { width: 18px; height: 18px; }
+  .on { fill: var(--p); } .off { fill: none; stroke: var(--control); stroke-width: 1.4; }
+  .nm { overflow: hidden; font: 600 15px/20px var(--font-text); white-space: nowrap; text-overflow: ellipsis; }
+  .bot { position: absolute; left: 16px; right: 16px; bottom: 12px; display: flex; justify-content: space-between; font: 500 13px/18px var(--font-text); opacity: .72; }
+  .num { font-family: var(--font-display); letter-spacing: .06em; font-variant-numeric: tabular-nums; }
+  .ph { opacity: .45; }
+
+  /* 세그먼트: 떠 있는 흰 썸 */
+  .seg { position: relative; display: grid; grid-template-columns: 1fr 1fr; height: 36px; padding: 2px; border-radius: 10px; background: var(--tab-active-bg); }
+  .seg::before { content: ""; position: absolute; top: 2px; bottom: 2px; left: 2px; width: calc(50% - 2px); border-radius: 8px; background: var(--surface); box-shadow: var(--shadow-raise); transition: transform var(--dur-tab) var(--ease-drawer); }
+  .bank-on .seg::before { transform: translateX(100%); }
+  .seg button { position: relative; border: 0; background: none; color: var(--text); font: 600 14.5px/32px var(--font-text); cursor: pointer; }
+
+  /* 묶음 입력: 왼쪽 이름표, 오른쪽 값 */
+  .group { margin-top: 16px; background: var(--surface); border-radius: var(--radius-control); box-shadow: var(--shadow-card); }
+  .f { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 50px; padding: 0 16px; box-sizing: border-box; border: 0; background: none; color: var(--text); font: 500 16px/22px var(--font-text); text-align: left; }
+  .f + .f { box-shadow: 0 -.6px 0 var(--rule); }
+  .f > span:first-child { flex: none; width: 74px; color: var(--muted); }
+  .f input { flex: 1; min-width: 0; height: 48px; border: 0; background: none; color: var(--text); font: inherit; text-align: right; }
+  .f input::placeholder { color: var(--faint); opacity: .7; }
+  .f b { margin-left: auto; font-weight: 500; }
+  .f .chev { width: 16px; height: 16px; flex: none; fill: none; stroke: var(--control); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  button.f { cursor: pointer; }
+  .bank-on .card-only { display: none; }
+  .owners { display: flex; gap: 6px; margin-left: auto; }
+  .own { display: inline-flex; align-items: center; gap: 5px; height: 32px; padding: 0 10px 0 7px; border: 0; border-radius: var(--radius-chip); background: var(--well); color: var(--muted); font: 600 14px/32px var(--font-text); cursor: pointer; transition: transform var(--dur-press) var(--ease-press); }
+  .own:active { transform: scale(.94); }
+  .own[aria-checked="true"] { background: var(--accent-soft); color: var(--accent-ink); box-shadow: inset 0 0 0 1.5px var(--accent); }
+  .help { margin: 10px 4px 0; color: var(--faint); font: 500 13px/18px var(--font-text); }
+  .put { margin-top: auto; height: 52px; border: 0; border-radius: var(--radius-control); background: var(--primary); color: var(--on-primary); font: 600 17px/52px var(--font-text); cursor: pointer; transition: transform var(--dur-press) var(--ease-press), background-color var(--dur-press); }
+  .put:active { transform: scale(.96); background: var(--primary-press); }
+  .put:disabled { opacity: .4; cursor: default; }
+  @media (prefers-reduced-motion: reduce) { .preview, .flip, .seg::before, .own, .put { transition: none; } }
+</style>
+<div class="stage">
+  <div class="screen">
+    <div class="sheet" id="sheet" role="dialog" aria-labelledby="add-h">
+      <span class="grab" aria-hidden="true"></span>
+      <div class="sh-head"><button type="button" class="txt">취소</button><h3 id="add-h">카드 추가</h3></div>
+      <div class="preview" id="preview" aria-hidden="true">
+        <div class="flip">
+          <div class="face front"><span class="sheen"></span>
+            <span class="top"><span class="who" data-glyph></span><span class="nm" data-name></span></span>
+            <span class="bot"><span data-inst></span><span class="num" data-last4></span></span></div>
+          <div class="face back"><span class="sheen"></span>
+            <span class="top"><span class="who" data-glyph></span><span class="nm" data-name></span></span>
+            <span class="bot"><span data-inst></span><span class="num">통장</span></span></div>
+        </div>
+      </div>
+      <div class="seg" role="radiogroup" aria-label="종류">
+        <button type="button" role="radio" aria-checked="true" data-kind="card">신용카드</button>
+        <button type="button" role="radio" aria-checked="false" data-kind="bank">통장</button>
+      </div>
+      <div class="group">
+        <label class="f"><span>이름</span><input id="nm" maxlength="30" autocomplete="off" placeholder="공동 신용카드"></label>
+        <label class="f"><span id="inst-l">카드사</span><input id="inst" maxlength="30" autocomplete="off" placeholder="모아카드"></label>
+        <label class="f card-only"><span>끝 4자리</span><input id="l4" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="1234"></label>
+      </div>
+      <div class="group">
+        <div class="f"><span>누구 것</span><div class="owners" role="radiogroup" aria-label="누구 것" id="owners"></div></div>
+        <button type="button" class="f card-only"><span>결제 계좌</span><b>공동 생활비통장</b><svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button>
+        <button type="button" class="f card-only"><span>결제일</span><b>매달 14일</b><svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button>
+      </div>
+      <p class="help">공동 지출을 개인 카드·통장으로 내면 정산 대상이 돼요.</p>
+      <button type="button" class="put" id="put" disabled>지갑에 넣기</button>
+    </div>
+  </div>
+</div>
+<script>
+  const L = "M11.2 4.6a7.4 7.4 0 0 0 0 14.8Z", R = "M12.8 4.6a7.4 7.4 0 0 1 0 14.8Z";
+  const glyph = (o) => `<svg viewBox="0 0 24 24" aria-hidden="true"><path class="${o !== "b" ? "on" : "off"}" d="${L}"/><path class="${o !== "a" ? "on" : "off"}" d="${R}"/></svg>`;
+  const OWNER = { joint: ["공동", "var(--joint)"], a: ["현빈", "var(--a)"], b: ["예진", "var(--b)"] };
+  const sheet = document.getElementById("sheet"), preview = document.getElementById("preview");
+  const $ = (id) => document.getElementById(id);
+  let kind = "card", owner = "joint";
+  $("owners").innerHTML = Object.entries(OWNER).map(([k, [n]]) => `<button type="button" class="own" role="radio" data-o="${k}" style="--p: ${OWNER[k][1]}" aria-checked="${k === owner}">${glyph(k)}${n}</button>`).join("");
+
+  // 적는 대로 카드가 바뀐다. 비어 있으면 자리 글자를 옅게 보여 준다
+  const paint = () => {
+    const nm = $("nm").value.trim(), inst = $("inst").value.trim(), l4 = $("l4").value;
+    const put = (sel, v, ph) => preview.querySelectorAll(sel).forEach((el) => { el.textContent = v || ph; el.classList.toggle("ph", !v); });
+    put("[data-name]", nm, kind === "card" ? "카드 이름" : "통장 이름");
+    put("[data-inst]", inst, kind === "card" ? "카드사" : "은행");
+    put("[data-last4]", l4 && `•••• ${l4}`, "•••• ····");
+    preview.querySelectorAll("[data-glyph]").forEach((el) => (el.innerHTML = glyph(owner)));
+    preview.style.setProperty("--p", OWNER[owner][1]);
+    preview.style.setProperty("--dot", OWNER[owner][1]);
+    $("put").disabled = !nm;
+  };
+  sheet.querySelector(".seg").addEventListener("click", (e) => {
+    const b = e.target.closest("button"); if (!b) return;
+    kind = b.dataset.kind;
+    for (const x of b.parentElement.children) x.setAttribute("aria-checked", String(x === b));
+    sheet.classList.toggle("bank-on", kind === "bank");
+    $("add-h").textContent = kind === "card" ? "카드 추가" : "통장 추가";
+    $("inst-l").textContent = kind === "card" ? "카드사" : "은행";
+    $("nm").placeholder = kind === "card" ? "공동 신용카드" : "공동 생활비통장";
+    $("inst").placeholder = kind === "card" ? "모아카드" : "도토리은행";
+    paint();
+  });
+  $("owners").addEventListener("click", (e) => {
+    const b = e.target.closest(".own"); if (!b) return;
+    owner = b.dataset.o;
+    for (const x of b.parentElement.children) x.setAttribute("aria-checked", String(x === b));
+    paint();
+  });
+  $("l4").addEventListener("input", (e) => (e.target.value = e.target.value.replace(/\D/g, "").slice(0, 4)));
+  for (const id of ["nm", "inst", "l4"]) $(id).addEventListener("input", paint);
+  // 지갑에 넣기: 카드가 아래(지갑 쪽)로 내려가며 사라진다. 미리보기는 잠시 뒤 처음으로
+  $("put").addEventListener("click", () => {
+    navigator.vibrate?.(15);
+    preview.classList.add("drop");
+    $("put").textContent = "지갑에 넣었어요";
+    setTimeout(() => { preview.classList.remove("drop"); $("put").textContent = "지갑에 넣기"; }, 1600);
+  });
+  paint();
+</script>

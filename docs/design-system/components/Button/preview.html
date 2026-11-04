@@ -1,4 +1,4 @@
-<!-- @dsCard group="Actions" height=240 subtitle="블록 · 주 · 보조 · 고스트 · 위험 · 떠 있는 버튼" -->
+<!-- @dsCard group="Actions" height=380 subtitle="블록 · 주 · 보조 · 고스트 · 위험 · 떠 있는 버튼, 그리고 지갑의 둥근 유리 버튼 · 유리 캡슐 · 회색 알약" -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alan+Sans:wght@300..900&family=Noto+Sans+KR:wght@400..800&display=swap">
 <style>
   body { margin: 0; background: var(--ground); color: var(--text); font-family: var(--font-text); word-break: keep-all; -webkit-font-smoothing: antialiased; }
@@ -17,7 +17,18 @@
   .danger { height: 36px; padding: 0 8px; background: transparent; color: var(--negative); }
   .fab { height: 52px; padding: 0 22px 0 18px; border-radius: var(--radius-chip); box-shadow: var(--shadow-float); font-size: 16px; }
   .fab:active { transform: scale(0.94); }
-  @media (prefers-reduced-motion: reduce) { .btn { transition: none; } }
+  /* 지갑에서 온 버튼: 떠 있는 유리(둥근 하나, 캡슐 묶음)와 회색 알약 */
+  .glassbar { display: flex; align-items: center; gap: var(--nav-gap); padding: 14px; border-radius: var(--radius-control); background: linear-gradient(120deg, color-mix(in srgb, var(--g-living) 30%, var(--surface)), color-mix(in srgb, var(--g-fixed) 30%, var(--surface))); }
+  .glass { display: inline-flex; height: 44px; border-radius: var(--radius-chip); background: var(--glass); box-shadow: var(--shadow-float); -webkit-backdrop-filter: blur(20px) saturate(1.6); backdrop-filter: blur(20px) saturate(1.6); }
+  .glass.cap { padding: 0 4px; margin-left: auto; }
+  .ico { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 0; border-radius: var(--radius-chip); background: none; color: var(--text); cursor: pointer; transition: transform var(--dur-press) var(--ease-press); }
+  button.glass.ico { background: var(--glass); }
+  .ico:active { transform: scale(.88); }
+  .ico:focus-visible, .tonal:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .ico svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .tonal { height: 44px; padding: 0 22px; border: 0; border-radius: var(--radius-chip); background: var(--tab-active-bg); color: var(--text); font: 600 16px/44px var(--font-text); cursor: pointer; transition: transform var(--dur-press) var(--ease-press); }
+  .tonal:active { transform: scale(.96); }
+  @media (prefers-reduced-motion: reduce) { .btn, .ico, .tonal { transition: none; } }
 </style>
 <div class="stage">
   <button type="button" class="btn primary block">점심&nbsp;<b>12,000원</b>&nbsp;기록하기</button>
@@ -27,7 +38,13 @@
     <button type="button" class="btn ghost">취소</button>
     <button type="button" class="btn danger">로그아웃</button>
   </div>
+  <div class="glassbar">
+    <button type="button" class="glass ico" aria-label="닫기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+    <button type="button" class="glass ico" aria-label="추가"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg></button>
+    <span class="glass cap"><button type="button" class="ico" aria-label="찾기"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></button><button type="button" class="ico" aria-label="더 보기"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg></button></span>
+  </div>
   <div class="row">
+    <button type="button" class="tonal">결제했어요</button>
     <button type="button" class="btn primary fab"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>지출 기록</button>
   </div>
 </div>
