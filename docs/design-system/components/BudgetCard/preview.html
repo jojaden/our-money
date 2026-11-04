@@ -18,18 +18,20 @@
   .aside { color: var(--faint); font: 500 14.5px/20px var(--font-text); text-decoration: none; border-radius: 6px; }
 
   svg path { fill: none; stroke-linecap: round; }
-  /* 튜브: 테두리(rim) → 몸통(body) → 가운데 빛(hi) 세 겹. 테두리는 몸통보다 아주 조금만 진하다 */
-  .tr.rim { stroke: var(--tr-rim, color-mix(in srgb, var(--lilac) 85%, var(--surface))); }
-  .tr.body { stroke: var(--tr-body, color-mix(in srgb, var(--lilac) 42%, var(--surface))); }
-  .tr.hi { stroke: var(--surface); stroke-opacity: .9; filter: blur(1px); }
-  .fl.rim { stroke: color-mix(in srgb, var(--c) 90%, var(--text)); }
-  .fl.body { stroke: var(--c); }
-  .fl.hi { stroke: var(--surface); stroke-opacity: .5; filter: blur(.8px); }
-  .fl { stroke-dasharray: 100 100; stroke-dashoffset: 100; }
-  /* 흰 카드 위 작은 게이지는 빈자리를 조금 더 진하게 */
-  .compact { --tr-rim: color-mix(in srgb, var(--lilac) 92%, var(--muted)); --tr-body: color-mix(in srgb, var(--lilac) 62%, var(--surface)); }
+  /* 빛을 머금은 튜브: 빈자리는 굵기 방향 입체의 흰 라일락, 채운 호는 옅은 → 진한 끝 + 반투명 입체 + 둘레 빛 */
+  .tk-edge { stop-color: color-mix(in srgb, var(--lilac) 82%, var(--muted)); }
+  .tk-body { stop-color: color-mix(in srgb, var(--lilac) 45%, var(--surface)); }
+  .tk-light { stop-color: var(--surface); }
+  .tk-rim { stop-color: color-mix(in srgb, var(--lilac) 88%, var(--muted)); }
+  .lg-from { stop-color: color-mix(in srgb, var(--c) 46%, var(--surface)); }
+  .lg-to { stop-color: var(--c); }
+  .vo-shade { stop-color: var(--text); }
+  .vo-light { stop-color: var(--surface); }
+  .fl path { stroke-dasharray: 100 100; stroke-dashoffset: var(--off, 100); }
+  .fl .halo { opacity: .45; filter: blur(7px); }
+  .compact .fl .halo { filter: blur(4px); }
   .mile { fill: var(--surface); stroke: var(--ink); }
-  .knob { fill: var(--surface); stroke: var(--c); filter: drop-shadow(0 0 5px color-mix(in srgb, var(--c) 55%, transparent)); }
+  .knob { fill: var(--surface); filter: drop-shadow(0 1px 2px color-mix(in srgb, var(--text) 25%, transparent)); }
 
   .cap { color: var(--faint); font: 500 14.5px/20px var(--font-text); }
   .fig { font: 700 36px/42px var(--font-display); letter-spacing: -0.02em; }
@@ -82,16 +84,22 @@
       <div class="head"><h3 id="lead-h">남은 공동 생활비</h3><a class="aside" href="#">가계부 ›</a></div>
       <div class="arc">
         <svg viewBox="0 0 300 160" role="img" data-svg>
-          <defs><path id="lead-t" d="M52 148 A98 98 0 0 1 248 148"/></defs>
-          <path class="tr rim" stroke-width="22" d="M26 148 A124 124 0 0 1 274 148"/>
-          <path class="tr body" stroke-width="20" d="M26 148 A124 124 0 0 1 274 148"/>
-          <path class="tr hi" stroke-width="8" d="M26 148 A124 124 0 0 1 274 148"/>
-          <path class="fl rim" data-fill stroke-width="22" pathLength="100" d="M26 148 A124 124 0 0 1 274 148"/>
-          <path class="fl body" data-fill stroke-width="20" pathLength="100" d="M26 148 A124 124 0 0 1 274 148"/>
-          <path class="fl hi" data-fill stroke-width="8" pathLength="100" d="M26 148 A124 124 0 0 1 274 148"/>
+          <defs>
+            <path id="lead-t" d="M52 148 A98 98 0 0 1 248 148"/>
+            <!-- 굵기 방향 자리: 안쪽 113 → 바깥 135 (반지름 124, 굵기 22) -->
+            <radialGradient id="lead-k" gradientUnits="userSpaceOnUse" cx="150" cy="148" r="135"><stop offset=".837" class="tk-edge"/><stop offset=".886" class="tk-body"/><stop offset=".935" class="tk-light"/><stop offset=".974" class="tk-body"/><stop offset="1" class="tk-rim"/></radialGradient>
+            <radialGradient id="lead-v" gradientUnits="userSpaceOnUse" cx="150" cy="148" r="135"><stop offset=".837" class="vo-shade" stop-opacity=".22"/><stop offset=".886" class="vo-shade" stop-opacity="0"/><stop offset=".935" class="vo-light" stop-opacity=".32"/><stop offset=".974" class="vo-light" stop-opacity="0"/><stop offset="1" class="vo-shade" stop-opacity=".14"/></radialGradient>
+          </defs>
+          <path stroke="url(#lead-k)" stroke-width="22" d="M26 148 A124 124 0 0 1 274 148"/>
+          <g class="fl" data-fill>
+            <linearGradient id="lead-l" gradientUnits="userSpaceOnUse" x1="26" y1="148" x2="26" y2="148"><stop offset="0" class="lg-from"/><stop offset="1" class="lg-to"/></linearGradient>
+            <path class="halo" stroke="url(#lead-l)" stroke-width="30" pathLength="100" d="M26 148 A124 124 0 0 1 274 148"/>
+            <path stroke="url(#lead-l)" stroke-width="22" pathLength="100" d="M26 148 A124 124 0 0 1 274 148"/>
+            <path stroke="url(#lead-v)" stroke-width="22" pathLength="100" d="M26 148 A124 124 0 0 1 274 148"/>
+          </g>
           <circle class="mile" data-mile r="4.5" stroke-width="2"/>
           <text class="mile-t"><textPath href="#lead-t" data-mile-t text-anchor="middle">오늘</textPath></text>
-          <circle class="knob" data-knob r="8" stroke-width="3.5"/>
+          <circle class="knob" data-knob r="6.5"/>
         </svg>
         <div class="pct" aria-hidden="true"><b><span data-pct>0</span><span class="u">%</span></b><small>사용</small></div>
       </div>
@@ -116,14 +124,20 @@
       </div>
       <div class="mini">
         <svg viewBox="0 0 92 92" role="img" data-svg>
-          <path class="tr rim" stroke-width="10" d="M19.13 72.87 A38 38 0 1 1 72.87 72.87"/>
-          <path class="tr body" stroke-width="8.5" d="M19.13 72.87 A38 38 0 1 1 72.87 72.87"/>
-          <path class="tr hi" stroke-width="3.6" d="M19.13 72.87 A38 38 0 1 1 72.87 72.87"/>
-          <path class="fl rim" data-fill stroke-width="10" pathLength="100" d="M19.13 72.87 A38 38 0 1 1 72.87 72.87"/>
-          <path class="fl body" data-fill stroke-width="8.5" pathLength="100" d="M19.13 72.87 A38 38 0 1 1 72.87 72.87"/>
-          <path class="fl hi" data-fill stroke-width="3.6" pathLength="100" d="M19.13 72.87 A38 38 0 1 1 72.87 72.87"/>
+          <defs>
+            <!-- 굵기 방향 자리: 안쪽 33 → 바깥 43 (반지름 38, 굵기 10) -->
+            <radialGradient id="mini-k" gradientUnits="userSpaceOnUse" cx="46" cy="46" r="43"><stop offset=".767" class="tk-edge"/><stop offset=".837" class="tk-body"/><stop offset=".907" class="tk-light"/><stop offset=".963" class="tk-body"/><stop offset="1" class="tk-rim"/></radialGradient>
+            <radialGradient id="mini-v" gradientUnits="userSpaceOnUse" cx="46" cy="46" r="43"><stop offset=".767" class="vo-shade" stop-opacity=".22"/><stop offset=".837" class="vo-shade" stop-opacity="0"/><stop offset=".907" class="vo-light" stop-opacity=".32"/><stop offset=".963" class="vo-light" stop-opacity="0"/><stop offset="1" class="vo-shade" stop-opacity=".14"/></radialGradient>
+          </defs>
+          <path stroke="url(#mini-k)" stroke-width="10" d="M19.13 72.87 A38 38 0 1 1 72.87 72.87"/>
+          <g class="fl" data-fill>
+            <linearGradient id="mini-l" gradientUnits="userSpaceOnUse" x1="19.13" y1="72.87" x2="19.13" y2="72.87"><stop offset="0" class="lg-from"/><stop offset="1" class="lg-to"/></linearGradient>
+            <path class="halo" stroke="url(#mini-l)" stroke-width="14" pathLength="100" d="M19.13 72.87 A38 38 0 1 1 72.87 72.87"/>
+            <path stroke="url(#mini-l)" stroke-width="10" pathLength="100" d="M19.13 72.87 A38 38 0 1 1 72.87 72.87"/>
+            <path stroke="url(#mini-v)" stroke-width="10" pathLength="100" d="M19.13 72.87 A38 38 0 1 1 72.87 72.87"/>
+          </g>
           <circle class="mile" data-mile r="2.6" stroke-width="1.5"/>
-          <circle class="knob" data-knob r="5.5" stroke-width="2.5"/>
+          <circle class="knob" data-knob r="3"/>
         </svg>
         <div class="pct" aria-hidden="true"><b><span data-pct>0</span><span class="u">%</span></b><small>사용</small></div>
       </div>
@@ -165,7 +179,10 @@
   // 한 프레임: 호, 끝 점, 퍼센트, 남은 돈이 같은 값으로 움직인다
   const frame = (c, v) => {
     const r = Math.min(1, v / c.budget);
-    c.el.querySelectorAll("[data-fill]").forEach((p) => (p.style.strokeDashoffset = String(100 - r * 100)));
+    const fill = q(c, "fill"), lg = fill.querySelector("linearGradient"), [gx, gy] = c.at(Math.max(r, 0.02));
+    fill.style.setProperty("--off", String(100 - r * 100));
+    lg.setAttribute("x2", gx.toFixed(2));
+    lg.setAttribute("y2", gy.toFixed(2));
     place(q(c, "knob"), c.at(r));
     q(c, "pct").textContent = String(Math.round((v / c.budget) * 100));
     q(c, "left").textContent = won(Math.abs(c.budget - v));
