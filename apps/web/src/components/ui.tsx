@@ -21,8 +21,7 @@ import {
 } from "lucide-react";
 import type { CatIcon, CatVisual } from "@/lib/categories";
 import { Drawer } from "vaul";
-import type { Group, Owner, Settings } from "@/lib/types";
-import { GROUP_LABEL, GROUP_ORDER } from "@/lib/types";
+import type { Owner, Settings } from "@/lib/types";
 import { num } from "@/lib/format";
 import { nameOf } from "@/lib/calc";
 import { useStore } from "@/lib/store";
@@ -189,39 +188,6 @@ export function Track({ value, max, tick }: { value: number; max: number; tick?:
         <span className={`fill ${over ? "over" : ""}`} style={{ transform: `scaleX(${ratio})` }} />
       </div>
       {tick !== null && tick !== undefined && max > 0 && <span className="tick" style={{ left: `${Math.min(100, (tick / max) * 100)}%` }} aria-hidden="true" />}
-    </div>
-  );
-}
-
-export function ThinTrack({ value, max }: { value: number; max: number }) {
-  const ratio = max > 0 ? Math.min(1, value / max) : 0;
-  return (
-    <div className="thin track" aria-hidden="true">
-      <span className={`fill ${value > max && max > 0 ? "over" : ""}`} style={{ transform: `scaleX(${ratio})` }} />
-    </div>
-  );
-}
-
-export function GroupLegend({ totals, income }: { totals: Record<Group, number>; income: number }) {
-  const allocated = GROUP_ORDER.reduce((a, g) => a + totals[g], 0);
-  const left = income - allocated;
-  const pct = (v: number) => (income > 0 ? `${Math.round((v / income) * 100)}%` : "–");
-  return (
-    <div className="legend">
-      {GROUP_ORDER.map((g) => (
-        <div className="li" key={g}>
-          <span className={`dot ${g}`} />
-          <span>{GROUP_LABEL[g]}</span>
-          <Money value={totals[g]} />
-          <span className="pct num">{pct(totals[g])}</span>
-        </div>
-      ))}
-      <div className="li">
-        <span className="dot left" />
-        <span>{left >= 0 ? "배분 안 된 돈" : "초과 배분"}</span>
-        <Money value={Math.abs(left)} className={left < 0 ? "neg" : ""} />
-        <span className="pct num">{pct(Math.abs(left))}</span>
-      </div>
     </div>
   );
 }

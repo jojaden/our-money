@@ -106,7 +106,6 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
   border-radius: 2px;
 }
 .track-legend { display: flex; justify-content: space-between; margin-top: 8px; color: var(--muted); font-size: var(--fs-meta); }
-.thin.track { height: 4px; }
 
 /* 결제수단 나눔 */
 .split3 {
@@ -170,17 +169,12 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
 
 /* ---------- 레인 (두 사람 월급 흐름) ---------- */
 
-.legend { display: grid; margin-top: 18px; }
-.legend .li { display: grid; grid-template-columns: 10px 1fr auto auto; align-items: center; gap: 10px; padding: 7px 0; font-size: 14px; }
-.legend .dot { width: 10px; height: 10px; border-radius: 3px; }
-.legend .li .money { text-align: right; min-width: 92px; }
-.legend .li .pct { color: var(--muted); min-width: 40px; text-align: right; font-size: 13px; }
 .dot.fixed { background: var(--g-fixed); }
 .dot.living { background: var(--g-living); }
 .dot.allowance { background: var(--g-allowance); }
 .dot.saving { background: var(--g-saving); }
 .dot.left { background: var(--g-left); box-shadow: inset 0 0 0 1px var(--control); }
-.legend .dot, .dot { border-radius: 999px; }
+.dot { border-radius: 999px; }
 
 /* 이체 화살표 줄 */
 .row .t.flow { display: flex; flex-wrap: wrap; align-items: center; column-gap: 6px; row-gap: 0; white-space: normal; overflow: visible; }
@@ -238,7 +232,7 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
 .keytick::before { content: ""; width: 2px; height: 12px; border-radius: 2px; background: var(--text); }
 @media (max-width: 1023px) {
   .col { display: contents; }
-  .o1 { order: 1; } .o2 { order: 2; } .o3 { order: 3; } .o4 { order: 4; } .o5 { order: 5; } .o6 { order: 6; }
+  .o1 { order: 1; } .o2 { order: 2; } .o3 { order: 3; } .o4 { order: 4; } .o5 { order: 5; } .o6 { order: 6; } .o7 { order: 7; }
 }
 
 .split-note { display: none; }
@@ -310,34 +304,9 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
 .kpi-sub .money { color: var(--muted); }
 
 
-/* 요약 머리 (플랜·가계부) */
-.summary { margin: -4px 0 24px; }
-.summary-lbl { color: var(--faint); font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
-.summary-hero { margin-top: 2px; font-size: 40px; line-height: 1.1; font-weight: 700; letter-spacing: -0.035em; }
-.summary-hero .money { font-variant-numeric: proportional-nums; font-feature-settings: normal; }
-.summary-hero .money .unit { font-size: 0.55em; color: var(--faint); font-weight: 600; margin-left: 3px; }
-.summary-stats { display: grid; margin: 18px 0 0; padding: 14px 0 0; border-top: 1px solid var(--border); }
-.summary-stats > div { padding: 0 14px; min-width: 0; }
-.summary-stats > div:first-child { padding-left: 0; }
-.summary-stats > div + div { box-shadow: inset 1px 0 0 var(--border); }
-.summary-stats dt { color: var(--faint); font-size: 13px; font-weight: 500; }
-.summary-stats dd { margin: 3px 0 0; font-size: 17px; font-weight: 700; letter-spacing: -0.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.summary-stats dd .money .unit { font-size: 0.8em; color: var(--faint); font-weight: 600; }
-.summary-stats dd.note { margin-top: 2px; font-size: 12px; font-weight: 600; letter-spacing: 0; }
-.delta { display: inline-flex; align-items: center; gap: 2px; }
-.delta.good { color: var(--positive); }
-.delta.bad { color: var(--negative); }
-@media (min-width: 1024px) { .summary { max-width: 720px; } }
 .todo-progress { display: flex; align-items: center; gap: 16px; margin: 0 0 12px; padding-bottom: 14px; border-bottom: 1px solid var(--rule); }
 .todo-progress .big { font-size: 26px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.1; }
 .todo-progress .big span { font-size: 16px; font-weight: 600; color: var(--faint); letter-spacing: -0.01em; }
 .todo-progress .sub { margin-top: 4px; color: var(--faint); font-size: 14px; font-weight: 500; }
-@media (max-width: 420px) {
-  .summary-stats > div { padding: 0 10px; }
-  .summary-stats dd { font-size: 15px; }
-  .summary-hero { font-size: 38px; }
-}
-.summary-stats dd { overflow: visible; text-overflow: clip; }
-
 .firstrun-actions { display: grid; gap: 8px; margin-top: 20px; }
 .firstrun-actions .btn { margin-top: 0; width: 100%; height: 50px; }

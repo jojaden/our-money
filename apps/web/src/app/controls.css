@@ -27,6 +27,11 @@
 .group-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 12px 4px 10px; }
 .group-head h2 { color: var(--faint); font: 500 14.5px/20px var(--font-text); }
 .group-head .aside { color: var(--faint); font: 500 14.5px/20px var(--font-text); white-space: nowrap; }
+/* 이름표 앞 버킷 색 점, 이름표 오른쪽의 작은 글자 버튼(수정 등) */
+.group-head h2 .dot { display: inline-block; width: 8px; height: 8px; margin-right: 8px; vertical-align: 1px; }
+.group-head .head-btn { display: inline-flex; align-items: center; gap: 4px; height: 28px; margin: -4px -8px; padding: 0 8px; border: 0; border-radius: var(--radius-chip); background: none; color: var(--accent-ink); font-weight: 600; transition: background-color var(--dur-press) var(--ease-out); }
+.group-head .head-btn:active { background: var(--well); }
+.group-head .head-btn svg { width: 15px; height: 15px; stroke-width: 2; }
 
 /* ---------- 금액 ---------- */
 
@@ -36,7 +41,7 @@
 .pos { color: var(--positive); }
 .dash { color: var(--faint); }
 /* 답 숫자는 Alan Sans. 각 화면 단계에서 자리를 옮기면 이 묶음에서 뺀다 */
-.summary-hero, .bigamount input, .todo-progress .big { font-family: var(--font-display); }
+.bigamount input, .todo-progress .big { font-family: var(--font-display); }
 
 /* ---------- 목록 줄 (ListRow) ---------- */
 
