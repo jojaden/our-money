@@ -17,11 +17,6 @@
 .card-head a.aside::after, .budget-head a.aside::after, .group-head a.aside::after { content: ""; width: 7px; height: 7px; margin-left: 2px; border-top: 1.6px solid currentColor; border-right: 1.6px solid currentColor; transform: rotate(45deg); }
 .card-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 14px; }
 
-.section-title { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 28px 4px 10px; }
-.section-title h2 { font: 700 20px/28px var(--font-text); letter-spacing: -0.02em; }
-.section-title .aside { color: var(--faint); font-size: 14.5px; }
-.stack > .section-title:first-child { margin-top: 0; }
-
 /* 섹션 이름표: 카드 안 머리 대신 카드 묶음 위에 짧게 (README "레이아웃") */
 .group { min-width: 0; }
 .group-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 12px 4px 10px; }
@@ -38,10 +33,7 @@
 .money { font-variant-numeric: tabular-nums; white-space: nowrap; }
 .money .unit { margin-left: 1px; }
 .neg { color: var(--negative); }
-.pos { color: var(--positive); }
 .dash { color: var(--faint); }
-/* 답 숫자는 Alan Sans. 각 화면 단계에서 자리를 옮기면 이 묶음에서 뺀다 */
-.bigamount input, .todo-progress .big { font-family: var(--font-display); }
 
 /* ---------- 목록 줄 (ListRow) ---------- */
 
@@ -157,7 +149,6 @@ button.row:active, a.row:active { background: var(--well); transform: scale(0.98
 .pill.positive { background: var(--pill-positive-bg); color: var(--pill-positive-ink); }
 .pill.negative { background: var(--pill-negative-bg); color: var(--pill-negative-ink); }
 .pill.warning { background: var(--pill-warning-bg); color: var(--pill-warning-ink); }
-.pill.accent { background: var(--accent-soft); color: var(--accent-ink); }
 
 /* ---------- 칩 (Chip) ---------- */
 
@@ -290,7 +281,6 @@ button.row:active, a.row:active { background: var(--well); transform: scale(0.98
 .notice { display: flex; gap: 10px; padding: 12px 14px; border-radius: var(--radius-inner); background: var(--pill-warning-bg); color: var(--pill-warning-ink); font-size: 14.5px; }
 .notice svg { flex: none; width: 18px; height: 18px; margin-top: 1px; }
 .empty { padding: 14px 16px; border-radius: var(--radius-inner); background: var(--raised); color: var(--muted); font-size: 14.5px; }
-.skeleton { display: block; border-radius: var(--radius-small); background: var(--well); }
 
 /* ---------- 시트 (vaul) ---------- */
 

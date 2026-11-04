@@ -1,6 +1,6 @@
-/* 우리 집 가계부 — 기본과 아직 새 디자인으로 옮기지 않은 화면
+/* 우리 집 가계부 — 바탕 규칙, 그리드, 여러 화면이 나눠 쓰는 작은 조각
    디자인 기준은 docs/design-system 이다. 색·모서리·그림자·움직임 값은 tokens.css(tokens.json 에서 만듦),
-   셸은 shell.css, 공통 컨트롤은 controls.css 에 있다. 화면을 옮기면 여기 옛 규칙을 지운다.
+   셸은 shell.css, 공통 컨트롤은 controls.css, 카드·게이지는 cards.css, 지갑은 wallet.css, 축하·로그인·로딩은 moments.css.
    그리드: 폰은 한 열. 1024px 이상은 56px 레일 + 최대 1152px 캔버스, 캔버스 안 12열(7 + 5). */
 
 @font-face {
@@ -13,15 +13,7 @@
   unicode-range: U+0020-007E, U+00A0, U+00B7, U+00D7, U+2013-2014, U+2019, U+2026, U+2212;
 }
 
-/* 앱에만 있는 글자 크기 — 옮기지 않은 화면이 쓴다 */
-:root {
-  --fs-title: 32px;
-  --fs-section: 20px;
-  --fs-body: 16px;
-  --fs-small: 14px;
-  --fs-meta: 13px;
-  color-scheme: light;
-}
+:root { color-scheme: light; }
 
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; overscroll-behavior: none; }
@@ -54,6 +46,12 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
 
 .num { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+/* 문장 안에서 쉼표 단위로만 줄바꿈 */
+.nw { white-space: nowrap; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+}
 
 /* ---------- 그리드 ---------- */
 
@@ -65,105 +63,46 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
   .grid { grid-template-columns: repeat(12, minmax(0, 1fr)); }
   .span-7 { grid-column: span 7; }
   .span-5 { grid-column: span 5; }
-  .span-6 { grid-column: span 6; }
   .span-12 { grid-column: 1 / -1; }
   .col { display: grid; gap: var(--gap); align-content: start; }
 }
+/* 폰에서는 열을 풀고 o1~o7 순서로 한 줄에 세운다 */
+@media (max-width: 1023px) {
+  .col { display: contents; }
+  .o1 { order: 1; } .o2 { order: 2; } .o3 { order: 3; } .o4 { order: 4; } .o5 { order: 5; } .o6 { order: 6; } .o7 { order: 7; }
+}
 
+/* ---------- 찾은 문장·보조 줄 ---------- */
 
-/* ---------- 숫자 ---------- */
-
-.kpi-sub { margin-top: 6px; color: var(--muted); font-size: var(--fs-small); }
+.kpi-sub { margin-top: 6px; color: var(--faint); font-size: 14px; }
 .kpi-sub strong { color: var(--text); font-weight: 600; }
-
-/* ---------- 계획 트랙 ---------- */
-
-.track {
-  position: relative;
-  height: 10px;
-  border-radius: 999px;
-  background: var(--g-left);
-  overflow: hidden;
+.kpi-sub .money { color: var(--muted); }
+/* 좁은 폰에서는 쉼표 대신 마디마다 줄을 바꾼다 */
+@media (max-width: 639px) {
+  .finding .sep, .kpi-sub .sep { display: none; }
+  .finding .clause, .kpi-sub .clause { display: block; }
 }
-.track > .fill {
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: 100%;
-  border-radius: 999px;
-  background: var(--accent);
-  transform-origin: left center;
-  transition: transform 320ms var(--ease-out);
-}
-.track > .fill.over { background: var(--negative); }
-.track-wrap { position: relative; margin-top: 16px; }
-.track-wrap .tick {
-  position: absolute;
-  top: -4px;
-  bottom: -4px;
-  width: 2px;
-  margin-left: -1px;
-  background: var(--text);
-  border-radius: 2px;
-}
-.track-legend { display: flex; justify-content: space-between; margin-top: 8px; color: var(--muted); font-size: var(--fs-meta); }
+.split-note { display: none; }
+@media (min-width: 640px) { .split-note { display: block; } }
 
-/* 결제수단 나눔 */
-.split3 {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  margin-top: 18px;
-  padding-top: 14px;
-  border-top: 1px solid var(--rule);
-}
-.split3 > div { padding: 0 12px; }
-.split3 > div:first-child { padding-left: 0; }
-.split3 > div + div { border-left: 1px solid var(--rule); }
-.split3 .k { color: var(--muted); font-size: var(--fs-meta); }
-.split3 .v { font-size: 15px; font-weight: 600; }
+/* ---------- 버킷 점·범례 ---------- */
 
-
-.daygroup + .daygroup { margin-top: 8px; }
-.dayhead { display: flex; justify-content: space-between; padding: 14px 0 4px; color: var(--muted); font-size: var(--fs-meta); font-weight: 600; }
-
-
-
-
-
-.bigamount {
-  display: flex;
-  align-items: baseline;
-  gap: 6px;
-  padding: 4px 0 12px;
-  border-bottom: 2px solid var(--text);
-}
-.bigamount input {
-  flex: 1;
-  min-width: 0;
-  border: 0;
-  outline: none;
-  background: transparent;
-  font-size: 34px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  font-variant-numeric: tabular-nums;
-}
-.bigamount input::placeholder { color: #c5c9ce; }
-.bigamount .unit { font-size: 22px; font-weight: 600; color: var(--muted); }
-.quick { display: flex; gap: 8px; margin-top: 10px; }
-.quick button { height: 30px; padding: 0 10px; border: 0; border-radius: 999px; background: var(--well); color: var(--muted); font-size: 13px; font-weight: 600; }
-.quick button:active { transform: scale(0.96); }
-
-
-/* ---------- 레인 (두 사람 월급 흐름) ---------- */
-
+.dot { border-radius: 999px; }
 .dot.fixed { background: var(--g-fixed); }
 .dot.living { background: var(--g-living); }
 .dot.allowance { background: var(--g-allowance); }
 .dot.saving { background: var(--g-saving); }
 .dot.left { background: var(--g-left); box-shadow: inset 0 0 0 1px var(--control); }
-.dot { border-radius: 999px; }
+.keytick { display: inline-flex; align-items: center; gap: 6px; }
+.keytick::before { content: ""; width: 2px; height: 12px; border-radius: 2px; background: var(--text); }
 
-/* 이체 화살표 줄 */
+/* ---------- 체크: 할 일 진행, 이체 화살표 줄, 나눠 내는 몫 ---------- */
+
+.todo-progress { display: flex; align-items: center; gap: 16px; margin: 0 0 12px; padding-bottom: 14px; border-bottom: 1px solid var(--rule); }
+.todo-progress .big { font-family: var(--font-display); font-size: 26px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.1; }
+.todo-progress .big span { font-size: 16px; font-weight: 600; color: var(--faint); letter-spacing: -0.01em; }
+.todo-progress .sub { margin-top: 4px; color: var(--faint); font-size: 14px; font-weight: 500; }
+
 .row .t.flow { display: flex; flex-wrap: wrap; align-items: center; column-gap: 6px; row-gap: 0; white-space: normal; overflow: visible; }
 .flow .acc { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
 .flow svg { width: 14px; height: 14px; flex: none; color: var(--faint); }
@@ -172,79 +111,52 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
 .parts .p { display: flex; justify-content: space-between; gap: 12px; padding: 3px 0; font-size: 13px; color: var(--muted); }
 .parts .p .money { color: var(--text); }
 
-/* 진행 */
-.progress-strip { display: flex; gap: 3px; margin-top: 12px; }
-.progress-strip span { flex: 1; height: 6px; border-radius: 999px; background: var(--g-left); transition: background-color 200ms ease; }
-.progress-strip span.on { background: var(--positive); }
+/* ---------- 가계부: 날짜 묶음, 분류 예산 줄 ---------- */
 
-/* ---------- 안내·빈 상태 ---------- */
-
-.firstrun { padding: 28px var(--pad); }
-.firstrun h2 { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; }
-.firstrun p { margin-top: 8px; color: var(--muted); }
-.firstrun .btn { margin-top: 20px; }
-
-
-/* ---------- 설정 ---------- */
-
-.set-sec { display: grid; gap: 12px; }
-.set-sec + .set-sec { margin-top: 28px; }
-.set-sec > .head h2 { font-size: var(--fs-section); font-weight: 600; }
-.set-sec > .head p { margin-top: 2px; color: var(--muted); font-size: 14px; }
-@media (min-width: 1024px) {
-  .set-sec { grid-template-columns: 320px minmax(0, 1fr); gap: 32px; }
-  .set-sec + .set-sec { margin-top: 0; padding-top: 32px; border-top: 1px solid var(--border); }
-  .settings-wrap { display: grid; gap: 32px; max-width: 1040px; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
-}
-
-/* 범례·순서 보정 */
-.keytick { display: inline-flex; align-items: center; gap: 6px; }
-.keytick::before { content: ""; width: 2px; height: 12px; border-radius: 2px; background: var(--text); }
-@media (max-width: 1023px) {
-  .col { display: contents; }
-  .o1 { order: 1; } .o2 { order: 2; } .o3 { order: 3; } .o4 { order: 4; } .o5 { order: 5; } .o6 { order: 6; } .o7 { order: 7; }
-}
-
-.split-note { display: none; }
-@media (min-width: 640px) { .split-note { display: block; } }
-
-/* 문장 안에서 쉼표 단위로만 줄바꿈 */
-.nw { white-space: nowrap; }
-
-
-/* 분류 예산 줄: 금액 칸 너비 고정 → 트랙 길이 같게 */
+.daygroup + .daygroup { margin-top: 8px; }
+.dayhead { display: flex; justify-content: space-between; padding: 14px 0 4px; color: var(--muted); font-size: 13px; font-weight: 600; }
+/* 금액 칸 너비 고정 → 트랙 길이 같게 */
 .row.catrow { grid-template-columns: minmax(0, 1fr) 112px; }
-@media (max-width: 639px) {
-  .finding .sep, .kpi-sub .sep { display: none; }
-  .finding .clause, .kpi-sub .clause { display: block; }
+.row.catrow.icon { grid-template-columns: auto minmax(0, 1fr) 112px; }
+
+/* ---------- 지출 시트: 큰 금액 입력, 금액 더하기, 자주 쓰는 지출 ---------- */
+
+.bigamount {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 4px 0 12px;
+  border-bottom: 2px solid var(--border);
+  transition: border-color 200ms ease;
 }
-
-
-
-/* =====================================================================
-   2차 다듬기 — 토스·애플 참고: 굵은 숫자, 파란 주 버튼, 누르는 반응, 이어지는 모션
-   ===================================================================== */
-
-.bigamount { border-bottom: 2px solid var(--border); transition: border-color 200ms ease; }
 .bigamount:focus-within { border-color: var(--accent); }
-.bigamount input { font-size: 36px; letter-spacing: -0.03em; }
-.quick button { background: var(--well); color: var(--muted); height: 32px; padding: 0 12px; transition: transform 240ms var(--ease-press), background-color 160ms ease; }
+.bigamount input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  font-family: var(--font-display);
+  font-size: 36px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+.bigamount input::placeholder { color: #c5c9ce; }
+.bigamount .unit { font-size: 22px; font-weight: 600; color: var(--muted); }
+.quick { display: flex; gap: 8px; margin-top: 10px; }
+.quick button {
+  height: 32px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--well);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  transition: transform 240ms var(--ease-press), background-color 160ms ease;
+}
 .quick button:active { transform: scale(0.94); background: var(--accent-soft); color: var(--accent-ink); }
-
-.progress-strip span.on { background: var(--accent); }
-
-
-/* 트랙: 처음 그려질 때 차오르고, 값이 바뀌면 부드럽게 */
-.track { height: 12px; }
-.track > .fill { transition: transform 900ms var(--ease-out); }
-@starting-style { .track > .fill { transform: scaleX(0) !important; } }
-.split3 { border-top-color: var(--rule); }
-.split3 > div + div { border-left-color: var(--border); }
-.split3 .v { font-size: 16px; font-weight: 700; }
 
 .auto-tag { margin-left: 6px; color: var(--accent-ink); font-size: 12px; font-weight: 600; }
 .presets { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; margin: 14px -20px 0; padding: 0 20px 2px; }
@@ -264,23 +176,24 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
 .preset:active { transform: scale(0.95); background: var(--accent-soft); }
 .preset .t { font-size: 14px; font-weight: 600; white-space: nowrap; }
 .preset .s { color: var(--faint); font-size: 12px; white-space: nowrap; }
-.suggest { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
-.suggest button { height: 30px; padding: 0 12px; border: 0; border-radius: 999px; background: var(--well); color: var(--muted); font-size: 13px; font-weight: 600; }
 
-.row.catrow.icon { grid-template-columns: auto minmax(0, 1fr) 112px; }
+/* ---------- 첫 달 안내 ---------- */
 
-
-/* =====================================================================
-   3차 — 애플 스타일: 큰 제목, 묶음 목록, 반투명 탭 바, 활동 링, 스크린타임 막대
-   ===================================================================== */
-
-.kpi-sub { color: var(--faint); font-size: 14px; }
-.kpi-sub .money { color: var(--muted); }
-
-
-.todo-progress { display: flex; align-items: center; gap: 16px; margin: 0 0 12px; padding-bottom: 14px; border-bottom: 1px solid var(--rule); }
-.todo-progress .big { font-size: 26px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.1; }
-.todo-progress .big span { font-size: 16px; font-weight: 600; color: var(--faint); letter-spacing: -0.01em; }
-.todo-progress .sub { margin-top: 4px; color: var(--faint); font-size: 14px; font-weight: 500; }
+.firstrun { padding: 28px var(--pad); }
+.firstrun h2 { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; }
+.firstrun p { margin-top: 8px; color: var(--muted); }
+.firstrun .btn { margin-top: 20px; }
 .firstrun-actions { display: grid; gap: 8px; margin-top: 20px; }
 .firstrun-actions .btn { margin-top: 0; width: 100%; height: 50px; }
+
+/* ---------- 설정 ---------- */
+
+.set-sec { display: grid; gap: 12px; }
+.set-sec + .set-sec { margin-top: 28px; }
+.set-sec > .head h2 { font-size: 20px; font-weight: 600; }
+.set-sec > .head p { margin-top: 2px; color: var(--muted); font-size: 14px; }
+@media (min-width: 1024px) {
+  .set-sec { grid-template-columns: 320px minmax(0, 1fr); gap: 32px; }
+  .set-sec + .set-sec { margin-top: 0; padding-top: 32px; border-top: 1px solid var(--border); }
+  .settings-wrap { display: grid; gap: 32px; max-width: 1040px; }
+}
