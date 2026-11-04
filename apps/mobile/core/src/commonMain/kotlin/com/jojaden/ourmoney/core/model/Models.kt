@@ -105,6 +105,8 @@ data class Account(
     /** 카드 번호 끝 4자리 — 카드 알림 자동 기록에서 카드를 찾을 때 */
     val last4: String? = null,
     val note: String = "",
+    /** 지갑 카드 그림 색 (migrations/008, 카드만). 비면 이번 달 쓴 버킷 색 */
+    val color: String? = null,
     @SerialName("created_at") val createdAt: String? = null,
     /** 서버가 채우는 칸 (migrations/004). rev 는 읽은 그대로 돌려보낸다 — 다른 기기가 그사이 고쳤으면 저장 거절 */
     val rev: Int? = null,

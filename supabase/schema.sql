@@ -735,6 +735,12 @@ begin
   end loop;
 end $$;
 
+-- ========== 지갑 카드 색 (migrations/008 와 같음) ==========
+alter table public.accounts
+  add column if not exists color text
+    check (color in ('black', 'silver', 'gold', 'rose', 'red', 'green', 'blue', 'purple'));
+comment on column public.accounts.color is '지갑 카드 그림 색(카드만). 비면 이번 달 쓴 버킷 색';
+
 -- ---------- 실시간 동기화 ----------
 do $$
 declare t text;

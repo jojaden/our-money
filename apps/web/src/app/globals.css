@@ -126,19 +126,6 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
 .dayhead { display: flex; justify-content: space-between; padding: 14px 0 4px; color: var(--muted); font-size: var(--fs-meta); font-weight: 600; }
 
 
-.tile {
-  display: grid;
-  place-items: center;
-  width: 36px;
-  height: 36px;
-  border-radius: var(--radius-inner);
-  font-size: 13px;
-  font-weight: 700;
-  flex: none;
-}
-.tile.card-a { background: var(--a-soft); color: var(--a-ink); }
-.tile.card-b { background: var(--b-soft); color: var(--b-ink); }
-.tile.card-joint { background: var(--joint-soft); color: var(--joint-ink); }
 
 
 

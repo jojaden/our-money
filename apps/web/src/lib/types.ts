@@ -62,7 +62,14 @@ export interface Account extends Meta {
   /** 카드 번호 끝 4자리 — 카드 알림 자동 기록에서 카드를 찾을 때 */
   last4?: string | null;
   note?: string;
+  /** 지갑 카드 그림 색 (migrations/008, 카드만). 비면 이번 달 쓴 버킷 색 */
+  color?: PassColor | null;
 }
+
+/** 지갑에서 고르는 카드 색 — tokens.json 의 pass-* 와 DB CHECK(migrations/008) 이 같은 목록 */
+export const PASS_COLORS = ["black", "silver", "gold", "rose", "red", "green", "blue", "purple"] as const;
+export type PassColor = (typeof PASS_COLORS)[number];
+export const PASS_COLOR_LABEL: Record<PassColor, string> = { black: "검정", silver: "은색", gold: "금색", rose: "분홍", red: "빨강", green: "초록", blue: "파랑", purple: "보라" };
 
 interface ItemFields extends Meta {
   group: Group;

@@ -5,6 +5,7 @@ import { ArrowRight, ChevronDown } from "lucide-react";
 import { useData } from "@/lib/store";
 import { nameOf } from "@/lib/calc";
 import { CheckButton, Money } from "./ui";
+import { MiniCard } from "./pass";
 import { dueState, dueText, waiting, type Task } from "./tasks";
 import { shortDate } from "@/lib/format";
 
@@ -47,7 +48,11 @@ export function TaskRow({ task, expandable = false, fromShown = false }: { task:
               </span>
             </div>
           ) : (
-            <div className="t">{task.title}</div>
+            // 카드값: 작은 카드 그림이 "카드"를 말하므로 이름만 (읽어 주는 이름은 체크 버튼의 전체 제목)
+            <div className="t">
+              {task.bill && <MiniCard account={task.bill.card} />}
+              {task.bill ? task.bill.card.name : task.title}
+            </div>
           )}
           {expandable && task.transfer && task.transfer.parts.length > 1 ? (
             <button

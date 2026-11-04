@@ -2,13 +2,14 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Trash2 } from "lucide-react";
-import type { Data, Owner, PayKind, Spending } from "@/lib/types";
+import type { Account, Data, Owner, PayKind, Spending } from "@/lib/types";
 import { useData } from "@/lib/store";
 import { allowanceStatus, livingStatus, monthOf, nameOf } from "@/lib/calc";
 import { categoryVisual, guessFromMemo, presetsOf, type Preset } from "@/lib/categories";
 import { num, parseYmd, rase, ymd } from "@/lib/format";
 import { haptic } from "@/lib/native";
 import { CategoryIcon, MAX_SPENDING, Seg, Sheet } from "./ui";
+import { MiniCard } from "./pass";
 
 const LAST_CARD = "our-money-last-card";
 const MINE = "__mine";
@@ -165,10 +166,10 @@ export function SpendingSheet({ open, onOpenChange, editing }: { open: boolean; 
 
   const accountOptions =
     payKind === "card"
-      ? cards.map((c) => ({ value: c.id, label: c.name }))
+      ? cards.map((c) => ({ value: c.id, label: c.name, card: c as Account | undefined }))
       : [
-          ...banks.map((b) => ({ value: b.id, label: payKind === "cash" ? `${b.name}에서 뽑은 현금` : b.name })),
-          ...(payKind === "cash" ? [{ value: MINE, label: "내 지갑" }] : []),
+          ...banks.map((b) => ({ value: b.id, label: payKind === "cash" ? `${b.name}에서 뽑은 현금` : b.name, card: undefined })),
+          ...(payKind === "cash" ? [{ value: MINE, label: "내 지갑", card: undefined }] : []),
         ];
 
   // 기록하면 남는 금액 미리보기
@@ -346,6 +347,7 @@ export function SpendingSheet({ open, onOpenChange, editing }: { open: boolean; 
           <div className="chips" role="radiogroup" aria-label={payKind === "card" ? "카드" : "계좌"}>
             {accountOptions.map((o) => (
               <button key={o.value} type="button" className="chip" role="radio" aria-checked={(account ?? MINE) === o.value} onClick={() => changeAccount(o.value)}>
+                {o.card && <MiniCard account={o.card} />}
                 {o.label}
               </button>
             ))}

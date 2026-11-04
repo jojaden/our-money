@@ -15,6 +15,7 @@ import { PayFlow } from "@/components/PayFlow";
 import { byUrgency, dueState, useTasks, waiting } from "@/components/tasks";
 import { dDay, shortDate } from "@/lib/format";
 import { TaskRow } from "@/components/TaskRow";
+import { MiniCard } from "@/components/pass";
 import { useSheets } from "@/components/Shell";
 
 export default function Home() {
@@ -143,9 +144,7 @@ export default function Home() {
                 <div className="rows">
                   {bills.map((b) => (
                     <div className="row" key={b.card.id}>
-                      <span className={`tile card-${b.card.owner}`} aria-hidden="true">
-                        {b.card.institution.slice(0, 2)}
-                      </span>
+                      <MiniCard account={b.card} />
                       <div style={{ minWidth: 0 }}>
                         <div className="t">{b.card.name}</div>
                         <div className="s">

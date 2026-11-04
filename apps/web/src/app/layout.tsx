@@ -6,6 +6,7 @@ import "./globals.css";
 import "./controls.css";
 import "./cards.css";
 import "./moments.css";
+import "./wallet.css";
 import "./shell.css";
 
 

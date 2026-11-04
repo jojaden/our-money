@@ -9,7 +9,10 @@ import { nameOf, paydayOf } from "@/lib/calc";
 import { num } from "@/lib/format";
 import { resetDemo, signOut } from "@/lib/repo";
 import { AmountInput, Money, Seg, Who } from "@/components/ui";
-import { AccountSheet, CategorySheet } from "@/components/SettingsSheets";
+import { CategorySheet } from "@/components/SettingsSheets";
+import { AddPass } from "@/components/AddPass";
+import { Wallet } from "@/components/Wallet";
+import { MiniCard } from "@/components/pass";
 
 /** 스프레드시트가 수식으로 실행하지 않게 = + - @ 탭·줄바꿈으로 시작하는 글자 칸 앞에 ' 를 붙인다 */
 function cell(v: string | number) {
@@ -56,7 +59,7 @@ export default function SettingsPage() {
 
   const perPerson = s.payday_a != null && s.payday_b != null;
   const banks = data.accounts.filter((a) => a.kind === "bank" && !a.archived).sort((a, b) => a.sort - b.sort);
-  const cards = data.accounts.filter((a) => a.kind === "card" && !a.archived).sort((a, b) => a.sort - b.sort);
+  const hidden = data.accounts.filter((a) => a.archived).sort((a, b) => a.sort - b.sort);
   const cats = [...data.categories].sort((a, b) => a.sort - b.sort);
   const catTotal = cats.reduce((a, c) => a + c.budget, 0);
 
@@ -84,25 +87,6 @@ export default function SettingsPage() {
     if (pending > 0 && !window.confirm(`보내지 못한 저장 ${pending}건이 있어요. 로그아웃하면 이 기기에서 지워져요. 로그아웃할까요?`)) return;
     void signOut();
   };
-
-  const accountRow = (a: Account) => (
-    <button type="button" className="row" key={a.id} onClick={() => setAcc({ open: true, account: a })}>
-      <span className={`tile card-${a.owner}`} aria-hidden="true">
-        {(a.institution || a.name).slice(0, 2)}
-      </span>
-      <div style={{ minWidth: 0 }}>
-        <div className="t">{a.name}</div>
-        <div className="s">
-          {[a.institution, nameOf(s, a.owner), a.kind === "card" && a.pay_day ? `${a.pay_day}일 결제` : null, a.kind === "card" && a.billing_account_id ? data.accounts.find((x) => x.id === a.billing_account_id)?.name : null]
-            .filter(Boolean)
-            .join(" · ")}
-        </div>
-      </div>
-      <div className="r">
-        {(s.salary_account_a === a.id || s.salary_account_b === a.id) && <span className="pill accent">월급통장</span>}
-      </div>
-    </button>
-  );
 
   return (
     <>
@@ -262,24 +246,34 @@ export default function SettingsPage() {
 
         <section className="set-sec" aria-labelledby="acc-h">
           <div className="head">
-            <h2 id="acc-h">계좌와 카드</h2>
-            <p>이체 목록과 카드값 계산에 써요. 잔액은 따로 관리하지 않아요.</p>
+            <h2 id="acc-h">지갑</h2>
+            <p>계좌와 카드예요. 이체 목록과 카드값 계산에 써요. 잔액은 따로 관리하지 않아요. 카드를 누르면 카드값·결제일·최근 사용이 나와요.</p>
           </div>
-          <div className="card">
-            <div className="rows">{banks.map(accountRow)}</div>
-            <div className="card-foot" style={{ justifyContent: "flex-start" }}>
-              <button type="button" className="btn ghost" onClick={() => setAcc({ open: true, kind: "bank" })}>
-                <Plus aria-hidden="true" /> 계좌 추가
-              </button>
-            </div>
-            <div className="rows" style={{ marginTop: 8, borderTop: "1px solid var(--rule)" }}>
-              {cards.map(accountRow)}
-            </div>
-            <div className="card-foot" style={{ justifyContent: "flex-start" }}>
-              <button type="button" className="btn ghost" onClick={() => setAcc({ open: true, kind: "card" })}>
-                <Plus aria-hidden="true" /> 카드 추가
-              </button>
-            </div>
+          <div>
+            <Wallet onAdd={() => setAcc({ open: true, kind: "card" })} onEdit={(a) => setAcc({ open: true, account: a })} />
+            {hidden.length > 0 && (
+              <section className="group hidden-passes" aria-labelledby="hidden-h">
+                <div className="group-head">
+                  <h3 id="hidden-h">숨긴 카드·통장</h3>
+                </div>
+                <div className="card">
+                  <div className="rows">
+                    {hidden.map((a) => (
+                      <div className="row" key={a.id}>
+                        <MiniCard account={a} />
+                        <div style={{ minWidth: 0 }}>
+                          <div className="t">{a.name}</div>
+                          <div className="s">{[a.institution, nameOf(s, a.owner)].filter(Boolean).join(" · ")}</div>
+                        </div>
+                        <button type="button" className="btn secondary sm" onClick={() => void upsert("accounts", [{ ...a, archived: false }])}>
+                          되살리기
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </section>
+            )}
           </div>
         </section>
 
@@ -360,7 +354,7 @@ export default function SettingsPage() {
         </section>
       </div>
 
-      <AccountSheet open={acc.open} account={acc.account} kind={acc.kind} onOpenChange={(open) => setAcc((x) => ({ ...x, open }))} />
+      <AddPass open={acc.open} account={acc.account} kind={acc.kind} onOpenChange={(open) => setAcc((x) => ({ ...x, open }))} />
       <CategorySheet open={cat.open} category={cat.category} onOpenChange={(open) => setCat((x) => ({ ...x, open }))} />
     </>
   );
