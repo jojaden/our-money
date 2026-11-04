@@ -89,7 +89,8 @@ begin
     ) then
       return null;
     end if;
-    update public.members set user_id = uid where email = mail and user_id is null;
+    -- 같은 계정이 동시에 두 번 부르면(앱 시작 때) 늦은 쪽은 이미 자기에게 묶인 줄을 본다 → 그것도 성공
+    update public.members set user_id = uid where email = mail and (user_id is null or user_id = uid);
     if not found then
       return null;
     end if;
