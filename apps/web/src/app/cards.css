@@ -93,6 +93,38 @@
 .task-gauge { width: 80px; height: 80px; }
 .task-gauge .pct b { font-size: 16px; line-height: 18px; letter-spacing: -0.03em; }
 
+/* 체크 화면 머리: 같은 270° 튜브 + 결론 */
+.progress-line { display: flex; align-items: center; gap: 14px; margin-top: 12px; }
+.progress-line .task-gauge { width: 64px; height: 64px; }
+.progress-line .task-gauge .pct b { font-size: 14px; line-height: 16px; }
+.progress-line .finding { margin: 0; }
+
+/* ---------- 체크포인트 진행선 (StepTrack) ---------- */
+
+/* 월급날 카드: 제목 → 메타 줄 → 진행선 → 기한 줄 → 할 일 줄 */
+.payday .card-head { margin-bottom: 6px; }
+.payday .card-head h3 { font: 600 17px/24px var(--font-text); letter-spacing: -0.01em; }
+.step-meta { display: flex; align-items: flex-start; gap: 6px; margin: 0; color: var(--faint); font: 500 12.5px/18px var(--font-text); }
+.step-meta svg { flex: none; width: 14px; height: 14px; margin-top: 2px; stroke-width: 2; }
+.step-meta b { color: var(--muted); font-family: var(--font-display); font-weight: 600; }
+.step-meta strong { color: var(--muted); font-weight: 600; }
+.step-meta .money { color: var(--muted); }
+.step-track { display: flex; align-items: center; margin: 10px 0; }
+.step-wrap { display: flex; flex: 1; align-items: center; }
+.step-wrap:first-child { flex: none; }
+.step { flex: none; display: grid; place-items: center; width: 20px; height: 20px; box-sizing: border-box; border: 2px solid var(--well); border-radius: var(--radius-chip); background: var(--surface); color: var(--on-primary); transition: background-color var(--dur-press) var(--ease-out), border-color var(--dur-press) var(--ease-out); }
+.step svg { width: 12px; height: 12px; stroke-width: 3; opacity: 0; }
+.step.done { border-color: var(--primary); background: var(--primary); }
+.step.done svg { opacity: 1; }
+/* 이음선: 끝내면 왼쪽에서 차오른다 */
+.step-bar { position: relative; flex: 1; height: 4px; overflow: hidden; background: var(--well); }
+.step-bar::after { content: ""; position: absolute; inset: 0; background: var(--primary); transform: scaleX(0); transform-origin: left; transition: transform var(--dur-value) var(--ease-value); }
+.step-bar.done::after { transform: none; }
+.payday .rows { margin-top: 10px; }
+@media (prefers-reduced-motion: reduce) {
+  .step, .step-bar::after { transition: none; }
+}
+
 /* ---------- 두 사람 월급의 흐름 (PayFlow) ---------- */
 
 .flow-lanes { display: grid; gap: 24px; }

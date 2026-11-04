@@ -1,0 +1,103 @@
+/* 순간 — 100% 축하(Celebrate). 로그인·로딩의 따뜻한 무대도 여기에 둔다
+   규칙: docs/design-system README "움직임", components/Celebrate/README.md */
+
+/* ---------- 100% 축하 ---------- */
+
+.celebrate {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  overflow: hidden;
+  background: radial-gradient(120% 85% at 50% 32%, var(--glow) 0%, var(--accent-soft) 42%, var(--lilac) 100%);
+  outline: none;
+  cursor: pointer;
+  animation: celebrate-in var(--dur-bloom) var(--ease-out) both;
+}
+.celebrate.leaving { animation: celebrate-out 220ms var(--ease-out) both; }
+/* 빛·구슬·숫자의 가운데 = 숫자 자리 */
+.celebrate { --cy: calc(env(safe-area-inset-top, 0px) + 30vh + 40px); }
+.celebrate .bloom { position: absolute; inset: 0; background: radial-gradient(55% 40% at 50% var(--cy), var(--surface) 0%, transparent 70%); opacity: 0.9; animation: celebrate-bloom var(--dur-bloom) var(--ease-out) both; }
+.celebrate .rays {
+  position: absolute;
+  top: var(--cy);
+  left: 50%;
+  width: 900px;
+  height: 900px;
+  margin: -450px 0 0 -450px;
+  background: repeating-conic-gradient(from 0deg, color-mix(in srgb, var(--surface) 90%, transparent) 0deg 12deg, transparent 12deg 36deg);
+  opacity: 0.6;
+  filter: blur(26px);
+  -webkit-mask: radial-gradient(circle, #000 0 18%, transparent 55%);
+  mask: radial-gradient(circle, #000 0 18%, transparent 55%);
+  animation: celebrate-bloom var(--dur-bloom) var(--ease-out) both, celebrate-spin var(--dur-rays) linear infinite;
+}
+.celebrate .spark { position: absolute; top: var(--cy); left: 50%; width: 14px; height: 14px; margin: -7px; border-radius: var(--radius-chip); background: var(--surface); box-shadow: 0 0 18px 8px color-mix(in srgb, var(--surface) 80%, transparent), 0 0 40px 16px color-mix(in srgb, var(--primary) 22%, transparent); opacity: 0; animation: celebrate-spark 700ms var(--ease-out) both; }
+.celebrate .bead {
+  position: absolute;
+  top: var(--cy);
+  left: 50%;
+  translate: -50% -50%;
+  border-radius: var(--radius-chip);
+  background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--primary) 30%, var(--surface)) 0 18%, var(--primary) 55%, var(--primary-press) 100%);
+  opacity: 0;
+  animation: celebrate-burst 1100ms var(--ease-out) var(--d) both;
+}
+.celebrate .center { position: absolute; top: calc(var(--cy) - 60px); right: 16px; left: 16px; display: grid; justify-items: center; gap: 14px; text-align: center; }
+.celebrate .big {
+  margin: 0;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--primary) 68%, var(--surface)) 0%, var(--primary) 46%, color-mix(in srgb, var(--primary) 72%, var(--primary-press)) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font: 800 120px/1 var(--font-display);
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  filter: drop-shadow(0 5px 0 color-mix(in srgb, var(--primary-press) 30%, transparent)) drop-shadow(0 18px 24px color-mix(in srgb, var(--primary) 26%, transparent));
+  animation: celebrate-pop var(--dur-pop) var(--ease-pop) 300ms both;
+}
+.celebrate .big small { font-size: 0.5em; letter-spacing: 0; }
+.celebrate h2 { font: 700 26px/32px var(--font-text); letter-spacing: -0.02em; text-wrap: balance; animation: celebrate-rise 420ms var(--ease-out) 650ms both; }
+.done-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; max-width: 320px; margin: 0; padding: 0; list-style: none; }
+.done-chips li { height: 28px; padding: 0 12px; border-radius: var(--radius-chip); background: color-mix(in srgb, var(--surface) 75%, transparent); color: var(--muted); font: 600 12.5px/28px var(--font-text); animation: celebrate-rise 360ms var(--ease-out) both; }
+.done-chips li:nth-child(1) { animation-delay: 900ms; }
+.done-chips li:nth-child(2) { animation-delay: 1050ms; }
+.done-chips li:nth-child(3) { animation-delay: 1200ms; }
+.done-chips b { color: var(--accent-ink); font-family: var(--font-display); }
+.celebrate .next {
+  position: absolute;
+  right: 16px;
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  left: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 448px;
+  margin: 0 auto;
+  padding: 20px;
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+  animation: celebrate-rise 520ms var(--ease-out) 1500ms both;
+  transition: transform var(--dur-press) var(--ease-press);
+}
+.celebrate .next:active { transform: scale(0.98); }
+.celebrate .next > span { flex: 1; min-width: 0; }
+.celebrate .next strong { display: block; font: 700 18px/26px var(--font-text); }
+.celebrate .next span span { color: var(--faint); font: 400 14.5px/20px var(--font-text); }
+.celebrate .next svg { flex: none; width: 22px; height: 22px; color: var(--primary); stroke-width: 2; }
+
+@keyframes celebrate-in { from { opacity: 0; } }
+@keyframes celebrate-out { to { opacity: 0; } }
+@keyframes celebrate-bloom { from { scale: 0.7; opacity: 0; } }
+@keyframes celebrate-spin { to { transform: rotate(1turn); } }
+@keyframes celebrate-spark { 0% { opacity: 0; scale: 0.2; } 40% { opacity: 1; scale: 1.4; } 100% { opacity: 0; scale: 2.2; } }
+@keyframes celebrate-pop { from { transform: scale(0.6); opacity: 0; } }
+@keyframes celebrate-rise { from { transform: translateY(12px); opacity: 0; } }
+@keyframes celebrate-burst { 0% { transform: translate(0, 0) scale(0.4); opacity: 0; } 18% { opacity: 1; } 100% { transform: translate(var(--x), var(--y)) scale(0.75); opacity: 0; } }
+
+/* 움직임 줄이기: 빛·구슬·등장을 멈추고 100과 모든 글을 바로. 닫힘은 아주 짧게 (animationend 로 닫는다) */
+@media (prefers-reduced-motion: reduce) {
+  .celebrate, .celebrate .bloom, .celebrate .rays, .celebrate .spark, .celebrate .big, .celebrate h2, .done-chips li, .celebrate .next { animation: none; }
+  .celebrate .bead { display: none; }
+  .celebrate.leaving { animation: celebrate-out 1ms both; }
+}

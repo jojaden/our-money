@@ -310,15 +310,6 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
 .kpi-sub .money { color: var(--muted); }
 
 
-/* ---------- 예산 카드 + 활동 링 ---------- */
-.ring { position: relative; flex: none; }
-.ring svg { display: block; overflow: visible; }
-.ring-arc { transition: stroke-dashoffset 1100ms var(--ease-out); }
-@starting-style { .ring-arc { stroke-dashoffset: var(--c) !important; } }
-.ring-center { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; line-height: 1.1; }
-.ring-center b { font-size: 17px; font-weight: 700; letter-spacing: -0.02em; }
-.ring-center small { display: block; color: var(--faint); font-size: 11px; font-weight: 600; }
-
 /* ---------- 스크린타임식 하루 막대 ---------- */
 .daily-head { display: flex; align-items: baseline; gap: 8px; min-height: 30px; }
 .daily-head .k { color: var(--faint); font-size: 14px; font-weight: 500; }
@@ -347,12 +338,8 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
 .catbar > span.over { background: var(--negative); }
 .catbar > i { position: absolute; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; border-radius: 2px; background: var(--text); }
 
-/* ---------- 진행 링 (체크) ---------- */
-.progress-line { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
-.progress-line .ring-center b { font-size: 12px; }
-
 @media (prefers-reduced-motion: reduce) {
-  .ring-arc, .db span, .catbar > span { transition: none !important; }
+  .db span, .catbar > span { transition: none !important; }
 }
 
 
