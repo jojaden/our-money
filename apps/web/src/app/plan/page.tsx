@@ -92,7 +92,7 @@ export default function PlanPage() {
 
   return (
     <>
-      <MonthHeader title={(l) => `${l} 플랜`}>
+      <MonthHeader name="플랜">
         <p className="finding">
           {income === 0 ? (
             "아직 이번 달 수입을 적지 않았어요."

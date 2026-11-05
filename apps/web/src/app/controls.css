@@ -363,3 +363,34 @@ button.row:active, a.row:active { background: var(--well); transform: scale(0.98
 
 .morph { position: relative; }
 .morph.morphing { overflow: clip; overflow-clip-margin: 4px; }
+
+/* ---------- 달 고르기 시트 (MonthSheet): 해 넘기기 + 열두 달. 보고 있는 달은 인디고, 이번 달은 안쪽 링 ---------- */
+
+.year-step { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 14px; }
+.year-step .y { min-width: 96px; font: 700 20px/28px var(--font-display); text-align: center; }
+.year-step .month-arrow { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 0; border-radius: var(--radius-control); background: var(--well); color: var(--muted); transition: transform var(--dur-press) var(--ease-press); }
+.year-step .month-arrow svg { width: 20px; height: 20px; stroke-width: 2.25; }
+.year-step .month-arrow:active { transform: scale(0.94); }
+.month-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.month-cell {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 2px;
+  height: 64px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: var(--well);
+  color: var(--text);
+  font: 600 17px/22px var(--font-text);
+  transition: transform var(--dur-press) var(--ease-press), background-color var(--dur-press) ease, color var(--dur-press) ease;
+}
+.month-cell:active { transform: scale(0.96); }
+.month-cell small { color: var(--accent-ink); font: 600 11.5px/14px var(--font-text); }
+.month-cell .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--faint); }
+.month-cell[aria-current="date"] { box-shadow: inset 0 0 0 2px var(--accent); }
+.month-cell[aria-pressed="true"] { background: var(--primary); color: var(--on-primary); }
+.month-cell[aria-pressed="true"] small { color: inherit; }
+.month-cell[aria-pressed="true"] .dot { background: currentColor; }
+@media (hover: hover) and (pointer: fine) { .month-cell:not([aria-pressed="true"]):hover { background: var(--tab-active-bg); } }

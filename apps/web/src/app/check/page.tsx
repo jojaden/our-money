@@ -112,7 +112,7 @@ export default function CheckPage() {
   if (!started) {
     return (
       <>
-        <MonthHeader title={(l) => `${l} 체크`} />
+        <MonthHeader name="체크" />
         <FirstRun />
       </>
     );
@@ -127,7 +127,7 @@ export default function CheckPage() {
 
   return (
     <>
-      <MonthHeader title={(l) => `${l} 체크`}>
+      <MonthHeader name="체크">
         <div className="progress-line">
           <TaskGauge done={done} total={tasks.length} />
           <p className="finding">

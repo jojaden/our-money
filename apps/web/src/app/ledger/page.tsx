@@ -64,7 +64,7 @@ export default function LedgerPage() {
 
   return (
     <>
-      <MonthHeader title={(l) => `${l} 가계부`} />
+      <MonthHeader name="가계부" />
       <div className="grid">
         <div className="col span-7">
         <RainbowGauge
