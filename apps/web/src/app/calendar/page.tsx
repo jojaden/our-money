@@ -1,18 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
-import { Plus } from "lucide-react";
+import { Suspense, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { ChevronLeft, Plus } from "lucide-react";
 import type { CalEvent } from "@/lib/types";
 import { useData } from "@/lib/store";
 import { actualAmount, findCheck, nameOf } from "@/lib/calc";
-import { ddayText, eventTodo, marksIn, monthGrid, nextOccurrence, spentByDay, timeText, type Mark } from "@/lib/calendar";
+import { ddayText, eventTodo, marksIn, monthGrid, nextOccurrence, rangeDays, rangeOf, rangeText, spentByDay, timeText, type Mark, type Range } from "@/lib/calendar";
+import { leaveSummary, resetSummary } from "@/lib/summaryNav";
 import { dateWithDay, num, shortDate } from "@/lib/format";
 import { MonthHeader } from "@/components/MonthHeader";
 import { CategoryIcon, CheckButton, Money } from "@/components/ui";
 import { EventSheet } from "@/components/EventSheet";
 import { MonthTodo } from "@/components/MonthTodo";
-import { Morph } from "@/components/Morph";
+import { Morph, slideIn } from "@/components/Morph";
 import { PeriodSummary } from "@/components/PeriodSummary";
 import { useSheets } from "@/components/Shell";
 import { spendingVisual } from "@/lib/categories";
@@ -81,12 +83,68 @@ function CheckMark({ m, onOpen }: { m: Mark; onOpen: () => void }) {
   );
 }
 
+export default function CalendarPage() {
+  // 주소의 기간을 읽으려면 Suspense 가 있어야 정적 내보내기가 된다
+  return (
+    <Suspense fallback={null}>
+      <Calendar />
+    </Suspense>
+  );
+}
+
+/**
+ * 주소에 기간(?from=…&to=…)이 있으면 모아 보기, 없으면 달력.
+ * 바뀔 때 들어가는 쪽은 오른쪽에서, 돌아오는 쪽은 왼쪽에서 밀려 들어온다(애플의 밀어 넣기). 뒤로가기는 브라우저 기록을 따른다.
+ */
+function Calendar() {
+  const q = useSearchParams();
+  const range = rangeOf(q.get("from"), q.get("to"));
+  const mode = range ? "sum" : "cal";
+  const prev = useRef(mode);
+  useLayoutEffect(() => {
+    if (prev.current === mode) return;
+    prev.current = mode;
+    window.scrollTo(0, 0);
+    slideIn(document.querySelectorAll(".page-enter > *"), mode === "sum" ? 1 : -1);
+  }, [mode]);
+  return range ? <PeriodView range={range} /> : <CalendarMonth />;
+}
+
+/** 모아 보기 — "‹ 달력"으로 돌아가고, 기간 제목을 누르면 달 고르기 시트의 "기간"이 열린다 */
+function PeriodView({ range }: { range: Range }) {
+  const { today } = useData();
+  const router = useRouter();
+  const { openMonths } = useSheets();
+  const title = rangeText(range, Number(today.slice(0, 4)));
+  return (
+    <>
+      <header className="page-head sum-head">
+        <div style={{ minWidth: 0 }}>
+          <button type="button" className="back-btn" onClick={() => leaveSummary(router)}>
+            <ChevronLeft aria-hidden="true" />
+            달력
+          </button>
+          <div className="title-row">
+            <h1>
+              <button type="button" className="range-btn" aria-haspopup="dialog" aria-label={`${title}, 기간 바꾸기`} onClick={() => openMonths({ range })}>
+                {title}
+              </button>
+            </h1>
+          </div>
+          <p className="sub">모아 보기 · {rangeDays(range)}일</p>
+        </div>
+      </header>
+      <PeriodSummary range={range} />
+    </>
+  );
+}
+
 /**
  * 달력 — 날짜마다 그날 쓴 돈과 월급날·카드 결제일·이체일·일정. 날짜를 누르면 아래에 그날 것이 펼쳐진다(할 일 일정은 바로 체크).
  * 더하기는 그날 머리의 "+ 추가" 하나(시트 맨 위에서 할 일·일정·D-day 를 고른다).
- * 옆에 이번 달 할 일·일정과 D-day, 아래에 기간 모아 보기 (폰에서는 달력 → 그날 → 할 일 → D-day → 모아 보기). 위쪽 막대의 달 넘기기를 그대로 쓴다(가계부 달 이름 = 달력 달).
+ * 옆에 이번 달 할 일·일정과 D-day (폰에서는 달력 → 그날 → 할 일 → D-day). 기간 모아 보기는 제목의 "11월"을 눌러 연다.
  */
-export default function CalendarPage() {
+function CalendarMonth() {
   const { data, month, today } = useData();
   const s = data.settings;
   const { openSpending } = useSheets();
@@ -99,6 +157,7 @@ export default function CalendarPage() {
   const [picked, setPicked] = useState<string | null>(null);
   const day = picked && inMonth(picked) ? picked : inMonth(today) ? today : `${month}-01`;
   const [sheet, setSheet] = useState<{ open: boolean; key: number; event?: CalEvent; date: string }>({ open: false, key: 0, date: day });
+  useEffect(() => resetSummary(), []);
   const openEvent = (event?: CalEvent, date = day) => setSheet((x) => ({ open: true, key: x.key + 1, event, date }));
 
   const monthSpent = [...spent.entries()].filter(([d]) => inMonth(d)).reduce((a, [, v]) => a + v, 0);
@@ -236,8 +295,6 @@ export default function CalendarPage() {
               )}
             </Morph>
           </section>
-
-          <PeriodSummary month={month} day={day} className="o5" />
         </div>
 
         <div className="col span-5">

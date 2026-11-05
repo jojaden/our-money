@@ -394,3 +394,20 @@ button.row:active, a.row:active { background: var(--well); transform: scale(0.98
 .month-cell[aria-pressed="true"] small { color: inherit; }
 .month-cell[aria-pressed="true"] .dot { background: currentColor; }
 @media (hover: hover) and (pointer: fine) { .month-cell:not([aria-pressed="true"]):hover { background: var(--tab-active-bg); } }
+
+/* 기간 고르기: 고른 기간 한 줄 + "직접"의 작은 달력. 시작·끝 날은 인디고, 사이는 옅은 인디고 띠 */
+.range-now { margin: 12px 0 0; color: var(--muted); font: 600 15px/22px var(--font-text); }
+.range-cal { margin-top: 14px; }
+.range-cal .year-step { margin-bottom: 8px; }
+.range-cal .year-step .y { min-width: 128px; font-size: 17px; }
+.range-week, .range-days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
+.range-week span { padding: 4px 0; color: var(--faint); font: 600 12px/16px var(--font-text); text-align: center; }
+.range-days { row-gap: 4px; }
+.range-days button { height: 40px; padding: 0; border: 0; background: transparent; color: var(--text); font: 500 15px/1 var(--font-display); font-variant-numeric: tabular-nums; transition: background-color var(--dur-press) ease, color var(--dur-press) ease; }
+.range-days button.out { color: var(--faint); }
+.range-days button.today { font-weight: 700; color: var(--accent-ink); }
+.range-days button.in { background: var(--accent-soft); }
+.range-days button.edge { border-radius: var(--radius-control); background: var(--primary); color: var(--on-primary); }
+/* 시작·끝 칸도 띠와 이어지게 바깥쪽만 둥글게 */
+.range-days button.edge.first:not(.last) { border-radius: var(--radius-control) 0 0 var(--radius-control); }
+.range-days button.edge.last:not(.first) { border-radius: 0 var(--radius-control) var(--radius-control) 0; }

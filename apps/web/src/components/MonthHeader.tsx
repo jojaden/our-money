@@ -36,7 +36,7 @@ export function MonthHeader({ name, sub, children }: { /** 탭 이름 (홈은 �
             <button type="button" className="month-arrow" aria-label={`지난달 (${monthLabel(addMonths(month, -1))})`} onClick={() => setMonth(addMonths(month, -1))}>
               <ChevronLeft aria-hidden="true" />
             </button>
-            <button type="button" className="month-btn" aria-haspopup="dialog" aria-label={`${label}, 다른 달 고르기`} onClick={openMonths}>
+            <button type="button" className="month-btn" aria-haspopup="dialog" aria-label={`${label}, 다른 달 고르기`} onClick={() => openMonths()}>
               <span className="m num">{label}</span>
             </button>
             <button type="button" className="month-arrow" aria-label={`다음 달 (${monthLabel(addMonths(month, 1))})`} onClick={() => setMonth(addMonths(month, 1))}>

@@ -262,6 +262,9 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
 /* 모아 보기: TextTabs → 칩 → 카드들 */
 .sum-controls { display: grid; gap: 12px; margin-bottom: 12px; }
 .sum-stack { display: grid; gap: 12px; }
+.sum-col { display: grid; align-content: start; gap: 12px; }
+/* 넓은 화면: 쓴 돈(왼쪽) · 한 일과 일정(오른쪽) */
+@media (min-width: 1024px) { .sum-stack { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); align-items: start; gap: 16px; } }
 .sum .card-head h3 { font: 600 17px/24px var(--font-text); letter-spacing: -0.01em; }
 .sum-h { margin: 18px 0 4px; color: var(--faint); font: 600 13px/18px var(--font-text); }
 .sum-owners { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 0; padding: 0; list-style: none; }
