@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus, Download, LogOut, RotateCcw } from "lucide-react";
+import { Plus, Download, History, LogOut, RotateCcw } from "lucide-react";
 import type { Account, AccountKind, Category, Person, Settings } from "@/lib/types";
 import { PAY_KIND_LABEL } from "@/lib/types";
 import { useData } from "@/lib/store";
@@ -13,6 +13,7 @@ import { CategorySheet } from "@/components/SettingsSheets";
 import { AddPass } from "@/components/AddPass";
 import { Wallet } from "@/components/Wallet";
 import { MiniCard } from "@/components/pass";
+import { HistorySheet } from "@/components/HistorySheet";
 
 /** 스프레드시트가 수식으로 실행하지 않게 = + - @ 탭·줄바꿈으로 시작하는 글자 칸 앞에 ' 를 붙인다 */
 function cell(v: string | number) {
@@ -44,6 +45,8 @@ export default function SettingsPage() {
   };
   const [acc, setAcc] = useState<{ open: boolean; account?: Account; kind?: AccountKind }>({ open: false });
   const [cat, setCat] = useState<{ open: boolean; category?: Category }>({ open: false });
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [historyKey, setHistoryKey] = useState(0);
 
   useEffect(() => setDraft(s), [s]);
 
@@ -328,6 +331,16 @@ export default function SettingsPage() {
                   <button type="button" className="btn secondary sm" onClick={() => void exportCsv()}>
                     <Download aria-hidden="true" /> 지출 CSV 내보내기
                   </button>
+                  <button
+                    type="button"
+                    className="btn secondary sm"
+                    onClick={() => {
+                      setHistoryKey((n) => n + 1);
+                      setHistoryOpen(true);
+                    }}
+                  >
+                    <History aria-hidden="true" /> 변경 이력
+                  </button>
                 </div>
               </>
             ) : (
@@ -344,6 +357,16 @@ export default function SettingsPage() {
                   <button type="button" className="btn secondary sm" onClick={() => void exportCsv()}>
                     <Download aria-hidden="true" /> 지출 CSV 내보내기
                   </button>
+                  <button
+                    type="button"
+                    className="btn secondary sm"
+                    onClick={() => {
+                      setHistoryKey((n) => n + 1);
+                      setHistoryOpen(true);
+                    }}
+                  >
+                    <History aria-hidden="true" /> 변경 이력
+                  </button>
                   <button type="button" className="btn danger sm" onClick={logout}>
                     <LogOut aria-hidden="true" /> 로그아웃
                   </button>
@@ -356,6 +379,7 @@ export default function SettingsPage() {
 
       <AddPass open={acc.open} account={acc.account} kind={acc.kind} onOpenChange={(open) => setAcc((x) => ({ ...x, open }))} />
       <CategorySheet open={cat.open} category={cat.category} onOpenChange={(open) => setCat((x) => ({ ...x, open }))} />
+      <HistorySheet key={historyKey} open={historyOpen} onOpenChange={setHistoryOpen} />
     </>
   );
 }
