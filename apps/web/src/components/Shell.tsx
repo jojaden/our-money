@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { createContext, Suspense, useCallback, useContext, useEffect, useRef, useState } from "react";
-import { House, Layers, ListChecks, ReceiptText, CalendarDays, Settings2, Plus, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { House, Layers, ListChecks, ReceiptText, CalendarDays, CalendarPlus, Settings2, Plus, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { isStandalone } from "@/lib/native";
 import { StoreProvider, useStore } from "@/lib/store";
 import { signInWithGoogle, signOut } from "@/lib/repo";
@@ -33,13 +33,46 @@ interface SheetCtx {
 const SheetContext = createContext<SheetCtx>({ openSpending: () => {}, openMonths: () => {} });
 export const useSheets = () => useContext(SheetContext);
 
+/** 화면마다 주된 버튼 하나 — 폰은 아래 원형 버튼, 데스크톱은 머리줄 버튼. 없는 화면(플랜·체크·설정)은 원형 버튼이 빠지고 캡슐이 넓어진다 */
+export interface Primary {
+  label: string;
+  icon: "spending" | "event";
+  run: () => void;
+}
+const PrimarySet = createContext<(p: Primary | null) => void>(() => {});
+const PrimaryNow = createContext<Primary | null>(null);
+export const usePrimary = () => useContext(PrimaryNow);
+const ICON = { spending: Plus, event: CalendarPlus };
+export function PrimaryIcon({ icon }: { icon: Primary["icon"] }) {
+  const Icon = ICON[icon];
+  return <Icon aria-hidden="true" />;
+}
+
+/** 그 화면의 주된 버튼을 정한다. 화면이 사라지면 같이 없어진다 (run 은 늘 마지막 것을 부른다) */
+export function usePrimaryAction(label: string, icon: Primary["icon"], run: () => void) {
+  const set = useContext(PrimarySet);
+  const ref = useRef(run);
+  useEffect(() => {
+    ref.current = run;
+  });
+  useEffect(() => {
+    set({ label, icon, run: () => ref.current() });
+    return () => set(null);
+  }, [set, label, icon]);
+}
+
 function norm(p: string) {
   return p !== "/" && p.endsWith("/") ? p.slice(0, -1) : p;
 }
 
-function Nav({ onRecord }: { onRecord: () => void }) {
+function Nav() {
   const path = norm(usePathname() ?? "/");
   const at = TABS.findIndex((t) => t.href === path);
+  const primary = usePrimary();
+  // 버튼이 빠질 때도 줄어드는 동안은 마지막 아이콘을 보여 준다
+  const [last, setLast] = useState<Primary | null>(null);
+  if (primary && primary !== last) setLast(primary);
+  const shown = primary ?? last;
   return (
     <>
       <nav className="rail" aria-label="주요 메뉴">
@@ -56,8 +89,8 @@ function Nav({ onRecord }: { onRecord: () => void }) {
           <span className="tip">설정</span>
         </Link>
       </nav>
-      {/* 폰: 떠 있는 다섯 칸 캡슐 + 따로 뜬 원형 기록 버튼. 버튼은 어느 탭에서나 같은 자리라 캡슐 폭이 그대로다 */}
-      <div className="navbar">
+      {/* 폰: 떠 있는 다섯 칸 캡슐 + 따로 뜬 원형 버튼(그 화면의 주된 일). 버튼이 없는 화면은 버튼이 줄어들며 캡슐이 그 자리까지 넓어진다 */}
+      <div className={`navbar ${primary ? "" : "solo"}`}>
         <nav className={`tabbar ${at < 0 ? "none" : ""}`} aria-label="주요 메뉴" style={{ ["--i" as string]: Math.max(0, at) }}>
           <span className="tab-pill" aria-hidden="true" />
           {TABS.map(({ href, label, icon: Icon }) => (
@@ -78,8 +111,12 @@ function Nav({ onRecord }: { onRecord: () => void }) {
             </Link>
           ))}
         </nav>
-        <button type="button" className="fab" aria-label="지출 기록" onClick={onRecord}>
-          <Plus aria-hidden="true" />
+        <button type="button" className="fab" aria-label={shown?.label} inert={!primary} onClick={() => primary?.run()}>
+          {shown && (
+            <span className="fab-icon" key={shown.icon}>
+              <PrimaryIcon icon={shown.icon} />
+            </span>
+          )}
         </button>
       </div>
     </>
@@ -343,6 +380,7 @@ function Frame({ children }: { children: React.ReactNode }) {
   const openSpending = useCallback((s?: Spending) => setSheet({ open: true, editing: (s as MonthSpending | undefined)?.inst?.orig ?? s }), []);
   // 열 때마다 보고 있는 달의 해에서 시작하도록 key 를 바꾼다
   const [months, setMonths] = useState<{ open: boolean; key: number; range?: Range }>({ open: false, key: 0 });
+  const [primary, setPrimary] = useState<Primary | null>(null);
   const openMonths = useCallback((o?: { range?: Range }) => setMonths((x) => ({ open: true, key: x.key + 1, range: o?.range })), []);
   const path = norm(usePathname() ?? "/");
   const { data } = useStore();
@@ -356,22 +394,26 @@ function Frame({ children }: { children: React.ReactNode }) {
 
   return (
     <SheetContext.Provider value={{ openSpending, openMonths }}>
-      <div className={data ? "shell" : undefined}>
-        {data && <Nav onRecord={() => openSpending()} />}
-        <Gate>
-          <main className={`canvas ${path === "/" ? "home" : ""}`}>
-            {/* 위쪽 막대가 주소의 기간을 읽어서 Suspense 안에 둔다 (정적 내보내기) */}
-            <Suspense fallback={null}>
-              <TopBar path={path} />
-            </Suspense>
-            <InstallPrompt />
-            <PageMotion path={path}>{children}</PageMotion>
-          </main>
-          {data && <SpendingSheet open={sheet.open} editing={sheet.editing} onOpenChange={(open) => setSheet((s) => ({ ...s, open }))} />}
-          {data && <MonthSheet key={months.key} open={months.open} range={months.range} onOpenChange={(open) => setMonths((x) => ({ ...x, open }))} />}
-        </Gate>
-      </div>
-      <Toasts />
+      <PrimarySet.Provider value={setPrimary}>
+        <PrimaryNow.Provider value={primary}>
+          <div className={data ? "shell" : undefined}>
+            {data && <Nav />}
+            <Gate>
+              <main className={`canvas ${path === "/" ? "home" : ""}`}>
+                {/* 위쪽 막대가 주소의 기간을 읽어서 Suspense 안에 둔다 (정적 내보내기) */}
+                <Suspense fallback={null}>
+                  <TopBar path={path} />
+                </Suspense>
+                <InstallPrompt />
+                <PageMotion path={path}>{children}</PageMotion>
+              </main>
+              {data && <SpendingSheet open={sheet.open} editing={sheet.editing} onOpenChange={(open) => setSheet((s) => ({ ...s, open }))} />}
+              {data && <MonthSheet key={months.key} open={months.open} range={months.range} onOpenChange={(open) => setMonths((x) => ({ ...x, open }))} />}
+            </Gate>
+          </div>
+          <Toasts />
+        </PrimaryNow.Provider>
+      </PrimarySet.Provider>
     </SheetContext.Provider>
   );
 }

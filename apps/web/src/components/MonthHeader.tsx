@@ -6,8 +6,8 @@ import { useState } from "react";
 import { monthLabel, parseYmd } from "@/lib/format";
 import { Toggle } from "./ui";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
-import { useSheets } from "./Shell";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { PrimaryIcon, usePrimary, useSheets } from "./Shell";
 
 function rangeText(month: string, cycle: number) {
   const p = periodOf(month, cycle);
@@ -66,12 +66,13 @@ export function MonthHeader({ name, sub, children }: { /** 탭 이름 (홈은 �
   );
 }
 
-/** 데스크톱에서만 보이는 머리줄 "지출 기록" (폰은 하단 원형 버튼) */
+/** 데스크톱에서만 보이는 머리줄 버튼 — 그 화면의 주된 일 (폰은 아래 원형 버튼). 없는 화면은 비운다 */
 function HeadAction() {
-  const { openSpending } = useSheets();
+  const p = usePrimary();
+  if (!p) return null;
   return (
-    <button type="button" className="btn head-action" onClick={() => openSpending()}>
-      <Plus aria-hidden="true" /> 지출 기록
+    <button type="button" className="btn head-action" onClick={p.run}>
+      <PrimaryIcon icon={p.icon} /> {p.label}
     </button>
   );
 }

@@ -13,7 +13,7 @@ import { RainbowGauge } from "@/components/RainbowGauge";
 import { StatTiles } from "@/components/StatTiles";
 import { categoryVisual, spendingVisual } from "@/lib/categories";
 import { isFresh } from "@/lib/fresh";
-import { useSheets } from "@/components/Shell";
+import { usePrimaryAction, useSheets } from "@/components/Shell";
 import { BudgetCard } from "@/components/BudgetCard";
 import { useRevealOnce } from "@/components/reveal";
 
@@ -24,6 +24,7 @@ export default function LedgerPage() {
   const { data, month, today, me } = useData();
   const s = data.settings;
   const { openSpending } = useSheets();
+  usePrimaryAction("지출 기록", "spending", () => openSpending());
   const [kind, setKind] = useState<KindFilter>("all");
   const [owner, setOwner] = useState<OwnerFilter>("all");
   // 카드 알림 자동 기록 중 확인이 필요한 것만

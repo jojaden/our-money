@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Suspense, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ChevronLeft, Plus } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import type { CalEvent } from "@/lib/types";
 import { useData } from "@/lib/store";
 import { actualAmount, findCheck, nameOf } from "@/lib/calc";
@@ -17,7 +17,7 @@ import { MonthTodo } from "@/components/MonthTodo";
 import { CalendarCard } from "@/components/CalendarCard";
 import { Morph, slideIn } from "@/components/Morph";
 import { PeriodSummary } from "@/components/PeriodSummary";
-import { useSheets } from "@/components/Shell";
+import { usePrimaryAction, useSheets } from "@/components/Shell";
 import { spendingVisual } from "@/lib/categories";
 
 const ORDER: Record<Mark["kind"], number> = { event: 0, payday: 1, card: 2, item: 3 };
@@ -134,7 +134,7 @@ function PeriodView({ range }: { range: Range }) {
 
 /**
  * 달력 — 날짜마다 그날 쓴 돈과 월급날·카드 결제일·이체일·일정. 날짜를 누르면 아래에 그날 것이 펼쳐진다(할 일 일정은 바로 체크).
- * 더하기는 그날 머리의 "+ 추가" 하나(시트 맨 위에서 할 일·일정·D-day 를 고른다).
+ * 더하기는 이 화면의 주된 버튼 "일정 추가" 하나(폰은 아래 원형 버튼, 데스크톱은 머리줄). 고른 날로 시트가 열리고 맨 위에서 할 일·일정·D-day 를 고른다.
  * 옆에 이번 달 할 일·일정과 D-day (폰에서는 달력 → 그날 → 할 일 → D-day). 기간 모아 보기는 제목의 "11월"을 눌러 연다.
  */
 /** 다른 달의 날을 골라 그 달로 넘어갈 때, 새로 그린 달력이 그날을 고른 채 시작하도록 잠깐 들고 있는다 */
@@ -164,6 +164,7 @@ function CalendarMonth() {
     setMonth(d.slice(0, 7));
   };
   const openEvent = (event?: CalEvent, date = day) => setSheet((x) => ({ open: true, key: x.key + 1, event, date }));
+  usePrimaryAction("일정 추가", "event", () => openEvent(undefined, day));
 
   const monthSpent = [...spent.entries()].filter(([d]) => inMonth(d)).reduce((a, [, v]) => a + v, 0);
   const monthEvents = new Set([...marks.entries()].filter(([d]) => inMonth(d)).flatMap(([, ms]) => ms.filter((m) => m.event).map((m) => m.event!.id))).size;
@@ -198,9 +199,6 @@ function CalendarMonth() {
           <section className="group o2" aria-labelledby="day-h">
             <div className="group-head">
               <h2 id="day-h">{dateWithDay(day)}</h2>
-              <button type="button" className="aside head-btn" onClick={() => openEvent(undefined, day)}>
-                <Plus aria-hidden="true" /> 추가
-              </button>
             </div>
             {/* 다른 날을 고르면 그날 목록이 겹쳐 바뀐다 */}
             <Morph className="card" track=":scope > *, .rows > *">
@@ -271,7 +269,7 @@ function CalendarMonth() {
             </div>
             <Morph className="card" track=":scope > *, .rows > *">
               {ddays.length === 0 ? (
-                <p className="empty">날짜를 고르고 &quot;+ 추가&quot;에서 D-day를 고르면(기념일·만기) 여기에 모여요. 할 일도 D-day 세기를 켜면 같이 모여요.</p>
+                <p className="empty">날짜를 고르고 일정 추가(+)에서 D-day를 고르면(기념일·만기) 여기에 모여요. 할 일도 D-day 세기를 켜면 같이 모여요.</p>
               ) : (
                 <div className="rows">
                   {ddays.map(({ e, o }) => (
