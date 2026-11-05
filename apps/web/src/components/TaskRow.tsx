@@ -6,6 +6,7 @@ import { useData } from "@/lib/store";
 import { nameOf } from "@/lib/calc";
 import { CheckButton, Money } from "./ui";
 import { MiniCard } from "./pass";
+import { PaidAmountSheet } from "./PaidAmountSheet";
 import { dueState, dueText, waiting, type Task } from "./tasks";
 import { shortDate } from "@/lib/format";
 
@@ -14,6 +15,10 @@ export function TaskRow({ task, expandable = false, fromShown = false }: { task:
   const { data, today } = useData();
   const s = data.settings;
   const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [session, setSession] = useState(0);
+  // 완료한 납부는 금액을 눌러 실제로 낸 금액을 적는다
+  const editable = task.kind === "pay" && task.done && task.item;
   const state = dueState(task.due, today, task.done);
   const label = `${task.title} ${task.done ? "완료 취소" : "완료로 표시"}`;
 
@@ -70,7 +75,17 @@ export function TaskRow({ task, expandable = false, fromShown = false }: { task:
           )}
         </div>
         <div className="r">
-          <Money value={task.amount} />
+          {editable ? (
+            <button type="button" className="amt-edit" aria-label={`${task.title} 실제로 낸 금액 고치기`} onClick={() => {
+                setSession((n) => n + 1);
+                setEditing(true);
+              }}
+            >
+              <Money value={task.amount} />
+            </button>
+          ) : (
+            <Money value={task.amount} />
+          )}
           <div style={{ marginTop: 2 }}>{meta}</div>
         </div>
       </div>
@@ -87,6 +102,7 @@ export function TaskRow({ task, expandable = false, fromShown = false }: { task:
           ))}
         </div>
       )}
+      {task.item && task.kind === "pay" && <PaidAmountSheet key={session} open={editing} onOpenChange={setEditing} item={task.item} />}
     </>
   );
 }

@@ -144,6 +144,7 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
 }
 .bigamount input::placeholder { color: #c5c9ce; }
 .bigamount .unit { font-size: 22px; font-weight: 600; color: var(--muted); }
+.sheet-lead { margin: 0 0 4px; color: var(--muted); font: 500 14px/20px var(--font-text); }
 .quick { display: flex; gap: 8px; margin-top: 10px; }
 .quick button {
   height: 32px;

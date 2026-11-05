@@ -5,6 +5,7 @@ import type { Data, MonthItem, Person } from "@/lib/types";
 import { METHOD_LABEL } from "@/lib/types";
 import {
   accountMap,
+  actualAmount,
   addMonths,
   cardBills,
   checkId,
@@ -22,7 +23,7 @@ import {
   type Transfer,
   type TransferIssue,
 } from "@/lib/calc";
-import { parseYmd, shortDate } from "@/lib/format";
+import { num, parseYmd, shortDate } from "@/lib/format";
 import { useData } from "@/lib/store";
 
 export type TaskKind = "transfer" | "pay" | "card" | "settle";
@@ -147,12 +148,14 @@ function build(
 
   const pays: Task[] = items.filter(needsPayCheck).map((i) => {
     const via = i.method === "card_auto" ? accName(i.card_id) : accName(i.account_id);
+    const paid = actualAmount(i);
     return {
       key: i.id,
       kind: "pay",
       title: i.name,
-      sub: `${nameOf(s, i.payer)} · ${METHOD_LABEL[i.method]} · ${via}`,
-      amount: i.amount,
+      // 실제로 낸 금액이 플랜과 다르면 플랜 금액을 앞에 남긴다
+      sub: `${paid !== i.amount ? `플랜 ${num(i.amount)}원 · ` : ""}${nameOf(s, i.payer)} · ${METHOD_LABEL[i.method]} · ${via}`,
+      amount: paid,
       due: i.due_day ? dateInMonth(month, i.due_day, s.cycle_start) : null,
       done: i.paid,
       doneBy: i.paid_by,
