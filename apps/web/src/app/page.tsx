@@ -16,12 +16,13 @@ import { byUrgency, dueState, useTasks, waiting } from "@/components/tasks";
 import { dDay, shortDate } from "@/lib/format";
 import { TaskRow } from "@/components/TaskRow";
 import { MiniCard } from "@/components/pass";
-import { useSheets } from "@/components/Shell";
+import { usePrimaryAction, useSheets } from "@/components/Shell";
 
 export default function Home() {
   const { data, month, today, me } = useData();
   const { tasks, paydays, started } = useTasks(month);
   const { openSpending } = useSheets();
+  usePrimaryAction("지출 기록", "spending", () => openSpending());
   const s = data.settings;
 
   if (!started) {

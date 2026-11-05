@@ -171,10 +171,15 @@ div.mini { display: flex; align-items: center; justify-content: center; gap: 2px
   box-shadow: var(--shadow-float);
   color: var(--on-primary);
   pointer-events: auto;
-  transition: transform var(--dur-press) var(--ease-press);
+  transition: transform var(--dur-press) var(--ease-press), width var(--dur-tab) var(--ease-drawer), margin var(--dur-tab) var(--ease-drawer), opacity var(--dur-press) ease;
 }
 .fab svg { width: 26px; height: 26px; stroke-width: 2; }
 .fab:active { transform: scale(0.94); }
+/* 탭마다 주된 일이 다르면 아이콘이 살짝 커지며 바뀐다 (지출 기록 + / 일정 추가 달력+) */
+.fab-icon { display: grid; place-items: center; animation: fab-icon-in var(--dur-tab) var(--ease-pop) both; }
+@keyframes fab-icon-in { from { opacity: 0; transform: scale(0.6) rotate(-45deg); } }
+/* 주된 일이 없는 화면(플랜·체크·설정): 버튼이 줄어들며 빠지고 캡슐이 그 자리까지 넓어진다. 알약도 같은 박자로 따라간다 */
+.navbar.solo .fab { width: 0; margin-left: calc(var(--nav-gap) * -1); opacity: 0; transform: scale(0.6); pointer-events: none; }
 @media (prefers-reduced-transparency: reduce) {
   .tabbar, .topbar.glass { background: var(--surface); -webkit-backdrop-filter: none; backdrop-filter: none; }
 }
@@ -303,4 +308,5 @@ div.mini { display: flex; align-items: center; justify-content: center; gap: 2px
 
 @media (prefers-reduced-motion: reduce) {
   .page-enter, .page-enter > *, .page-enter .page-head * { animation: none !important; }
+  .fab, .fab-icon { animation: none !important; transition: none !important; }
 }
