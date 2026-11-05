@@ -9,25 +9,18 @@ import { useData } from "@/lib/store";
 import { actualAmount, findCheck, nameOf } from "@/lib/calc";
 import { ddayText, eventTodo, marksIn, monthGrid, nextOccurrence, rangeDays, rangeOf, rangeText, spentByDay, timeText, type Mark, type Range } from "@/lib/calendar";
 import { leaveSummary, resetSummary } from "@/lib/summaryNav";
-import { dateWithDay, num, shortDate } from "@/lib/format";
+import { dateWithDay, shortDate } from "@/lib/format";
 import { MonthHeader } from "@/components/MonthHeader";
 import { CategoryIcon, CheckButton, Money } from "@/components/ui";
 import { EventSheet } from "@/components/EventSheet";
 import { MonthTodo } from "@/components/MonthTodo";
+import { CalendarCard } from "@/components/CalendarCard";
 import { Morph, slideIn } from "@/components/Morph";
 import { PeriodSummary } from "@/components/PeriodSummary";
 import { useSheets } from "@/components/Shell";
 import { spendingVisual } from "@/lib/categories";
 
-const WEEK = ["일", "월", "화", "수", "목", "금", "토"];
 const ORDER: Record<Mark["kind"], number> = { event: 0, payday: 1, card: 2, item: 3 };
-
-/** 칸 안의 짧은 금액: 8,400 / 3.2만 / 120만 */
-function short(n: number): string {
-  if (n < 10_000) return num(n);
-  const man = n / 10_000;
-  return `${man >= 100 || Number.isInteger(man) ? Math.round(man) : man.toFixed(1)}만`;
-}
 
 /** 그날 끝낼 것(할 일 일정·이체·납부·카드값) — 앞 동그라미로 끝내고, 나머지를 누르면 일정은 고치기, 돈 일은 체크 화면으로 */
 function CheckMark({ m, onOpen }: { m: Mark; onOpen: () => void }) {
@@ -144,8 +137,11 @@ function PeriodView({ range }: { range: Range }) {
  * 더하기는 그날 머리의 "+ 추가" 하나(시트 맨 위에서 할 일·일정·D-day 를 고른다).
  * 옆에 이번 달 할 일·일정과 D-day (폰에서는 달력 → 그날 → 할 일 → D-day). 기간 모아 보기는 제목의 "11월"을 눌러 연다.
  */
+/** 다른 달의 날을 골라 그 달로 넘어갈 때, 새로 그린 달력이 그날을 고른 채 시작하도록 잠깐 들고 있는다 */
+let carried: string | null = null;
+
 function CalendarMonth() {
-  const { data, month, today } = useData();
+  const { data, month, today, setMonth } = useData();
   const s = data.settings;
   const { openSpending } = useSheets();
   const cells = monthGrid(month);
@@ -154,10 +150,19 @@ function CalendarMonth() {
   const marks = marksIn(data, from, to);
   const spent = spentByDay(data, from, to);
   const inMonth = (d: string) => d.slice(0, 7) === month;
-  const [picked, setPicked] = useState<string | null>(null);
+  const [picked, setPicked] = useState<string | null>(() => (carried && inMonth(carried) ? carried : null));
   const day = picked && inMonth(picked) ? picked : inMonth(today) ? today : `${month}-01`;
   const [sheet, setSheet] = useState<{ open: boolean; key: number; event?: CalEvent; date: string }>({ open: false, key: 0, date: day });
-  useEffect(() => resetSummary(), []);
+  useEffect(() => {
+    carried = null;
+    resetSummary();
+  }, []);
+  // 다른 달의 날(앞뒤 회색 칸, 접힌 주를 넘길 때)이면 그 달로 넘어가서 고른다
+  const pick = (d: string) => {
+    if (inMonth(d)) return setPicked(d);
+    carried = d;
+    setMonth(d.slice(0, 7));
+  };
   const openEvent = (event?: CalEvent, date = day) => setSheet((x) => ({ open: true, key: x.key + 1, event, date }));
 
   const monthSpent = [...spent.entries()].filter(([d]) => inMonth(d)).reduce((a, [, v]) => a + v, 0);
@@ -187,47 +192,7 @@ function CalendarMonth() {
       <div className="grid">
         <div className="col span-7">
           <section className="group o1" aria-label="달력">
-            <div className="card cal">
-              <div className="cal-week" aria-hidden="true">
-                {WEEK.map((w, i) => (
-                  <span key={w} className={i === 0 ? "sun" : i === 6 ? "sat" : ""}>
-                    {w}
-                  </span>
-                ))}
-              </div>
-              <div className="cal-grid" role="grid" aria-label={`${Number(month.slice(5))}월`}>
-                {cells.map((d, i) => {
-                  const ms = marks.get(d) ?? [];
-                  const kinds = [...new Set(ms.filter((m) => !(m.occ && m.occ.start !== m.occ.end)).map((m) => (m.kind === "payday" ? `k-payday ${m.owner}` : `k-${m.kind}`)))].slice(0, 3);
-                  const bars = ms.filter((m) => m.occ && m.occ.start !== m.occ.end).slice(0, 2);
-                  const amount = spent.get(d) ?? 0;
-                  const label = [dateWithDay(d), amount ? `쓴 돈 ${num(amount)}원` : "", ...ms.map((m) => m.title)].filter(Boolean).join(", ");
-                  return (
-                    <button
-                      key={d}
-                      type="button"
-                      className={`cal-day ${inMonth(d) ? "" : "out"} ${d === today ? "today" : ""} ${d === day ? "picked" : ""} ${i % 7 === 0 ? "sun" : i % 7 === 6 ? "sat" : ""}`}
-                      aria-label={label}
-                      aria-pressed={d === day}
-                      onClick={() => setPicked(d)}
-                    >
-                      <span className="n">{Number(d.slice(8))}</span>
-                      {amount > 0 && <span className="amt">{short(amount)}</span>}
-                      {kinds.length > 0 && (
-                        <span className="dots" aria-hidden="true">
-                          {kinds.map((k) => (
-                            <i key={k} className={k} />
-                          ))}
-                        </span>
-                      )}
-                      {bars.map((m) => (
-                        <i key={m.event!.id} className={`bar ${m.event!.owner} ${m.occ!.start === d ? "first" : ""} ${m.occ!.end === d ? "last" : ""}`} aria-hidden="true" />
-                      ))}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+            <CalendarCard month={month} cells={cells} marks={marks} spent={spent} day={day} today={today} onPick={pick} />
           </section>
 
           <section className="group o2" aria-labelledby="day-h">

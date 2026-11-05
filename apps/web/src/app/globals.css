@@ -283,3 +283,11 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
 .date-lead b { font: 700 15px/1 var(--font-display); font-variant-numeric: tabular-nums; }
 .date-lead small { color: var(--faint); font: 600 10.5px/1 var(--font-text); }
 .row.past { opacity: 0.55; }
+
+/* 달력 한 주로 접기: 보이는 칸(cal-clip) 높이와 달력 위치를 옮긴다. 손잡이는 시트 손잡이와 같은 모양 */
+.cal { padding-bottom: 2px; }
+.cal-clip { position: relative; overflow: clip; overflow-clip-margin: 3px; }
+.cal-fold { display: grid; place-items: center; width: 100%; height: 22px; margin-top: 2px; padding: 0; border: 0; background: transparent; touch-action: none; }
+.cal-fold i { display: block; width: 36px; height: 5px; border-radius: var(--radius-chip); background: var(--border); transition: background-color var(--dur-press) ease, transform var(--dur-press) var(--ease-press); }
+.cal-fold:active i { transform: scaleX(0.86); }
+@media (hover: hover) and (pointer: fine) { .cal-fold:hover i { background: var(--faint); } }

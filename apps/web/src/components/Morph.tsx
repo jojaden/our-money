@@ -20,7 +20,8 @@ type Snap = { h: number; items: Map<Element, Rect> };
 const TRACK = ":scope > *, :scope > * > *";
 
 let T: { move: number; swap: number; drawer: string; out: string } | null = null;
-function tokens() {
+/** 움직임 토큰 (tokens.css 의 dur-tab·dur-swap·ease-drawer·ease-out) — 처음 한 번 읽는다 */
+export function tokens() {
   if (T) return T;
   const css = getComputedStyle(document.documentElement);
   const ms = (n: string, d: number) => parseFloat(css.getPropertyValue(n)) || d;
@@ -29,7 +30,8 @@ function tokens() {
   return T;
 }
 
-const still = () => typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+/** 움직임 줄이기 */
+export const still = () => typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
 const rel = (r: DOMRect, b: DOMRect): Rect => ({ x: r.left - b.left, y: r.top - b.top, w: r.width, h: r.height });
 
 export class Morph extends Component<{ children: ReactNode; className?: string; track?: string; enter?: boolean }, object, Snap | null> {
