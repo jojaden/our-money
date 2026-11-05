@@ -8,7 +8,7 @@ import { addMonths, currentMonth } from "@/lib/calc";
 import { calendarMonth, monthGrid, rangeDays, rangeText, summaryHref, weekOf, type Range } from "@/lib/calendar";
 import { monthLabel } from "@/lib/format";
 import { enterSummary, leaveSummary } from "@/lib/summaryNav";
-import { Seg, Sheet, TextTabs } from "./ui";
+import { afterSheet, Seg, Sheet, TextTabs } from "./ui";
 
 type Tab = "month" | "period";
 type Preset = "week" | "month" | "three" | "year" | "custom";
@@ -45,10 +45,8 @@ export function MonthSheet({ open, onOpenChange, range }: { open: boolean; onOpe
   const chosen: Range | null = preset === "custom" ? (pick.to ? { from: pick.from, to: pick.to } : null) : presets[preset].range;
   const thisYear = Number(today.slice(0, 4));
 
-  // 시트가 쌓은 뒤로가기 기록이 빠진 다음에 화면을 옮긴다 (먼저 옮기면 그 뒤로가기가 새 화면을 되돌린다)
   const go = (fn: () => void) => {
-    if (window.history.state?.sheet) window.addEventListener("popstate", () => setTimeout(fn), { once: true });
-    else fn();
+    afterSheet(fn);
     onOpenChange(false);
   };
   const pickMonth = (id: string) => {

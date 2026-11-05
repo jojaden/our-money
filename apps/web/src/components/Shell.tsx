@@ -3,17 +3,18 @@
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { createContext, Suspense, useCallback, useContext, useEffect, useRef, useState } from "react";
-import { House, Layers, ListChecks, ReceiptText, CalendarDays, CalendarPlus, Settings2, Plus, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { House, Layers, ListChecks, ReceiptText, CalendarDays, CalendarPlus, Settings, Plus, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { isStandalone } from "@/lib/native";
 import { StoreProvider, useStore } from "@/lib/store";
 import { signInWithGoogle, signOut } from "@/lib/repo";
-import { addMonths, nameOf, type MonthSpending } from "@/lib/calc";
+import { addMonths, type MonthSpending } from "@/lib/calc";
 import { monthLabel } from "@/lib/format";
 import type { Spending } from "@/lib/types";
 import type { Range } from "@/lib/calendar";
-import { Mark, PersonGlyph, Toasts } from "./ui";
+import { Mark, Toasts } from "./ui";
 import { SpendingSheet } from "./SpendingSheet";
 import { MonthSheet } from "./MonthSheet";
+import { BellButton } from "./Bell";
 import { LoadingScreen, StageScreen } from "./Stage";
 
 // 설정은 탭이 아니다 — 폰은 위쪽 막대의 내 동전 버튼, 데스크톱은 레일 맨 아래
@@ -84,8 +85,9 @@ function Nav() {
           </Link>
         ))}
         <span className="spacer" />
+        <BellButton rail />
         <Link href="/settings" aria-current={path === "/settings" ? "page" : undefined} aria-label="설정">
-          <Settings2 aria-hidden="true" />
+          <Settings aria-hidden="true" />
           <span className="tip">설정</span>
         </Link>
       </nav>
@@ -258,12 +260,13 @@ function PageMotion({ path, children }: { path: string; children: React.ReactNod
 }
 
 /**
- * 위쪽 막대 — 내 동전 반쪽(설정)과, 굴렸을 때 가운데에 뜨는 작은 제목. 화면 위에 붙어 있다.
+ * 위쪽 막대 — 굴렸을 때 가운데에 뜨는 작은 제목, 오른쪽에 종(알림 모음)과 톱니(설정). 화면 위에 붙어 있다.
+ * 데스크톱은 종·톱니가 레일 아래에 있어 막대에서는 뺀다.
  * 달 넘기기는 큰 제목 줄(‹ 11월 ›)에 있고, 큰 제목 줄이 막대 밑으로 지나가면 막대가 유리 바탕이 되며
  * 가운데에 ‹ 11월 체크 › 가 작게 떠오른다 (굴릴 때마다가 아니라 지나갈 때 한 번). 작은 제목을 누르면 달 고르기.
  */
 function TopBar({ path }: { path: string }) {
-  const { auth, data, me, month, setMonth } = useStore();
+  const { auth, month, setMonth } = useStore();
   const { openMonths } = useSheets();
   const q = useSearchParams();
   const search = q.toString();
@@ -289,17 +292,16 @@ function TopBar({ path }: { path: string }) {
     return () => io.disconnect();
   }, [path, month, search]);
   const settings = path === "/settings";
-  const name = data ? nameOf(data.settings, me) : "";
   return (
     <div ref={bar} className={`topbar ${glass ? "glass" : ""}`}>
-      <Link href="/settings" className={`sq me ${me}`} aria-label={`설정 (${name})`} aria-current={settings ? "page" : undefined}>
-        <PersonGlyph owner={me} />
-      </Link>
-      {auth.state === "demo" && (
-        <Link href="/settings" className="pill warning">
-          예시 데이터
-        </Link>
-      )}
+      {/* 왼쪽은 오른쪽 두 버튼만큼 비워 작은 제목을 가운데에 둔다 (예시 데이터 알약만 여기에) */}
+      <div className="bar-lead">
+        {auth.state === "demo" && (
+          <Link href="/settings" className="pill warning">
+            예시 데이터
+          </Link>
+        )}
+      </div>
       {!settings && month && !summary ? (
         // 큰 제목이 보일 때는 숨기고 누를 수도 없게 (같은 버튼이 큰 제목 줄에 있다)
         <div className="mini" inert={!glass}>
@@ -318,8 +320,12 @@ function TopBar({ path }: { path: string }) {
           {title}
         </span>
       )}
-      {/* 작은 제목을 가운데에 두려고 왼쪽 동전 버튼만큼 비운다 */}
-      <span className="sq-space" aria-hidden="true" />
+      <div className="bar-actions">
+        <BellButton />
+        <Link href="/settings" className="sq gear" aria-label="설정" aria-current={settings ? "page" : undefined}>
+          <Settings aria-hidden="true" />
+        </Link>
+      </div>
     </div>
   );
 }

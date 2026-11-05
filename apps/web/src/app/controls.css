@@ -411,3 +411,10 @@ button.row:active, a.row:active { background: var(--well); transform: scale(0.98
 /* 시작·끝 칸도 띠와 이어지게 바깥쪽만 둥글게 */
 .range-days button.edge.first:not(.last) { border-radius: var(--radius-control) 0 0 var(--radius-control); }
 .range-days button.edge.last:not(.first) { border-radius: 0 var(--radius-control) var(--radius-control) 0; }
+
+/* 알림 모음의 다가오는 날: 동그란 아이콘 바탕은 그 사람 색(공동은 인디고), D-day 는 따뜻한 색 */
+.alert-ic { display: grid; flex: none; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: var(--accent-soft); color: var(--accent-ink); }
+.alert-ic svg { width: 18px; height: 18px; stroke-width: 2; }
+.alert-ic.a { background: var(--a-soft); color: var(--a-ink, var(--text)); }
+.alert-ic.b { background: var(--b-soft); color: var(--b-ink, var(--text)); }
+.alert-ic.dday { background: var(--warm-100); color: var(--warning); }

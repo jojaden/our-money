@@ -227,6 +227,12 @@ export function useBackToClose(open: boolean, onOpenChange: (v: boolean) => void
   }, [open]);
 }
 
+/** 시트를 닫으며 다른 화면으로 갈 때: 시트가 쌓은 뒤로가기 기록이 빠진 다음에 옮긴다 (먼저 옮기면 그 뒤로가기가 새 화면을 되돌린다). 시트를 닫기 전에 부른다 */
+export function afterSheet(fn: () => void) {
+  if (window.history.state?.sheet) window.addEventListener("popstate", () => setTimeout(fn), { once: true });
+  else fn();
+}
+
 export function Sheet({
   open,
   onOpenChange,
