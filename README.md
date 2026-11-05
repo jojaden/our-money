@@ -277,7 +277,7 @@ npm run dev          # http://localhost:3000 — .env.local 이 없으면 데모
    - **Allow new users to sign up** 은 두 사람이 모두 한 번 로그인할 때까지 켜 둬요(끄면 처음 로그인하는 구글 계정도 막혀요). 둘 다 들어온 뒤에는 꺼도 돼요.
 4. Supabase **Authentication → URL Configuration**:
    - Site URL: 배포 주소
-   - Redirect URLs: 배포 주소, `http://localhost:3000`
+   - Redirect URLs: 배포 주소, `http://localhost:3000`, `ourmoney://auth-callback`(안드로이드 앱에서 로그인한 뒤 앱으로 돌아오는 주소)
 
 ### 3. 환경 변수
 

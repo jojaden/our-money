@@ -3,21 +3,44 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <!-- 로그인 크롬 맞춤 탭을 찾으려고 (Android 11+ 패키지 공개 범위) -->
+    <queries>
+        <intent>
+            <action android:name="android.support.customtabs.action.CustomTabsService" />
+        </intent>
+    </queries>
+
     <application
         android:allowBackup="false"
         android:dataExtractionRules="@xml/data_extraction_rules"
+        android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:supportsRtl="true"
-        android:theme="@android:style/Theme.Material.Light.NoActionBar">
+        android:theme="@style/Theme.OurMoney">
+
+        <!-- 웹앱을 담는 첫 화면. 로그인에서 돌아오는 ourmoney://auth-callback 도 여기로 (singleTask: 로그인 탭을 닫고 같은 화면으로) -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
+            android:launchMode="singleTask"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="ourmoney" android:host="auth-callback" />
+            </intent-filter>
         </activity>
+
+        <!-- 카드 알림 모으기 화면: 앱 안에서만 연다 -->
+        <activity
+            android:name=".notice.NoticeActivity"
+            android:exported="false" />
 
         <!-- 카드 결제 알림 읽기: 시스템(BIND_NOTIFICATION_LISTENER_SERVICE 를 가진 쪽)만 붙을 수 있다 -->
         <service
