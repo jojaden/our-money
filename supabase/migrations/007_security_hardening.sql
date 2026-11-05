@@ -17,10 +17,13 @@
 -- ---------- 1. 멤버 ↔ 계정 ----------
 alter table public.members add column if not exists user_id uuid unique references auth.users(id) on delete set null;
 
--- 이미 로그인해서 users 에 있는 계정으로 채운다
+-- 이미 로그인해서 users 에 있는 계정으로 채운다 (ensure_user 와 같은 조건: 이메일이 확인됐고 같은 이메일의 구글 계정)
 update public.members m set user_id = u.id
   from public.users u
- where u.email = m.email and u.person = m.person and m.user_id is null;
+  join auth.users au on au.id = u.id and au.email_confirmed_at is not null
+ where u.email = m.email and u.person = m.person and m.user_id is null
+   and exists (select 1 from auth.identities i
+                where i.user_id = u.id and i.provider = 'google' and lower(i.identity_data ->> 'email') = m.email);
 
 -- 이메일을 바꾸면(사람이 다른 구글 계정으로 바뀜) 묶인 계정을 푼다
 create or replace function public.members_unbind() returns trigger
@@ -79,13 +82,15 @@ begin
   end if;
 
   if bound is null then
-    -- 토큰이 아니라 서버의 계정 기록(auth.users)으로 확인: 같은 이메일, 확인됨, 구글 로그인
+    -- 토큰이 아니라 서버의 계정 기록으로 확인: 같은 이메일, 확인됨, 그리고 그 이메일의 구글 계정(auth.identities)이 붙어 있다
+    -- (대표 이메일과 "구글로 로그인한 적 있음"만 보면, 다른 로그인 방식으로 만든 계정에 구글을 이어 붙였을 때 구분하지 못한다)
     if not exists (
       select 1 from auth.users au
+        join auth.identities i on i.user_id = au.id and i.provider = 'google'
        where au.id = uid
          and lower(au.email) = mail
          and au.email_confirmed_at is not null
-         and coalesce(au.raw_app_meta_data -> 'providers', '[]'::jsonb) ? 'google'
+         and lower(i.identity_data ->> 'email') = mail
     ) then
       return null;
     end if;

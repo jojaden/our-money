@@ -217,7 +217,7 @@ erDiagram
 - 카드·계좌별 지출은 `(account_id, date desc)`, 분류별은 `(category_id, date desc)` 부분 인덱스로 찾아요. 외래키가 걸린 칸에는 인덱스가 있어서 참조 확인이 빨라요.
 - 수정은 모두 기본키(`id`) 하나로 찾아요. 같은 내용의 저장은 트리거가 건너뛰어서 쓰기·기록·실시간 알림이 늘지 않아요.
 - `history` 는 `(at desc)` 와 `(table_name, row_id, at desc)` 인덱스로 "최근 바뀐 것", "이 줄의 이력"을 찾아요.
-- 이미 쓰던 DB 에는 [`supabase/migrations/`](supabase/migrations/)의 파일을 번호 순서대로 실행해요(002 성능, 003 계정별 이름, 004 기록·충돌, 005 한도·한 번에 저장·대량 사고 방지, 006 사람별 월급날).
+- 이미 쓰던 DB 에는 [`supabase/migrations/`](supabase/migrations/)의 파일을 번호 순서대로 실행해요(002 성능, 003 계정별 이름, 004 기록·충돌, 005 한도·한 번에 저장·대량 사고 방지, 006 사람별 월급날, 007 멤버를 계정에 묶기·권한 정리, 008 지갑 카드 색, 009 첫 연결을 구글 계정으로 확인). 002~004 는 007 을 실행한 뒤에는 다시 실행하지 않아요(실행하면 바로 멈춰요).
 
 ## 저장소 구조
 
@@ -272,6 +272,9 @@ npm run dev          # http://localhost:3000 — .env.local 이 없으면 데모
 2. **사용자 인증 정보 → OAuth 클라이언트 ID(웹 애플리케이션)** 를 만들어요.
    - 승인된 리디렉션 URI: `https://<프로젝트>.supabase.co/auth/v1/callback`
 3. Supabase **Authentication → Sign In / Providers → Google** 을 켜고 클라이언트 ID 와 시크릿을 넣어요.
+   - 같은 화면에서 **Email** 제공자는 꺼요(이 앱은 구글로만 로그인해요). 켜 두면 아무나 이메일로 가입해 로그인 상태가 될 수 있어요. 멤버가 아니라 가계부 내용은 못 보지만, 실시간 알림으로 지운 항목의 id 와 시각은 받을 수 있어요.
+   - **Allow anonymous sign-ins** 와 **Allow manual linking** 은 꺼 둬요.
+   - **Allow new users to sign up** 은 두 사람이 모두 한 번 로그인할 때까지 켜 둬요(끄면 처음 로그인하는 구글 계정도 막혀요). 둘 다 들어온 뒤에는 꺼도 돼요.
 4. Supabase **Authentication → URL Configuration**:
    - Site URL: 배포 주소
    - Redirect URLs: 배포 주소, `http://localhost:3000`
