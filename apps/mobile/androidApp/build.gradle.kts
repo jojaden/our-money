@@ -14,6 +14,9 @@ android {
         targetSdk = 36
         versionCode = 2
         versionName = "0.2.0"
+        // 웹앱 주소 — 디버그로 개발 서버를 열 때만 -PwebUrl=http://<맥 IP>:3000 (저장소에 IP 를 적지 않는다)
+        val webUrl = providers.gradleProperty("webUrl").getOrElse("https://our-money-sage.vercel.app")
+        buildConfigField("String", "WEB_URL", "\"$webUrl\"")
     }
 
     buildTypes {
@@ -22,13 +25,18 @@ android {
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
-    buildFeatures { compose = true }
+    buildFeatures {
+        compose = true
+        buildConfig = true
+    }
 }
 
 dependencies {
     implementation(project(":ui"))
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.core)
+    implementation(libs.androidx.webkit)
+    implementation(libs.androidx.browser)
     implementation(libs.compose.foundation)
     implementation(libs.compose.material3)
 }

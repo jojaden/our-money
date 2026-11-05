@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus, Download, LogOut, RotateCcw } from "lucide-react";
+import { Plus, Download, BellRing, LogOut, RotateCcw } from "lucide-react";
 import type { Account, AccountKind, Category, Person, Settings } from "@/lib/types";
 import { PAY_KIND_LABEL } from "@/lib/types";
 import { useData } from "@/lib/store";
 import { nameOf, paydayOf } from "@/lib/calc";
 import { num } from "@/lib/format";
 import { resetDemo, signOut } from "@/lib/repo";
+import { toApp, useInApp } from "@/lib/native";
 import { AmountInput, Money, Seg, Who } from "@/components/ui";
 import { CategorySheet } from "@/components/SettingsSheets";
 import { AddPass } from "@/components/AddPass";
@@ -44,6 +45,7 @@ export default function SettingsPage() {
   };
   const [acc, setAcc] = useState<{ open: boolean; account?: Account; kind?: AccountKind }>({ open: false });
   const [cat, setCat] = useState<{ open: boolean; category?: Category }>({ open: false });
+  const app = useInApp();
 
   useEffect(() => setDraft(s), [s]);
 
@@ -344,6 +346,11 @@ export default function SettingsPage() {
                   <button type="button" className="btn secondary sm" onClick={() => void exportCsv()}>
                     <Download aria-hidden="true" /> 지출 CSV 내보내기
                   </button>
+                  {app && (
+                    <button type="button" className="btn secondary sm" onClick={() => toApp("card-notice")}>
+                      <BellRing aria-hidden="true" /> 카드 알림
+                    </button>
+                  )}
                   <button type="button" className="btn danger sm" onClick={logout}>
                     <LogOut aria-hidden="true" /> 로그아웃
                   </button>

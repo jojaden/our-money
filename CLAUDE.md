@@ -4,7 +4,7 @@ Household budget app for a couple (person `a` = repo owner, `b` = partner). Kore
 
 ## Layout
 - `apps/web` — Next.js 16 static export (PWA), live at https://our-money-sage.vercel.app
-- `apps/mobile` — Kotlin Multiplatform: `core` (models, calc, Supabase), `ui` (Compose MP), `androidApp`, `iosApp` (placeholder)
+- `apps/mobile` — Kotlin Multiplatform: `core` (models, calc, Supabase), `ui` (Compose MP), `androidApp`, `iosApp` (placeholder). The Android app is **hybrid**: `MainActivity` hosts the web app in a WebView (screens are built once, on the web); only Android-only features (card-notification logging, widgets) are native. Google login opens in a Custom Tab and returns via `ourmoney://auth-callback`.
 - `supabase/` — `schema.sql` + `migrations/` (shared by web and mobile)
 - `PRODUCT.md` — product source of truth; `CHANGELOG.md` — versions
 - `docs/design-system/` — design source of truth: `tokens.json`, rules in `README.md`, per-component `README.md` + live `preview.html`. `DESIGN.md` only points into it (no values of its own).
@@ -75,4 +75,4 @@ On the web, apply the principles (window size classes, `env(safe-area-inset-*)`,
 ## Status
 - Done: web app, Supabase + Google login, Vercel deploy, monorepo, mobile scaffold + calc port (tests pass, debug APK builds), public repo with secret checks and versioning (v0.2.0), new design system applied to the web app, migrations 002-009 run in production.
 - Paydays differ per person (`payday_a`/`payday_b`, read via `paydayOf`; the old shared `payday` is only a fallback). Transfers are grouped by the payer's payday on the check page.
-- Pending: port the screens to Compose; Android Google login (Android OAuth client + SHA-1); card-notification auto-logging, widget, push; Play Console internal testing.
+- Pending: card-notification auto-logging (collect samples → parser → save with `review`), widget, push; Play Console internal testing.
