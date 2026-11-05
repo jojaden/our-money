@@ -197,11 +197,12 @@ enum class CheckKind {
     @SerialName("transfer") TRANSFER,
     @SerialName("card") CARD,
     @SerialName("settle") SETTLE,
+    @SerialName("event") EVENT,
 }
 
 @Serializable
 data class Check(
-    /** transfer: `t:${month}:${from}>${to}`  card: `c:${month}:${cardId}`  settle: `s:${month}` */
+    /** transfer: `t:${month}:${from}>${to}`  card: `c:${month}:${cardId}`  settle: `s:${month}`  event: `e:${month}:${eventId}@${start}` */
     val id: String,
     val month: String,
     val kind: CheckKind,

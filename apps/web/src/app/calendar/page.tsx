@@ -5,12 +5,14 @@ import { useState } from "react";
 import { Plus } from "lucide-react";
 import type { CalEvent } from "@/lib/types";
 import { useData } from "@/lib/store";
-import { nameOf } from "@/lib/calc";
-import { ddayText, marksIn, monthGrid, nextOccurrence, spentByDay, type Mark } from "@/lib/calendar";
+import { actualAmount, findCheck, nameOf } from "@/lib/calc";
+import { ddayText, eventTodo, marksIn, monthGrid, nextOccurrence, spentByDay, type Mark } from "@/lib/calendar";
 import { dateWithDay, num, shortDate } from "@/lib/format";
 import { MonthHeader } from "@/components/MonthHeader";
-import { CategoryIcon, Money } from "@/components/ui";
+import { CategoryIcon, CheckButton, Money } from "@/components/ui";
 import { EventSheet } from "@/components/EventSheet";
+import { MonthTodo } from "@/components/MonthTodo";
+import { PeriodSummary } from "@/components/PeriodSummary";
 import { useSheets } from "@/components/Shell";
 import { spendingVisual } from "@/lib/categories";
 
@@ -24,9 +26,63 @@ function short(n: number): string {
   return `${man >= 100 || Number.isInteger(man) ? Math.round(man) : man.toFixed(1)}만`;
 }
 
+/** 그날 끝낼 것(할 일 일정·이체·납부·카드값) — 앞 동그라미로 끝내고, 나머지를 누르면 일정은 고치기, 돈 일은 체크 화면으로 */
+function CheckMark({ m, onOpen }: { m: Mark; onOpen: () => void }) {
+  const { data, today, toggleCheck, togglePaid } = useData();
+  const s = data.settings;
+  const st = (() => {
+    if (m.item) {
+      const i = m.item;
+      return { done: i.paid, by: i.paid_by, amount: actualAmount(i), sub: "이체·납부", toggle: () => void togglePaid(i) };
+    }
+    if (m.bill) {
+      const { id, month } = m.bill;
+      const c = findCheck(data.checks, id);
+      return { done: Boolean(c), by: c?.done_by ?? null, amount: m.amount, sub: "카드값", toggle: () => void toggleCheck({ id, month, kind: "card", amount: m.amount ?? 0 }, !c) };
+    }
+    const e = m.event!;
+    const t = eventTodo(data, m.occ!);
+    const when = m.occ!.start !== m.occ!.end ? `${shortDate(m.occ!.start)}~${shortDate(m.occ!.end)}` : "하루";
+    return {
+      done: Boolean(t.check),
+      by: t.check?.done_by ?? null,
+      amount: m.amount,
+      sub: `${when}${e.owner !== "joint" ? ` · ${nameOf(s, e.owner)}` : ""}`,
+      toggle: () => void toggleCheck({ id: t.id, month: t.month, kind: "event", amount: e.amount ?? 0 }, !t.check),
+    };
+  })();
+  const main = (
+    <>
+      <div className="t">{m.title}</div>
+      <div className="s">
+        {st.sub}
+        {st.done ? ` · ${st.by ? `${nameOf(s, st.by)} ` : ""}완료` : m.event ? " · 할 일" : ""}
+      </div>
+    </>
+  );
+  return (
+    <div className={`row cal-mark ${st.done ? "done" : ""}`}>
+      <CheckButton on={st.done} onToggle={st.toggle} label={`${m.title} ${st.done ? "완료 취소" : "완료로 표시"}`} />
+      {m.event ? (
+        <button type="button" className="row-open" onClick={onOpen}>
+          {main}
+        </button>
+      ) : (
+        <Link href="/check" className="row-open">
+          {main}
+        </Link>
+      )}
+      <div className="r">
+        {st.amount ? <Money value={st.amount} /> : null}
+        {m.event?.dday && !st.done && <div className="s">{ddayText(m.occ!, today)}</div>}
+      </div>
+    </div>
+  );
+}
+
 /**
- * 달력 — 날짜마다 그날 쓴 돈과 월급날·카드 결제일·이체일·일정. 날짜를 누르면 아래에 그날 것이 펼쳐진다.
- * 위쪽 막대의 달 넘기기를 그대로 쓴다(가계부 달 이름 = 달력 달).
+ * 달력 — 날짜마다 그날 쓴 돈과 월급날·카드 결제일·이체일·일정. 날짜를 누르면 아래에 그날 것이 펼쳐진다(할 일 일정은 바로 체크).
+ * 옆에 이번 달 할 일·D-day, 아래에 기간 모아 보기 (폰에서는 달력 → 그날 → 할 일 → D-day → 모아 보기). 위쪽 막대의 달 넘기기를 그대로 쓴다(가계부 달 이름 = 달력 달).
  */
 export default function CalendarPage() {
   const { data, month, today } = useData();
@@ -68,7 +124,7 @@ export default function CalendarPage() {
 
       <div className="grid">
         <div className="col span-7">
-          <section className="group" aria-label="달력">
+          <section className="group o1" aria-label="달력">
             <div className="card cal">
               <div className="cal-week" aria-hidden="true">
                 {WEEK.map((w, i) => (
@@ -112,7 +168,7 @@ export default function CalendarPage() {
             </div>
           </section>
 
-          <section className="group" aria-labelledby="day-h">
+          <section className="group o2" aria-labelledby="day-h">
             <div className="group-head">
               <h2 id="day-h">{dateWithDay(day)}</h2>
               <button type="button" className="aside head-btn" onClick={() => openEvent(undefined, day)}>
@@ -125,7 +181,9 @@ export default function CalendarPage() {
               ) : (
                 <div className="rows">
                   {dayMarks.map((m, i) =>
-                    m.event ? (
+                    (m.event?.todo && m.occ) || m.item || m.bill ? (
+                      <CheckMark key={m.event ? `e${m.event.id}` : `${m.kind}${i}`} m={m} onOpen={() => openEvent(m.event)} />
+                    ) : m.event ? (
                       <button type="button" className="row no-lead cal-mark" key={`e${m.event.id}`} onClick={() => openEvent(m.event)}>
                         <div style={{ minWidth: 0 }}>
                           <div className="t">
@@ -150,7 +208,7 @@ export default function CalendarPage() {
                             <i className={`mark-dot k-${m.kind} ${m.owner ?? ""}`} aria-hidden="true" />
                             {m.title}
                           </div>
-                          <div className="s">{m.kind === "payday" ? "옮길 돈은 체크에서" : m.kind === "card" ? "카드값" : m.done ? "완료" : "이체·납부"}</div>
+                          <div className="s">옮길 돈은 체크에서</div>
                         </div>
                         <div className="r">{m.amount ? <Money value={m.amount} /> : null}</div>
                       </Link>
@@ -172,10 +230,14 @@ export default function CalendarPage() {
               )}
             </div>
           </section>
+
+          <PeriodSummary month={month} day={day} className="o5" />
         </div>
 
         <div className="col span-5">
-          <section className="group" aria-labelledby="dday-h">
+          <MonthTodo month={month} className="o3" />
+
+          <section className="group o4" aria-labelledby="dday-h">
             <div className="group-head">
               <h2 id="dday-h">D-day</h2>
               <button type="button" className="aside head-btn" onClick={() => openEvent(undefined, today)}>

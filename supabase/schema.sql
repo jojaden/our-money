@@ -99,7 +99,7 @@ create index if not exists month_items_month on public.month_items(month);
 create table if not exists public.checks (
   id text primary key,
   month text not null,
-  kind text not null check (kind in ('transfer', 'card', 'settle')),
+  kind text not null check (kind in ('transfer', 'card', 'settle', 'event')),
   amount bigint not null default 0,
   done_at timestamptz not null default now(),
   done_by text not null check (done_by in ('a', 'b'))
@@ -805,6 +805,11 @@ begin
 end $$;
 
 create index if not exists events_start on public.events (start_date);
+
+-- 012 일정을 할 일로: 체크해서 끝내는 일정. 끝낸 기록은 checks 에 kind 'event' 로 (회차마다 따로)
+alter table public.events add column if not exists todo boolean not null default false;
+alter table public.checks drop constraint if exists checks_kind_check;
+alter table public.checks add constraint checks_kind_check check (kind in ('transfer', 'card', 'settle', 'event'));
 
 -- 접근: 멤버만, 익명 키는 아무것도
 alter table public.events enable row level security;

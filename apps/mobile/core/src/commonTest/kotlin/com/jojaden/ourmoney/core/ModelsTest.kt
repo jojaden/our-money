@@ -1,5 +1,6 @@
 package com.jojaden.ourmoney.core
 
+import com.jojaden.ourmoney.core.calc.checkId
 import com.jojaden.ourmoney.core.model.*
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
@@ -30,5 +31,14 @@ class ModelsTest {
         assertEquals(SpendingSource.MANUAL, s.source)
         assertEquals(1, s.installmentMonths)
         assertNull(s.rev)
+    }
+
+    // 012: 일정 할 일을 끝낸 체크 (회차마다 따로)
+    @Test fun event_check_row() {
+        val c = json.decodeFromString<Check>(
+            """{"id":"e:2026-05:ev-1@2026-05-01","month":"2026-05","kind":"event","amount":0,"done_at":"2026-05-20T01:00:00Z","done_by":"b"}""",
+        )
+        assertEquals(CheckKind.EVENT, c.kind)
+        assertEquals(c.id, checkId(CheckKind.EVENT, "2026-05", "ev-1@2026-05-01"))
     }
 }

@@ -329,3 +329,12 @@ button.row:active, a.row:active { background: var(--well); transform: scale(0.98
 @media (prefers-reduced-motion: reduce) {
   .row.fresh, .check[aria-pressed="true"] .ring { animation: none !important; }
 }
+
+/* ---------- 글자 탭 (TextTabs): 기간 고르기. 고른 칸만 옅은 인디고 알약 ---------- */
+
+.text-tabs { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; }
+.text-tabs::-webkit-scrollbar { display: none; }
+.text-tabs button { flex: none; height: 36px; padding: 0 12px; border: 0; border-radius: var(--radius-chip); background: transparent; color: var(--faint); font: 500 14.5px/1 var(--font-text); transition: background-color var(--dur-press) var(--ease-out), color var(--dur-press) var(--ease-out); }
+.text-tabs button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent-ink); font-weight: 600; }
+.text-tabs button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { .text-tabs button { transition: none; } }

@@ -32,6 +32,8 @@ interface Store {
   exportSpendings: () => Promise<Spending[]>;
   /** 바뀐 기록 한 쪽 (최근 것부터, before 보다 앞선 것) */
   loadHistory: (before: number | null) => Promise<HistoryRow[]>;
+  /** start(YYYY-MM-DD) 부터의 지출이 없으면 그 앞 기간만 더 불러온다 (달력 기간 모아 보기) */
+  loadSpendingsFrom: (start: string) => void;
   /**
    * 저장들. 화면에는 바로 반영하고 서버로 보낸다. 거절하지 않고 결과만 돌려준다:
    * true = 저장됨(또는 연결 문제로 폰에 보관, 나중에 보냄), false = 충돌·잘못된 값으로 못 함(알림과 다시 읽기는 이미 했음)
@@ -303,21 +305,27 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     };
   }, [repo, auth.state, reload]);
 
-  // 불러온 범위보다 이전 달을 보면 그 기간 지출만 더 불러온다
-  useEffect(() => {
-    if (!repo || !data || !month) return;
-    const start = periodOf(addMonths(month, -1), data.settings.cycle_start).start; // 지난달 비교·카드값까지
-    if (start >= spendingsFrom.current) return;
-    const until = spendingsFrom.current;
-    spendingsFrom.current = start;
-    void repo.loadSpendings(start, until).then((older) => {
-      setData((d) => {
-        if (!d) return d;
-        const have = new Set(d.spendings.map((x) => x.id));
-        return { ...d, spendings: [...d.spendings, ...older.filter((x) => !have.has(x.id))] };
+  // 불러온 범위보다 이전을 보면 그 기간 지출만 더 불러온다
+  const loadSpendingsFrom = useCallback(
+    (start: string) => {
+      if (!repo || start >= spendingsFrom.current) return;
+      const until = spendingsFrom.current;
+      spendingsFrom.current = start;
+      void repo.loadSpendings(start, until).then((older) => {
+        setData((d) => {
+          if (!d) return d;
+          const have = new Set(d.spendings.map((x) => x.id));
+          return { ...d, spendings: [...d.spendings, ...older.filter((x) => !have.has(x.id))] };
+        });
       });
-    });
-  }, [repo, data, month]);
+    },
+    [repo],
+  );
+
+  useEffect(() => {
+    if (!data || !month) return;
+    loadSpendingsFrom(periodOf(addMonths(month, -1), data.settings.cycle_start).start); // 지난달 비교·카드값까지
+  }, [data, month, loadSpendingsFrom]);
 
   const setMonth = useCallback((m: string) => {
     setMonthState(m);
@@ -600,6 +608,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     reload,
     exportSpendings,
     loadHistory,
+    loadSpendingsFrom,
     upsert,
     remove,
     batch,

@@ -22,7 +22,7 @@ function newId() {
 }
 
 /**
- * 일정 만들기·고치기. 하루 또는 기간(끝 날 포함), 반복(매달·매년), D-day, 기간 동안 알림 모음 고정, 미리 알림.
+ * 일정 만들기·고치기. 하루 또는 기간(끝 날 포함), 반복(매달·매년), 할 일, D-day, 기간 동안 알림 모음 고정, 미리 알림.
  * 열 때마다 새 key 로 그려서 입력이 그 일정(또는 고른 날짜)에서 시작한다.
  */
 export function EventSheet({ open, onOpenChange, event, date }: { open: boolean; onOpenChange: (v: boolean) => void; event?: CalEvent; date: string }) {
@@ -34,6 +34,7 @@ export function EventSheet({ open, onOpenChange, event, date }: { open: boolean;
   const [end, setEnd] = useState(event?.end_date ?? "");
   const [repeat, setRepeat] = useState<Repeat>(event?.repeat ?? "none");
   const [owner, setOwner] = useState<Owner>(event?.owner ?? "joint");
+  const [todo, setTodo] = useState(event?.todo ?? false);
   const [dday, setDday] = useState(event?.dday ?? true);
   const [pin, setPin] = useState(event?.pin ?? false);
   const [remind, setRemind] = useState(event?.remind_days == null ? "" : String(event.remind_days));
@@ -54,6 +55,7 @@ export function EventSheet({ open, onOpenChange, event, date }: { open: boolean;
       repeat,
       owner,
       dday,
+      todo,
       pin: ranged && pin,
       remind_days: remind === "" ? null : Number(remind),
       amount: amount > 0 ? amount : null,
@@ -145,6 +147,13 @@ export function EventSheet({ open, onOpenChange, event, date }: { open: boolean;
       </div>
 
       <div className="field">
+        <div className="switchrow">
+          <div>
+            <div className="t">할 일로 체크하기</div>
+            <div className="s">끝내면 체크해요 (예: 재산세 내기). 달력의 이번 달 할 일에 모이고, 반복이면 회차마다 따로 체크해요</div>
+          </div>
+          <Toggle on={todo} onChange={setTodo} label="할 일로 체크하기" />
+        </div>
         <div className="switchrow">
           <div>
             <div className="t">D-day 세기</div>

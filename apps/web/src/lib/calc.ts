@@ -4,6 +4,7 @@
 import type {
   Account,
   Check,
+  CheckKind,
   Data,
   Group,
   Month,
@@ -265,9 +266,10 @@ export function transfersOf(
   return { transfers, issues };
 }
 
-export function checkId(kind: "transfer" | "card" | "settle", month: string, key = ""): string {
+export function checkId(kind: CheckKind, month: string, key = ""): string {
   if (kind === "transfer") return `t:${month}:${key}`;
   if (kind === "card") return `c:${month}:${key}`;
+  if (kind === "event") return `e:${month}:${key}`;
   return `s:${month}`;
 }
 

@@ -298,3 +298,11 @@
 @media (prefers-reduced-motion: reduce) {
   .flow-bar, .flow-bar .seg, .flow-key button { transition: none; }
 }
+
+/* ---------- 강조 카드 (HighlightCard): 화면에 하나. 옅은 하늘 그라데이션, 그림자 없음 ---------- */
+
+.highlight { display: grid; gap: 8px; padding: var(--pad); border-radius: var(--radius-card); background: linear-gradient(115deg, var(--sky-100), var(--sky-50)); }
+.highlight h3 { font: 700 20px/28px var(--font-text); letter-spacing: -0.02em; }
+.highlight .reward { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; margin-top: 4px; }
+.highlight .reward b { font: 700 20px/28px var(--font-display); font-variant-numeric: tabular-nums; }
+.highlight .reward > span { color: var(--faint); font: 500 14.5px/20px var(--font-text); }

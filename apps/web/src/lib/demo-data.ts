@@ -216,7 +216,7 @@ export function buildDemoData(today = ymd(new Date())): Data {
   };
 }
 
-/** 예시 일정: 1년에 두 번 내는 재산세, 5월 한 달 신고 기간(알림 모음에 고정), 기념일 D-day */
+/** 예시 일정: 1년에 두 번 내는 재산세, 5월 한 달 신고 기간(알림 모음에 고정), 기념일 D-day, 매달 체크하는 할 일 */
 function demoEvents(y: number): CalEvent[] {
   const ev = (e: Partial<CalEvent> & Pick<CalEvent, "id" | "title" | "start_date">): CalEvent => ({
     note: "",
@@ -227,14 +227,16 @@ function demoEvents(y: number): CalEvent[] {
     pin: false,
     remind_days: 3,
     amount: null,
+    todo: false,
     ...e,
   });
   return [
-    ev({ id: "ev-property-1", title: "재산세 (건물분)", start_date: `${y}-07-16`, end_date: `${y}-07-31`, amount: 320_000, pin: true }),
-    ev({ id: "ev-property-2", title: "재산세 (토지분)", start_date: `${y}-09-16`, end_date: `${y}-09-30`, amount: 180_000, pin: true }),
-    ev({ id: "ev-cgt", title: "양도소득세 신고", start_date: `${y}-05-01`, end_date: `${y}-05-31`, owner: "a", pin: true, note: "해외 주식 판 것 정리해서 홈택스에 신고" }),
+    ev({ id: "ev-property-1", title: "재산세 (건물분)", start_date: `${y}-07-16`, end_date: `${y}-07-31`, amount: 320_000, pin: true, todo: true }),
+    ev({ id: "ev-property-2", title: "재산세 (토지분)", start_date: `${y}-09-16`, end_date: `${y}-09-30`, amount: 180_000, pin: true, todo: true }),
+    ev({ id: "ev-cgt", title: "양도소득세 신고", start_date: `${y}-05-01`, end_date: `${y}-05-31`, owner: "a", pin: true, todo: true, note: "해외 주식 판 것 정리해서 홈택스에 신고" }),
     ev({ id: "ev-anniv", title: "결혼기념일", start_date: `${y - 2}-11-21`, remind_days: 7 }),
-    ev({ id: "ev-car", title: "자동차보험 갱신", start_date: `${y}-12-10`, owner: "a", remind_days: 14, dday: false }),
+    ev({ id: "ev-car", title: "자동차보험 갱신", start_date: `${y}-12-10`, owner: "a", remind_days: 14, dday: false, todo: true }),
+    ev({ id: "ev-bill", title: "관리비 고지서 확인", start_date: `${y}-01-05`, repeat: "monthly", dday: false, remind_days: null, todo: true }),
   ];
 }
 
