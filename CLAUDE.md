@@ -62,7 +62,7 @@ On the web, apply the principles (window size classes, `env(safe-area-inset-*)`,
 - UI work follows `docs/design-system/`: its token names (CSS variables from the generated `tokens.css`; change values only in `tokens.json`) and component rules. Mark people with the half-coin `PersonGlyph`, never initials (both names can start with the same syllable).
 - Keep calc logic identical in `apps/web/src/lib/calc.ts` and `apps/mobile/core/.../calc/Calc.kt`; add a `core` test for any change.
 - Schema changes: add a new file in `supabase/migrations/` and mirror it in `schema.sql` (PR check enforces).
-- Membership is bound to the auth account: `is_member()`/`current_person()` check `members.user_id = auth.uid()` (never the JWT email claim). `ensure_user()` binds on first login only for a confirmed Google account in `auth.users`. anon has no table privileges; keep it that way for new tables (`revoke all … from anon`).
+- Membership is bound to the auth account: `is_member()`/`current_person()` check `members.user_id = auth.uid()` (never the JWT email claim). `ensure_user()` binds on first login only for a confirmed account whose Google identity (`auth.identities`) has the member's email. anon has no table privileges; keep it that way for new tables (`revoke all … from anon`).
 - Writes: send back the `rev` you read (optimistic lock; a stale rev fails with SQLSTATE `OM409` → reload, don't retry). Never send `rev: null` (Kotlin Json `explicitNulls = false`). `created_*`, `updated_*`, `rev` and `history` are filled by triggers; don't write them yourself, and strip them when copying a row into a new one.
 - Writes that must land together (month + items, plan item + month item, delete + deactivate) go in one `apply_batch` call (web: `store.batch([upsertOp(…), deleteOp(…)])`). Send full rows, sorted by id. Limits: 500 rows per batch, 200 rows per UPDATE/DELETE statement (`OM413`).
 - Retry only `RetryableError` (network, 5xx, 429, 40001, 40P01) with capped backoff and jitter; re-sending is safe because writes are id upserts and identical content is skipped before the rev check. Keep unsent writes in the outbox, never drop them.
@@ -73,6 +73,6 @@ On the web, apply the principles (window size classes, `env(safe-area-inset-*)`,
 - Never commit secrets or connection info: `.env*`, keystores, `local.properties`, `google-services.json`, `.vercel/`, Supabase keys/URL, real emails. Only the anon key goes in the app; never the service_role key.
 
 ## Status
-- Done: web app, Supabase + Google login, Vercel deploy, monorepo, mobile scaffold + calc port (tests pass, debug APK builds), public repo with secret checks and versioning (v0.1.0).
+- Done: web app, Supabase + Google login, Vercel deploy, monorepo, mobile scaffold + calc port (tests pass, debug APK builds), public repo with secret checks and versioning (v0.2.0), new design system applied to the web app, migrations 002-008 run in production.
 - Paydays differ per person (`payday_a`/`payday_b`, read via `paydayOf`; the old shared `payday` is only a fallback). Transfers are grouped by the payer's payday on the check page.
-- Pending: run `supabase/migrations/007_security_hardening.sql`; port the screens to Compose; Android Google login (Android OAuth client + SHA-1); card-notification auto-logging, widget, push; Play Console internal testing.
+- Pending: run `supabase/migrations/009_security_hardening_2.sql`; port the screens to Compose; Android Google login (Android OAuth client + SHA-1); card-notification auto-logging, widget, push; Play Console internal testing.
