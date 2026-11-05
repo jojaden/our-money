@@ -12,6 +12,7 @@ import { MonthHeader } from "@/components/MonthHeader";
 import { CategoryIcon, CheckButton, Money } from "@/components/ui";
 import { EventSheet } from "@/components/EventSheet";
 import { MonthTodo } from "@/components/MonthTodo";
+import { Morph } from "@/components/Morph";
 import { PeriodSummary } from "@/components/PeriodSummary";
 import { useSheets } from "@/components/Shell";
 import { spendingVisual } from "@/lib/categories";
@@ -177,11 +178,14 @@ export default function CalendarPage() {
                 <Plus aria-hidden="true" /> 추가
               </button>
             </div>
-            <div className="card">
+            {/* 다른 날을 고르면 그날 목록이 겹쳐 바뀐다 */}
+            <Morph className="card" track=":scope > *, .rows > *">
               {dayMarks.length === 0 && daySpendings.length === 0 ? (
-                <p className="empty">이날은 일정도 기록도 없어요.</p>
+                <p className="empty" key={day}>
+                  이날은 일정도 기록도 없어요.
+                </p>
               ) : (
-                <div className="rows">
+                <div className="rows" key={day}>
                   {dayMarks.map((m, i) =>
                     (m.event?.todo && m.occ) || m.item || m.bill ? (
                       <CheckMark key={m.event ? `e${m.event.id}` : `${m.kind}${i}`} m={m} onOpen={() => openEvent(m.event)} />
@@ -230,7 +234,7 @@ export default function CalendarPage() {
                   ))}
                 </div>
               )}
-            </div>
+            </Morph>
           </section>
 
           <PeriodSummary month={month} day={day} className="o5" />
@@ -243,7 +247,7 @@ export default function CalendarPage() {
             <div className="group-head">
               <h2 id="dday-h">D-day</h2>
             </div>
-            <div className="card">
+            <Morph className="card" track=":scope > *, .rows > *">
               {ddays.length === 0 ? (
                 <p className="empty">날짜를 고르고 &quot;+ 추가&quot;에서 D-day를 고르면(기념일·만기) 여기에 모여요. 할 일도 D-day 세기를 켜면 같이 모여요.</p>
               ) : (
@@ -261,7 +265,7 @@ export default function CalendarPage() {
                   ))}
                 </div>
               )}
-            </div>
+            </Morph>
           </section>
         </div>
       </div>

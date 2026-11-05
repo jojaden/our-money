@@ -190,7 +190,9 @@ export function EventSheet({ open, onOpenChange, event, date }: { open: boolean;
     >
       <div className="field">
         <Seg label="무엇을 만들까요" value={kind} onChange={setKind} options={KIND.map((x) => ({ value: x.value, label: x.label }))} />
-        <p className="help">{k.help}</p>
+        <p className="help" key={kind}>
+          {k.help}
+        </p>
       </div>
 
       <div className="field">
@@ -235,7 +237,11 @@ export function EventSheet({ open, onOpenChange, event, date }: { open: boolean;
       </div>
 
       <div className="field">
-        {kind !== "dday" && <span className="label">{kind === "todo" ? "언제까지" : "언제"}</span>}
+        {kind !== "dday" && (
+          <span className="label" key={kind}>
+            {kind === "todo" ? "언제까지" : "언제"}
+          </span>
+        )}
         {kind !== "dday" && (
           <Seg
             label="하루 또는 기간"

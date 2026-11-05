@@ -358,3 +358,8 @@ button.row:active, a.row:active { background: var(--well); transform: scale(0.98
 .time-chip button { display: grid; place-items: center; width: 28px; height: 28px; border: 0; border-radius: var(--radius-chip); background: none; color: inherit; }
 .time-chip button svg { width: 15px; height: 15px; }
 @media (prefers-reduced-motion: reduce) { .title-mirror mark { animation: none; } }
+
+/* ---------- 칸 바뀌기 (Morph): 높이가 따라가는 동안만 넘친 칸을 자른다. 포커스 링은 남긴다 ---------- */
+
+.morph { position: relative; }
+.morph.morphing { overflow: clip; overflow-clip-margin: 4px; }

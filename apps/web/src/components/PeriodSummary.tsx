@@ -8,6 +8,7 @@ import { categoryName, categoryVisual, spendingVisual } from "@/lib/categories";
 import { dateWithDay, monthLabel, num, parseYmd, shortDate } from "@/lib/format";
 import { CategoryIcon, Money, TextTabs, Who } from "./ui";
 import { HighlightCard } from "./HighlightCard";
+import { Morph } from "./Morph";
 import { useSheets } from "./Shell";
 
 type Kind = "week" | "month" | "year" | "custom";
@@ -131,7 +132,8 @@ export function PeriodSummary({ month, day, className = "" }: { month: string; d
         </div>
       </div>
 
-      <div className="sum-stack">
+      {/* 기간·모을 것·모두 보기를 바꾸면 카드와 줄이 겹쳐 바뀐다 */}
+      <Morph className="sum-stack" track=":scope > *, :scope > * > *, .rows > *">
         {parts.has("spent") && (
           <>
             <HighlightCard title={`${title} 쓴 돈`} amount={sum.spent} note={elapsed > 0 ? `하루 평균 ${num(Math.round(sum.spent / elapsed))}원 · ${sum.spendings.length}건` : "아직 오지 않은 기간이에요"} />
@@ -244,7 +246,7 @@ export function PeriodSummary({ month, day, className = "" }: { month: string; d
             {more("events", sum.events.length)}
           </div>
         )}
-      </div>
+      </Morph>
     </section>
   );
 }
