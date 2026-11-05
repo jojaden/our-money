@@ -114,6 +114,9 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
 /* 달 마무리: 메모와 마감 (마감은 표시만) */
 .month-close textarea.input { height: auto; min-height: 88px; padding: 12px 14px; line-height: 22px; resize: vertical; }
 .month-close .card-foot .s { color: var(--faint); font-size: 13px; }
+.row.hist { align-items: start; min-height: 0; padding-top: 12px; padding-bottom: 12px; }
+.row.hist .s { white-space: normal; }
+.hist-dot { width: 22px; height: 22px; border-radius: 50%; background: var(--well); }
 .month-close .close-row { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--rule); }
 
 /* ---------- 가계부: 날짜 묶음, 분류 예산 줄 ---------- */
