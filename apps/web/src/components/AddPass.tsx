@@ -34,6 +34,7 @@ export function AddPass({ open, onOpenChange, account, kind: initialKind }: { op
   const [dropping, setDropping] = useState(false);
   const [color, setColor] = useState<PassColor | null>(null);
   const [instFocus, setInstFocus] = useState(false);
+  const [note, setNote] = useState("");
 
   useEffect(() => {
     if (!open) return;
@@ -45,6 +46,7 @@ export function AddPass({ open, onOpenChange, account, kind: initialKind }: { op
     setBilling(account?.billing_account_id ?? null);
     setPayDay(account?.pay_day ?? null);
     setColor(account?.color ?? null);
+    setNote(account?.note ?? "");
     setDropping(false);
   }, [open, account, initialKind]);
 
@@ -63,6 +65,7 @@ export function AddPass({ open, onOpenChange, account, kind: initialKind }: { op
       billing_account_id: card ? billing : null,
       pay_day: card ? payDay : null,
       last4: card && last4.length === 4 ? last4 : null,
+      note: note.trim(),
       // 색은 고르거나 지울 때만 보낸다: 한 건 저장은 PostgREST upsert 라, 008 전에는 없는 칸이면 저장이 실패한다
       ...(card && color ? { color } : account?.color ? { color: null } : {}),
       sort: account?.sort ?? Math.max(0, ...data.accounts.map((a) => a.sort)) + 1,
@@ -243,6 +246,18 @@ export function AddPass({ open, onOpenChange, account, kind: initialKind }: { op
             </label>
           </>
         )}
+      </div>
+      <div className="form-group">
+        <label className="form-row wide">
+          <span>메모</span>
+          <textarea
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            rows={2}
+            maxLength={500}
+            placeholder={card ? "예: 전월 실적 30만 원, 통신비 할인" : "예: 비상금은 여기서 꺼내 쓰지 않기"}
+          />
+        </label>
       </div>
       <p className="help">
         공동 지출을 개인 카드·통장으로 내면 정산 대상이 돼요.{card ? " 끝 4자리는 카드 알림에서 카드를 찾는 데만 써요. 색은 내 카드와 비슷하게 고르면 돼요(자동은 이번 달 쓴 버킷 색)." : ""}
