@@ -1,10 +1,19 @@
 -- 003 계정별 사용자 — 로그인한 구글 계정마다 한 줄. 이름은 그 계정 본인만 바꿀 수 있다.
--- 이미 schema.sql 을 실행한 프로젝트에 한 번 실행한다 (여러 번 실행해도 안전).
+-- 이미 schema.sql 을 실행한 프로젝트에 한 번 실행한다 (007 을 실행하기 전까지는 여러 번 실행해도 안전).
 -- Supabase 대시보드 > SQL Editor 에 붙여넣고 Run.
 --
 -- members  = 들어올 수 있는 이메일과 그 사람이 a/b 중 누구인지 (관리자가 SQL 로만 바꿈)
 -- users    = 실제로 로그인한 계정. 앱이 로그인할 때 ensure_user() 로 만들고, 이름은 본인이 바꾼다.
 -- settings.name_a / name_b 는 아직 로그인하지 않은 사람의 이름(기본값)으로만 쓴다.
+
+-- 007 을 실행한 DB 에서는 멈춘다: 이 파일은 멤버 확인 함수를 예전 이메일 방식으로 다시 만든다
+do $$
+begin
+  if exists (select 1 from information_schema.columns
+              where table_schema = 'public' and table_name = 'members' and column_name = 'user_id') then
+    raise exception '007 을 이미 실행한 DB 예요. 003 은 다시 실행하지 마세요 (멤버 확인이 이메일 방식으로 돌아가요)';
+  end if;
+end $$;
 
 create table if not exists public.users (
   id uuid primary key references auth.users(id) on delete cascade,

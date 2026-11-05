@@ -1,4 +1,4 @@
--- 004 기록 남기기 · 충돌 막기 · 무결성 — 이미 schema.sql 을 실행한 프로젝트에 한 번 실행한다 (여러 번 실행해도 안전).
+-- 004 기록 남기기 · 충돌 막기 · 무결성 — 이미 schema.sql 을 실행한 프로젝트에 한 번 실행한다 (007 을 실행하기 전까지는 여러 번 실행해도 안전).
 -- Supabase 대시보드 > SQL Editor 에 붙여넣고 Run.
 --
 -- 1) 모든 줄에 누가·언제 만들고 고쳤는지 (created_by / updated_at / updated_by) — 트리거가 채우므로 앱이 속일 수 없다
@@ -6,6 +6,15 @@
 -- 3) history — 모든 추가·수정·삭제를 바뀐 칸만 남긴다 (나중에 "누가 언제 바꿨나", 되돌리기, 습관 통계에 쓴다)
 -- 4) 앞으로 쓸 정보 칸: 지출 출처·태그·할부·카드 승인번호, 카드 끝 4자리, 항목 시작·끝 달, 실제 낸 금액, 달 메모·마감
 -- 5) 외래키(계좌·플랜 항목) + 그 인덱스, 카드 알림 중복 기록을 막는 유니크 인덱스
+
+-- 007 을 실행한 DB 에서는 멈춘다: 이 파일은 멤버 확인 함수를 예전 이메일 방식으로 다시 만든다
+do $$
+begin
+  if exists (select 1 from information_schema.columns
+              where table_schema = 'public' and table_name = 'members' and column_name = 'user_id') then
+    raise exception '007 을 이미 실행한 DB 예요. 004 은 다시 실행하지 마세요 (멤버 확인이 이메일 방식으로 돌아가요)';
+  end if;
+end $$;
 
 -- ---------- 0. 로그인한 사람(a/b) ----------
 create or replace function public.current_person() returns text
