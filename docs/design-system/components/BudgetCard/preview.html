@@ -1,4 +1,4 @@
-<!-- @dsCard group="Cards" height=980 subtitle="홈 첫 카드는 굵은 반원 호와 곡선 패널, 작은 카드는 270° 게이지 — '+ 지출'을 눌러 호·끝 점·숫자가 이어지는 모습을 보세요" -->
+<!-- @dsCard group="Cards" height=980 subtitle="홈 첫 카드는 굵은 반원 호와 흰 바탕으로 스며드는 하늘, 결제수단 비율 막대, 작은 카드는 270° 게이지 — '+ 지출'을 눌러 호·끝 점·숫자가 이어지는 모습을 보세요" -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alan+Sans:wght@300..900&family=Noto+Sans+KR:wght@400..800&display=swap">
 <style>
   body { margin: 0; background: var(--ground); color: var(--text); font-family: var(--font-text); word-break: keep-all; -webkit-font-smoothing: antialiased; }
@@ -46,8 +46,8 @@
   .daily { color: var(--muted); font: 500 14.5px/20px var(--font-text); }
   .daily b { color: var(--text); font-weight: 700; }
 
-  /* 홈 첫 카드: 하늘 머리 + 굵은 반원 호 + 곡선 패널 */
-  .sky { padding-bottom: 28px; background: linear-gradient(180deg, var(--sky-100) 0%, var(--glow) 100%); }
+  /* 홈 첫 카드: 하늘 머리 + 굵은 반원 호, 하늘색이 흰 바탕으로 스며든다 */
+  .sky { padding-bottom: 4px; background: linear-gradient(180deg, var(--sky-100) 0%, var(--glow) 55%, var(--surface) 100%); }
   .arc { position: relative; width: min(100% - 40px, 300px); margin: 6px auto 0; }
   .arc svg { display: block; width: 100%; overflow: visible; }
   .mile-t { fill: var(--ink); font: 600 11px var(--font-text); letter-spacing: .02em; }
@@ -55,14 +55,21 @@
   .pct b { font: 800 44px/46px var(--font-display); letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
   .pct .u { margin-left: 1px; font-size: .5em; font-weight: 700; color: var(--faint); }
   .pct small { color: var(--faint); font: 600 12.5px/16px var(--font-text); }
-  .panel { position: relative; display: grid; justify-items: center; gap: 2px; margin-top: -30px; padding: 26px var(--pad) var(--pad); background: var(--surface); border-radius: 50% 50% 0 0 / 30px 30px 0 0; text-align: center; }
+  .panel { display: grid; justify-items: center; gap: 2px; padding: 10px var(--pad) var(--pad); text-align: center; }
   .panel .pill { margin-top: 14px; }
   .panel .daily { margin-top: 8px; }
-  .kinds { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; width: 100%; margin-top: 18px; text-align: left; }
-  .kinds div { padding: 10px; border-radius: var(--radius-small); background: var(--well); }
-  .kinds dt { color: var(--faint); font: 500 12.5px/16px var(--font-text); }
-  .kinds dd { margin-top: 2px; font: 600 15px/22px var(--font-display); font-variant-numeric: tabular-nums; white-space: nowrap; }
-  .kinds dd span { margin-left: 1px; font-size: .8em; color: var(--faint); }
+  /* 결제수단 나눔: 비율 막대 + 목록 (0원은 빼고 카드·현금·계좌이체 순서·색 고정) */
+  .kinds { width: 100%; max-width: 440px; margin-top: 20px; text-align: left; }
+  .kinds .bar { display: flex; gap: 2px; height: 8px; }
+  .kinds .bar i { min-width: 4px; border-radius: 4px; background: var(--k); }
+  .kinds ul { margin: 6px 0 0; padding: 0; list-style: none; }
+  .kinds li { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 12px 0; }
+  .kinds li + li { background: linear-gradient(var(--rule), var(--rule)) 22px 0 / calc(100% - 22px) 0.6px no-repeat; }
+  .kinds li i { width: 10px; height: 10px; border-radius: var(--radius-chip); background: var(--k); }
+  .kinds .n { font: 500 16px/24px var(--font-text); }
+  .kinds .v { margin-left: 4px; color: var(--faint); font: 500 12.5px/16px var(--font-text); }
+  .kinds b { font: 600 17px/24px var(--font-display); font-variant-numeric: tabular-nums; }
+  .k-card { --k: var(--kind-card); } .k-cash { --k: var(--kind-cash); } .k-transfer { --k: var(--kind-transfer); }
 
   /* 작은 카드: 왼쪽 답 숫자 + 오른쪽 270° 게이지 */
   .body { display: grid; grid-template-columns: minmax(0, 1fr) 96px; align-items: center; gap: 12px; padding: 14px var(--pad) 0; }
@@ -110,7 +117,7 @@
       <p class="sub" data-sub></p>
       <p class="pill" data-pill></p>
       <p class="daily" data-daily></p>
-      <dl class="kinds" data-kinds></dl>
+      <div class="kinds" data-kinds></div>
     </div>
   </section>
 
@@ -202,8 +209,9 @@
     const per = Math.floor(left / LEFT_DAYS);
     q(c, "daily").innerHTML = left <= 0 ? "이번 달 예산을 다 썼어요"
       : c.lead ? `남은 ${LEFT_DAYS}일, 하루 <b>${won(per)}원</b>씩 쓸 수 있어요` : `하루 <b>${won(per)}원</b>`;
-    const entries = Object.entries(c.kinds);
-    if (c.lead) q(c, "kinds").innerHTML = entries.map(([k, v]) => `<div><dt>${KIND[k]}</dt><dd>${won(v)}<span>원</span></dd></div>`).join("");
+    const entries = Object.entries(c.kinds).filter(([, v]) => v > 0);
+    const sum = entries.reduce((a, [, v]) => a + v, 0) || 1;
+    if (c.lead) q(c, "kinds").innerHTML = `<div class="bar" aria-hidden="true">${entries.map(([k, v]) => `<i class="k-${k}" style="flex-grow:${v}"></i>`).join("")}</div><ul>${entries.map(([k, v]) => `<li class="k-${k}"><i></i><span class="n">${KIND[k]}<span class="v">${Math.round((v / sum) * 100)}%</span></span><b>${won(v)}원</b></li>`).join("")}</ul>`;
     else q(c, "kinds").textContent = entries.map(([k, v]) => `${KIND[k]} ${won(v)}원`).join(" · ");
     const p = Math.min(1, pace / c.budget);
     place(q(c, "mile"), c.at(p));

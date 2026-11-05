@@ -56,28 +56,24 @@
 .pace-pill.warn { background: var(--pill-warning-bg); color: var(--pill-warning-ink); }
 .pace-pill.bad { background: var(--pill-negative-bg); color: var(--pill-negative-ink); }
 
-/* 큰 카드: 하늘 머리 + 반원 호 + 곡선 패널 */
-.budget.lead .sky { padding-bottom: 28px; background: linear-gradient(180deg, var(--sky-100) 0%, var(--glow) 100%); }
+/* 큰 카드: 하늘 머리 + 반원 호. 하늘색이 호 아래에서 흰 바탕으로 스며들어 경계선이 없다 */
+.budget.lead .sky { padding-bottom: 4px; background: linear-gradient(180deg, var(--sky-100) 0%, var(--glow) 55%, var(--surface) 100%); }
 .budget.lead .arc { position: relative; width: min(100% - 40px, 300px); margin: 6px auto 0; }
 .budget.lead .arc .pct { position: absolute; right: 0; bottom: 14px; left: 0; }
-.budget.lead .panel {
-  position: relative;
-  display: grid;
-  justify-items: center;
-  gap: 2px;
-  margin-top: -30px;
-  padding: 26px var(--pad) var(--pad);
-  border-radius: 50% 50% 0 0 / 30px 30px 0 0;
-  background: var(--surface);
-  text-align: center;
-}
+.budget.lead .panel { display: grid; justify-items: center; gap: 2px; padding: 10px var(--pad) var(--pad); text-align: center; }
 .budget.lead .pace-pill { margin-top: 14px; }
 .budget.lead .daily { margin-top: 8px; }
-.budget .kinds { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; width: 100%; margin: 18px 0 0; text-align: left; }
-.budget .kinds div { padding: 10px; border-radius: var(--radius-small); background: var(--well); }
-.budget .kinds dt { color: var(--faint); font: 500 12.5px/16px var(--font-text); }
-.budget .kinds dd { margin: 2px 0 0; font: 600 15px/22px var(--font-display); font-variant-numeric: tabular-nums; white-space: nowrap; }
-.budget .kinds dd span { margin-left: 1px; color: var(--faint); font-size: 0.8em; }
+/* 결제수단 나눔: 비율 막대(8px, 칸 사이 2px, 끝 4px 둥글게) + 목록. 처음 그릴 때 왼쪽에서 펼쳐진다 */
+.budget .kinds { width: 100%; max-width: 440px; margin-top: 20px; }
+.kinds-bar { display: flex; gap: 2px; height: 8px; animation: kinds-in var(--dur-ring) var(--ease-out) both; }
+.kinds-bar i { min-width: 4px; border-radius: 4px; background: var(--k); }
+@keyframes kinds-in { from { clip-path: inset(0 100% 0 0); } }
+@media (prefers-reduced-motion: reduce) { .kinds-bar { animation: none; } }
+.kinds .buckets { margin-top: 6px; }
+.kinds .n .v { margin-left: 4px; }
+.kinds .k-card { --k: var(--kind-card); }
+.kinds .k-cash { --k: var(--kind-cash); }
+.kinds .k-transfer { --k: var(--kind-transfer); }
 
 /* 작은 카드: 왼쪽 답 숫자 + 오른쪽 270° 게이지 */
 .budget.compact .fig { font-size: 28px; line-height: 34px; }
@@ -87,7 +83,8 @@
 .mini .pct, .task-gauge .pct { position: absolute; inset: 0; place-content: center; text-align: center; }
 .mini .pct b, .task-gauge .pct b { font-size: 20px; line-height: 22px; letter-spacing: -0.02em; }
 .budget-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; padding: 14px var(--pad) 0; }
-.budget .kinds-line { padding: 12px var(--pad) var(--pad); color: var(--faint); font: 500 12.5px/16px var(--font-text); }
+.budget.compact { padding-bottom: var(--pad); }
+.budget .kinds-line { padding: 12px var(--pad) 0; color: var(--faint); font: 500 12.5px/16px var(--font-text); }
 .budget-foot:empty { display: none; }
 
 /* 할 일 진행 (홈 할 일 카드) */
@@ -128,10 +125,10 @@
 
 /* ---------- 가계부 머리: 무지개 게이지 (RainbowGauge) ---------- */
 
-/* 쓴 돈 버킷 두 겹. 하늘 머리 + 겹친 반원 + 곡선 패널은 큰 예산 카드와 같은 틀 */
+/* 쓴 돈 버킷 두 겹. 하늘 머리 + 겹친 반원 + 흰 바탕으로 스며드는 그라데이션은 큰 예산 카드와 같은 틀 */
 .rainbow { overflow: hidden; padding: 0; }
 .rainbow p { margin: 0; }
-.rainbow .sky { padding: 22px 0 30px; background: linear-gradient(180deg, var(--sky-100) 0%, var(--glow) 100%); }
+.rainbow .sky { padding: 22px 0 4px; background: linear-gradient(180deg, var(--sky-100) 0%, var(--glow) 55%, var(--surface) 100%); }
 .rainbow .arc { position: relative; width: min(100% - 40px, 320px); margin: 0 auto; filter: drop-shadow(0 6px 10px color-mix(in srgb, var(--accent-ink) 10%, transparent)); }
 .rainbow .layer + .layer { position: absolute; inset: 0; }
 .rainbow .layer.living { --c: var(--g-living); }
@@ -139,7 +136,7 @@
 .tube.rb0 .fl .halo, .tube.rb1 .fl .halo { filter: blur(5px); }
 .rainbow .arc .pct { position: absolute; right: 0; bottom: 4px; left: 0; }
 .rainbow .pct b { font-size: 40px; line-height: 42px; }
-.rainbow .panel { position: relative; display: grid; justify-items: center; gap: 2px; margin-top: -30px; padding: 26px var(--pad) var(--pad); border-radius: 50% 50% 0 0 / 30px 30px 0 0; background: var(--surface); text-align: center; }
+.rainbow .panel { display: grid; justify-items: center; gap: 2px; padding: 10px var(--pad) var(--pad); text-align: center; }
 .rainbow .cap, .rainbow .used { color: var(--faint); font: 500 14.5px/20px var(--font-text); }
 .rainbow .fig { font: 700 36px/42px var(--font-display); letter-spacing: -0.02em; }
 .rainbow .fig .won { margin-left: 2px; color: var(--faint); font-size: 0.62em; font-weight: 600; }
