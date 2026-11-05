@@ -69,6 +69,14 @@ export function waiting(t: Task, today: string): boolean {
   return t.kind === "transfer" && !t.done && !t.early && Boolean(t.payday) && t.payday! > today;
 }
 
+/**
+ * 자동으로 나가는 납부(자동이체·카드 자동결제)인데 날짜가 지나도 체크 전 — 늦은 게 아니니 "지남"으로 다그치지 않고 "잘 나갔나요?"로 묻는다.
+ * (안드로이드 결제 알림으로 확인되면 자동으로 체크한다 — 그 전까지는 사람이 확인)
+ */
+export function asking(t: Task, today: string): boolean {
+  return t.kind === "pay" && !t.done && t.due !== null && t.due < today && (t.item?.method === "account_auto" || t.item?.method === "card_auto");
+}
+
 /** 이 사람이 월급날에 할 일 */
 export interface PaydayGroup {
   person: Person;
