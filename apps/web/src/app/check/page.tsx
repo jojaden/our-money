@@ -1,18 +1,20 @@
 "use client";
 
 import Link from "next/link";
+import { useMemo } from "react";
 import { AlertTriangle, Clock, Target } from "lucide-react";
 import { useData } from "@/lib/store";
-import { addMonths, currentMonth, monthRow, nameOf } from "@/lib/calc";
+import { addMonths, currentMonth, monthRow, nameOf, periodOf } from "@/lib/calc";
 import { FirstRun, MonthHeader } from "@/components/MonthHeader";
 import { Money } from "@/components/ui";
-import { byUrgency, useTasks, type PaydayGroup, type Task } from "@/components/tasks";
+import { byUrgency, eventTasks, useTasks, type PaydayGroup, type Task } from "@/components/tasks";
 import { dDay, dateWithDay, monthLabel, shortDate } from "@/lib/format";
 import { TaskRow } from "@/components/TaskRow";
 import { TaskGauge } from "@/components/BudgetCard";
 import { MAX_STEPS, StepTrack } from "@/components/StepTrack";
 import { Celebrate } from "@/components/Celebrate";
 import { MonthClose } from "@/components/MonthClose";
+import { Morph } from "@/components/Morph";
 
 function Rows({ tasks, expandable, fromShown }: { tasks: Task[]; expandable?: boolean; fromShown?: boolean }) {
   return (
@@ -24,8 +26,8 @@ function Rows({ tasks, expandable, fromShown }: { tasks: Task[]; expandable?: bo
   );
 }
 
-/** 카드 위 이름표 + 끝낸 수, 카드 안에는 할 일 줄만 */
-function Section({ id, title, tasks, empty }: { id: string; title: string; tasks: Task[]; empty: string }) {
+/** 카드 위 이름표 + 끝낸 수, 카드 안에는 할 일 줄만. 체크하면 줄이 끝낸 쪽으로 스르륵 옮겨 간다 */
+function Section({ id, title, tasks, empty, foot }: { id: string; title: string; tasks: Task[]; empty: string; foot?: React.ReactNode }) {
   const done = tasks.filter((t) => t.done).length;
   return (
     <section className="group" aria-labelledby={id}>
@@ -33,7 +35,10 @@ function Section({ id, title, tasks, empty }: { id: string; title: string; tasks
         <h2 id={id}>{title}</h2>
         {tasks.length > 0 && <span className="aside num">{`${done} / ${tasks.length}`}</span>}
       </div>
-      <div className="card">{tasks.length === 0 ? <p className="empty">{empty}</p> : <Rows tasks={tasks} />}</div>
+      <Morph className="card" track=":scope > *, .rows > *">
+        {tasks.length === 0 ? <p className="empty">{empty}</p> : <Rows tasks={tasks} />}
+        {foot}
+      </Morph>
     </section>
   );
 }
@@ -105,9 +110,12 @@ function PaydaySection({ g, today, name }: { g: PaydayGroup; today: string; name
 }
 
 export default function CheckPage() {
-  const { data, month, today, setMonth } = useData();
+  const { data, month, today, setMonth, toggleCheck } = useData();
   const s = data.settings;
   const { tasks, transfers, pays, bills, settle, issues, paydays, started } = useTasks(month);
+  // 달력에서 만든 할 일(재산세 내기 등) — 같은 가계부 달(예: 10/25~11/24). 이체·납부 진행률과 축하에는 넣지 않는다
+  const p = periodOf(month, s.cycle_start);
+  const todos = useMemo(() => eventTasks(data, p.start, p.last, toggleCheck), [data, p.start, p.last, toggleCheck]);
 
   if (!started) {
     return (
@@ -178,6 +186,20 @@ export default function CheckPage() {
           <Section id="saving" title="저축·투자 납입" tasks={saving} empty="이번 달 저축 항목이 없어요." />
           <Section id="cards" title="카드값 준비" tasks={bills} empty="이번 달에 결제되는 카드값이 없어요." />
           {settle && <Section id="settle" title="두 사람 정산" tasks={[settle]} empty="" />}
+          <Section
+            id="todos"
+            title="할 일"
+            tasks={todos}
+            empty="이번 달 할 일이 없어요. 달력의 일정 추가에서 ‘할 일’을 고르면 여기에도 모여요."
+            foot={
+              <div className="card-foot">
+                <span />
+                <Link href="/calendar" className="aside s">
+                  달력에서 보기
+                </Link>
+              </div>
+            }
+          />
           <MonthClose key={month} month={month} />
         </div>
       </div>
