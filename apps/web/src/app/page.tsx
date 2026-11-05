@@ -17,6 +17,8 @@ import { dDay, shortDate } from "@/lib/format";
 import { TaskRow } from "@/components/TaskRow";
 import { MiniCard } from "@/components/pass";
 import { usePrimaryAction, useSheets } from "@/components/Shell";
+import { ClosePrompt } from "@/components/ClosePrompt";
+import { Morph } from "@/components/Morph";
 
 export default function Home() {
   const { data, month, today, me } = useData();
@@ -120,6 +122,10 @@ export default function Home() {
 
       <div className="grid">
         <div className="col span-7">
+          {/* 새 달이 시작됐는데 지난달을 마감하지 않았으면 맨 위에 — 마감하거나 미루면 스르륵 빠진다 */}
+          <Morph className="close-slot" track=":scope > *">
+            <ClosePrompt />
+          </Morph>
           <BudgetCard id="living-h" className="o1" bucket="living" title="남은 공동 생활비" status={living} link={{ href: "/ledger", label: "가계부" }} />
 
           <BudgetCard

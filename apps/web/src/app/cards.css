@@ -303,3 +303,12 @@
 .highlight .reward { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; margin-top: 4px; }
 .highlight .reward b { font: 700 20px/28px var(--font-display); font-variant-numeric: tabular-nums; }
 .highlight .reward > span { color: var(--faint); font: 500 14.5px/20px var(--font-text); }
+
+/* ---------- 지난달 마감 묻기 (ClosePrompt, 홈 맨 위) ---------- */
+
+/* 빈 자리는 칸 간격까지 0 (카드가 빠질 때 간격도 같이 줄어든다) */
+.close-slot { display: flow-root; margin-bottom: calc(var(--gap) * -1); }
+.close-prompt { margin-bottom: var(--gap); }
+.close-prompt .card-head { margin-bottom: 4px; }
+.close-prompt .s { color: var(--muted); font: 500 14.5px/20px var(--font-text); }
+.close-prompt-actions { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: 8px; margin-top: 16px; }
