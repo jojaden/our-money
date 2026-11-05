@@ -82,7 +82,8 @@ function CheckMark({ m, onOpen }: { m: Mark; onOpen: () => void }) {
 
 /**
  * 달력 — 날짜마다 그날 쓴 돈과 월급날·카드 결제일·이체일·일정. 날짜를 누르면 아래에 그날 것이 펼쳐진다(할 일 일정은 바로 체크).
- * 옆에 이번 달 할 일·D-day, 아래에 기간 모아 보기 (폰에서는 달력 → 그날 → 할 일 → D-day → 모아 보기). 위쪽 막대의 달 넘기기를 그대로 쓴다(가계부 달 이름 = 달력 달).
+ * 더하기는 그날 머리의 "+ 추가" 하나(시트 맨 위에서 할 일·일정·D-day 를 고른다).
+ * 옆에 이번 달 할 일·일정과 D-day, 아래에 기간 모아 보기 (폰에서는 달력 → 그날 → 할 일 → D-day → 모아 보기). 위쪽 막대의 달 넘기기를 그대로 쓴다(가계부 달 이름 = 달력 달).
  */
 export default function CalendarPage() {
   const { data, month, today } = useData();
@@ -172,7 +173,7 @@ export default function CalendarPage() {
             <div className="group-head">
               <h2 id="day-h">{dateWithDay(day)}</h2>
               <button type="button" className="aside head-btn" onClick={() => openEvent(undefined, day)}>
-                <Plus aria-hidden="true" /> 일정 추가
+                <Plus aria-hidden="true" /> 추가
               </button>
             </div>
             <div className="card">
@@ -235,18 +236,15 @@ export default function CalendarPage() {
         </div>
 
         <div className="col span-5">
-          <MonthTodo month={month} className="o3" />
+          <MonthTodo month={month} onOpenEvent={(e) => openEvent(e)} className="o3" />
 
           <section className="group o4" aria-labelledby="dday-h">
             <div className="group-head">
               <h2 id="dday-h">D-day</h2>
-              <button type="button" className="aside head-btn" onClick={() => openEvent(undefined, today)}>
-                <Plus aria-hidden="true" /> 일정 추가
-              </button>
             </div>
             <div className="card">
               {ddays.length === 0 ? (
-                <p className="empty">재산세·신고 기간·기념일을 일정으로 만들고 D-day 세기를 켜면 여기에 모여요.</p>
+                <p className="empty">날짜를 고르고 &quot;+ 추가&quot;에서 D-day를 고르면(기념일·만기) 여기에 모여요. 할 일도 D-day 세기를 켜면 같이 모여요.</p>
               ) : (
                 <div className="rows">
                   {ddays.map(({ e, o }) => (

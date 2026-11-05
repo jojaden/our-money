@@ -253,6 +253,9 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
 .row-open { min-width: 0; padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; }
 
 /* 이번 달 할 일: 끝낸 비율 막대 (transform 만 움직인다) */
+.month-todo .mt-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 8px; color: var(--faint); font: 600 13px/18px var(--font-text); }
+.month-todo .mt-head h3 { font: inherit; }
+.month-todo .rows + .mt-head, .month-todo .empty + .mt-head { margin-top: 18px; }
 .month-todo .mt-bar { height: 6px; margin-bottom: 8px; overflow: hidden; border-radius: var(--radius-chip); background: var(--well); }
 .month-todo .mt-bar i { display: block; height: 100%; border-radius: inherit; background: var(--step-done); transform-origin: left; transition: transform var(--dur-ring) var(--ease-out); }
 
@@ -269,3 +272,11 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
 @media (prefers-reduced-motion: reduce) {
   .month-todo .mt-bar i { transition: none; }
 }
+
+/* 이번 달 일정: 앞에 날짜(쓰는 사람 색 바탕), 지난 일정은 옅게 */
+.date-lead { display: grid; place-items: center; align-content: center; gap: 2px; flex: none; width: 40px; height: 40px; border-radius: var(--radius-chip); background: var(--joint-soft); color: var(--text); }
+.date-lead.a { background: var(--a-soft); }
+.date-lead.b { background: var(--b-soft); }
+.date-lead b { font: 700 15px/1 var(--font-display); font-variant-numeric: tabular-nums; }
+.date-lead small { color: var(--faint); font: 600 10.5px/1 var(--font-text); }
+.row.past { opacity: 0.55; }
