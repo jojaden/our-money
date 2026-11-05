@@ -274,7 +274,7 @@ function TopBar({ path }: { path: string }) {
   const summary = path === "/calendar" && q.has("from");
   const bar = useRef<HTMLDivElement>(null);
   const [glass, setGlass] = useState(false);
-  const [title, setTitle] = useState("");
+  const [title, setTitle] = useState({ lead: "", name: "" });
   useEffect(() => {
     const h1 = document.querySelector<HTMLElement>(".page-head h1");
     const row = document.querySelector<HTMLElement>(".page-head .title-row") ?? h1;
@@ -283,7 +283,10 @@ function TopBar({ path }: { path: string }) {
     // 처음 한 번은 바로 불린다. 막대 아래 선을 지나 위로 올라갔을 때만 유리 (화면 아래로 벗어난 것은 아님)
     const io = new IntersectionObserver(
       ([e]) => {
-        setTitle(h1.textContent ?? "");
+        // 달(제목 앞의 가려 둔 글)과 화면 이름을 나눠 둔다 — 좁은 폰의 작은 제목에는 달만 (shell.css)
+        const text = h1.textContent ?? "";
+        const lead = h1.querySelector(".sr-only")?.textContent ?? text;
+        setTitle({ lead: lead.trim(), name: text.slice(lead.length).trim() });
         setGlass(!e.isIntersecting && e.boundingClientRect.top < h);
       },
       { rootMargin: `-${h}px 0px 0px 0px` },
@@ -292,6 +295,7 @@ function TopBar({ path }: { path: string }) {
     return () => io.disconnect();
   }, [path, month, search]);
   const settings = path === "/settings";
+  const full = [title.lead, title.name].filter(Boolean).join(" ");
   return (
     <div ref={bar} className={`topbar ${glass ? "glass" : ""}`}>
       {/* 왼쪽은 오른쪽 두 버튼만큼 비워 작은 제목을 가운데에 둔다 (예시 데이터 알약만 여기에) */}
@@ -304,20 +308,21 @@ function TopBar({ path }: { path: string }) {
       </div>
       {!settings && month && !summary ? (
         // 큰 제목이 보일 때는 숨기고 누를 수도 없게 (같은 버튼이 큰 제목 줄에 있다)
-        <div className="mini" inert={!glass}>
+        <div className="bar-mini" inert={!glass}>
           <button type="button" className="mini-step" aria-label={`지난달 (${monthLabel(addMonths(month, -1))})`} onClick={() => setMonth(addMonths(month, -1))}>
             <ChevronLeft aria-hidden="true" />
           </button>
-          <button type="button" className="mini-title" aria-haspopup="dialog" aria-label={`${title}, 다른 달 고르기`} onClick={() => openMonths()}>
-            {title}
+          <button type="button" className="mini-title" aria-haspopup="dialog" aria-label={`${full}, 다른 달 고르기`} onClick={() => openMonths()}>
+            {title.lead}
+            {title.name && <span className="nm"> {title.name}</span>}
           </button>
           <button type="button" className="mini-step" aria-label={`다음 달 (${monthLabel(addMonths(month, 1))})`} onClick={() => setMonth(addMonths(month, 1))}>
             <ChevronRight aria-hidden="true" />
           </button>
         </div>
       ) : (
-        <span className="mini" aria-hidden="true">
-          {title}
+        <span className="bar-mini" aria-hidden="true">
+          {full}
         </span>
       )}
       <div className="bar-actions">

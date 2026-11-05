@@ -27,17 +27,27 @@ body:has(.canvas.home) {
   align-items: center;
   gap: 8px;
   margin: 0 calc(var(--edge) * -1);
-  padding: calc(10px + env(safe-area-inset-top, 0px)) var(--edge) 10px;
-  transition: background-color var(--dur-press) ease, box-shadow var(--dur-press) ease;
+  padding: calc(6px + env(safe-area-inset-top, 0px)) var(--edge) 6px;
 }
-/* 큰 제목이 막대 밑으로 지나가면 유리 바탕 + 가운데 작은 제목 */
-.topbar.glass {
+/* 큰 제목이 막대 밑으로 지나가면 유리 바탕 + 가운데 작은 제목.
+   유리는 아래 선 없이 막대 밑으로 16px 더 내려와 그 16px 동안 옅어진다 (막대 안은 그대로, 흐림이 글 위에서 서서히 걷힘) */
+.topbar::before {
+  position: absolute;
+  inset: 0 0 -16px;
+  z-index: -1;
   background: color-mix(in srgb, var(--surface) 72%, transparent);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   backdrop-filter: blur(20px) saturate(180%);
-  box-shadow: inset 0 -0.5px 0 color-mix(in srgb, var(--text) 18%, transparent);
+  content: "";
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 16px), transparent);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 16px), transparent);
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+  transition: opacity var(--dur-press) ease, visibility 0s linear var(--dur-press);
 }
-.topbar .mini {
+.topbar.glass::before { opacity: 1; visibility: visible; transition: opacity var(--dur-press) ease; }
+.topbar .bar-mini {
   flex: 1;
   min-width: 0;
   overflow: hidden;
@@ -50,9 +60,10 @@ body:has(.canvas.home) {
   transform: translateY(4px);
   transition: opacity var(--dur-press) ease, transform var(--dur-tab) var(--ease-drawer);
 }
-.topbar.glass .mini { opacity: 1; transform: none; }
-/* 작은 제목 ‹ 11월 체크 › — 누르면 달 고르기. 큰 제목이 보일 때는 inert */
-div.mini { display: flex; align-items: center; justify-content: center; gap: 2px; }
+.topbar.glass .bar-mini { opacity: 1; transform: none; }
+/* 작은 제목 ‹ 11월 체크 › — 누르면 달 고르기. 큰 제목이 보일 때는 inert. 이름까지 들어갈 자리가 없는 폰(~400px)에서는 ‹ 11월 › 만 */
+div.bar-mini { container-type: inline-size; display: flex; align-items: center; justify-content: center; gap: 2px; }
+@container (max-width: 157px) { .mini-title .nm { display: none; } }
 .mini-title { min-width: 0; height: 36px; padding: 0 8px; overflow: hidden; border: 0; border-radius: var(--radius-control); background: transparent; color: var(--text); font: inherit; letter-spacing: inherit; text-overflow: ellipsis; white-space: nowrap; }
 .mini-step { display: grid; flex: none; place-items: center; width: 32px; height: 36px; padding: 0; border: 0; border-radius: var(--radius-control); background: transparent; color: var(--faint); }
 .mini-step svg { width: 18px; height: 18px; stroke-width: 2.25; }
@@ -184,7 +195,7 @@ div.mini { display: flex; align-items: center; justify-content: center; gap: 2px
 /* 주된 일이 없는 화면(플랜·체크·설정): 버튼이 줄어들며 빠지고 캡슐이 그 자리까지 넓어진다. 알약도 같은 박자로 따라간다 */
 .navbar.solo .fab { width: 0; margin-left: calc(var(--nav-gap) * -1); opacity: 0; transform: scale(0.6); pointer-events: none; }
 @media (prefers-reduced-transparency: reduce) {
-  .tabbar, .topbar.glass { background: var(--surface); -webkit-backdrop-filter: none; backdrop-filter: none; }
+  .tabbar, .topbar::before { background: var(--surface); -webkit-backdrop-filter: none; backdrop-filter: none; }
 }
 
 /* ---------- 데스크톱: 레일 ---------- */

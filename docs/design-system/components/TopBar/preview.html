@@ -24,7 +24,7 @@
   .title-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
   .now { height: 32px; padding: 0 12px; border: 0; border-radius: var(--radius-chip); background: var(--tab-active-bg); color: var(--text); font: 600 13.5px/1 var(--font-text); cursor: pointer; transition: transform var(--dur-press) var(--ease-press); }
   .now:active { transform: scale(0.96); }
-  .glass { max-width: 390px; box-sizing: border-box; padding: 10px var(--edge); border-radius: var(--radius-control); background: color-mix(in srgb, var(--surface) 72%, transparent); -webkit-backdrop-filter: blur(20px) saturate(180%); backdrop-filter: blur(20px) saturate(180%); box-shadow: inset 0 -0.5px 0 color-mix(in srgb, var(--text) 18%, transparent); }
+  .glass { max-width: 390px; box-sizing: border-box; padding: 6px var(--edge) 22px; background: color-mix(in srgb, var(--surface) 72%, transparent); -webkit-backdrop-filter: blur(20px) saturate(180%); backdrop-filter: blur(20px) saturate(180%); -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 16px), transparent); mask-image: linear-gradient(to bottom, #000 calc(100% - 16px), transparent); }
 </style>
 <div class="stage">
   <header class="band">
