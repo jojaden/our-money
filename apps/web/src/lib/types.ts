@@ -146,6 +146,18 @@ export interface Category extends Meta {
 
 export type SpendingSource = "manual" | "preset" | "notification" | "import";
 
+/** 자동 기록(카드 알림)에서 확실하지 않아 확인이 필요한 칸 — migrations/010 의 CHECK 와 같은 목록 */
+export type ReviewField = "card" | "category" | "owner" | "installment" | "merchant" | "duplicate" | "canceled";
+export const REVIEW_LABEL: Record<ReviewField, string> = {
+  card: "카드",
+  category: "분류",
+  owner: "누구 돈",
+  installment: "할부",
+  merchant: "가게 이름",
+  duplicate: "중복일 수 있음",
+  canceled: "승인 취소 알림",
+};
+
 export interface Spending extends Meta {
   id: string;
   /** YYYY-MM-DD */
@@ -168,6 +180,8 @@ export interface Spending extends Meta {
   installment_months?: number;
   /** 카드 승인번호 — 같은 승인 건이 두 번 기록되지 않게 */
   approval_no?: string | null;
+  /** 확인이 필요한 칸 (비면 확인 끝). 사람이 고쳐 저장하면 비운다 */
+  review?: ReviewField[];
 }
 
 export interface Member {

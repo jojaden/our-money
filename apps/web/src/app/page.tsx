@@ -233,7 +233,13 @@ export default function Home() {
                       </div>
                       <div className="r">
                         <Money value={r.amount} />
-                        <div className="s">{Number(r.date.slice(5, 7))}/{Number(r.date.slice(8))}</div>
+                        {r.review?.length ? (
+                          <div style={{ marginTop: 2 }}>
+                            <span className="pill warning">확인 필요</span>
+                          </div>
+                        ) : (
+                          <div className="s">{Number(r.date.slice(5, 7))}/{Number(r.date.slice(8))}</div>
+                        )}
                       </div>
                     </button>
                   ))}

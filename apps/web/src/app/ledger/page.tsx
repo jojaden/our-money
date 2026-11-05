@@ -26,10 +26,15 @@ export default function LedgerPage() {
   const { openSpending } = useSheets();
   const [kind, setKind] = useState<KindFilter>("all");
   const [owner, setOwner] = useState<OwnerFilter>("all");
+  // 카드 알림 자동 기록 중 확인이 필요한 것만
+  const [needsReview, setNeedsReview] = useState(false);
   const catsGrown = useRevealOnce("cats");
 
   const all = spendingsIn(data, month);
-  const rows = all.filter((r) => (kind === "all" || r.pay_kind === kind) && (owner === "all" || r.owner === owner));
+  const reviewCount = all.filter((r) => r.review?.length).length;
+  const rows = all.filter(
+    (r) => (kind === "all" || r.pay_kind === kind) && (owner === "all" || r.owner === owner) && (!needsReview || Boolean(r.review?.length)),
+  );
   const total = sum(rows, (r) => r.amount);
   const living = livingStatus(data, month, today);
   const prevSame = spentToDay(data, addMonths(month, -1), "joint", dayIndexOf(month, s.cycle_start, today));
@@ -93,6 +98,14 @@ export default function LedgerPage() {
           </div>
           <div className="card">
           <div className="chips scroll" role="group" aria-label="필터" style={{ marginBottom: 6 }}>
+            {reviewCount > 0 && (
+              <>
+                <button type="button" className="chip" aria-pressed={needsReview} onClick={() => setNeedsReview((v) => !v)}>
+                  확인 필요 <span className="count">{reviewCount}</span>
+                </button>
+                <span className="chip-sep" aria-hidden="true" />
+              </>
+            )}
             {(["all", "card", "cash", "transfer"] as KindFilter[]).map((k) => (
               <button key={k} type="button" className="chip" aria-pressed={kind === k} onClick={() => setKind(k)}>
                 {k === "all" ? "전체" : PAY_KIND_LABEL[k]} <span className="count">{count(k, owner)}</span>
@@ -128,7 +141,13 @@ export default function LedgerPage() {
                       </div>
                       <div className="r">
                         <Money value={r.amount} />
-                        <div className="s">{r.inst ? `할부 ${r.inst.no}/${r.inst.of}` : PAY_KIND_LABEL[r.pay_kind]}</div>
+                        {r.review?.length ? (
+                          <div style={{ marginTop: 2 }}>
+                            <span className="pill warning">확인 필요</span>
+                          </div>
+                        ) : (
+                          <div className="s">{r.inst ? `할부 ${r.inst.no}/${r.inst.of}` : PAY_KIND_LABEL[r.pay_kind]}</div>
+                        )}
                       </div>
                     </button>
                   ))}

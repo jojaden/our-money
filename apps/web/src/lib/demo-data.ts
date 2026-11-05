@@ -198,6 +198,8 @@ export function buildDemoData(today = ymd(new Date())): Data {
     { id: "sp-a3", date: shift(today, -4), amount: 12_000, category_id: null, pay_kind: "cash", account_id: null, owner: "a", paid_by: "a", memo: "회사 동료 경조사 봉투 보탬", created_at: `${shift(today, -4)}T13:00:00.000Z` },
     { id: "sp-b1", date: shift(today, -6), amount: 55_000, category_id: null, pay_kind: "card", account_id: "card-b", owner: "b", paid_by: "b", memo: "미용실", created_at: `${shift(today, -6)}T15:20:00.000Z` },
     { id: "sp-b2", date: shift(today, -2), amount: 18_000, category_id: null, pay_kind: "card", account_id: "card-b", owner: "b", paid_by: "b", memo: "책", created_at: `${shift(today, -2)}T19:05:00.000Z` },
+    // 카드 알림으로 기록했는데 카드·분류·누구 돈을 정하지 못한 것 (확인 필요)
+    { id: "sp-n1", date: today, amount: 32_500, category_id: null, pay_kind: "card", account_id: null, owner: "a", paid_by: "a", memo: "편의점", created_at: `${today}T09:12:00.000Z`, source: "notification", review: ["card", "category", "owner"] },
   );
 
   return {

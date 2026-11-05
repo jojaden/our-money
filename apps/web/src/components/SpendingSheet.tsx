@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Trash2 } from "lucide-react";
+import { AlertTriangle, Trash2 } from "lucide-react";
 import type { Account, Data, Owner, PayKind, Spending } from "@/lib/types";
+import { REVIEW_LABEL } from "@/lib/types";
 import { useData } from "@/lib/store";
 import { allowanceStatus, installmentShare, livingStatus, monthOf, nameOf } from "@/lib/calc";
 import { categoryVisual, guessFromMemo, presetsOf, type Preset } from "@/lib/categories";
@@ -200,6 +201,8 @@ export function SpendingSheet({ open, onOpenChange, editing }: { open: boolean; 
       memo: memo.trim(),
       created_at: editing?.created_at ?? new Date().toISOString(),
       installment_months: payKind === "card" ? months : 1,
+      // 자동 기록을 사람이 보고 저장하면 확인 끝 (010 전 DB 에 보내지 않게 확인할 게 있던 기록만)
+      ...(editing?.review?.length ? { review: [] } : {}),
       // 고칠 때는 읽은 rev 를 그대로 (다른 폰이 그사이 고쳤으면 서버가 거절), 새 기록은 어떻게 시작했는지
       ...(editing ? { rev: editing.rev } : { source: fromPreset ? "preset" : "manual" }),
     };
@@ -249,6 +252,12 @@ export function SpendingSheet({ open, onOpenChange, editing }: { open: boolean; 
         </button>
       }
     >
+      {editing?.review?.length ? (
+        <div className="notice" role="note" style={{ marginBottom: 12 }}>
+          <AlertTriangle aria-hidden="true" />
+          <span>{reviewText(editing.review)}</span>
+        </div>
+      ) : null}
       <label className="sr-only" htmlFor="sp-amount">
         금액
       </label>
@@ -420,6 +429,13 @@ export function SpendingSheet({ open, onOpenChange, editing }: { open: boolean; 
       </div>
     </Sheet>
   );
+}
+
+/** 카드 알림 자동 기록에서 확인할 것 — 고쳐서 저장하면 표시가 사라진다 */
+function reviewText(review: NonNullable<Spending["review"]>): string {
+  if (review.includes("canceled")) return "승인 취소 알림이 왔어요. 취소된 결제면 삭제해 주세요.";
+  if (review.includes("duplicate")) return "같은 결제가 두 번 기록됐을 수 있어요. 겹치면 하나를 삭제해 주세요.";
+  return `카드 알림으로 기록했어요. 확인할 것: ${review.map((f) => REVIEW_LABEL[f]).join(" · ")}. 고쳐서 저장하면 표시가 사라져요.`;
 }
 
 /** 그 지출이 빠진 예산의 남은 금액 */
