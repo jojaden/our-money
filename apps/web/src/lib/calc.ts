@@ -496,10 +496,15 @@ export function goalProgress(data: Data, item: PlanItem): { saved: number; targe
 
 /* ---------- 새 달 ---------- */
 
+/** 플랜 항목이 그 달에 들어가는가: 켜져 있고, 시작·끝 달을 정했으면 그 안 (대출·몇 달만 내는 보험 등) */
+export function planInMonth(p: Pick<PlanItem, "active" | "start_month" | "end_month">, month: string): boolean {
+  return p.active && (!p.start_month || p.start_month <= month) && (!p.end_month || month <= p.end_month);
+}
+
 /** 템플릿에서 그달의 항목을 만든다. id 가 결정적이라 두 폰이 동시에 눌러도 중복되지 않는다. */
 export function snapshotItems(month: string, plan: PlanItem[]): MonthItem[] {
   return plan
-    .filter((p) => p.active)
+    .filter((p) => planInMonth(p, month))
     .map((p) => ({
       id: `${month}:${p.id}`,
       month,
@@ -578,12 +583,12 @@ export function latestMonthBefore(data: Data, m: string): string | null {
 /**
  * from 달의 플랜을 to 달 항목으로 옮긴다.
  * - 반복 항목은 그 달의 금액·계좌·방식 그대로 (그 달에만 바꾼 값도 이어진다)
- * - 반복을 끈(삭제한) 항목은 빼고, 그 뒤에 새로 만든 반복 항목은 더한다
+ * - 반복을 끈(삭제한) 항목과 기간이 끝난 항목은 빼고, 그 뒤에 새로 만든 반복 항목과 기간이 시작된 항목은 더한다
  * - 일회성 항목은 oneOffs 가 켜져 있을 때만
  * id 가 결정적이라 두 폰이 동시에 만들어도 중복되지 않는다.
  */
 export function itemsFromMonth(data: Data, from: string, to: string, opts: { oneOffs?: boolean } = {}): MonthItem[] {
-  const active = new Set(data.plan_items.filter((p) => p.active).map((p) => p.id));
+  const active = new Set(data.plan_items.filter((p) => planInMonth(p, to)).map((p) => p.id));
   const reset = { paid: false, paid_at: null, paid_by: null, paid_amount: null } as const;
   const out: MonthItem[] = [];
   for (const i of itemsOf(data, from)) {

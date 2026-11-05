@@ -7,6 +7,7 @@ import { GROUP_LABEL, METHOD_LABEL } from "@/lib/types";
 import { useData } from "@/lib/store";
 import { deleteOp, upsertOp, type Op } from "@/lib/repo";
 import { nameOf } from "@/lib/calc";
+import { monthLabel } from "@/lib/format";
 import { AmountInput, MAX_GOAL, Seg, Sheet, Toggle } from "./ui";
 
 function newId(prefix: string) {
@@ -42,6 +43,10 @@ export function ItemSheet({
   const [goal, setGoal] = useState(0);
   const [goalStart, setGoalStart] = useState(0);
   const [forward, setForward] = useState(true);
+  // 기간: 시작·끝 달 (YYYY-MM, 비우면 제한 없음)
+  const [ranged, setRanged] = useState(false);
+  const [startM, setStartM] = useState("");
+  const [endM, setEndM] = useState("");
 
   useEffect(() => {
     if (!open) return;
@@ -57,9 +62,22 @@ export function ItemSheet({
     setGoal(plan?.goal_amount ?? 0);
     setGoalStart(plan?.goal_start ?? 0);
     setForward(true);
-  }, [open, item, plan, initialGroup]);
+    setRanged(Boolean(plan?.start_month || plan?.end_month));
+    setStartM(plan?.start_month ?? month);
+    setEndM(plan?.end_month ?? "");
+  }, [open, item, plan, initialGroup, month]);
 
-  const valid = name.trim().length > 0 && amount > 0 && (method === "card_auto" ? Boolean(cardId) : true);
+  // 이번 달에 이미 있는 항목은 이번 달이 기간 안이어야 한다. 새 항목은 나중 달부터 시작할 수 있다
+  const periodOn = forward && ranged;
+  const later = periodOn && !item && Boolean(startM) && startM > month;
+  const periodError = !periodOn
+    ? null
+    : item && startM && startM > month
+      ? `이번 달 항목이라 시작 달은 ${monthLabel(month)}이나 그 전이어야 해요`
+      : endM && endM < (startM && startM > month ? startM : month)
+        ? "끝 달은 시작 달과 이번 달보다 앞일 수 없어요"
+        : null;
+  const valid = name.trim().length > 0 && amount > 0 && (method === "card_auto" ? Boolean(cardId) : true) && !periodError;
 
   const save = async () => {
     if (!valid) return;
@@ -89,7 +107,15 @@ export function ItemSheet({
       };
       ops.push(
         upsertOp("plan_items", [
-          { ...base, ...fields, active: true, goal_amount: group === "saving" && goal > 0 ? goal : null, goal_start: group === "saving" && goal > 0 ? goalStart : null },
+          {
+            ...base,
+            ...fields,
+            active: true,
+            goal_amount: group === "saving" && goal > 0 ? goal : null,
+            goal_start: group === "saving" && goal > 0 ? goalStart : null,
+            start_month: periodOn && startM ? startM : null,
+            end_month: periodOn && endM ? endM : null,
+          },
         ]),
       );
     }
@@ -102,13 +128,15 @@ export function ItemSheet({
       paid: item?.paid ?? false,
       paid_at: item?.paid_at ?? null,
       paid_by: item?.paid_by ?? null,
+      paid_amount: item?.paid_amount ?? null,
       ...fields,
       rev: item?.rev,
     };
-    ops.push(upsertOp("month_items", [row]));
+    // 나중 달부터 시작하는 새 항목은 이번 달에는 넣지 않는다
+    if (!later) ops.push(upsertOp("month_items", [row]));
     onOpenChange(false);
     if (!(await batch(ops))) return;
-    toast(forward ? "저장했어요 · 다음 달부터도 적용" : "이번 달만 바꿨어요");
+    toast(later ? `저장했어요 · ${monthLabel(startM)}부터 들어가요` : forward ? "저장했어요 · 다음 달부터도 적용" : "이번 달만 바꿨어요");
   };
 
   const del = async () => {
@@ -244,6 +272,36 @@ export function ItemSheet({
           <Toggle on={forward} onChange={setForward} label="다음 달부터도 적용" />
         </div>
       </div>
+      {forward && (
+        <div className="field">
+          <div className="switchrow">
+            <div>
+              <div className="t">기간 정하기</div>
+              <div className="s">대출·보험처럼 끝이 있거나 몇 달만 내는 항목</div>
+            </div>
+            <Toggle on={ranged} onChange={setRanged} label="기간 정하기" />
+          </div>
+          {ranged && (
+            <div className="inline-fields" style={{ marginTop: 8 }}>
+              <div className="field" style={{ marginTop: 0 }}>
+                <label htmlFor="it-start">시작 달</label>
+                <input id="it-start" type="month" className="input" value={startM} onChange={(e) => setStartM(e.target.value)} />
+              </div>
+              <div className="field" style={{ marginTop: 0 }}>
+                <label htmlFor="it-end">끝 달 (선택)</label>
+                <input id="it-end" type="month" className="input" value={endM} min={startM || undefined} onChange={(e) => setEndM(e.target.value)} />
+              </div>
+            </div>
+          )}
+          {periodError ? (
+            <p className="help" role="alert">
+              {periodError}
+            </p>
+          ) : (
+            later && <p className="help">이번 달에는 넣지 않고 {monthLabel(startM)}부터 들어가요.</p>
+          )}
+        </div>
+      )}
     </Sheet>
   );
 }

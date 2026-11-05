@@ -361,8 +361,12 @@ fun AppData.goalProgress(item: PlanItem): GoalProgress? {
 
 /* ---------- 새 달·불러오기 ---------- */
 
+/** 플랜 항목이 그 달에 들어가는가: 켜져 있고, 시작·끝 달을 정했으면 그 안 (대출·몇 달만 내는 보험 등) */
+fun PlanItem.inMonth(month: String): Boolean =
+    active && (startMonth == null || startMonth <= month) && (endMonth == null || month <= endMonth)
+
 /** 템플릿에서 그달의 항목을 만든다. id 가 결정적이라 두 폰이 동시에 만들어도 중복되지 않는다. */
-fun snapshotItems(month: String, plan: List<PlanItem>): List<MonthItem> = plan.filter { it.active }.map { p ->
+fun snapshotItems(month: String, plan: List<PlanItem>): List<MonthItem> = plan.filter { it.inMonth(month) }.map { p ->
     MonthItem(
         id = "$month:${p.id}", month = month, planItemId = p.id, group = p.group, name = p.name, amount = p.amount,
         payer = p.payer, accountId = p.accountId, method = p.method, cardId = p.cardId, dueDay = p.dueDay,
@@ -375,10 +379,10 @@ fun AppData.latestMonthBefore(m: String): String? = months.map { it.id }.filter 
 
 /**
  * from 달의 플랜을 to 달 항목으로 옮긴다.
- * 반복 항목은 그 달의 금액·계좌·방식 그대로, 반복을 끈 항목은 빼고, 새 반복 항목은 더한다. 일회성은 oneOffs 일 때만.
+ * 반복 항목은 그 달의 금액·계좌·방식 그대로, 반복을 끈 항목과 기간 밖 항목은 빼고, 새 반복 항목과 기간이 시작된 항목은 더한다. 일회성은 oneOffs 일 때만.
  */
 fun AppData.itemsFromMonth(from: String, to: String, oneOffs: Boolean = false): List<MonthItem> {
-    val active = planItems.filter { it.active }.map { it.id }.toSet()
+    val active = planItems.filter { it.inMonth(to) }.map { it.id }.toSet()
     val out = mutableListOf<MonthItem>()
     for (i in itemsOf(from)) {
         val reset = i.copy(paid = false, paidAt = null, paidBy = null, paidAmount = null, month = to)

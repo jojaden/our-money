@@ -169,4 +169,21 @@ class CalcTest {
         val cash = tv.copy(id = "cash", payKind = PayKind.CASH, accountId = null)
         assertEquals(100_000, data.copy(spendings = listOf(cash)).spendingsIn("2026-11").single().amount)
     }
+
+    @Test fun plan_period_limits_months() {
+        // 보험은 2027-03 ~ 2027-08 만, 대출은 2026-12 까지
+        val plan = listOf(
+            PlanItem("ins", Group.FIXED, "ins", 50_000, Owner.A, "acc-a", Method.ACCOUNT_AUTO, startMonth = "2027-03", endMonth = "2027-08"),
+            PlanItem("loan", Group.FIXED, "loan", 200_000, Owner.JOINT, "acc-fixed", Method.ACCOUNT_AUTO, endMonth = "2026-12"),
+        )
+        assertEquals(listOf("2026-12:loan"), snapshotItems("2026-12", plan).map { it.id })
+        assertEquals(emptyList<String>(), snapshotItems("2027-01", plan).map { it.id })
+        assertEquals(listOf("2027-03:ins"), snapshotItems("2027-03", plan).map { it.id })
+        // 지난달에서 이어받을 때도: 끝난 대출은 빠지고, 시작된 보험은 더해진다
+        val feb = snapshotItems("2027-02", plan)
+        val data = AppData(settings = settings, planItems = plan, months = listOf(Month("2027-02")), monthItems = feb)
+        assertEquals(listOf("2027-03:ins"), data.itemsFromMonth("2027-02", "2027-03").map { it.id })
+        val dec = AppData(settings = settings, planItems = plan, months = listOf(Month("2026-12")), monthItems = snapshotItems("2026-12", plan))
+        assertTrue(dec.itemsFromMonth("2026-12", "2027-01").isEmpty())
+    }
 }
