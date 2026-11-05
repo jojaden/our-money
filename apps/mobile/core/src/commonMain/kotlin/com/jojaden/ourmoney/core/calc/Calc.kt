@@ -181,6 +181,7 @@ fun checkId(kind: CheckKind, month: String, key: String = ""): String = when (ki
     CheckKind.TRANSFER -> "t:$month:$key"
     CheckKind.CARD -> "c:$month:$key"
     CheckKind.SETTLE -> "s:$month"
+    CheckKind.EVENT -> "e:$month:$key"
 }
 
 fun List<Check>.find(id: String): Check? = firstOrNull { it.id == id }

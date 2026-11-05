@@ -24,9 +24,10 @@ import {
   type TransferIssue,
 } from "@/lib/calc";
 import { num, parseYmd, shortDate } from "@/lib/format";
+import { eventTodos, timeText, type EventTodo } from "@/lib/calendar";
 import { useData } from "@/lib/store";
 
-export type TaskKind = "transfer" | "pay" | "card" | "settle";
+export type TaskKind = "transfer" | "pay" | "card" | "settle" | "event";
 
 export interface Task {
   key: string;
@@ -50,6 +51,8 @@ export interface Task {
   item?: MonthItem;
   bill?: CardBill;
   settlement?: Settlement;
+  /** 일정 할 일 (그 회차) */
+  todo?: EventTodo;
   toggle: () => void;
 }
 
@@ -218,12 +221,33 @@ function build(
   return { tasks, transfers, pays, bills, settle, issues, paydays, started: true };
 }
 
+/** [from, to] 의 일정 할 일 — 기간 일정은 끝 날이 기한 */
+export function eventTasks(data: Data, from: string, to: string, toggleCheck: ReturnType<typeof useData>["toggleCheck"]): Task[] {
+  const s = data.settings;
+  return eventTodos(data, from, to).map((t) => {
+    const { event: e, start, end } = t.occ;
+    return {
+      key: t.id,
+      kind: "event",
+      title: e.title,
+      sub: [start === end ? shortDate(start) : `${shortDate(start)}~${shortDate(end)}`, timeText(e), e.owner !== "joint" ? nameOf(s, e.owner) : "", e.note].filter(Boolean).join(" · "),
+      amount: e.amount ?? 0,
+      due: end,
+      done: Boolean(t.check),
+      doneBy: t.check?.done_by ?? null,
+      person: e.owner,
+      todo: t,
+      toggle: () => void toggleCheck({ id: t.id, month: t.month, kind: "event", amount: e.amount ?? 0 }, !t.check),
+    };
+  });
+}
+
 /** 할 일을 급한 순서로 */
 export function byUrgency(a: Task, b: Task): number {
   if (a.done !== b.done) return a.done ? 1 : -1;
   const ad = a.due ?? "9999";
   const bd = b.due ?? "9999";
   if (ad !== bd) return ad.localeCompare(bd);
-  const order = { transfer: 0, pay: 1, card: 2, settle: 3 };
+  const order = { transfer: 0, pay: 1, card: 2, settle: 3, event: 4 };
   return order[a.kind] - order[b.kind];
 }

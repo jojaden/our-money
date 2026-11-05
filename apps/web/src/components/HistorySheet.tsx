@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { Data, HistoryRow, Owner } from "@/lib/types";
-import { GROUP_LABEL, METHOD_LABEL, PAY_KIND_LABEL } from "@/lib/types";
+import { GROUP_LABEL, METHOD_LABEL, PAY_KIND_LABEL, REPEAT_LABEL } from "@/lib/types";
 import { useData } from "@/lib/store";
 import { nameOf } from "@/lib/calc";
 import { dayLabel, monthLabel, num, shortDate, ymd } from "@/lib/format";
@@ -19,6 +19,7 @@ const TABLE: Record<string, string> = {
   settings: "설정",
   checks: "체크",
   users: "이름",
+  events: "일정",
 };
 
 const FIELD: Record<string, string> = {
@@ -63,6 +64,16 @@ const FIELD: Record<string, string> = {
   ratio_a: "나누는 비율",
   name_a: "이름",
   name_b: "이름",
+  title: "이름",
+  start_date: "시작",
+  end_date: "끝",
+  repeat: "반복",
+  dday: "D-day",
+  pin: "알림 모음 고정",
+  remind_days: "미리 알림",
+  todo: "할 일",
+  start_time: "시작 시간",
+  end_time: "끝 시간",
 };
 
 const MONEY = new Set(["amount", "paid_amount", "budget", "goal_amount", "goal_start", "income_a", "income_b", "extra_income", "salary_a", "salary_b"]);
@@ -78,7 +89,9 @@ function value(data: Data, key: string, v: unknown): string {
   if (key === "pay_kind") return PAY_KIND_LABEL[v as keyof typeof PAY_KIND_LABEL] ?? String(v);
   if (key === "method") return METHOD_LABEL[v as keyof typeof METHOD_LABEL] ?? String(v);
   if (key === "group") return GROUP_LABEL[v as keyof typeof GROUP_LABEL] ?? String(v);
-  if (key === "date") return shortDate(String(v));
+  if (key === "date" || key === "start_date" || key === "end_date") return shortDate(String(v));
+  if (key === "repeat") return REPEAT_LABEL[v as keyof typeof REPEAT_LABEL] ?? String(v);
+  if (key === "remind_days") return Number(v) === 0 ? "당일" : `${v}일 전`;
   if (key === "start_month" || key === "end_month") return monthLabel(String(v));
   if (key === "installment_months") return Number(v) > 1 ? `${v}개월` : "일시불";
   if (key === "closed_at") return "마감함";
@@ -91,14 +104,16 @@ function value(data: Data, key: string, v: unknown): string {
 /** 어떤 줄이 바뀌었나 — 기록에 이름이 없으면(수정은 바뀐 칸만 남는다) 지금 데이터에서 찾는다 */
 function subject(data: Data, h: HistoryRow): string {
   const row = (h.after ?? h.before ?? {}) as Record<string, unknown>;
-  const text = (row.name ?? row.memo) as string | undefined;
+  const text = (row.name ?? row.memo ?? row.title) as string | undefined;
   if (text) return text;
   const id = h.row_id;
+  // 일정 할 일 체크: e:${month}:${일정 id}@${회차 시작일}
+  if (h.table_name === "checks" && id?.startsWith("e:")) return data.events.find((e) => e.id === id.split(":")[2]?.split("@")[0])?.title ?? "";
   if (h.table_name === "months" && id) return monthLabel(id);
   if (h.table_name === "settings") return "";
-  const list = (data as unknown as Record<string, { id: string; name?: string; memo?: string }[]>)[h.table_name];
+  const list = (data as unknown as Record<string, { id: string; name?: string; memo?: string; title?: string }[]>)[h.table_name];
   const now = Array.isArray(list) ? list.find((x) => x.id === id) : undefined;
-  return now?.name || now?.memo || "";
+  return now?.name || now?.memo || now?.title || "";
 }
 
 function describe(data: Data, h: HistoryRow): { title: string; lines: string[] } {

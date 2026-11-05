@@ -83,7 +83,7 @@ export function TaskRow({ task, expandable = false, fromShown = false }: { task:
             >
               <Money value={task.amount} />
             </button>
-          ) : (
+          ) : task.kind === "event" && !task.amount ? null : (
             <Money value={task.amount} />
           )}
           <div style={{ marginTop: 2 }}>{meta}</div>

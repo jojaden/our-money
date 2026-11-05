@@ -249,3 +249,34 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
 .cal-mark .t { display: flex; align-items: center; gap: 8px; }
 .cal-mark .mark-dot { flex: none; }
 
+/* 할 일 일정: 앞 동그라미는 체크, 가운데는 눌러서 고치기 */
+.row-open { min-width: 0; padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; }
+
+/* 이번 달 할 일: 끝낸 비율 막대 (transform 만 움직인다) */
+.month-todo .mt-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 8px; color: var(--faint); font: 600 13px/18px var(--font-text); }
+.month-todo .mt-head h3 { font: inherit; }
+.month-todo .rows + .mt-head, .month-todo .empty + .mt-head { margin-top: 18px; }
+.month-todo .mt-bar { height: 6px; margin-bottom: 8px; overflow: hidden; border-radius: var(--radius-chip); background: var(--well); }
+.month-todo .mt-bar i { display: block; height: 100%; border-radius: inherit; background: var(--step-done); transform-origin: left; transition: transform var(--dur-ring) var(--ease-out); }
+
+/* 모아 보기: TextTabs → 칩 → 카드들 */
+.sum-controls { display: grid; gap: 12px; margin-bottom: 12px; }
+.sum-stack { display: grid; gap: 12px; }
+.sum .card-head h3 { font: 600 17px/24px var(--font-text); letter-spacing: -0.01em; }
+.sum-h { margin: 18px 0 4px; color: var(--faint); font: 600 13px/18px var(--font-text); }
+.sum-owners { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 0; padding: 0; list-style: none; }
+.sum-owners li { display: grid; justify-items: start; gap: 4px; min-width: 0; padding: 10px 12px; border-radius: var(--radius-inner); background: var(--raised); }
+.sum-owners .s { color: var(--faint); font: 500 12.5px/16px var(--font-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.sum-owners .money { font: 600 15px/20px var(--font-display); font-variant-numeric: tabular-nums; }
+
+@media (prefers-reduced-motion: reduce) {
+  .month-todo .mt-bar i { transition: none; }
+}
+
+/* 이번 달 일정: 앞에 날짜(쓰는 사람 색 바탕), 지난 일정은 옅게 */
+.date-lead { display: grid; place-items: center; align-content: center; gap: 2px; flex: none; width: 40px; height: 40px; border-radius: var(--radius-chip); background: var(--joint-soft); color: var(--text); }
+.date-lead.a { background: var(--a-soft); }
+.date-lead.b { background: var(--b-soft); }
+.date-lead b { font: 700 15px/1 var(--font-display); font-variant-numeric: tabular-nums; }
+.date-lead small { color: var(--faint); font: 600 10.5px/1 var(--font-text); }
+.row.past { opacity: 0.55; }

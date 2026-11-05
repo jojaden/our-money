@@ -167,6 +167,19 @@ export function Seg<T extends string>({ value, options, onChange, label }: { val
   );
 }
 
+/** 같은 자료를 다른 범위로 보는 글자 탭 — 고른 칸만 옅은 인디고 알약 (docs/design-system/components/TextTabs) */
+export function TextTabs<T extends string>({ value, options, onChange, label }: { value: T; options: { value: T; label: string }[]; onChange: (v: T) => void; label: string }) {
+  return (
+    <div className="text-tabs" role="group" aria-label={label}>
+      {options.map((o) => (
+        <button key={o.value} type="button" aria-pressed={value === o.value} onClick={() => onChange(o.value)}>
+          {o.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export function Chips<T extends string>({ value, options, onChange, label }: { value: T | null; options: { value: T; label: string }[]; onChange: (v: T) => void; label: string }) {
   return (
     <div className="chips" role="radiogroup" aria-label={label}>
