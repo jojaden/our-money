@@ -2,7 +2,7 @@
 // 두 구현 모두 같은 테이블 단위 연산만 제공한다.
 
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import type { Data, Member, Person, Row, Spending, TableName, User } from "./types";
+import type { Data, HistoryRow, Member, Person, Row, Spending, TableName, User } from "./types";
 import { buildDemoData } from "./demo-data";
 
 export const LIST_TABLES = [
@@ -55,6 +55,8 @@ export interface Repo {
   loadSpendings(from: string, to: string): Promise<Spending[]>;
   /** 내보내기용 전체 지출 (날짜·id 순) */
   exportSpendings(): Promise<Spending[]>;
+  /** 바뀐 기록 — 최근 것부터 한 쪽(HISTORY_PAGE 건). before 를 주면 그 id 보다 앞선 것 */
+  history(before: number | null): Promise<HistoryRow[]>;
   /** 저장. 여러 건이면 전부 되거나 전부 안 된다. 실패하면 ConflictError / RetryableError / Error */
   apply(ops: Op[]): Promise<OpResult[]>;
   /** 로그인한 사람(me)의 이름 — 본인 줄만 바꿀 수 있다 */
@@ -189,6 +191,15 @@ class SupabaseRepo implements Repo {
     return this.spendings(null, null, true);
   }
 
+  async history(before: number | null) {
+    // id 는 쌓인 순서라 keyset 으로 이어 받는다 (history_pkey)
+    let q = this.db.from("history").select("*");
+    if (before != null) q = q.lt("id", before);
+    const { data, error } = await q.order("id", { ascending: false }).limit(HISTORY_PAGE);
+    if (error) throw toError(error);
+    return (data ?? []) as HistoryRow[];
+  }
+
   async apply(ops: Op[]): Promise<OpResult[]> {
     // id 순서로 보낸다: 두 폰이 같은 줄들을 다른 순서로 저장해도 서로 잠금을 기다리다 교착(deadlock)하지 않게
     const sorted = ops.map((o) => (o.op === "upsert" ? { ...o, rows: [...o.rows].sort((a, b) => (String(a.id) < String(b.id) ? -1 : 1)) } : o));
@@ -286,6 +297,37 @@ export function defaultSettings(): Data["settings"] {
 /* ---------- 데모 (localStorage) ---------- */
 
 const STORE_KEY = "our-money-demo-v5";
+const HISTORY_KEY = "our-money-demo-history";
+export const HISTORY_PAGE = 50;
+
+/** 예시 데이터의 바뀐 기록 — DB 트리거(log_change)처럼 수정은 바뀐 칸만, 최근 200건 */
+function readDemoHistory(): HistoryRow[] {
+  try {
+    return JSON.parse(localStorage.getItem(HISTORY_KEY) ?? "[]") as HistoryRow[];
+  } catch {
+    return [];
+  }
+}
+
+function logDemo(table: string, id: string, op: HistoryRow["op"], old: object | null, row: object | null) {
+  const o = old as Record<string, unknown> | null;
+  const n = row as Record<string, unknown> | null;
+  let before = o;
+  let after = n;
+  if (op === "update" && o && n) {
+    const keys = Object.keys(n).filter((k) => !["rev", "updated_at", "updated_by"].includes(k) && JSON.stringify(o[k] ?? null) !== JSON.stringify(n[k] ?? null));
+    if (keys.length === 0) return;
+    before = Object.fromEntries(keys.map((k) => [k, o[k] ?? null]));
+    after = Object.fromEntries(keys.map((k) => [k, n[k]]));
+  }
+  const all = readDemoHistory();
+  const h: HistoryRow = { id: (all[0]?.id ?? 0) + 1, at: new Date().toISOString(), person: null, table_name: table, row_id: id, op, before, after };
+  try {
+    localStorage.setItem(HISTORY_KEY, JSON.stringify([h, ...all].slice(0, 200)));
+  } catch {
+    /* 무시 */
+  }
+}
 
 class LocalRepo implements Repo {
   mode = "demo" as const;
@@ -336,6 +378,10 @@ class LocalRepo implements Repo {
     return structuredClone(this.read().spendings);
   }
 
+  async history(before: number | null) {
+    return readDemoHistory().filter((h) => before == null || h.id < before).slice(0, HISTORY_PAGE);
+  }
+
   async apply(ops: Op[]): Promise<OpResult[]> {
     const d = this.read();
     const out: OpResult[] = [];
@@ -348,6 +394,7 @@ class LocalRepo implements Repo {
       const key = o.table as Exclude<TableName, "settings">;
       const list = d[key] as unknown as { id: string }[];
       if (o.op === "delete") {
+        for (const x of list.filter((x) => o.ids.includes(x.id))) logDemo(key, x.id, "delete", x, null);
         const keep = list.filter((x) => !o.ids.includes(x.id));
         out.push({ table: o.table, deleted: list.length - keep.length });
         (d[key] as unknown as { id: string }[]) = keep;
@@ -356,8 +403,14 @@ class LocalRepo implements Repo {
       for (const row of o.rows as unknown as { id: string }[]) {
         const i = list.findIndex((x) => x.id === row.id);
         if (i >= 0) {
-          if (!o.ignore_duplicates) list[i] = { ...list[i], ...row };
-        } else list.push(row);
+          if (!o.ignore_duplicates) {
+            logDemo(key, row.id, "update", list[i], row);
+            list[i] = { ...list[i], ...row };
+          }
+        } else {
+          logDemo(key, row.id, "insert", null, row);
+          list.push(row);
+        }
       }
       out.push({ table: o.table, rows: structuredClone(o.rows) });
     }

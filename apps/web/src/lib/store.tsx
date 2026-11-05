@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
-import type { Check, Data, Month, MonthItem, Person, Row, Spending, TableName } from "./types";
+import type { Check, Data, HistoryRow, Month, MonthItem, Person, Row, Spending, TableName } from "./types";
 import { getRepo, hasSupabase, currentMember, supabase, LIST_TABLES, ConflictError, RetryableError, upsertOp, deleteOp, type Change, type Op } from "./repo";
 import { addMonths, currentMonth, itemsFromMonth, latestMonthBefore, monthRow, periodOf, snapshotItems, withUserNames } from "./calc";
 import { haptic } from "./native";
@@ -30,6 +30,8 @@ interface Store {
   today: string;
   reload: (table?: TableName) => Promise<void>;
   exportSpendings: () => Promise<Spending[]>;
+  /** 바뀐 기록 한 쪽 (최근 것부터, before 보다 앞선 것) */
+  loadHistory: (before: number | null) => Promise<HistoryRow[]>;
   /**
    * 저장들. 화면에는 바로 반영하고 서버로 보낸다. 거절하지 않고 결과만 돌려준다:
    * true = 저장됨(또는 연결 문제로 폰에 보관, 나중에 보냄), false = 충돌·잘못된 값으로 못 함(알림과 다시 읽기는 이미 했음)
@@ -231,6 +233,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   );
 
   const exportSpendings = useCallback(async () => (repo ? repo.exportSpendings() : []), [repo]);
+  const loadHistory = useCallback(async (before: number | null) => (repo ? repo.history(before) : []), [repo]);
 
   // 로그인 상태
   useEffect(() => {
@@ -596,6 +599,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     today,
     reload,
     exportSpendings,
+    loadHistory,
     upsert,
     remove,
     batch,
