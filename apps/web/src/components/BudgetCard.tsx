@@ -12,7 +12,7 @@ const KINDS = ["card", "cash", "transfer"] as const;
 
 /**
  * 예산 하나의 남은 돈 — 답 숫자 하나와 튜브 게이지 (docs/design-system/components/BudgetCard).
- * 홈 첫 카드(공동 생활비)는 반원 호와 곡선 패널의 큰 카드, 내 용돈은 270° 게이지의 작은 카드.
+ * 홈 첫 카드(공동 생활비)는 반원 호 아래로 하늘색이 흰 바탕에 스며드는 큰 카드, 내 용돈은 270° 게이지의 작은 카드.
  * 호·끝 점·%·남은 돈은 한 값으로 같은 박자에 움직이고, 글 줄과 속도 알약은 바로 바뀐다.
  */
 export function BudgetCard({
@@ -127,7 +127,13 @@ export function BudgetCard({
           <PacePill status={status} />
           {daily}
         </div>
-        <p className="kinds-line">{KINDS.map((k) => `${PAY_KIND_LABEL[k]} ${num(status.byKind[k])}원`).join(" · ")}</p>
+        {KINDS.some((k) => status.byKind[k] > 0) && (
+          <p className="kinds-line">
+            {KINDS.filter((k) => status.byKind[k] > 0)
+              .map((k) => `${PAY_KIND_LABEL[k]} ${num(status.byKind[k])}원`)
+              .join(" · ")}
+          </p>
+        )}
       </section>
     );
   }
@@ -141,19 +147,49 @@ export function BudgetCard({
         {figure}
         <PacePill status={status} />
         {daily}
-        <dl className="kinds">
-          {KINDS.map((k) => (
-            <div key={k}>
-              <dt>{PAY_KIND_LABEL[k]}</dt>
-              <dd>
-                {num(status.byKind[k])}
-                <span>원</span>
-              </dd>
-            </div>
-          ))}
-        </dl>
+        <Kinds byKind={status.byKind} />
       </div>
     </section>
+  );
+}
+
+/** 합이 100이 되게 반올림 (나머지가 큰 쪽부터 1씩) */
+function shares(values: number[]): number[] {
+  const total = values.reduce((a, b) => a + b, 0);
+  const raw = values.map((v) => (v / total) * 100);
+  const out = raw.map(Math.floor);
+  let left = 100 - out.reduce((a, b) => a + b, 0);
+  for (const i of values.map((_, i) => i).sort((a, b) => raw[b] - out[b] - (raw[a] - out[a]))) if (left-- > 0) out[i]++;
+  return out;
+}
+
+/**
+ * 결제수단 나눔 — 비율 막대 한 줄과 그 아래 목록(점·이름·%·금액). 토스 소비 분석처럼 한눈에 비중을 보고 줄에서 금액을 읽는다.
+ * 0원인 수단은 빼고, 순서와 색은 카드·현금·계좌이체로 고정한다(금액 순으로 다시 칠하지 않는다).
+ */
+function Kinds({ byKind }: { byKind: LivingStatus["byKind"] }) {
+  const parts = KINDS.filter((k) => byKind[k] > 0);
+  if (parts.length === 0) return null;
+  const pct = shares(parts.map((k) => byKind[k]));
+  return (
+    <div className="kinds">
+      <div className="kinds-bar" aria-hidden="true">
+        {parts.map((k) => (
+          <i key={k} className={`k-${k}`} style={{ flexGrow: byKind[k] }} />
+        ))}
+      </div>
+      <ul className="buckets" aria-label="결제수단별">
+        {parts.map((k, i) => (
+          <li key={k} className={`k-${k}`}>
+            <i aria-hidden="true" />
+            <span className="n">
+              {PAY_KIND_LABEL[k]} <span className="v">{pct[i] > 0 ? `${pct[i]}%` : "1% 미만"}</span>
+            </span>
+            <b>{num(byKind[k])}원</b>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 

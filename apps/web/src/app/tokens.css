@@ -32,6 +32,9 @@
   --g-allowance: #ffb619;
   --g-saving: #2aa79c;
   --g-left: #dbe2f4;
+  --kind-card: var(--accent);
+  --kind-cash: #1baf7a;
+  --kind-transfer: #eda100;
   --warm-100: #fcebd7;
   --warm-50: #fff4e8;
   --sky-100: #d3e2fc;
