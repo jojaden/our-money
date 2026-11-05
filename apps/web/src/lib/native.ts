@@ -20,9 +20,18 @@ export function inApp(): boolean {
   return typeof navigator !== "undefined" && /\bOurMoneyApp\//.test(navigator.userAgent);
 }
 
-/** 앱에 부탁하기 (앱이 우리 주소에서 온 메시지만 받는다). 앱 밖이면 아무것도 하지 않는다 */
-export function toApp(message: "card-notice") {
-  (window as Window & { OurMoneyApp?: { postMessage(m: string): void } }).OurMoneyApp?.postMessage(message);
+/**
+ * 앱에 부탁하기 (앱이 우리 주소에서 온 메시지만 받는다). 앱 밖이면 아무것도 하지 않는다.
+ * - "card-notice": 카드 알림 모으기 화면
+ * - { type: "ics", text }: 일정 .ics 를 파일로 만들어 공유 창 열기
+ */
+export function toApp(message: "card-notice" | { type: "ics"; text: string }) {
+  (window as Window & { OurMoneyApp?: { postMessage(m: string): void } }).OurMoneyApp?.postMessage(typeof message === "string" ? message : JSON.stringify(message));
+}
+
+/** 이 앱이 그 일을 할 수 있나 — 앱이 user agent 에 OurMoneyCan/… 로 알린다 (예전 앱에는 없다) */
+export function appCan(feature: "ics"): boolean {
+  return typeof navigator !== "undefined" && new RegExp(`\\bOurMoneyCan/\\S*\\b${feature}\\b`).test(navigator.userAgent);
 }
 
 const noSubscribe = () => () => {};
