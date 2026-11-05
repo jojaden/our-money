@@ -12,7 +12,7 @@ import { spendingVisual } from "@/lib/categories";
 import { isFresh } from "@/lib/fresh";
 import { BudgetCard, TaskGauge } from "@/components/BudgetCard";
 import { PayFlow } from "@/components/PayFlow";
-import { byUrgency, dueState, useTasks, waiting } from "@/components/tasks";
+import { asking, byUrgency, dueState, useTasks, waiting } from "@/components/tasks";
 import { dDay, shortDate } from "@/lib/format";
 import { TaskRow } from "@/components/TaskRow";
 import { MiniCard } from "@/components/pass";
@@ -43,7 +43,8 @@ export default function Home() {
   const ls = lanes(s, m, items);
   const open = tasks.filter((t) => !t.done).sort(byUrgency);
   const doneCount = tasks.length - open.length;
-  const overdue = open.filter((t) => dueState(t.due, today, false) === "overdue");
+  const overdue = open.filter((t) => dueState(t.due, today, false) === "overdue" && !asking(t, today));
+  const asks = open.filter((t) => asking(t, today));
   // 월급날이 아직 안 온 사람의 이체는 지금 할 일로 재촉하지 않는다
   const pendingTransfers = open.filter((t) => t.kind === "transfer" && !waiting(t, today));
   const paydayToday = paydays.find((g) => g.date === today && g.transfers.some((t) => !t.done));
@@ -61,6 +62,14 @@ export default function Home() {
       <>
         <strong>{overdue[0].kind === "transfer" ? `${ro(overdue[0].to ?? "")} 옮길 돈` : overdue[0].title}</strong>
         {overdue.length > 1 ? ` 외 ${overdue.length - 1}건이` : iga(overdue[0].kind === "transfer" ? "돈" : overdue[0].title).slice(-1)} 기한을 넘겼어요.
+      </>
+    );
+  } else if (asks.length > 0) {
+    // 자동으로 나가는 돈은 다그치지 않고 확인만 부탁한다
+    finding = (
+      <>
+        <strong>{asks[0].title}</strong>
+        {asks.length > 1 ? ` 외 ${asks.length - 1}건이` : iga(asks[0].title).slice(-1)} 잘 나갔는지 확인해 주세요.
       </>
     );
   } else if (paydayToday) {

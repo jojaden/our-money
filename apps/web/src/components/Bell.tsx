@@ -2,13 +2,14 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Bell, CalendarCheck, CalendarDays, Heart, Wallet } from "lucide-react";
+import { Bell, CalendarCheck, CalendarDays, CreditCard, Heart, Repeat, Wallet } from "lucide-react";
 import type { Person } from "@/lib/types";
+import { METHOD_LABEL } from "@/lib/types";
 import { useData } from "@/lib/store";
 import { addMonths, currentMonth, nameOf, paydayDate, periodOf } from "@/lib/calc";
 import { ddayText, nextOccurrence, timeText } from "@/lib/calendar";
-import { dateWithDay, parseYmd } from "@/lib/format";
-import { byUrgency, dueState, eventTasks, useTasks, waiting, type Task } from "./tasks";
+import { dateWithDay, num, parseYmd, shortDate } from "@/lib/format";
+import { asking, byUrgency, dueState, eventTasks, useTasks, waiting, type Task } from "./tasks";
 import { TaskRow } from "./TaskRow";
 import { afterSheet, Sheet } from "./ui";
 import { usePendingClose } from "./ClosePrompt";
@@ -36,6 +37,7 @@ function daysUntil(today: string, d: string) {
 /**
  * 지금(오늘이 든 가계부 달) 챙길 것.
  * - 고정: 할 일 중 "기간 동안 알림 모음에 고정"을 켠 것 — 그 기간 안이고 아직 안 끝냈으면 맨 위에
+ * - 잘 나갔나요?: 자동이체·카드 자동결제인데 날짜가 지나도 체크 전인 납부 (늦은 게 아니라 확인할 일)
  * - 지난 것 / 오늘·곧: 이체·납부·카드값·정산은 3일 안, 할 일은 3일과 그 할 일의 미리 알림 중 긴 쪽 안. 월급날 전 이체는 빼고
  * - 다가오는 날: 월급날(3일 안), 미리 알림을 켠 일정·D-day(그 날 수 안)
  */
@@ -50,12 +52,13 @@ function useAlerts() {
     const pinned = todos.filter((t) => !t.done && t.todo!.occ.event.pin && t.todo!.occ.start <= today && today <= t.todo!.occ.end);
     const pinnedKeys = new Set(pinned.map((t) => t.key));
     const near = (t: Task) => {
-      if (t.done || pinnedKeys.has(t.key) || waiting(t, today) || !t.due) return false;
+      if (t.done || pinnedKeys.has(t.key) || waiting(t, today) || asking(t, today) || !t.due) return false;
       if (t.todo) return daysUntil(today, t.due) <= Math.max(3, t.todo.occ.event.remind_days ?? 0);
       const st = dueState(t.due, today, false);
       return st === "overdue" || st === "soon";
     };
     const urgent = [...tasks, ...todos].filter(near).sort(byUrgency);
+    const asks = tasks.filter((t) => asking(t, today)).sort(byUrgency);
 
     const upcoming: Upcoming[] = [];
     for (const person of ["a", "b"] as const) {
@@ -81,8 +84,9 @@ function useAlerts() {
       pinned,
       late: urgent.filter((t) => t.due! < today),
       soon: urgent.filter((t) => t.due! >= today),
+      asks,
       upcoming,
-      keys: [...pinned.map((t) => t.key), ...urgent.map((t) => t.key), ...upcoming.map((u) => u.key)],
+      keys: [...pinned.map((t) => t.key), ...urgent.map((t) => t.key), ...asks.map((t) => `ask:${t.key}`), ...upcoming.map((u) => u.key)],
     };
   }, [data, month, s, tasks, today, toggleCheck]);
 }
@@ -180,6 +184,36 @@ export function BellButton({ rail = false }: { rail?: boolean }) {
             )}
             {group("기간 동안 고정", a.pinned)}
             {group("지난 것", a.late)}
+            {a.asks.length > 0 && (
+              <div className="field" key="asks">
+                <h3 className="sum-h">잘 나갔나요?</h3>
+                <div className="rows" style={{ ["--inset" as string]: "52px" }}>
+                  {a.asks.map((t) => {
+                    const Icon = t.item!.method === "card_auto" ? CreditCard : Repeat;
+                    return (
+                      <div className="row" key={t.key}>
+                        <span className="alert-ic" aria-hidden="true">
+                          <Icon />
+                        </span>
+                        <div style={{ minWidth: 0 }}>
+                          <div className="t">
+                            {t.title} {num(t.amount)}원
+                          </div>
+                          <div className="s">
+                            {shortDate(t.due!)} {METHOD_LABEL[t.item!.method]} 날이 지났어요
+                          </div>
+                        </div>
+                        <div className="r">
+                          <button type="button" className="btn sm" aria-label={`${t.title} 나갔어요, 완료로 표시`} onClick={t.toggle}>
+                            나갔어요
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
             {group("오늘·곧", a.soon)}
             {a.upcoming.length > 0 && (
               <div className="field" key="upcoming">

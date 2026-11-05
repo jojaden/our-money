@@ -7,7 +7,7 @@ import { nameOf } from "@/lib/calc";
 import { CheckButton, Money } from "./ui";
 import { MiniCard } from "./pass";
 import { PaidAmountSheet } from "./PaidAmountSheet";
-import { dueState, dueText, waiting, type Task } from "./tasks";
+import { asking, dueState, dueText, waiting, type Task } from "./tasks";
 import { shortDate } from "@/lib/format";
 
 /** fromShown: 카드 머리가 이미 "OO 급여통장에서"를 말할 때 이체 줄은 도착 계좌만 쓴다 */
@@ -27,6 +27,9 @@ export function TaskRow({ task, expandable = false, fromShown = false }: { task:
   ) : waiting(task, today) ? (
     // 아직 월급날 전: 재촉하지 않고 언제 할 일인지만
     <span className="s">{shortDate(task.payday!)} 월급날</span>
+  ) : asking(task, today) ? (
+    // 자동으로 나가는 돈은 날짜가 지나도 늦은 게 아니라 확인할 일
+    <span className="pill">{shortDate(task.due!)} 나갔나요?</span>
   ) : task.early && state !== "overdue" ? (
     <span className="pill warning">미리 · {dueText(task.due, today)}</span>
   ) : state === "overdue" ? (
