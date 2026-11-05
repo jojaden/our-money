@@ -228,6 +228,7 @@ export default function Home() {
                         <div className="s">
                           {catName(r.category_id, r.owner)} · {PAY_KIND_LABEL[r.pay_kind]}
                           {accName(r.account_id) && r.pay_kind === "card" ? ` · ${accName(r.account_id)}` : ""}
+                          {r.inst ? ` · 할부 ${r.inst.no}/${r.inst.of}` : ""}
                         </div>
                       </div>
                       <div className="r">

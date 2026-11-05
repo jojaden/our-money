@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import type { Owner, PayKind, Spending } from "@/lib/types";
 import { PAY_KIND_LABEL } from "@/lib/types";
 import { useData } from "@/lib/store";
-import { addMonths, allowanceStatus, categoryUse, dayIndexOf, groupTotals, itemsOf, livingStatus, nameOf, periodOf, settlementOf, spendingsIn, spentToDay, sum } from "@/lib/calc";
+import { addMonths, allowanceStatus, categoryUse, dayIndexOf, groupTotals, itemsOf, livingStatus, nameOf, periodOf, settlementOf, spendingsIn, spentToDay, sum, type MonthSpending } from "@/lib/calc";
 import { dayLabel, iga, num } from "@/lib/format";
 import { MonthHeader } from "@/components/MonthHeader";
 import { CategoryIcon, Money, Who } from "@/components/ui";
@@ -44,7 +44,7 @@ export default function LedgerPage() {
   const accName = (id: string | null) => (id ? data.accounts.find((a) => a.id === id)?.name : undefined);
 
   const days = useMemo(() => {
-    const map = new Map<string, Spending[]>();
+    const map = new Map<string, MonthSpending[]>();
     for (const r of rows) map.set(r.date, [...(map.get(r.date) ?? []), r]);
     return [...map.entries()];
   }, [rows]);
@@ -128,7 +128,7 @@ export default function LedgerPage() {
                       </div>
                       <div className="r">
                         <Money value={r.amount} />
-                        <div className="s">{PAY_KIND_LABEL[r.pay_kind]}</div>
+                        <div className="s">{r.inst ? `할부 ${r.inst.no}/${r.inst.of}` : PAY_KIND_LABEL[r.pay_kind]}</div>
                       </div>
                     </button>
                   ))}

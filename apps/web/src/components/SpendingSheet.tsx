@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Trash2 } from "lucide-react";
 import type { Account, Data, Owner, PayKind, Spending } from "@/lib/types";
 import { useData } from "@/lib/store";
-import { allowanceStatus, livingStatus, monthOf, nameOf } from "@/lib/calc";
+import { allowanceStatus, installmentShare, livingStatus, monthOf, nameOf } from "@/lib/calc";
 import { categoryVisual, guessFromMemo, presetsOf, type Preset } from "@/lib/categories";
 import { num, parseYmd, rase, ymd } from "@/lib/format";
 import { haptic } from "@/lib/native";
@@ -13,6 +13,8 @@ import { MiniCard } from "./pass";
 
 const LAST_CARD = "our-money-last-card";
 const MINE = "__mine";
+/** 고를 수 있는 할부 개월 (DB 는 1~60) */
+const INSTALLMENTS = [1, 2, 3, 4, 5, 6, 10, 12, 24];
 
 function shiftDay(date: string, n: number) {
   const d = parseYmd(date);
@@ -42,6 +44,7 @@ export function SpendingSheet({ open, onOpenChange, editing }: { open: boolean; 
   const [owner, setOwner] = useState<Owner>(me);
   const [date, setDate] = useState(today);
   const [memo, setMemo] = useState("");
+  const [months, setMonths] = useState(1);
   // 사용자가 직접 고른 항목은 자동으로 덮어쓰지 않는다
   const [touched, setTouched] = useState({ category: false, owner: false, pay: false });
   const [autoCat, setAutoCat] = useState(false);
@@ -77,6 +80,7 @@ export function SpendingSheet({ open, onOpenChange, editing }: { open: boolean; 
       setOwner(editing.owner);
       setDate(editing.date);
       setMemo(editing.memo);
+      setMonths(editing.installment_months ?? 1);
       setTouched({ category: true, owner: true, pay: true });
       setAutoCat(false);
       setAutoOwner(false);
@@ -97,6 +101,7 @@ export function SpendingSheet({ open, onOpenChange, editing }: { open: boolean; 
     setOwner(card && card.owner === "joint" ? "joint" : me);
     setDate(today);
     setMemo("");
+    setMonths(1);
     setTouched({ category: false, owner: false, pay: false });
     setAutoCat(false);
     setAutoOwner(Boolean(card && card.owner === "joint"));
@@ -178,7 +183,7 @@ export function SpendingSheet({ open, onOpenChange, editing }: { open: boolean; 
     const row = buildRow();
     return remainingText(data, row);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [amount, owner, date, data]);
+  }, [amount, owner, date, data, payKind, months]);
 
   function buildRow(): Spending {
     const acc = account && account !== MINE ? data.accounts.find((a) => a.id === account) : null;
@@ -194,6 +199,7 @@ export function SpendingSheet({ open, onOpenChange, editing }: { open: boolean; 
       paid_by: paidBy,
       memo: memo.trim(),
       created_at: editing?.created_at ?? new Date().toISOString(),
+      installment_months: payKind === "card" ? months : 1,
       // 고칠 때는 읽은 rev 를 그대로 (다른 폰이 그사이 고쳤으면 서버가 거절), 새 기록은 어떻게 시작했는지
       ...(editing ? { rev: editing.rev } : { source: fromPreset ? "preset" : "manual" }),
     };
@@ -355,6 +361,27 @@ export function SpendingSheet({ open, onOpenChange, editing }: { open: boolean; 
         )}
         {payKind === "card" && cards.length === 0 && <p className="help">설정에서 카드를 먼저 추가해 주세요.</p>}
       </div>
+
+      {payKind === "card" && cards.length > 0 && (
+        <div className="field">
+          <span className="label">할부</span>
+          <div className="chips scroll" role="radiogroup" aria-label="할부 개월">
+            {[...new Set([...INSTALLMENTS, months])].sort((a, b) => a - b).map((n) => (
+              <button key={n} type="button" className="chip" role="radio" aria-checked={months === n} onClick={() => setMonths(n)}>
+                {n === 1 ? "일시불" : `${n}개월`}
+              </button>
+            ))}
+          </div>
+          {months > 1 && amount > 0 && (
+            <p className="help">
+              {installmentShare(amount, months, 1) === installmentShare(amount, months, 2)
+                ? `매달 ${num(installmentShare(amount, months, 1))}원씩 ${months}개월`
+                : `이번 달 ${num(installmentShare(amount, months, 1))}원, 다음 달부터 ${num(installmentShare(amount, months, 2))}원씩`}{" "}
+              예산과 카드값에 나눠 들어가요
+            </p>
+          )}
+        </div>
+      )}
 
       <div className="field">
         <span className="label">

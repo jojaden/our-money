@@ -124,10 +124,11 @@ class SupabaseRepo implements Repo {
   mode = "supabase" as const;
   constructor(private db: SupabaseClient) {}
 
-  /** 지출: (date, id) 순서로 [from, to) — spendings_date_id 인덱스를 그대로 탄다 */
-  private spendings(from: string | null, to: string | null, asc: boolean) {
+  /** 지출: (date, id) 순서로 [from, to) — spendings_date_id 인덱스를 그대로 탄다. installments 면 할부 기록만 */
+  private spendings(from: string | null, to: string | null, asc: boolean, installments = false) {
     return pageAll<Spending>((after) => {
       let q = this.db.from("spendings").select("*");
+      if (installments) q = q.gt("installment_months", 1);
       if (from) q = q.gte("date", from);
       if (to) q = q.lt("date", to);
       if (after) {
@@ -139,7 +140,12 @@ class SupabaseRepo implements Repo {
   }
 
   private async list(table: (typeof LIST_TABLES)[number], opts?: LoadOpts): Promise<unknown[]> {
-    if (table === "spendings") return this.spendings(opts?.spendingsFrom ?? null, null, false);
+    if (table === "spendings") {
+      const from = opts?.spendingsFrom ?? null;
+      if (!from) return this.spendings(null, null, false);
+      const [recent, older] = await Promise.all([this.spendings(from, null, false), this.olderInstallments(from)]);
+      return [...recent, ...older];
+    }
     try {
       return await pageAll<{ id: string }>((after) => {
         const q = this.db.from(table).select("*");
@@ -169,8 +175,14 @@ class SupabaseRepo implements Repo {
     return (await this.list(table as (typeof LIST_TABLES)[number], opts)) as never;
   }
 
-  loadSpendings(from: string, to: string) {
-    return this.spendings(from, to, false);
+  /** from 전에 산 할부 중 아직 이어지는 것 (최대 60개월) — 불러온 기간의 예산·카드값에 회차가 들어간다 */
+  private olderInstallments(from: string) {
+    return this.spendings(`${Number(from.slice(0, 4)) - 5}${from.slice(4)}`, from, false, true);
+  }
+
+  async loadSpendings(from: string, to: string) {
+    const [rows, older] = await Promise.all([this.spendings(from, to, false), this.olderInstallments(from)]);
+    return [...rows, ...older];
   }
 
   exportSpendings() {

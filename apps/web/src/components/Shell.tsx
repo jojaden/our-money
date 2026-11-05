@@ -7,7 +7,7 @@ import { House, Layers, ListChecks, ReceiptText, Settings2, Plus, X, ChevronLeft
 import { isStandalone } from "@/lib/native";
 import { StoreProvider, useStore } from "@/lib/store";
 import { signInWithGoogle, signOut } from "@/lib/repo";
-import { addMonths, nameOf } from "@/lib/calc";
+import { addMonths, nameOf, type MonthSpending } from "@/lib/calc";
 import type { Spending } from "@/lib/types";
 import { Mark, PersonGlyph, Toasts } from "./ui";
 import { SpendingSheet } from "./SpendingSheet";
@@ -324,7 +324,8 @@ function InstallPrompt() {
 
 function Frame({ children }: { children: React.ReactNode }) {
   const [sheet, setSheet] = useState<{ open: boolean; editing?: Spending }>({ open: false });
-  const openSpending = useCallback((s?: Spending) => setSheet({ open: true, editing: s }), []);
+  // 할부의 2회차 줄을 눌러도 원래 기록을 고친다
+  const openSpending = useCallback((s?: Spending) => setSheet({ open: true, editing: (s as MonthSpending | undefined)?.inst?.orig ?? s }), []);
   const path = norm(usePathname() ?? "/");
   const { data } = useStore();
 
