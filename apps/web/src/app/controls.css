@@ -339,16 +339,20 @@ button.row:active, a.row:active { background: var(--well); transform: scale(0.98
 .text-tabs button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) { .text-tabs button { transition: none; } }
 
-/* ---------- 제목 속 시간 카드: 입력칸 뒤에 같은 글을 깔고 시간 글자만 감싼다 ---------- */
+/* ---------- 제목 속 시간 카드: 시간이 보이면 입력칸 글자를 숨기고 뒤에 깐 같은 글이 보인다 (시간 글자만 칠한 카드) ---------- */
 
 .title-field { position: relative; border-radius: var(--radius-control); background: var(--well); transition: background-color var(--dur-press) ease, box-shadow var(--dur-press) ease; }
 .title-field:focus-within { background: var(--surface); box-shadow: 0 0 0 2px var(--accent); }
 .title-field .input { position: relative; background: transparent; }
 .title-field .input:focus { background: transparent; box-shadow: none; }
-.title-mirror { position: absolute; inset: 0; display: flex; align-items: center; padding: 0 14px; overflow: hidden; color: transparent; font-size: 16px; font-weight: 500; white-space: pre; pointer-events: none; }
+/* 커서·선택은 입력칸이 그대로 맡고, 글자는 뒤에 깐 글로 보인다 */
+.title-field.has-time .input { color: transparent; caret-color: var(--text); }
+.title-field.has-time .input::selection { background: color-mix(in srgb, var(--accent) 24%, transparent); }
+.title-mirror { position: absolute; inset: 0; display: flex; align-items: center; padding: 0 14px; overflow: hidden; color: var(--text); font-size: 16px; font-weight: 500; white-space: pre; pointer-events: none; }
 .title-mirror > span { flex: none; }
-.title-mirror mark { color: transparent; border-radius: 8px; background: color-mix(in srgb, var(--accent) 14%, transparent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent), 0 0 0 4px color-mix(in srgb, var(--accent) 45%, transparent); animation: time-card-in var(--dur-press) var(--ease-out); }
-@keyframes time-card-in { from { opacity: 0; } }
+/* 안쪽 여백만큼 바깥으로 당겨 글자 자리는 그대로, 바탕은 한 번에 칠한다 (그림자로 넓히면 가장자리에 옅은 줄이 남는다) */
+.title-mirror mark { margin: 0 -6px; padding: 6px; border-radius: 10px; background: color-mix(in srgb, var(--accent) 20%, var(--surface)); color: var(--accent-ink); animation: time-card-in var(--dur-press) var(--ease-out); }
+@keyframes time-card-in { from { background-color: transparent; color: var(--text); } }
 .time-chip { display: inline-flex; justify-self: start; width: fit-content; align-items: center; gap: 6px; height: 32px; padding: 0 4px 0 12px; border-radius: var(--radius-chip); background: var(--accent-soft); color: var(--accent-ink); font: 600 14.5px/1 var(--font-text); }
 .time-chip > svg { width: 16px; height: 16px; }
 .time-chip button { display: grid; place-items: center; width: 28px; height: 28px; border: 0; border-radius: var(--radius-chip); background: none; color: inherit; }

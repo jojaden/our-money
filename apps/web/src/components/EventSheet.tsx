@@ -193,7 +193,7 @@ export function EventSheet({ open, onOpenChange, event, date }: { open: boolean;
 
       <div className="field">
         <label htmlFor="ev-title">제목</label>
-        <div className="title-field">
+        <div className={`title-field ${live ? "has-time" : ""}`}>
           {live && (
             <span className="title-mirror" aria-hidden="true">
               <span ref={mirrorRef}>
