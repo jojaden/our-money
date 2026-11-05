@@ -17,6 +17,7 @@ import com.jojaden.ourmoney.R
 import com.jojaden.ourmoney.core.notice.Expect
 import com.jojaden.ourmoney.core.notice.Match
 import com.jojaden.ourmoney.core.notice.Payment
+import com.jojaden.ourmoney.core.notice.PaymentKind
 import com.jojaden.ourmoney.core.notice.Sureness
 import com.jojaden.ourmoney.core.notice.matchPayment
 import org.json.JSONArray
@@ -26,10 +27,10 @@ import java.time.Instant
 import java.time.ZoneId
 import java.util.UUID
 
-// 결제 알림 ↔ 이번 달 할 일 맞추기의 폰 쪽.
+// 결제 알림 ↔ 이번 달 할 일 맞추기의 폰 쪽. 할 일과 맞지 않는 카드 결제는 "확인할 지출"로 모은다(SpendQueue).
 // 웹이 앱을 열어 둔 동안 넘긴 "남은 할 일"(Expects)을 폰에만 두고, 알림이 맞으면 대기열(MatchQueue)에 넣어 폰 알림으로 알린다.
 // 체크는 웹이 한다(로그인은 웹에만 있다) — 앱을 열면 웹이 대기열에서 확실한 것·사람이 확인한 것을 가져가 체크하고 되돌리기를 보인다.
-// 두 파일 모두 앱 전용 저장소에만 있고 백업·기기 이전에서 빠진다(data_extraction_rules).
+// 파일은 모두 앱 전용 저장소에만 있고 백업·기기 이전에서 빠진다(data_extraction_rules).
 
 /** 웹이 넘긴 이번 달 남은 할 일 — 맞출 때만 쓴다 */
 object Expects {
@@ -227,10 +228,87 @@ class MatchActionReceiver : BroadcastReceiver() {
     }
 }
 
-/** 결제 알림을 이번 달 남은 할 일과 맞춰 보고, 맞으면 대기열에 넣고 알린다 (CardNoticeListener 에서) */
+/**
+ * 할 일과 맞지 않는 카드 결제 — 웹이 가계부에 "확인 필요"로 적는다 (카드·분류·누구 돈 중 모르는 칸을 표시).
+ * 계좌 출금은 내 통장끼리 옮긴 돈이 섞여서 모으지 않는다. 같은 결제가 두 앱(카드사·페이)에서 오면 한 번만,
+ * 아직 웹이 가져가지 않은 결제의 취소가 오면 둘 다 지운다(가져간 뒤의 취소는 웹이 원래 기록에 "취소 확인"을 단다).
+ */
+object SpendQueue {
+    private const val FILE = "notice-spends.json"
+    private const val MAX = 100
+    private const val KEEP_MS = 40L * 24 * 60 * 60 * 1000
+    /** 같은 결제가 다른 앱 알림으로 또 오는 간격 */
+    private const val SAME_MS = 3L * 60 * 1000
+
+    data class Entry(val id: String, val cancel: Boolean, val amount: Long, val merchant: String?, val last4: String?, val months: Int?, val at: Long)
+
+    private fun file(context: Context) = File(context.filesDir, FILE)
+
+    @Synchronized
+    fun list(context: Context): List<Entry> {
+        val f = file(context)
+        if (!f.exists()) return emptyList()
+        return runCatching {
+            val arr = JSONArray(f.readText())
+            (0 until arr.length()).map { i ->
+                val o = arr.getJSONObject(i)
+                Entry(
+                    o.getString("id"), o.getBoolean("cancel"), o.getLong("amount"),
+                    o.optString("merchant").takeIf { !o.isNull("merchant") && it.isNotEmpty() },
+                    o.optString("last4").takeIf { !o.isNull("last4") && it.isNotEmpty() },
+                    if (o.isNull("months")) null else o.getInt("months"),
+                    o.getLong("at"),
+                )
+            }
+        }.getOrDefault(emptyList())
+    }
+
+    private fun write(context: Context, all: List<Entry>) {
+        val arr = JSONArray()
+        all.forEach { arr.put(json(it)) }
+        file(context).writeText(arr.toString())
+    }
+
+    private fun json(e: Entry) = JSONObject().put("id", e.id).put("cancel", e.cancel).put("amount", e.amount)
+        .put("merchant", e.merchant ?: JSONObject.NULL).put("last4", e.last4 ?: JSONObject.NULL)
+        .put("months", e.months ?: JSONObject.NULL).put("at", e.at)
+
+    private fun same(a: Entry, p: Payment): Boolean =
+        a.amount == p.amount && (a.last4 != null && a.last4 == p.last4 || a.merchant != null && a.merchant == p.counterpart)
+
+    @Synchronized
+    fun add(context: Context, p: Payment, at: Long) {
+        val now = list(context).filter { at - it.at < KEEP_MS }
+        val cancel = p.kind == PaymentKind.CANCEL
+        if (cancel) {
+            // 아직 넘기지 않은 결제의 취소면 둘 다 없던 것으로
+            val paid = now.firstOrNull { !it.cancel && same(it, p) }
+            if (paid != null) return write(context, now - paid)
+        } else if (now.any { !it.cancel && it.amount == p.amount && kotlin.math.abs(at - it.at) < SAME_MS }) {
+            return
+        }
+        val e = Entry(UUID.randomUUID().toString(), cancel, p.amount, p.counterpart?.take(60), p.last4, p.months, at)
+        write(context, (listOf(e) + now).take(MAX))
+    }
+
+    /** 웹이 가계부에 적을 것 */
+    @Synchronized
+    fun forWeb(context: Context): JSONArray = JSONArray().also { arr -> list(context).forEach { arr.put(json(it)) } }
+
+    @Synchronized
+    fun remove(context: Context, ids: Set<String>) {
+        if (ids.isNotEmpty()) write(context, list(context).filterNot { it.id in ids })
+    }
+}
+
+/** 결제 알림을 이번 달 남은 할 일과 맞춰 보고, 맞으면 대기열에 넣고 알린다. 맞지 않는 카드 결제는 확인할 지출로 (CardNoticeListener 에서) */
 fun onPayment(context: Context, p: Payment, at: Long) {
     val on = Instant.ofEpochMilli(at).atZone(ZoneId.systemDefault()).toLocalDate().toString()
-    val m = matchPayment(p, on, Expects.list(context)) ?: return
+    val m = matchPayment(p, on, Expects.list(context))
+    if (m == null) {
+        if (p.isCard) SpendQueue.add(context, p, at)
+        return
+    }
     val what = listOfNotNull(p.counterpart, if (p.isCard) "카드" else "계좌").joinToString(" · ")
     MatchQueue.add(context, m, what, at)?.let { MatchNotifier.show(context, it) }
 }

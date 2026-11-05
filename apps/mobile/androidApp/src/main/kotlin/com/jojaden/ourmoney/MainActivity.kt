@@ -27,6 +27,7 @@ import androidx.webkit.WebViewFeature
 import com.jojaden.ourmoney.notice.Expects
 import com.jojaden.ourmoney.notice.MatchQueue
 import com.jojaden.ourmoney.notice.NoticeActivity
+import com.jojaden.ourmoney.notice.SpendQueue
 import org.json.JSONObject
 import java.io.File
 
@@ -39,7 +40,7 @@ import java.io.File
  *   다른 앱이 같은 스킴으로 code 를 가로채도 PKCE 값이 없어 쓸 수 없다.
  * - 웹 → 앱 메시지는 우리 주소(origin)의 맨 위 화면에서 온 것만 받는다 (WebMessageListener).
  *   "card-notice" 는 카드 알림 화면, {"type":"ics","text":…} 는 일정 .ics 를 파일로 만들어 공유 창으로 넘긴다.
- *   결제 알림 맞추기: {"type":"expect"} 이번 달 남은 할 일 받기, {"type":"matches"} 맞춘 것을 답장으로 보내기,
+ *   결제 알림 맞추기: {"type":"expect"} 이번 달 남은 할 일 받기, {"type":"matches"} 맞춘 것과 확인할 지출을 답장으로 보내기,
  *   {"type":"applied"} 웹이 체크를 마친 것 지우기. 앱으로 돌아올 때마다 웹에 "ourmoney-resume" 를 알려 다시 가져가게 한다.
  * - 뒤로 가기는 웹의 기록을 따른다 (웹은 시트·상세를 기록 한 칸으로 연다).
  */
@@ -113,9 +114,13 @@ class MainActivity : ComponentActivity() {
         when (msg.optString("type")) {
             "ics" -> shareIcs(msg.optString("text"))
             "expect" -> Expects.save(this, msg.optJSONArray("items"))
-            "matches" -> reply.postMessage(JSONObject().put("type", "matches").put("items", MatchQueue.forWeb(this)).toString())
-            "applied" -> msg.optJSONArray("ids")?.let { ids ->
-                MatchQueue.remove(this, (0 until minOf(ids.length(), 100)).map { ids.optString(it) }.filter { it.isNotEmpty() }.toSet())
+            "matches" -> reply.postMessage(
+                JSONObject().put("type", "matches").put("items", MatchQueue.forWeb(this)).put("spends", SpendQueue.forWeb(this)).toString(),
+            )
+            "applied" -> msg.optJSONArray("ids")?.let { arr ->
+                val ids = (0 until minOf(arr.length(), 200)).map { arr.optString(it) }.filter { it.isNotEmpty() }.toSet()
+                MatchQueue.remove(this, ids)
+                SpendQueue.remove(this, ids)
             }
         }
     }

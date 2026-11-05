@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Bell, CalendarCheck, CalendarDays, CreditCard, Heart, Repeat, Wallet } from "lucide-react";
+import { Bell, CalendarCheck, CalendarDays, CreditCard, Heart, ReceiptText, Repeat, Wallet } from "lucide-react";
 import type { Person } from "@/lib/types";
 import { METHOD_LABEL } from "@/lib/types";
 import { useData } from "@/lib/store";
@@ -38,6 +38,7 @@ function daysUntil(today: string, d: string) {
  * 지금(오늘이 든 가계부 달) 챙길 것.
  * - 고정: 할 일 중 "기간 동안 알림 모음에 고정"을 켠 것 — 그 기간 안이고 아직 안 끝냈으면 맨 위에
  * - 잘 나갔나요?: 자동이체·카드 자동결제인데 날짜가 지나도 체크 전인 납부 (늦은 게 아니라 확인할 일)
+ * - 확인할 지출: 결제 알림으로 적어서 카드·분류 등 확인할 칸이 남은 지출 (가계부의 "확인 필요")
  * - 지난 것 / 오늘·곧: 이체·납부·카드값·정산은 3일 안, 할 일은 3일과 그 할 일의 미리 알림 중 긴 쪽 안. 월급날 전 이체는 빼고
  * - 다가오는 날: 월급날(3일 안), 미리 알림을 켠 일정·D-day(그 날 수 안)
  */
@@ -79,14 +80,16 @@ function useAlerts() {
       upcoming.push({ key: `event:${e.id}@${o.start}`, date: o.start, title: e.title, sub: [when, timeText(e), e.owner !== "joint" ? nameOf(s, e.owner) : ""].filter(Boolean).join(" · "), pill: ddayText(o, today), icon: e.dday ? "dday" : "event", person: e.owner, href: "/calendar" });
     }
     upcoming.sort((a, b) => a.date.localeCompare(b.date));
+    const reviews = data.spendings.filter((x) => x.review?.length);
 
     return {
       pinned,
       late: urgent.filter((t) => t.due! < today),
       soon: urgent.filter((t) => t.due! >= today),
       asks,
+      reviews,
       upcoming,
-      keys: [...pinned.map((t) => t.key), ...urgent.map((t) => t.key), ...asks.map((t) => `ask:${t.key}`), ...upcoming.map((u) => u.key)],
+      keys: [...pinned.map((t) => t.key), ...urgent.map((t) => t.key), ...asks.map((t) => `ask:${t.key}`), ...reviews.map((x) => `rv:${x.id}`), ...upcoming.map((u) => u.key)],
     };
   }, [data, month, s, tasks, today, toggleCheck]);
 }
@@ -211,6 +214,22 @@ export function BellButton({ rail = false }: { rail?: boolean }) {
                       </div>
                     );
                   })}
+                </div>
+              </div>
+            )}
+            {a.reviews.length > 0 && (
+              <div className="field" key="reviews">
+                <h3 className="sum-h">확인할 지출</h3>
+                <div className="rows" style={{ ["--inset" as string]: "52px" }}>
+                  <button type="button" className="row" onClick={() => go("/ledger")}>
+                    <span className="alert-ic" aria-hidden="true">
+                      <ReceiptText />
+                    </span>
+                    <div style={{ minWidth: 0 }}>
+                      <div className="t">결제 알림으로 적은 지출 {a.reviews.length}건</div>
+                      <div className="s">카드·분류·누구 돈을 가계부의 &quot;확인 필요&quot;에서 확인해 주세요</div>
+                    </div>
+                  </button>
                 </div>
               </div>
             )}
