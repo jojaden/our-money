@@ -147,3 +147,10 @@ export class Morph extends Component<{ children: ReactNode; className?: string; 
     );
   }
 }
+
+/** 화면이 통째로 바뀔 때(달력 ↔ 모아 보기) 새 화면이 그 방향에서 밀려 들어온다 — 달 넘기기와 같은 28px·dur-tab·ease-drawer */
+export function slideIn(els: Iterable<Element>, dir: 1 | -1) {
+  if (still()) return;
+  const t = tokens();
+  for (const el of els) el.animate([{ opacity: 0, transform: `translateX(${28 * dir}px)` }, { opacity: 1, transform: "none" }], { duration: t.move, easing: t.drawer });
+}

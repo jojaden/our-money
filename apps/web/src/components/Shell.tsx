@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
+import { createContext, Suspense, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { House, Layers, ListChecks, ReceiptText, CalendarDays, Settings2, Plus, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { isStandalone } from "@/lib/native";
 import { StoreProvider, useStore } from "@/lib/store";
@@ -10,6 +10,7 @@ import { signInWithGoogle, signOut } from "@/lib/repo";
 import { addMonths, nameOf, type MonthSpending } from "@/lib/calc";
 import { monthLabel } from "@/lib/format";
 import type { Spending } from "@/lib/types";
+import type { Range } from "@/lib/calendar";
 import { Mark, PersonGlyph, Toasts } from "./ui";
 import { SpendingSheet } from "./SpendingSheet";
 import { MonthSheet } from "./MonthSheet";
@@ -26,8 +27,8 @@ const TABS = [
 
 interface SheetCtx {
   openSpending: (s?: Spending) => void;
-  /** 달 고르기 — 큰 제목·위쪽 막대의 "11월" */
-  openMonths: () => void;
+  /** 달 고르기 — 큰 제목·위쪽 막대의 "11월". 모아 보기에서 열면 그 기간으로 "기간"이 열린다 */
+  openMonths: (o?: { range?: Range }) => void;
 }
 const SheetContext = createContext<SheetCtx>({ openSpending: () => {}, openMonths: () => {} });
 export const useSheets = () => useContext(SheetContext);
@@ -164,7 +165,8 @@ function PageMotion({ path, children }: { path: string; children: React.ReactNod
   };
 
   const onDown = (e: React.PointerEvent) => {
-    if (!swipeable || e.pointerType === "mouse") return;
+    // 달 넘기기가 있는 화면에서만 (모아 보기·설정은 아님)
+    if (!swipeable || e.pointerType === "mouse" || !box.current?.querySelector(".page-head .month-step")) return;
     const t = e.target as HTMLElement;
     // 가로로 스크롤되는 줄, 차트, 입력, 시트 위에서는 넘기지 않는다
     if (t.closest(".chips.scroll, .presets, .daily-plot, input, textarea, select, .sheet, [data-no-swipe]")) return;
@@ -226,6 +228,10 @@ function PageMotion({ path, children }: { path: string; children: React.ReactNod
 function TopBar({ path }: { path: string }) {
   const { auth, data, me, month, setMonth } = useStore();
   const { openMonths } = useSheets();
+  const q = useSearchParams();
+  const search = q.toString();
+  // 모아 보기(달력 + 기간 주소)는 작은 제목에 화살표 없이 기간 제목만
+  const summary = path === "/calendar" && q.has("from");
   const bar = useRef<HTMLDivElement>(null);
   const [glass, setGlass] = useState(false);
   const [title, setTitle] = useState("");
@@ -244,7 +250,7 @@ function TopBar({ path }: { path: string }) {
     );
     io.observe(row);
     return () => io.disconnect();
-  }, [path, month]);
+  }, [path, month, search]);
   const settings = path === "/settings";
   const name = data ? nameOf(data.settings, me) : "";
   return (
@@ -257,13 +263,13 @@ function TopBar({ path }: { path: string }) {
           예시 데이터
         </Link>
       )}
-      {!settings && month ? (
+      {!settings && month && !summary ? (
         // 큰 제목이 보일 때는 숨기고 누를 수도 없게 (같은 버튼이 큰 제목 줄에 있다)
         <div className="mini" inert={!glass}>
           <button type="button" className="mini-step" aria-label={`지난달 (${monthLabel(addMonths(month, -1))})`} onClick={() => setMonth(addMonths(month, -1))}>
             <ChevronLeft aria-hidden="true" />
           </button>
-          <button type="button" className="mini-title" aria-haspopup="dialog" aria-label={`${title}, 다른 달 고르기`} onClick={openMonths}>
+          <button type="button" className="mini-title" aria-haspopup="dialog" aria-label={`${title}, 다른 달 고르기`} onClick={() => openMonths()}>
             {title}
           </button>
           <button type="button" className="mini-step" aria-label={`다음 달 (${monthLabel(addMonths(month, 1))})`} onClick={() => setMonth(addMonths(month, 1))}>
@@ -336,8 +342,8 @@ function Frame({ children }: { children: React.ReactNode }) {
   // 할부의 2회차 줄을 눌러도 원래 기록을 고친다
   const openSpending = useCallback((s?: Spending) => setSheet({ open: true, editing: (s as MonthSpending | undefined)?.inst?.orig ?? s }), []);
   // 열 때마다 보고 있는 달의 해에서 시작하도록 key 를 바꾼다
-  const [months, setMonths] = useState({ open: false, key: 0 });
-  const openMonths = useCallback(() => setMonths((x) => ({ open: true, key: x.key + 1 })), []);
+  const [months, setMonths] = useState<{ open: boolean; key: number; range?: Range }>({ open: false, key: 0 });
+  const openMonths = useCallback((o?: { range?: Range }) => setMonths((x) => ({ open: true, key: x.key + 1, range: o?.range })), []);
   const path = norm(usePathname() ?? "/");
   const { data } = useStore();
 
@@ -354,12 +360,15 @@ function Frame({ children }: { children: React.ReactNode }) {
         {data && <Nav onRecord={() => openSpending()} />}
         <Gate>
           <main className={`canvas ${path === "/" ? "home" : ""}`}>
-            <TopBar path={path} />
+            {/* 위쪽 막대가 주소의 기간을 읽어서 Suspense 안에 둔다 (정적 내보내기) */}
+            <Suspense fallback={null}>
+              <TopBar path={path} />
+            </Suspense>
             <InstallPrompt />
             <PageMotion path={path}>{children}</PageMotion>
           </main>
           {data && <SpendingSheet open={sheet.open} editing={sheet.editing} onOpenChange={(open) => setSheet((s) => ({ ...s, open }))} />}
-          {data && <MonthSheet key={months.key} open={months.open} onOpenChange={(open) => setMonths((x) => ({ ...x, open }))} />}
+          {data && <MonthSheet key={months.key} open={months.open} range={months.range} onOpenChange={(open) => setMonths((x) => ({ ...x, open }))} />}
         </Gate>
       </div>
       <Toasts />

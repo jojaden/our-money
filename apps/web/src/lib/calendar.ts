@@ -3,7 +3,7 @@
 
 import type { CalEvent, Check, Data, MonthItem, Owner, Person, Spending } from "./types";
 import { actualAmount, cardBills, checkId, dateInMonth, findCheck, itemsOf, monthOf, monthRow, nameOf, needsPayCheck, paydayDate } from "./calc";
-import { parseYmd, ymd } from "./format";
+import { dateWithDay, parseYmd, ymd } from "./format";
 
 /** 일정 한 번 (기간이면 start~end, 끝 날 포함) */
 export interface Occurrence {
@@ -180,6 +180,35 @@ export function weekOf(day: string): Range {
 export function calendarMonth(key: string): Range {
   const [y, m] = key.split("-").map(Number);
   return { from: `${key}-01`, to: ymd(new Date(y, m, 0)) };
+}
+
+/** 주소의 기간 (?from=…&to=…) — 있는 날짜가 아니거나 거꾸로면 없음 */
+export function rangeOf(from: string | null, to: string | null): Range | null {
+  const ok = (s: string | null): s is string => !!s && /^\d{4}-\d{2}-\d{2}$/.test(s) && ymd(parseYmd(s)) === s;
+  return ok(from) && ok(to) && from <= to ? { from, to } : null;
+}
+
+/** 모아 보기 화면 주소 */
+export function summaryHref(r: Range): string {
+  return `/calendar/?from=${r.from}&to=${r.to}`;
+}
+
+/** 기간 날 수 (끝 날 포함) */
+export function rangeDays(r: Range): number {
+  return days(r.from, r.to) + 1;
+}
+
+function md(d: Date) {
+  return `${d.getMonth() + 1}월 ${d.getDate()}일`;
+}
+
+/** "11월 1일 – 30일", "11월 30일 – 12월 6일", 하루면 "11월 3일 (화)", 올해가 아니면 해까지 */
+export function rangeText({ from, to }: Range, thisYear: number): string {
+  if (from === to) return dateWithDay(from);
+  const a = parseYmd(from);
+  const b = parseYmd(to);
+  if (a.getFullYear() !== b.getFullYear() || a.getFullYear() !== thisYear) return `${a.getFullYear()}년 ${md(a)} – ${b.getFullYear()}년 ${md(b)}`;
+  return a.getMonth() === b.getMonth() ? `${md(a)} – ${b.getDate()}일` : `${md(a)} – ${md(b)}`;
 }
 
 /** 끝낸 일 하나 (모아 보기) */
