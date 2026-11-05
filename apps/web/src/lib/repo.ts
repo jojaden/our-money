@@ -4,6 +4,7 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Data, HistoryRow, Member, Person, Row, Spending, TableName, User } from "./types";
 import { buildDemoData } from "./demo-data";
+import { inApp } from "./native";
 
 export const LIST_TABLES = [
   "accounts",
@@ -492,7 +493,8 @@ export async function signInWithGoogle() {
   if (!db) return;
   await db.auth.signInWithOAuth({
     provider: "google",
-    options: { redirectTo: window.location.origin + "/" },
+    // 안드로이드 앱 안이면 로그인 탭이 끝난 뒤 앱으로 돌아온다 (Supabase Redirect URLs 에 ourmoney://auth-callback 필요)
+    options: { redirectTo: inApp() ? "ourmoney://auth-callback" : window.location.origin + "/" },
   });
 }
 
