@@ -14,11 +14,13 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.jojaden.ourmoney.core.notice.parseNotice
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -28,7 +30,7 @@ private val Muted = Color(0xFF6E6E73)
 private val Card = Color(0xFFFFFFFF)
 
 /**
- * 카드 알림 모으기 화면 (임시). 알림 접근 권한 상태, 모은 알림 목록,
+ * 카드 알림 모으기 화면 (임시). 알림 접근 권한 상태, 모은 알림 목록과 해석기가 읽은 값,
  * 숫자를 가려 복사하기(해석 규칙을 만들 때 붙여 넣을 용도), 모두 지우기.
  */
 @Composable
@@ -82,6 +84,9 @@ fun NoticeScreen(
                     Text("${time.format(Date(s.at))} · ${s.pkg}", fontSize = 12.sp, color = Muted)
                     if (s.title.isNotBlank()) Text(s.title, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = Ink)
                     Text(s.text, fontSize = 15.sp, color = Ink)
+                    // 다시 그릴 때마다 정규식을 돌리지 않게 알림마다 한 번만 읽는다
+                    val read = remember(s) { NoticeSamples.describe(parseNotice(s.title, s.text)) }
+                    Text("읽은 값: $read", fontSize = 13.sp, color = Muted)
                 }
             }
         }
