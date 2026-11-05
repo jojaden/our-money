@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
-import { Trash2 } from "lucide-react";
+import { useLayoutEffect, useRef, useState } from "react";
+import { Clock, Trash2, X } from "lucide-react";
 import type { CalEvent, Owner, Repeat } from "@/lib/types";
 import { REPEAT_LABEL } from "@/lib/types";
 import { useData } from "@/lib/store";
 import { nameOf } from "@/lib/calc";
-import { eul } from "@/lib/format";
-import { splitTime } from "@/lib/calendar";
+import { eul, ro } from "@/lib/format";
+import { findTime, timeText, type TimeHit } from "@/lib/calendar";
 import { AmountInput, MAX_GOAL, Seg, Sheet, Toggle } from "./ui";
 
 /** 무엇을 만드나 — 맨 위에서 고르면 그에 맞는 칸만 나온다 */
@@ -42,7 +42,9 @@ function kindOf(e?: CalEvent): Kind {
  * - 할 일: 기한(하루 또는 기간), 낼 돈, D-day 세기, 기간이면 알림 모음 고정 → 끝내면 체크 (todo)
  * - 일정: 하루 또는 기간 (체크 없음)
  * - D-day: 하루 (dday)
- * 셋 다 반복(매달·매년)·누구·미리 알림·메모, 할 일·일정은 시간(선택). 제목에 "오후 7시부터"처럼 적으면 제목에서 떼어 시간 칸에 넣는다.
+ * 셋 다 반복(매달·매년)·누구·미리 알림·메모, 할 일·일정은 시간(선택).
+ * 제목에 "오후5시", "5시 40분"처럼 시간을 쓰면 그 글자를 카드로 감싸 보여 주고, 띄어 쓰면 제목에서 떼어 시간 칸에 넣는다.
+ * 다시 쓰면 바꾼다("9시까지"는 끝 시간만). 오전·오후를 안 쓰면 시트를 연 지금에 맞춘다(지난 시각이면 오후).
  * 열 때마다 새 key 로 그려서 입력이 그 일정(또는 고른 날짜)에서 시작한다.
  */
 export function EventSheet({ open, onOpenChange, event, date }: { open: boolean; onOpenChange: (v: boolean) => void; event?: CalEvent; date: string }) {
@@ -62,8 +64,14 @@ export function EventSheet({ open, onOpenChange, event, date }: { open: boolean;
   const [note, setNote] = useState(event?.note ?? "");
   const [startTime, setStartTime] = useState(event?.start_time ?? "");
   const [endTime, setEndTime] = useState(event?.end_time ?? "");
-  /** 제목에서 떼어 시간 칸으로 옮긴 글 (예: "오후7시부터") */
-  const [moved, setMoved] = useState("");
+  /** 오전·오후를 안 쓴 시간을 정할 기준 (시트를 연 때) */
+  const [now] = useState(() => new Date());
+  const titleRef = useRef<HTMLInputElement>(null);
+  const mirrorRef = useRef<HTMLSpanElement>(null);
+  /** 제목을 고쳐 쓴 뒤 놓을 커서 자리 */
+  const caret = useRef<number | null>(null);
+  /** 방금 시간을 뗀 자리 — 바로 이어 "40분 "·"반 "을 쓰면 그 시간의 분을 고친다 ("5시 40분") */
+  const lastAt = useRef<{ at: number; field: "start" | "end" } | null>(null);
 
   const k = KIND.find((x) => x.value === kind)!;
   const isRange = kind !== "dday" && ranged;
@@ -72,25 +80,68 @@ export function EventSheet({ open, onOpenChange, event, date }: { open: boolean;
   const timeBad = timed && !isRange && Boolean(startTime) && Boolean(endTime) && endTime < startTime;
   const valid = title.trim().length > 0 && Boolean(start) && (!isRange || Boolean(end)) && !endBad && !timeBad;
 
-  /** 제목의 시간을 떼어 시간 칸에 넣는다 (다 적고 칸을 떠날 때, 저장할 때) */
-  const pullTime = () => {
-    const r = timed ? splitTime(title) : null;
-    if (!r) return null;
-    setTitle(r.title);
-    setStartTime(r.start ?? "");
-    setEndTime(r.end ?? "");
-    setMoved(r.text);
-    return r;
+  // 띄어 쓰기 전의 시간 (제목 속 카드로 보여 준다)
+  const live = timed ? findTime(title, now) : null;
+
+  /** 새 시간을 넣는다 — 시작이 있으면 시작·끝을 바꾸고, "9시까지"처럼 끝만 쓰면 끝만 */
+  const applyTime = (hit: TimeHit) => {
+    if (hit.start) {
+      setStartTime(hit.start);
+      setEndTime(hit.until ?? "");
+    } else if (hit.until) setEndTime(hit.until);
   };
+
+  const onTitle = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let v = e.target.value;
+    const pos = e.target.selectionStart ?? v.length;
+    // 한글 조합 중에는 글을 건드리지 않는다 (빈칸을 치면 조합이 끝난 뒤 다시 온다)
+    if (timed && !(e.nativeEvent as InputEvent).isComposing) {
+      const l = lastAt.current;
+      const typed = l && pos >= l.at ? v.slice(l.at, pos) : null;
+      const mm = typed ? /^(?:(\d{1,2})\s*분|반)\s$/.exec(typed) : null;
+      if (l && mm && Number(mm[1] ?? 30) <= 59) {
+        const cur = l.field === "start" ? startTime : endTime;
+        if (cur) (l.field === "start" ? setStartTime : setEndTime)(`${cur.slice(0, 3)}${String(mm[1] ?? 30).padStart(2, "0")}`);
+        v = v.slice(0, l.at) + v.slice(pos);
+        caret.current = l.at;
+        lastAt.current = null;
+      } else {
+        if (typed === null || !/^(?:\d{0,2}\s*분?|반)$/.test(typed)) lastAt.current = null;
+        const hit = findTime(v, now);
+        if (hit?.closed) {
+          const before = v.slice(0, hit.index).trimEnd();
+          const head = before ? `${before} ` : "";
+          v = head + v.slice(hit.end).trimStart();
+          caret.current = head.length;
+          applyTime(hit);
+          lastAt.current = { at: head.length, field: hit.start ? "start" : "end" };
+        }
+      }
+    }
+    setTitle(v);
+  };
+
+  // 고쳐 쓴 제목의 커서 자리, 카드 그림(뒤에 깐 글)의 가로 위치를 입력칸에 맞춘다
+  const syncMirror = () => {
+    if (mirrorRef.current && titleRef.current) mirrorRef.current.style.transform = `translateX(${-titleRef.current.scrollLeft}px)`;
+  };
+  useLayoutEffect(() => {
+    const el = titleRef.current;
+    if (el && caret.current !== null) el.setSelectionRange(caret.current, caret.current);
+    caret.current = null;
+    syncMirror();
+  }, [title]);
 
   const save = async () => {
     if (!valid) return;
-    const r = pullTime();
-    const st = r ? r.start : startTime || null;
-    const et = r ? r.end : endTime || null;
+    // 띄어 쓰기 전에 저장하면 그때 넣는다 (떼면 제목이 비면 그대로 둔다)
+    const rest = live ? `${title.slice(0, live.index)} ${title.slice(live.end)}`.replace(/\s+/g, " ").trim() : "";
+    const hit = live && rest ? live : null;
+    const st = hit?.start ?? (startTime || null);
+    const et = hit ? (hit.start ? hit.until : hit.until ?? (endTime || null)) : endTime || null;
     const row: CalEvent = {
       id: event?.id ?? newId(),
-      title: (r?.title ?? title).trim(),
+      title: hit ? rest : title.trim(),
       note: note.trim(),
       start_date: start,
       end_date: isRange ? end : null,
@@ -142,22 +193,40 @@ export function EventSheet({ open, onOpenChange, event, date }: { open: boolean;
 
       <div className="field">
         <label htmlFor="ev-title">제목</label>
-        <input
-          id="ev-title"
-          className="input"
-          value={title}
-          onChange={(e) => {
-            setTitle(e.target.value);
-            setMoved("");
-          }}
-          onBlur={() => void pullTime()}
-          placeholder={k.hint}
-          maxLength={40}
-        />
-        {moved && (
+        <div className="title-field">
+          {live && (
+            <span className="title-mirror" aria-hidden="true">
+              <span ref={mirrorRef}>
+                {title.slice(0, live.index)}
+                <mark>{live.text}</mark>
+                {title.slice(live.end)}
+              </span>
+            </span>
+          )}
+          <input ref={titleRef} id="ev-title" className="input" value={title} onChange={onTitle} onScroll={syncMirror} onSelect={syncMirror} placeholder={k.hint} maxLength={40} />
+        </div>
+        {live ? (
           <p className="help" role="status">
-            &quot;{moved}&quot;{eul(moved).slice(moved.length)} 시간으로 옮겼어요
+            띄어 쓰면 {ro(timeText({ start_time: live.start, end_time: live.until }))} 시간에 넣어요
           </p>
+        ) : (
+          timed &&
+          (startTime || endTime) && (
+            <div className="time-chip">
+              <Clock aria-hidden="true" />
+              {timeText({ start_time: startTime || null, end_time: endTime || null })}
+              <button
+                type="button"
+                aria-label="시간 지우기"
+                onClick={() => {
+                  setStartTime("");
+                  setEndTime("");
+                }}
+              >
+                <X aria-hidden="true" />
+              </button>
+            </div>
+          )
         )}
       </div>
 
@@ -210,18 +279,6 @@ export function EventSheet({ open, onOpenChange, event, date }: { open: boolean;
             <p className="help" role="alert">
               끝 시간은 시작 시간보다 앞일 수 없어요
             </p>
-          )}
-          {(startTime || endTime) && (
-            <button
-              type="button"
-              className="btn ghost sm"
-              onClick={() => {
-                setStartTime("");
-                setEndTime("");
-              }}
-            >
-              시간 지우기
-            </button>
           )}
         </div>
       )}
