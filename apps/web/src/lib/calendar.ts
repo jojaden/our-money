@@ -260,3 +260,80 @@ function checkTitle(data: Data, c: Check, acc: Map<string, string>): string {
   if (c.kind === "event") return data.events.find((e) => e.id === key.split("@")[0])?.title ?? "지운 일정";
   return "정산";
 }
+
+/* ---------- 시간 ---------- */
+
+/** "19:30" → "오후 7시 30분" */
+export function clockText(t: string): string {
+  const [h, m] = t.split(":").map(Number);
+  return `${h < 12 ? "오전" : "오후"} ${h % 12 === 0 ? 12 : h % 12}시${m ? ` ${m}분` : ""}`;
+}
+
+/** "오후 7시", "오후 7시~9시 30분", "오전 11시~오후 1시", "오후 6시까지". 시간이 없으면 "" */
+export function timeText(e: Pick<CalEvent, "start_time" | "end_time">): string {
+  const a = e.start_time ? clockText(e.start_time) : "";
+  const b = e.end_time ? clockText(e.end_time) : "";
+  if (a && b) return `${a}~${a.slice(0, 2) === b.slice(0, 2) ? b.slice(3) : b}`;
+  return a || (b ? `${b}까지` : "");
+}
+
+const CLOCK = /(?:(오전|오후|아침|낮|저녁|밤|새벽)\s*)?(?:(\d{1,2})\s*시(?!간)(?:\s*(\d{1,2})\s*분|\s*(반))?|(\d{1,2}):(\d{2}))/y;
+
+/** pos 에서 시작하는 시각 하나. meridiem 이 없으면 inherit(범위의 앞 시각)를 쓴다 */
+function clockAt(text: string, pos: number, inherit?: string): { hm: string; end: number; meridiem?: string } | null {
+  CLOCK.lastIndex = pos;
+  const m = CLOCK.exec(text);
+  if (!m) return null;
+  const meridiem = m[1] ?? inherit;
+  let h = Number(m[2] ?? m[5]);
+  const min = m[4] ? 30 : Number(m[3] ?? m[6] ?? 0);
+  if (h > 24 || min > 59) return null;
+  if (meridiem === "오전" || meridiem === "아침" || meridiem === "새벽") h = h === 12 ? 0 : h;
+  else if (meridiem === "밤" && h === 12) h = 0;
+  else if (meridiem) h = h < 12 ? h + 12 : h;
+  // 오전·오후 없이 "3시"만 적으면 약속 시간으로 보고 1~6시는 오후로 (시간 칸에서 고칠 수 있다)
+  else if (m[2] && h >= 1 && h <= 6) h += 12;
+  h %= 24;
+  return { hm: `${String(h).padStart(2, "0")}:${String(min).padStart(2, "0")}`, end: CLOCK.lastIndex, meridiem };
+}
+
+/**
+ * 제목에 적은 시간을 떼어 낸다: "친구 약속 오후7시부터" → { title: "친구 약속", start: "19:00" }.
+ * "오후 7시~9시", "7시부터 9시까지", "19:00-21:30", "오후 6시까지"(끝 시간만), "3시 반". 처음 나온 것 하나만.
+ * 오전·오후가 없으면 1~6시는 오후, 제목에 저녁·밤이 있으면 오후로 본다 (떼어 낸 뒤 시간 칸에서 고칠 수 있다).
+ * 시간을 떼면 제목이 비거나 시간이 없으면 null.
+ */
+export function splitTime(title: string): { title: string; start: string | null; end: string | null; text: string } | null {
+  // 시각 바로 앞이 아니어도 "저녁 약속 7시"처럼 저녁·밤이 있으면 오후로 본다
+  const evening = /저녁|밤|퇴근/.test(title) ? "오후" : undefined;
+  for (let i = 0; i < title.length; i++) {
+    // 숫자 한가운데(예: 2026)에서는 시작하지 않는다
+    if (/\d/.test(title[i - 1] ?? "")) continue;
+    const a = clockAt(title, i, evening);
+    if (!a) continue;
+    let end = a.end;
+    let start: string | null = a.hm;
+    let until: string | null = null;
+    const sep = /\s*(?:부터|~|-|–)\s*/y;
+    sep.lastIndex = end;
+    if (sep.exec(title)) {
+      const b = clockAt(title, sep.lastIndex, a.meridiem);
+      if (b) {
+        until = b.hm < a.hm && Number(b.hm.slice(0, 2)) < 12 ? `${String(Number(b.hm.slice(0, 2)) + 12).padStart(2, "0")}${b.hm.slice(2)}` : b.hm;
+        end = b.end;
+      }
+    }
+    const tail = /\s*(부터|까지|에)?/y;
+    tail.lastIndex = end;
+    const t = tail.exec(title);
+    if (t?.[1] === "까지" && !until) {
+      until = start;
+      start = null;
+    }
+    end = tail.lastIndex;
+    const rest = `${title.slice(0, i)} ${title.slice(end)}`.replace(/\s+/g, " ").trim();
+    if (!rest) return null;
+    return { title: rest, start, end: until, text: title.slice(i, end).trim() };
+  }
+  return null;
+}

@@ -72,6 +72,8 @@ const FIELD: Record<string, string> = {
   pin: "알림 모음 고정",
   remind_days: "미리 알림",
   todo: "할 일",
+  start_time: "시작 시간",
+  end_time: "끝 시간",
 };
 
 const MONEY = new Set(["amount", "paid_amount", "budget", "goal_amount", "goal_start", "income_a", "income_b", "extra_income", "salary_a", "salary_b"]);

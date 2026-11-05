@@ -218,6 +218,9 @@ export interface CalEvent extends Meta {
   amount: number | null;
   /** 체크해서 끝내는 일 (끝낸 기록은 checks 의 event — 반복이면 회차마다) */
   todo: boolean;
+  /** 'HH:MM' 24시간. 비면 하루 종일 (기간이면 시작 시간은 첫날, 끝 시간은 끝 날) */
+  start_time: string | null;
+  end_time: string | null;
 }
 
 export const REPEAT_LABEL: Record<Repeat, string> = { none: "안 함", monthly: "매달", yearly: "매년" };

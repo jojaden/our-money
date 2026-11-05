@@ -7,6 +7,7 @@ import { REPEAT_LABEL } from "@/lib/types";
 import { useData } from "@/lib/store";
 import { nameOf } from "@/lib/calc";
 import { eul } from "@/lib/format";
+import { splitTime } from "@/lib/calendar";
 import { AmountInput, MAX_GOAL, Seg, Sheet, Toggle } from "./ui";
 
 /** 무엇을 만드나 — 맨 위에서 고르면 그에 맞는 칸만 나온다 */
@@ -14,7 +15,7 @@ type Kind = "todo" | "event" | "dday";
 
 const KIND: { value: Kind; label: string; help: string; hint: string }[] = [
   { value: "todo", label: "할 일", help: "끝내면 체크하는 일이에요. 이번 달 할 일에 모여요", hint: "예: 재산세 내기, 양도소득세 신고" },
-  { value: "event", label: "일정", help: "약속·계획이에요. 달력과 이번 달 일정에 보여요", hint: "예: 치과, 가족 모임, 여행" },
+  { value: "event", label: "일정", help: "약속·계획이에요. 달력과 이번 달 일정에 보여요", hint: "예: 친구 약속 오후 7시부터, 치과 3시 반" },
   { value: "dday", label: "D-day", help: "기념일·만기까지 남은 날을 세요. D-day 목록에 모여요", hint: "예: 결혼기념일, 전세 만기" },
 ];
 
@@ -41,7 +42,8 @@ function kindOf(e?: CalEvent): Kind {
  * - 할 일: 기한(하루 또는 기간), 낼 돈, D-day 세기, 기간이면 알림 모음 고정 → 끝내면 체크 (todo)
  * - 일정: 하루 또는 기간 (체크 없음)
  * - D-day: 하루 (dday)
- * 셋 다 반복(매달·매년)·누구·미리 알림·메모. 열 때마다 새 key 로 그려서 입력이 그 일정(또는 고른 날짜)에서 시작한다.
+ * 셋 다 반복(매달·매년)·누구·미리 알림·메모, 할 일·일정은 시간(선택). 제목에 "오후 7시부터"처럼 적으면 제목에서 떼어 시간 칸에 넣는다.
+ * 열 때마다 새 key 로 그려서 입력이 그 일정(또는 고른 날짜)에서 시작한다.
  */
 export function EventSheet({ open, onOpenChange, event, date }: { open: boolean; onOpenChange: (v: boolean) => void; event?: CalEvent; date: string }) {
   const { data, upsert, remove, toast } = useData();
@@ -58,17 +60,37 @@ export function EventSheet({ open, onOpenChange, event, date }: { open: boolean;
   const [remind, setRemind] = useState(event?.remind_days == null ? "" : String(event.remind_days));
   const [amount, setAmount] = useState(event?.amount ?? 0);
   const [note, setNote] = useState(event?.note ?? "");
+  const [startTime, setStartTime] = useState(event?.start_time ?? "");
+  const [endTime, setEndTime] = useState(event?.end_time ?? "");
+  /** 제목에서 떼어 시간 칸으로 옮긴 글 (예: "오후7시부터") */
+  const [moved, setMoved] = useState("");
 
   const k = KIND.find((x) => x.value === kind)!;
   const isRange = kind !== "dday" && ranged;
   const endBad = isRange && Boolean(end) && end < start;
-  const valid = title.trim().length > 0 && Boolean(start) && (!isRange || Boolean(end)) && !endBad;
+  const timed = kind !== "dday";
+  const timeBad = timed && !isRange && Boolean(startTime) && Boolean(endTime) && endTime < startTime;
+  const valid = title.trim().length > 0 && Boolean(start) && (!isRange || Boolean(end)) && !endBad && !timeBad;
+
+  /** 제목의 시간을 떼어 시간 칸에 넣는다 (다 적고 칸을 떠날 때, 저장할 때) */
+  const pullTime = () => {
+    const r = timed ? splitTime(title) : null;
+    if (!r) return null;
+    setTitle(r.title);
+    setStartTime(r.start ?? "");
+    setEndTime(r.end ?? "");
+    setMoved(r.text);
+    return r;
+  };
 
   const save = async () => {
     if (!valid) return;
+    const r = pullTime();
+    const st = r ? r.start : startTime || null;
+    const et = r ? r.end : endTime || null;
     const row: CalEvent = {
       id: event?.id ?? newId(),
-      title: title.trim(),
+      title: (r?.title ?? title).trim(),
       note: note.trim(),
       start_date: start,
       end_date: isRange ? end : null,
@@ -79,6 +101,8 @@ export function EventSheet({ open, onOpenChange, event, date }: { open: boolean;
       pin: kind === "todo" && isRange && pin,
       remind_days: remind === "" ? null : Number(remind),
       amount: kind === "todo" && amount > 0 ? amount : null,
+      start_time: timed ? st : null,
+      end_time: timed ? et : null,
       rev: event?.rev,
     };
     onOpenChange(false);
@@ -117,8 +141,24 @@ export function EventSheet({ open, onOpenChange, event, date }: { open: boolean;
       </div>
 
       <div className="field">
-        <label htmlFor="ev-title">이름</label>
-        <input id="ev-title" className="input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder={k.hint} maxLength={40} />
+        <label htmlFor="ev-title">제목</label>
+        <input
+          id="ev-title"
+          className="input"
+          value={title}
+          onChange={(e) => {
+            setTitle(e.target.value);
+            setMoved("");
+          }}
+          onBlur={() => void pullTime()}
+          placeholder={k.hint}
+          maxLength={40}
+        />
+        {moved && (
+          <p className="help" role="status">
+            &quot;{moved}&quot;{eul(moved).slice(moved.length)} 시간으로 옮겼어요
+          </p>
+        )}
       </div>
 
       <div className="field">
@@ -152,6 +192,39 @@ export function EventSheet({ open, onOpenChange, event, date }: { open: boolean;
           </p>
         )}
       </div>
+
+      {timed && (
+        <div className="field">
+          <span className="label">시간 (비우면 하루 종일)</span>
+          <div className="inline-fields">
+            <div className="field" style={{ marginTop: 0 }}>
+              <label htmlFor="ev-start-time">{isRange ? "첫날 시작" : "시작"}</label>
+              <input id="ev-start-time" type="time" className="input" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
+            </div>
+            <div className="field" style={{ marginTop: 0 }}>
+              <label htmlFor="ev-end-time">{isRange ? "끝 날 끝" : "끝"}</label>
+              <input id="ev-end-time" type="time" className="input" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
+            </div>
+          </div>
+          {timeBad && (
+            <p className="help" role="alert">
+              끝 시간은 시작 시간보다 앞일 수 없어요
+            </p>
+          )}
+          {(startTime || endTime) && (
+            <button
+              type="button"
+              className="btn ghost sm"
+              onClick={() => {
+                setStartTime("");
+                setEndTime("");
+              }}
+            >
+              시간 지우기
+            </button>
+          )}
+        </div>
+      )}
 
       <div className="field">
         <span className="label">반복</span>

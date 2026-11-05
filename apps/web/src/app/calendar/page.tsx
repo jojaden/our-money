@@ -6,7 +6,7 @@ import { Plus } from "lucide-react";
 import type { CalEvent } from "@/lib/types";
 import { useData } from "@/lib/store";
 import { actualAmount, findCheck, nameOf } from "@/lib/calc";
-import { ddayText, eventTodo, marksIn, monthGrid, nextOccurrence, spentByDay, type Mark } from "@/lib/calendar";
+import { ddayText, eventTodo, marksIn, monthGrid, nextOccurrence, spentByDay, timeText, type Mark } from "@/lib/calendar";
 import { dateWithDay, num, shortDate } from "@/lib/format";
 import { MonthHeader } from "@/components/MonthHeader";
 import { CategoryIcon, CheckButton, Money } from "@/components/ui";
@@ -42,7 +42,7 @@ function CheckMark({ m, onOpen }: { m: Mark; onOpen: () => void }) {
     }
     const e = m.event!;
     const t = eventTodo(data, m.occ!);
-    const when = m.occ!.start !== m.occ!.end ? `${shortDate(m.occ!.start)}~${shortDate(m.occ!.end)}` : "하루";
+    const when = [m.occ!.start !== m.occ!.end ? `${shortDate(m.occ!.start)}~${shortDate(m.occ!.end)}` : "", timeText(e)].filter(Boolean).join(" · ") || "하루";
     return {
       done: Boolean(t.check),
       by: t.check?.done_by ?? null,
@@ -102,7 +102,8 @@ export default function CalendarPage() {
 
   const monthSpent = [...spent.entries()].filter(([d]) => inMonth(d)).reduce((a, [, v]) => a + v, 0);
   const monthEvents = new Set([...marks.entries()].filter(([d]) => inMonth(d)).flatMap(([, ms]) => ms.filter((m) => m.event).map((m) => m.event!.id))).size;
-  const dayMarks = [...(marks.get(day) ?? [])].sort((a, b) => ORDER[a.kind] - ORDER[b.kind]);
+  // 일정이 먼저(하루 종일 → 시간 순), 그다음 월급날·카드값·이체
+  const dayMarks = [...(marks.get(day) ?? [])].sort((a, b) => ORDER[a.kind] - ORDER[b.kind] || (a.event?.start_time ?? "").localeCompare(b.event?.start_time ?? ""));
   const daySpendings = data.spendings.filter((x) => x.date === day).sort((a, b) => b.created_at.localeCompare(a.created_at));
   const ddays = data.events
     .filter((e) => e.dday)
@@ -192,7 +193,7 @@ export default function CalendarPage() {
                             {m.title}
                           </div>
                           <div className="s">
-                            {m.occ && m.occ.start !== m.occ.end ? `${shortDate(m.occ.start)}~${shortDate(m.occ.end)}` : "하루"}
+                            {[m.occ && m.occ.start !== m.occ.end ? `${shortDate(m.occ.start)}~${shortDate(m.occ.end)}` : "", timeText(m.event)].filter(Boolean).join(" · ") || "하루"}
                             {m.event.owner !== "joint" ? ` · ${nameOf(s, m.event.owner)}` : ""}
                             {m.event.note ? ` · ${m.event.note}` : ""}
                           </div>

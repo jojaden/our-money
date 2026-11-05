@@ -24,7 +24,7 @@ import {
   type TransferIssue,
 } from "@/lib/calc";
 import { num, parseYmd, shortDate } from "@/lib/format";
-import { eventTodos, type EventTodo } from "@/lib/calendar";
+import { eventTodos, timeText, type EventTodo } from "@/lib/calendar";
 import { useData } from "@/lib/store";
 
 export type TaskKind = "transfer" | "pay" | "card" | "settle" | "event";
@@ -230,7 +230,7 @@ export function eventTasks(data: Data, from: string, to: string, toggleCheck: Re
       key: t.id,
       kind: "event",
       title: e.title,
-      sub: [start === end ? shortDate(start) : `${shortDate(start)}~${shortDate(end)}`, e.owner !== "joint" ? nameOf(s, e.owner) : "", e.note].filter(Boolean).join(" · "),
+      sub: [start === end ? shortDate(start) : `${shortDate(start)}~${shortDate(end)}`, timeText(e), e.owner !== "joint" ? nameOf(s, e.owner) : "", e.note].filter(Boolean).join(" · "),
       amount: e.amount ?? 0,
       due: end,
       done: Boolean(t.check),

@@ -811,6 +811,19 @@ alter table public.events add column if not exists todo boolean not null default
 alter table public.checks drop constraint if exists checks_kind_check;
 alter table public.checks add constraint checks_kind_check check (kind in ('transfer', 'card', 'settle', 'event'));
 
+-- 012 시간: 'HH:MM' (비면 하루 종일)
+alter table public.events add column if not exists start_time text;
+alter table public.events add column if not exists end_time text;
+do $$
+begin
+  if not exists (select 1 from pg_constraint where conname = 'events_time_ok' and conrelid = 'public.events'::regclass) then
+    alter table public.events add constraint events_time_ok check (
+      (start_time is null or start_time ~ '^([01][0-9]|2[0-3]):[0-5][0-9]$')
+      and (end_time is null or end_time ~ '^([01][0-9]|2[0-3]):[0-5][0-9]$')
+    );
+  end if;
+end $$;
+
 -- 접근: 멤버만, 익명 키는 아무것도
 alter table public.events enable row level security;
 drop policy if exists "members only" on public.events;

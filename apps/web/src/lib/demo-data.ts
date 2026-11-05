@@ -229,6 +229,8 @@ function demoEvents(today: string): CalEvent[] {
     remind_days: 3,
     amount: null,
     todo: false,
+    start_time: null,
+    end_time: null,
     ...e,
   });
   return [
@@ -238,8 +240,8 @@ function demoEvents(today: string): CalEvent[] {
     ev({ id: "ev-anniv", title: "결혼기념일", start_date: `${y - 2}-11-21`, remind_days: 7 }),
     ev({ id: "ev-car", title: "자동차보험 갱신", start_date: `${y}-12-10`, owner: "a", remind_days: 14, dday: false, todo: true }),
     ev({ id: "ev-bill", title: "관리비 고지서 확인", start_date: `${y}-01-05`, repeat: "monthly", dday: false, remind_days: null, todo: true }),
-    ev({ id: "ev-meet", title: "동창 모임", start_date: shift(today, -3), repeat: "none", owner: "a", dday: false, remind_days: null }),
-    ev({ id: "ev-dentist", title: "치과 정기검진", start_date: shift(today, 4), repeat: "none", owner: "b", dday: false, remind_days: 1, note: "오후 3시" }),
+    ev({ id: "ev-meet", title: "동창 모임", start_date: shift(today, -3), repeat: "none", owner: "a", dday: false, remind_days: null, start_time: "19:00" }),
+    ev({ id: "ev-dentist", title: "치과 정기검진", start_date: shift(today, 4), repeat: "none", owner: "b", dday: false, remind_days: 1, start_time: "15:00", end_time: "16:00" }),
     ev({ id: "ev-trip", title: "가족 여행", start_date: shift(today, 10), end_date: shift(today, 12), repeat: "none", dday: false, remind_days: 7 }),
   ];
 }

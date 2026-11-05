@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useData } from "@/lib/store";
 import { nameOf } from "@/lib/calc";
-import { calendarMonth, ddayText, summarize, weekOf, type Range } from "@/lib/calendar";
+import { calendarMonth, ddayText, summarize, timeText, weekOf, type Range } from "@/lib/calendar";
 import { categoryName, categoryVisual, spendingVisual } from "@/lib/categories";
 import { dateWithDay, monthLabel, num, parseYmd, shortDate } from "@/lib/format";
 import { CategoryIcon, Money, TextTabs, Who } from "./ui";
@@ -231,7 +231,7 @@ export function PeriodSummary({ month, day, className = "" }: { month: string; d
                         <i className={`mark-dot k-event ${o.event.owner}`} aria-hidden="true" />
                         {o.event.title}
                       </div>
-                      <div className="s">{o.start === o.end ? dateWithDay(o.start) : `${shortDate(o.start)} ~ ${shortDate(o.end)}`}</div>
+                      <div className="s">{[o.start === o.end ? dateWithDay(o.start) : `${shortDate(o.start)} ~ ${shortDate(o.end)}`, timeText(o.event)].filter(Boolean).join(" · ")}</div>
                     </div>
                     <div className="r">
                       {o.event.amount ? <Money value={o.event.amount} /> : null}

@@ -6,7 +6,7 @@ import type { CalEvent } from "@/lib/types";
 import { REPEAT_LABEL } from "@/lib/types";
 import { useData } from "@/lib/store";
 import { nameOf, periodOf } from "@/lib/calc";
-import { ddayText, occurrences } from "@/lib/calendar";
+import { ddayText, occurrences, timeText } from "@/lib/calendar";
 import { monthLabel, parseYmd, shortDate } from "@/lib/format";
 import { byUrgency, eventTasks, useTasks } from "./tasks";
 import { TaskRow } from "./TaskRow";
@@ -34,7 +34,7 @@ export function MonthTodo({ month, onOpenEvent, className = "" }: { month: strin
       data.events
         .filter((e) => !e.todo)
         .flatMap((e) => occurrences(e, p.start, p.last))
-        .sort((a, b) => a.start.localeCompare(b.start) || a.event.title.localeCompare(b.event.title)),
+        .sort((a, b) => a.start.localeCompare(b.start) || (a.event.start_time ?? "").localeCompare(b.event.start_time ?? "") || a.event.title.localeCompare(b.event.title)),
     [data.events, p.start, p.last],
   );
   const [open, setOpen] = useState(false);
@@ -101,7 +101,7 @@ export function MonthTodo({ month, onOpenEvent, className = "" }: { month: strin
                           <div style={{ minWidth: 0 }}>
                             <div className="t">{e.title}</div>
                             <div className="s">
-                              {[o.start === o.end ? "" : `${shortDate(o.start)}~${shortDate(o.end)}`, e.repeat !== "none" ? REPEAT_LABEL[e.repeat] : "", e.owner !== "joint" ? nameOf(s, e.owner) : "", e.note]
+                              {[o.start === o.end ? "" : `${shortDate(o.start)}~${shortDate(o.end)}`, timeText(e), e.repeat !== "none" ? REPEAT_LABEL[e.repeat] : "", e.owner !== "joint" ? nameOf(s, e.owner) : "", e.note]
                                 .filter(Boolean)
                                 .join(" · ") || "하루"}
                             </div>
