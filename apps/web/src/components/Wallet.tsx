@@ -427,6 +427,7 @@ function PassDetail({ p, from, onClose, onEdit }: { p: PassInfo; from: DOMRect; 
         </button>
         <div className="pass-more">
           <div className="ptiles">{tiles}</div>
+          {a.note && <p className="pass-note">{a.note}</p>}
           {list}
         </div>
       </div>
