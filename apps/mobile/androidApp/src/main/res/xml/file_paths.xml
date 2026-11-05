@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- FileProvider 가 내줄 수 있는 곳: 일정 내보내기 파일을 두는 캐시의 exports/ 하나뿐 -->
+<paths>
+    <cache-path name="exports" path="exports/" />
+</paths>

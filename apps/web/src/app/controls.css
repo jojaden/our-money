@@ -418,3 +418,7 @@ button.row:active, a.row:active { background: var(--well); transform: scale(0.98
 .alert-ic.a { background: var(--a-soft); color: var(--a-ink, var(--text)); }
 .alert-ic.b { background: var(--b-soft); color: var(--b-ink, var(--text)); }
 .alert-ic.dday { background: var(--warm-100); color: var(--warning); }
+
+/* 일정 내보내기: 옮기는 법 — 앱 이름을 굵게 앞에 두고 한 줄씩 */
+.howto { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; color: var(--muted); font: 400 14px/21px var(--font-text); }
+.howto b { margin-right: 6px; color: var(--text); font-weight: 600; }
