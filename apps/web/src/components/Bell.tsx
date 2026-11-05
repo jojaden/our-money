@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Bell, CalendarDays, Heart, Wallet } from "lucide-react";
+import { Bell, CalendarCheck, CalendarDays, Heart, Wallet } from "lucide-react";
 import type { Person } from "@/lib/types";
 import { useData } from "@/lib/store";
 import { addMonths, currentMonth, nameOf, paydayDate, periodOf } from "@/lib/calc";
@@ -11,6 +11,7 @@ import { dateWithDay, parseYmd } from "@/lib/format";
 import { byUrgency, dueState, eventTasks, useTasks, waiting, type Task } from "./tasks";
 import { TaskRow } from "./TaskRow";
 import { afterSheet, Sheet } from "./ui";
+import { usePendingClose } from "./ClosePrompt";
 
 const SEEN_KEY = "our-money-bell-seen";
 /** 월급날은 며칠 전부터 알리나 */
@@ -99,18 +100,21 @@ const ICON = { payday: Wallet, event: CalendarDays, dday: Heart };
 /**
  * 종 — 폰은 위쪽 막대 오른쪽 톱니(설정) 옆, 데스크톱은 레일 아래 톱니 위(rail).
  * 숫자는 이 기기에서 마지막으로 연 뒤 새로 생긴 알림 수(DB 에 남기지 않는다 — 두 사람·기기마다 따로).
- * 열면 모두 본 것으로 하고, 시트 안에서 할 일·이체를 바로 체크한다(끝내면 목록에서 스르륵 빠진다). 다가오는 날을 누르면 그 화면으로.
+ * 열면 모두 본 것으로 하고, 시트 안에서 지난달 마감·할 일·이체를 바로 한다(끝내면 목록에서 스르륵 빠진다). 다가오는 날을 누르면 그 화면으로.
  */
 export function BellButton({ rail = false }: { rail?: boolean }) {
   const router = useRouter();
   const a = useAlerts();
+  // 지난달을 아직 마감하지 않았으면 맨 위에 (홈 카드에서 "나중에"를 눌러도 여기엔 남는다)
+  const close = usePendingClose();
+  const keys = close ? [`close:${close.month}`, ...a.keys] : a.keys;
   const [open, setOpen] = useState(false);
   const [seen, setSeen] = useState(readSeen);
-  const unseen = a.keys.filter((k) => !seen.has(k)).length;
+  const unseen = keys.filter((k) => !seen.has(k)).length;
 
   const show = () => {
     // 지금 있는 것만 남겨 쌓이지 않게
-    const now = new Set(a.keys);
+    const now = new Set(keys);
     setSeen(now);
     try {
       localStorage.setItem(SEEN_KEY, JSON.stringify([...now]));
@@ -121,7 +125,7 @@ export function BellButton({ rail = false }: { rail?: boolean }) {
     afterSheet(() => router.push(href));
     setOpen(false);
   };
-  const empty = a.keys.length === 0;
+  const empty = keys.length === 0;
 
   const group = (title: string, tasks: Task[]) =>
     tasks.length > 0 && (
@@ -149,10 +153,31 @@ export function BellButton({ rail = false }: { rail?: boolean }) {
       <Sheet open={open} onOpenChange={setOpen} title="알림">
         {empty ? (
           <p className="empty" key="empty">
-            지금 챙길 것이 없어요. 기한이 3일 안으로 다가온 이체·납부·할 일, 다가오는 월급날, 미리 알림을 켠 일정이 여기에 모여요.
+            지금 챙길 것이 없어요. 마감하지 않은 지난달, 기한이 3일 안으로 다가온 이체·납부·할 일, 다가오는 월급날, 미리 알림을 켠 일정이 여기에 모여요.
           </p>
         ) : (
           <>
+            {close && (
+              <div className="field" key="close">
+                <h3 className="sum-h">지난달 마무리</h3>
+                <div className="rows" style={{ ["--inset" as string]: "52px" }}>
+                  <div className="row">
+                    <span className="alert-ic" aria-hidden="true">
+                      <CalendarCheck />
+                    </span>
+                    <div style={{ minWidth: 0 }}>
+                      <div className="t">{close.label}을 마감할까요?</div>
+                      <div className="s">{close.summary}</div>
+                    </div>
+                    <div className="r">
+                      <button type="button" className="btn sm" onClick={() => void close.close()}>
+                        마감하기
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
             {group("기간 동안 고정", a.pinned)}
             {group("지난 것", a.late)}
             {group("오늘·곧", a.soon)}

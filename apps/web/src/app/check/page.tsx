@@ -215,15 +215,13 @@ export default function CheckPage() {
           { name: "카드값", count: bills.length },
         ].filter((c) => c.count > 0)}
         next={
-          // 아직 마감 전이면 아래 "마무리"로 (메모를 남기고 마감), 마감했으면 다음 달 플랜으로
-          monthRow(data, month)?.closed_at
-            ? {
-                title: `${monthLabel(next)} 플랜 ${nextReady ? "미리 보기" : "미리 만들기"}`,
-                sub: nextReady ? "다음 달 배분을 미리 살펴봐요" : "이번 달 배분을 그대로 이어받아요",
-                href: "/plan",
-                onGo: () => setMonth(next),
-              }
-            : { title: `${monthLabel(month)} 마감하기`, sub: "메모를 남기고 이달을 마무리해요", href: "/check#month-close", onGo: () => {} }
+          // 이번 달은 끝난 뒤에 마감한다(새 달이 되면 홈·종이 묻는다) → 다음 달 플랜으로
+          {
+            title: `${monthLabel(next)} 플랜 ${nextReady ? "미리 보기" : "미리 만들기"}`,
+            sub: nextReady ? "다음 달 배분을 미리 살펴봐요" : "이번 달 배분을 그대로 이어받아요",
+            href: "/plan",
+            onGo: () => setMonth(next),
+          }
         }
       />
     </>

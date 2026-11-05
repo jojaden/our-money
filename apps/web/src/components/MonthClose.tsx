@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { useData } from "@/lib/store";
-import { monthRow } from "@/lib/calc";
-import { monthLabel } from "@/lib/format";
+import { currentMonth, monthRow, periodOf } from "@/lib/calc";
+import { addDays } from "@/lib/calendar";
+import { monthLabel, parseYmd } from "@/lib/format";
 import { haptic } from "@/lib/native";
 
 /** DB 한도 (migrations/005 months_text_len) */
@@ -11,10 +12,11 @@ const MAX_NOTE = 500;
 
 /**
  * 체크 화면 맨 아래 — 그달 메모와 마감. 마감은 표시만 하고 잠그지 않는다(고치기는 그대로, 다시 열 수 있다).
+ * 마감은 그달이 끝난 뒤에만 한다 — 이번 달에는 언제부터 마감할 수 있는지만 알리고, 새 달이 되면 홈·종이 묻는다(ClosePrompt).
  * 메모 입력은 저장한 값과 다를 때만 저장 버튼이 나온다. 다른 폰에서 바뀐 메모는 입력 중이 아닐 때 따라온다.
  */
 export function MonthClose({ month }: { month: string }) {
-  const { data, upsert, toast } = useData();
+  const { data, today, upsert, toast } = useData();
   const m = monthRow(data, month);
   const saved = m?.note ?? "";
   const [draft, setDraft] = useState<string | null>(null);
@@ -23,6 +25,8 @@ export function MonthClose({ month }: { month: string }) {
   const dirty = draft !== null && draft.trim() !== saved;
   const label = monthLabel(month);
   const closed = m.closed_at ? new Date(m.closed_at) : null;
+  const ended = month < currentMonth(data.settings.cycle_start, today);
+  const opens = parseYmd(addDays(periodOf(month, data.settings.cycle_start).last, 1));
 
   const saveNote = async () => {
     const ok = await upsert("months", [{ ...m, note: note.trim() }]);
@@ -38,7 +42,7 @@ export function MonthClose({ month }: { month: string }) {
     const ok = await upsert("months", [{ ...m, note: note.trim(), closed_at: on ? new Date().toISOString() : null }]);
     if (!ok) return;
     setDraft(null);
-    toast(on ? `${label}을 마감했어요` : `${label}을 다시 열었어요`);
+    toast(on ? `${label}을 마감했어요` : `${label}을 다시 열었어요`, () => void upsert("months", [{ ...m, closed_at: m.closed_at ?? null }]));
   };
 
   return (
@@ -80,10 +84,14 @@ export function MonthClose({ month }: { month: string }) {
                 다시 열기
               </button>
             </>
-          ) : (
+          ) : ended ? (
             <button type="button" className="btn block" onClick={() => void setClosed(true)}>
               {label} 마감하기
             </button>
+          ) : (
+            <span className="s">
+              {opens.getMonth() + 1}월 {opens.getDate()}일부터 마감할 수 있어요
+            </span>
           )}
         </div>
       </div>
