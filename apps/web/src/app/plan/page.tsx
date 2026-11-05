@@ -5,7 +5,7 @@ import { Plus, Pencil, Download } from "lucide-react";
 import { ImportSheet } from "@/components/ImportSheet";
 import type { Group, MonthItem, PlanItem } from "@/lib/types";
 import { GROUP_LABEL, GROUP_ORDER, METHOD_LABEL } from "@/lib/types";
-import { useData } from "@/lib/store";
+import { blankMonth, useData } from "@/lib/store";
 import { goalProgress, groupTotals, incomeOf, itemsOf, lanes, monthRow, nameOf, ratioA, sum } from "@/lib/calc";
 import { monthLabel, num } from "@/lib/format";
 import { FirstRun, MonthHeader } from "@/components/MonthHeader";
@@ -17,19 +17,12 @@ import { IncomeSheet, ItemSheet } from "@/components/ItemSheet";
 export default function PlanPage() {
   const { data, month } = useData();
   const s = data.settings;
-  const m = monthRow(data, month);
+  // 아직 시작하지 않은 달도 빈 플랜을 그대로 보여 준다 (항목·월급을 처음 저장하면 그 달이 생긴다)
+  const saved = monthRow(data, month);
+  const m = saved ?? blankMonth(data, month);
   const [sheet, setSheet] = useState<{ open: boolean; item?: MonthItem; group?: Group }>({ open: false });
   const [incomeOpen, setIncomeOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
-
-  if (!m) {
-    return (
-      <>
-        <MonthHeader title={(l) => `${l} 플랜`} />
-        <FirstRun />
-      </>
-    );
-  }
 
   const items = itemsOf(data, month);
   const totals = groupTotals(items);
@@ -125,12 +118,14 @@ export default function PlanPage() {
             </>
           )}
         </p>
-        {data.months.length > 1 && (
+        {saved && data.months.length > 1 && (
           <button type="button" className="btn secondary sm import-btn" onClick={() => setImportOpen(true)}>
             <Download aria-hidden="true" /> 다른 달에서 불러오기
           </button>
         )}
       </MonthHeader>
+
+      {!saved && <FirstRun inPlan />}
 
       <div className="grid">
         <div className="col span-7">

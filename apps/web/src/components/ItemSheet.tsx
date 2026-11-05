@@ -4,9 +4,9 @@ import { useEffect, useMemo, useState } from "react";
 import { Trash2 } from "lucide-react";
 import type { Group, Method, MonthItem, Owner, PlanItem } from "@/lib/types";
 import { GROUP_LABEL, METHOD_LABEL } from "@/lib/types";
-import { useData } from "@/lib/store";
+import { blankMonth, useData } from "@/lib/store";
 import { deleteOp, upsertOp, type Op } from "@/lib/repo";
-import { nameOf } from "@/lib/calc";
+import { monthRow, nameOf } from "@/lib/calc";
 import { monthLabel } from "@/lib/format";
 import { AmountInput, MAX_GOAL, Seg, Sheet, Toggle } from "./ui";
 
@@ -94,6 +94,7 @@ export function ItemSheet({
     };
     // 플랜 항목과 이번 달 항목을 한 트랜잭션으로 (하나만 저장되고 끝나지 않게)
     const ops: Op[] = [];
+    // 빈 플랜(아직 시작하지 않은 달)에 처음 넣는 항목이면 그 달도 같이 만든다
     let planId = item?.plan_item_id ?? null;
     if (forward) {
       planId = planId ?? newId("pi");
@@ -133,7 +134,10 @@ export function ItemSheet({
       rev: item?.rev,
     };
     // 나중 달부터 시작하는 새 항목은 이번 달에는 넣지 않는다
-    if (!later) ops.push(upsertOp("month_items", [row]));
+    if (!later) {
+      if (!monthRow(data, month)) ops.push(upsertOp("months", [blankMonth(data, month)], { ignoreDuplicates: true }));
+      ops.push(upsertOp("month_items", [row]));
+    }
     onOpenChange(false);
     if (!(await batch(ops))) return;
     toast(later ? `저장했어요 · ${monthLabel(startM)}부터 들어가요` : forward ? "저장했어요 · 다음 달부터도 적용" : "이번 달만 바꿨어요");
@@ -309,21 +313,22 @@ export function ItemSheet({
 export function IncomeSheet({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
   const { data, month, upsert, toast } = useData();
   const s = data.settings;
-  const m = data.months.find((x) => x.id === month);
+  const saved = data.months.find((x) => x.id === month);
+  // 빈 플랜이면 지난달(없으면 설정) 월급으로 채운 새 달 — 저장하면 그 달이 시작된다
+  const m = useMemo(() => saved ?? blankMonth(data, month), [saved, data, month]);
   const [a, setA] = useState(0);
   const [b, setB] = useState(0);
   const [extra, setExtra] = useState(0);
   const [note, setNote] = useState("");
 
   useEffect(() => {
-    if (!open || !m) return;
+    if (!open) return;
     setA(m.income_a);
     setB(m.income_b);
     setExtra(m.extra_income);
     setNote(m.extra_note);
   }, [open, m]);
 
-  if (!m) return null;
   return (
     <Sheet
       open={open}

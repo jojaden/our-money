@@ -50,6 +50,22 @@ interface Store {
   dismissToast: (id: number) => void;
 }
 
+/**
+ * 아직 없는 달의 줄 — 월급은 가져올 달(없으면 지난달, 그것도 없으면 설정)에서.
+ * 이 줄이 생기면 그 달이 시작된 것으로 본다 (빈 플랜에 항목·월급을 처음 저장할 때 같이 만든다).
+ */
+export function blankMonth(data: Data, m: string, from?: string | null): Month {
+  const src = from ? monthRow(data, from) : monthRow(data, addMonths(m, -1));
+  return {
+    id: m,
+    income_a: src?.income_a ?? data.settings.salary_a,
+    income_b: src?.income_b ?? data.settings.salary_b,
+    extra_income: 0,
+    extra_note: "",
+    created_at: new Date().toISOString(),
+  };
+}
+
 const Ctx = createContext<Store | null>(null);
 
 export function useStore(): Store {
@@ -523,15 +539,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const startMonth = useCallback(
     async (m: string, opts: { from?: string | null; oneOffs?: boolean } = {}) => {
       if (!data) return false;
-      const src = opts.from ? monthRow(data, opts.from) : monthRow(data, addMonths(m, -1));
-      const row: Month = {
-        id: m,
-        income_a: src?.income_a ?? data.settings.salary_a,
-        income_b: src?.income_b ?? data.settings.salary_b,
-        extra_income: 0,
-        extra_note: "",
-        created_at: new Date().toISOString(),
-      };
+      const row = blankMonth(data, m, opts.from);
       const items = (opts.from ? itemsFromMonth(data, opts.from, m, { oneOffs: opts.oneOffs }) : snapshotItems(m, data.plan_items)).map(fresh);
       // 달과 항목을 한 트랜잭션으로: 달만 생기고 항목이 빠진 반쪽 달이 남지 않게
       return batch([upsertOp("months", [row], { ignoreDuplicates: true }), upsertOp("month_items", items, { ignoreDuplicates: true })]);

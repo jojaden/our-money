@@ -5,6 +5,7 @@ import { currentMonth, itemsFromMonth, itemsOf, latestMonthBefore, monthRow, per
 import { useState } from "react";
 import { monthLabel, parseYmd } from "@/lib/format";
 import { Toggle } from "./ui";
+import Link from "next/link";
 import { Plus } from "lucide-react";
 import { useSheets } from "./Shell";
 
@@ -54,83 +55,62 @@ function HeadAction() {
   );
 }
 
-export function FirstRun() {
+/**
+ * 아직 시작하지 않은 달. 지난 플랜(없으면 반복 항목)을 한 번에 가져오는 버튼 하나만 둔다.
+ * 플랜 화면(inPlan)은 이 카드 아래에 빈 플랜을 그대로 보여서 하나씩 추가할 수 있고,
+ * 홈·체크는 플랜으로 가는 길을 함께 보여 준다. 항목·월급을 처음 저장하면 그 달이 시작된다.
+ */
+export function FirstRun({ inPlan = false }: { inPlan?: boolean }) {
   const { data, month, startMonth, toast } = useData();
   const from = latestMonthBefore(data, month);
   const [oneOffs, setOneOffs] = useState(false);
   const activeCount = data.plan_items.filter((p) => p.active).length;
   const carried = from ? itemsFromMonth(data, from, month, { oneOffs }) : [];
   const oneOffCount = from ? itemsOf(data, from).filter((i) => !i.plan_item_id).length : 0;
+  const label = monthLabel(month);
 
-  if (!from && activeCount === 0) {
-    return (
-      <section className="card firstrun">
-        <h2>{monthLabel(month)} 플랜이 아직 없어요</h2>
-        <p>설정에서 계좌·카드와 월급통장을 먼저 정하고, 플랜에 월세·보험·생활비·용돈·적금 항목을 추가하면 매달 이체 목록이 자동으로 만들어져요.</p>
-        <button type="button" className="btn" onClick={() => void startMonth(month)}>
-          빈 플랜으로 시작하기
-        </button>
-      </section>
-    );
-  }
+  const source = from ? `${monthLabel(from)} 플랜` : activeCount > 0 ? `반복 항목 ${activeCount}개` : null;
+  const lead = from
+    ? `${monthLabel(from)} 플랜을 가져오면 항목 ${carried.length}개와 월급, 그달에 바꾼 금액까지 그대로 이어져요. 체크는 새로 시작해요.`
+    : activeCount > 0
+      ? `플랜에서 "다음 달부터도 적용"으로 저장한 반복 항목 ${activeCount}개를 가져올 수 있어요.`
+      : "설정에서 계좌·카드와 월급통장을 먼저 정하고, 플랜에 월세·보험·생활비·용돈·적금 항목을 추가하면 매달 이체 목록이 만들어져요.";
 
   return (
-    <section className="card firstrun">
-      <h2>{monthLabel(month)} 플랜이 아직 없어요</h2>
-      {from ? (
-        <>
-          <p>
-            {monthLabel(from)} 플랜을 그대로 가져와요. 항목 {carried.length}개, 그달에 바꾼 금액과 월급까지 이어져요. 체크는 새로 시작해요.
-          </p>
-          {oneOffCount > 0 && (
-            <div className="switchrow" style={{ marginTop: 14 }}>
-              <div>
-                <div className="t">‘이번 달만’ 항목도 가져오기</div>
-                <div className="s">{monthLabel(from)}에만 넣었던 항목 {oneOffCount}개</div>
-              </div>
-              <Toggle on={oneOffs} onChange={setOneOffs} label="이번 달만 항목도 가져오기" />
-            </div>
-          )}
-          <div className="firstrun-actions">
-            <button
-              type="button"
-              className="btn"
-              onClick={async () => {
-                if (!(await startMonth(month, { from, oneOffs }))) return;
-                toast(`${monthLabel(from)} 플랜을 그대로 가져왔어요`);
-              }}
-            >
-              {monthLabel(from)} 플랜 그대로 가져오기
-            </button>
-            {activeCount > 0 && (
-              <button
-                type="button"
-                className="btn secondary"
-                onClick={async () => {
-                  if (!(await startMonth(month))) return;
-                  toast(`반복 항목 ${activeCount}개로 만들었어요`);
-                }}
-              >
-                반복 항목으로 새로
-              </button>
-            )}
+    <section className={`card firstrun ${inPlan ? "inplan" : ""}`}>
+      <h2>{label} 플랜이 비어 있어요</h2>
+      <p>
+        {lead}
+        {inPlan ? " 가져오지 않고 아래에서 하나씩 추가해도 돼요." : ""}
+      </p>
+      {from && oneOffCount > 0 && (
+        <div className="switchrow" style={{ marginTop: 14 }}>
+          <div>
+            <div className="t">‘이번 달만’ 항목도 가져오기</div>
+            <div className="s">{monthLabel(from)}에만 넣었던 항목 {oneOffCount}개</div>
           </div>
-        </>
-      ) : (
-        <>
-          <p>반복 항목 {activeCount}개로 {monthLabel(month)} 플랜을 만들어요. 월급은 설정에 적은 금액으로 시작하고, 만든 뒤에 이번 달만 바꿀 수 있어요.</p>
+          <Toggle on={oneOffs} onChange={setOneOffs} label="이번 달만 항목도 가져오기" />
+        </div>
+      )}
+      <div className="firstrun-actions">
+        {source && (
           <button
             type="button"
             className="btn"
             onClick={async () => {
-              if (!(await startMonth(month))) return;
-              toast(`${monthLabel(month)} 플랜을 만들었어요`);
+              if (!(await startMonth(month, { from, oneOffs }))) return;
+              toast(from ? `${monthLabel(from)} 플랜을 가져왔어요` : `반복 항목 ${activeCount}개를 가져왔어요`);
             }}
           >
-            {monthLabel(month)} 플랜 시작하기
+            {source} 가져오기
           </button>
-        </>
-      )}
+        )}
+        {!inPlan && (
+          <Link className="btn secondary" href="/plan">
+            플랜에서 하나씩 만들기
+          </Link>
+        )}
+      </div>
     </section>
   );
 }
