@@ -3,11 +3,11 @@
 import { useState } from "react";
 import { Plus, Pencil, Download } from "lucide-react";
 import { ImportSheet } from "@/components/ImportSheet";
-import type { Group, MonthItem } from "@/lib/types";
+import type { Group, MonthItem, PlanItem } from "@/lib/types";
 import { GROUP_LABEL, GROUP_ORDER, METHOD_LABEL } from "@/lib/types";
 import { useData } from "@/lib/store";
 import { goalProgress, groupTotals, incomeOf, itemsOf, lanes, monthRow, nameOf, ratioA, sum } from "@/lib/calc";
-import { num } from "@/lib/format";
+import { monthLabel, num } from "@/lib/format";
 import { FirstRun, MonthHeader } from "@/components/MonthHeader";
 import { Money, Who } from "@/components/ui";
 import { PayFlow } from "@/components/PayFlow";
@@ -75,7 +75,7 @@ export default function PlanPage() {
                       <div className="t">{i.name}</div>
                       <div className="s">
                         {[i.due_day ? `${i.due_day}일` : null, METHOD_LABEL[i.method], where].filter(Boolean).join(" · ")}
-                        {!i.plan_item_id ? " · 이번 달만" : ""}
+                        {!i.plan_item_id ? " · 이번 달만" : periodText(data.plan_items.find((p) => p.id === i.plan_item_id))}
                       </div>
                     </div>
                     <div className="r">
@@ -213,4 +213,11 @@ export default function PlanPage() {
       <ImportSheet open={importOpen} onOpenChange={setImportOpen} />
     </>
   );
+}
+
+/** 플랜 항목의 기간 — " · 3월~8월", " · 12월까지", " · 3월부터" (정하지 않았으면 빈 글) */
+function periodText(p: PlanItem | undefined): string {
+  if (!p || (!p.start_month && !p.end_month)) return "";
+  if (p.start_month && p.end_month) return ` · ${monthLabel(p.start_month)}~${monthLabel(p.end_month)}`;
+  return p.end_month ? ` · ${monthLabel(p.end_month)}까지` : ` · ${monthLabel(p.start_month!)}부터`;
 }

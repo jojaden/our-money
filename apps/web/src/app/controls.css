@@ -267,6 +267,9 @@ button.row:active, a.row:active { background: var(--well); transform: scale(0.98
   background-position: right 12px center;
 }
 .inline-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+/* 날짜·달 입력은 글자 폭만큼 커지려 해서, 두 칸이 시트 밖으로 밀리지 않게 */
+.inline-fields > * { min-width: 0; }
+.inline-fields .input[type="month"] { min-width: 0; width: 100%; }
 
 /* 켜고 끄기 */
 .switchrow { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 6px 0; }
