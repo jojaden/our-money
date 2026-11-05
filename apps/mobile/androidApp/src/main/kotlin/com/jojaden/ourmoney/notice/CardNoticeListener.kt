@@ -3,9 +3,11 @@ package com.jojaden.ourmoney.notice
 import android.app.Notification
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
+import com.jojaden.ourmoney.core.notice.parseNotice
 
 /**
- * 카드 결제 알림 읽기. 지금은 해석하지 않고 결제처럼 보이는 알림만 폰 안에 모은다(NoticeSamples).
+ * 카드 결제 알림 읽기. 결제처럼 보이는 알림을 폰 안에 모으고(NoticeSamples), 읽은 돈이 이번 달 할 일과 맞으면 알린다(Matching).
+ * 해석과 맞추기는 모두 폰 안에서만 한다.
  * 시스템만 이 서비스에 붙을 수 있다 (매니페스트의 BIND_NOTIFICATION_LISTENER_SERVICE 권한).
  * 보낸 앱은 sbn.packageName 으로 본다 — 시스템이 채우는 값이라 다른 앱이 흉내 낼 수 없다.
  */
@@ -18,6 +20,7 @@ class CardNoticeListener : NotificationListenerService() {
         val text = (extras.getCharSequence(Notification.EXTRA_BIG_TEXT) ?: extras.getCharSequence(Notification.EXTRA_TEXT))?.toString().orEmpty()
         if (!looksLikePayment(sbn.packageName, "$title\n$text")) return
         NoticeSamples.add(this, NoticeSample(sbn.postTime, sbn.packageName, title, text))
+        parseNotice(title, text)?.let { onPayment(this, it, sbn.postTime) }
     }
 
     companion object {

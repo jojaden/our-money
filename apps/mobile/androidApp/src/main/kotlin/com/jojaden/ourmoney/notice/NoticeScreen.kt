@@ -36,8 +36,10 @@ private val Card = Color(0xFFFFFFFF)
 @Composable
 fun NoticeScreen(
     enabled: Boolean,
+    canNotify: Boolean,
     samples: List<NoticeSample>,
     onOpenSettings: () -> Unit,
+    onAllowNotify: () -> Unit,
     onCopy: () -> Unit,
     onClear: () -> Unit,
 ) {
@@ -53,13 +55,17 @@ fun NoticeScreen(
                 Column(Modifier.padding(horizontal = 20.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("카드 알림 모으기", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Ink)
                     Text(
-                        if (enabled) "알림을 읽고 있어요. 카드로 결제하면 그 알림이 여기에 모여요. 폰 밖으로는 보내지 않아요."
-                        else "카드 결제 알림을 읽으려면 알림 접근을 허용해 주세요.",
+                        if (enabled) "알림을 읽고 있어요. 결제 알림이 여기에 모이고, 이번 달 고정비·이체와 맞으면 체크해 둬요. 알림 글은 폰 밖으로 보내지 않아요."
+                        else "카드·은행 결제 알림을 읽으려면 알림 접근을 허용해 주세요.",
                         fontSize = 15.sp,
                         color = Muted,
                     )
+                    if (enabled && !canNotify) {
+                        Text("결제가 할 일과 맞으면 폰 알림으로 알려 드려요. 알림을 허용하면 \"체크할까요?\"도 거기서 물어봐요.", fontSize = 15.sp, color = Muted)
+                    }
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         if (!enabled) Button(onClick = onOpenSettings) { Text("알림 접근 허용") }
+                        if (enabled && !canNotify) Button(onClick = onAllowNotify) { Text("알림 허용") }
                         if (samples.isNotEmpty()) {
                             Button(onClick = onCopy) { Text("숫자 가려서 복사") }
                             OutlinedButton(onClick = onClear) { Text("모두 지우기") }

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { createContext, Suspense, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { House, Layers, ListChecks, ReceiptText, CalendarDays, CalendarPlus, Settings, Plus, X, ChevronLeft, ChevronRight } from "lucide-react";
-import { isStandalone } from "@/lib/native";
+import { isStandalone, useInApp } from "@/lib/native";
 import { StoreProvider, useStore } from "@/lib/store";
 import { signInWithGoogle, signOut } from "@/lib/repo";
 import { addMonths, type MonthSpending } from "@/lib/calc";
@@ -15,6 +15,7 @@ import { Mark, Toasts } from "./ui";
 import { SpendingSheet } from "./SpendingSheet";
 import { MonthSheet } from "./MonthSheet";
 import { BellButton } from "./Bell";
+import { NoticeSync } from "./NoticeSync";
 import { LoadingScreen, StageScreen } from "./Stage";
 
 // 설정은 탭이 아니다 — 폰은 위쪽 막대의 내 동전 버튼, 데스크톱은 레일 맨 아래
@@ -395,6 +396,7 @@ function Frame({ children }: { children: React.ReactNode }) {
   const openMonths = useCallback((o?: { range?: Range }) => setMonths((x) => ({ open: true, key: x.key + 1, range: o?.range })), []);
   const path = norm(usePathname() ?? "/");
   const { data } = useStore();
+  const app = useInApp();
 
   // 상태 막대 색을 화면 위쪽 색에 맞춘다 (홈은 따뜻한 띠, 나머지는 바탕)
   useEffect(() => {
@@ -420,6 +422,8 @@ function Frame({ children }: { children: React.ReactNode }) {
               </main>
               {data && <SpendingSheet open={sheet.open} editing={sheet.editing} onOpenChange={(open) => setSheet((s) => ({ ...s, open }))} />}
               {data && <MonthSheet key={months.key} open={months.open} range={months.range} onOpenChange={(open) => setMonths((x) => ({ ...x, open }))} />}
+              {/* 안드로이드 앱: 결제 알림으로 맞춘 고정비·이체를 체크 */}
+              {data && app && <NoticeSync />}
             </Gate>
           </div>
           <Toasts />
