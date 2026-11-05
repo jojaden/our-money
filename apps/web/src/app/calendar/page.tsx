@@ -114,7 +114,7 @@ export default function CalendarPage() {
 
   return (
     <>
-      <MonthHeader title={(l) => `${l} 달력`} sub={`${Number(month.slice(5))}월 1일 – ${Number(cells.filter(inMonth).at(-1)!.slice(8))}일`}>
+      <MonthHeader name="달력" sub={`${Number(month.slice(5))}월 1일 – ${Number(cells.filter(inMonth).at(-1)!.slice(8))}일`}>
         <p className="finding">
           <span className="nw">
             이번 달 쓴 돈 <strong><Money value={monthSpent} /></strong>

@@ -8,9 +8,11 @@ import { isStandalone } from "@/lib/native";
 import { StoreProvider, useStore } from "@/lib/store";
 import { signInWithGoogle, signOut } from "@/lib/repo";
 import { addMonths, nameOf, type MonthSpending } from "@/lib/calc";
+import { monthLabel } from "@/lib/format";
 import type { Spending } from "@/lib/types";
 import { Mark, PersonGlyph, Toasts } from "./ui";
 import { SpendingSheet } from "./SpendingSheet";
+import { MonthSheet } from "./MonthSheet";
 import { LoadingScreen, StageScreen } from "./Stage";
 
 // 설정은 탭이 아니다 — 폰은 위쪽 막대의 내 동전 버튼, 데스크톱은 레일 맨 아래
@@ -24,8 +26,10 @@ const TABS = [
 
 interface SheetCtx {
   openSpending: (s?: Spending) => void;
+  /** 달 고르기 — 큰 제목·위쪽 막대의 "11월" */
+  openMonths: () => void;
 }
-const SheetContext = createContext<SheetCtx>({ openSpending: () => {} });
+const SheetContext = createContext<SheetCtx>({ openSpending: () => {}, openMonths: () => {} });
 export const useSheets = () => useContext(SheetContext);
 
 function norm(p: string) {
@@ -147,6 +151,12 @@ function PageMotion({ path, children }: { path: string; children: React.ReactNod
   const swipeable = path !== "/settings";
   const g = useRef<{ x: number; y: number; t: number; id: number; lock: "x" | "y" | null; dx: number } | null>(null);
 
+  // 달을 넘길 때 큰 제목 줄(‹ 11월 ›)은 제자리에 두고 아래 내용만 움직인다 — 화살표가 손가락 밑에서 달아나지 않게
+  const parts = () => [...(box.current?.children ?? [])].filter((c) => !c.classList.contains("page-head")) as HTMLElement[];
+  const slide = (transform: string, opacity: string, transition: string) => {
+    for (const c of parts()) Object.assign(c.style, { transform, opacity, transition });
+  };
+
   const shift = (n: number) => {
     const [y, m] = month.split("-").map(Number);
     const d = new Date(y, m - 1 + n, 1);
@@ -172,15 +182,10 @@ function PageMotion({ path, children }: { path: string; children: React.ReactNod
     }
     if (s0.lock !== "x") return;
     s0.dx = dx;
-    const el = box.current;
-    if (el) {
-      // 손가락을 따라가되 멀리 갈수록 무거워진다 (러버밴드)
-      const w = el.offsetWidth || 360;
-      const r = (dx * w * 0.55) / (w + 0.55 * Math.abs(dx));
-      el.style.transition = "none";
-      el.style.transform = `translateX(${r}px)`;
-      el.style.opacity = String(1 - Math.min(0.35, Math.abs(r) / w));
-    }
+    // 손가락을 따라가되 멀리 갈수록 무거워진다 (러버밴드)
+    const w = box.current?.offsetWidth || 360;
+    const r = (dx * w * 0.55) / (w + 0.55 * Math.abs(dx));
+    slide(`translateX(${r}px)`, String(1 - Math.min(0.35, Math.abs(r) / w)), "none");
   };
   const onUp = (e: React.PointerEvent) => {
     const s0 = g.current;
@@ -188,19 +193,12 @@ function PageMotion({ path, children }: { path: string; children: React.ReactNod
     if (!s0 || s0.id !== e.pointerId || s0.lock !== "x") return;
     const dt = Math.max(1, performance.now() - s0.t);
     const v = s0.dx / dt; // px/ms
-    const el = box.current;
     const commit = Math.abs(s0.dx) > 80 || Math.abs(v) > 0.45;
     if (commit) {
-      if (el) {
-        el.style.transition = "";
-        el.style.transform = "";
-        el.style.opacity = "";
-      }
+      slide("", "", "");
       shift(s0.dx < 0 ? 1 : -1);
-    } else if (el) {
-      el.style.transition = "transform var(--dur-tab) var(--ease-drawer), opacity 300ms ease";
-      el.style.transform = "translateX(0)";
-      el.style.opacity = "1";
+    } else {
+      slide("translateX(0)", "1", "transform var(--dur-tab) var(--ease-drawer), opacity 300ms ease");
     }
   };
 
@@ -221,17 +219,20 @@ function PageMotion({ path, children }: { path: string; children: React.ReactNod
 }
 
 /**
- * 위쪽 막대 — 내 동전 반쪽(설정), 가운데 작은 제목, 달 넘기기. 화면 위에 붙어 있다.
- * 페이지 큰 제목이 막대 밑으로 지나가면 유리 바탕이 되고 작은 제목이 떠오른다 (굴릴 때마다가 아니라 지나갈 때 한 번).
+ * 위쪽 막대 — 내 동전 반쪽(설정)과, 굴렸을 때 가운데에 뜨는 작은 제목. 화면 위에 붙어 있다.
+ * 달 넘기기는 큰 제목 줄(‹ 11월 ›)에 있고, 큰 제목 줄이 막대 밑으로 지나가면 막대가 유리 바탕이 되며
+ * 가운데에 ‹ 11월 체크 › 가 작게 떠오른다 (굴릴 때마다가 아니라 지나갈 때 한 번). 작은 제목을 누르면 달 고르기.
  */
 function TopBar({ path }: { path: string }) {
   const { auth, data, me, month, setMonth } = useStore();
+  const { openMonths } = useSheets();
   const bar = useRef<HTMLDivElement>(null);
   const [glass, setGlass] = useState(false);
   const [title, setTitle] = useState("");
   useEffect(() => {
     const h1 = document.querySelector<HTMLElement>(".page-head h1");
-    if (!h1) return;
+    const row = document.querySelector<HTMLElement>(".page-head .title-row") ?? h1;
+    if (!h1 || !row) return;
     const h = bar.current?.offsetHeight ?? 64;
     // 처음 한 번은 바로 불린다. 막대 아래 선을 지나 위로 올라갔을 때만 유리 (화면 아래로 벗어난 것은 아님)
     const io = new IntersectionObserver(
@@ -241,7 +242,7 @@ function TopBar({ path }: { path: string }) {
       },
       { rootMargin: `-${h}px 0px 0px 0px` },
     );
-    io.observe(h1);
+    io.observe(row);
     return () => io.disconnect();
   }, [path, month]);
   const settings = path === "/settings";
@@ -256,19 +257,26 @@ function TopBar({ path }: { path: string }) {
           예시 데이터
         </Link>
       )}
-      <span className="mini" aria-hidden="true">
-        {title}
-      </span>
-      {!settings && month && (
-        <>
-          <button type="button" className="sq" aria-label="지난달" onClick={() => setMonth(addMonths(month, -1))}>
+      {!settings && month ? (
+        // 큰 제목이 보일 때는 숨기고 누를 수도 없게 (같은 버튼이 큰 제목 줄에 있다)
+        <div className="mini" inert={!glass}>
+          <button type="button" className="mini-step" aria-label={`지난달 (${monthLabel(addMonths(month, -1))})`} onClick={() => setMonth(addMonths(month, -1))}>
             <ChevronLeft aria-hidden="true" />
           </button>
-          <button type="button" className="sq" aria-label="다음 달" onClick={() => setMonth(addMonths(month, 1))}>
+          <button type="button" className="mini-title" aria-haspopup="dialog" aria-label={`${title}, 다른 달 고르기`} onClick={openMonths}>
+            {title}
+          </button>
+          <button type="button" className="mini-step" aria-label={`다음 달 (${monthLabel(addMonths(month, 1))})`} onClick={() => setMonth(addMonths(month, 1))}>
             <ChevronRight aria-hidden="true" />
           </button>
-        </>
+        </div>
+      ) : (
+        <span className="mini" aria-hidden="true">
+          {title}
+        </span>
       )}
+      {/* 작은 제목을 가운데에 두려고 왼쪽 동전 버튼만큼 비운다 */}
+      <span className="sq-space" aria-hidden="true" />
     </div>
   );
 }
@@ -327,6 +335,9 @@ function Frame({ children }: { children: React.ReactNode }) {
   const [sheet, setSheet] = useState<{ open: boolean; editing?: Spending }>({ open: false });
   // 할부의 2회차 줄을 눌러도 원래 기록을 고친다
   const openSpending = useCallback((s?: Spending) => setSheet({ open: true, editing: (s as MonthSpending | undefined)?.inst?.orig ?? s }), []);
+  // 열 때마다 보고 있는 달의 해에서 시작하도록 key 를 바꾼다
+  const [months, setMonths] = useState({ open: false, key: 0 });
+  const openMonths = useCallback(() => setMonths((x) => ({ open: true, key: x.key + 1 })), []);
   const path = norm(usePathname() ?? "/");
   const { data } = useStore();
 
@@ -338,7 +349,7 @@ function Frame({ children }: { children: React.ReactNode }) {
   }, [path, data]);
 
   return (
-    <SheetContext.Provider value={{ openSpending }}>
+    <SheetContext.Provider value={{ openSpending, openMonths }}>
       <div className={data ? "shell" : undefined}>
         {data && <Nav onRecord={() => openSpending()} />}
         <Gate>
@@ -348,6 +359,7 @@ function Frame({ children }: { children: React.ReactNode }) {
             <PageMotion path={path}>{children}</PageMotion>
           </main>
           {data && <SpendingSheet open={sheet.open} editing={sheet.editing} onOpenChange={(open) => setSheet((s) => ({ ...s, open }))} />}
+          {data && <MonthSheet key={months.key} open={months.open} onOpenChange={(open) => setMonths((x) => ({ ...x, open }))} />}
         </Gate>
       </div>
       <Toasts />
