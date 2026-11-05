@@ -17,7 +17,7 @@ function rangeText(month: string, cycle: number) {
 }
 
 /** 페이지 머리 — 큰 제목, 기간 줄, 결론. 달 넘기기는 위쪽 막대에 있고, 다른 달을 보면 "이번 달로"가 붙는다. */
-export function MonthHeader({ title, children }: { title?: (m: string) => string; children?: React.ReactNode }) {
+export function MonthHeader({ title, sub, children }: { title?: (m: string) => string; /** 기간 줄 대신 (달력은 1일~말일) */ sub?: string; children?: React.ReactNode }) {
   const { data, month, today, setMonth } = useData();
   const prog = periodProgress(month, data.settings.cycle_start, today);
   const tail = prog.state === "current" ? ` · ${prog.daysLeft}일 남음` : prog.state === "past" ? " · 지난 달" : " · 다가오는 달";
@@ -34,8 +34,8 @@ export function MonthHeader({ title, children }: { title?: (m: string) => string
           )}
         </div>
         <p className="sub">
-          {rangeText(month, data.settings.cycle_start)}
-          {tail}
+          {sub ?? rangeText(month, data.settings.cycle_start)}
+          {sub ? "" : tail}
           {monthRow(data, month)?.closed_at ? " · 마감" : ""}
         </p>
         {children}

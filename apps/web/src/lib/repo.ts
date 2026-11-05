@@ -15,6 +15,7 @@ export const LIST_TABLES = [
   "categories",
   "spendings",
   "users",
+  "events",
 ] as const satisfies readonly TableName[];
 
 /** 다른 폰이 먼저 같은 줄을 고쳐서 서버가 저장을 거절했다 (SQLSTATE OM409, migrations/005. 005 전에는 40001 + "conflict:") */
@@ -155,8 +156,8 @@ class SupabaseRepo implements Repo {
         return (after ? q.gt("id", after.id) : q).order("id").limit(PAGE);
       });
     } catch (e) {
-      // 003 마이그레이션 전이면 users 가 없다 → 빈 목록 (이름은 settings 로)
-      if (table === "users" && e instanceof Error && isMissingTable({ message: e.message })) return [];
+      // 003 전이면 users, 011 전이면 events 가 없다 → 빈 목록 (이름은 settings 로, 달력은 일정 없이)
+      if ((table === "users" || table === "events") && e instanceof Error && isMissingTable({ message: e.message })) return [];
       throw e;
     }
   }
@@ -342,6 +343,8 @@ class LocalRepo implements Repo {
         this.data = JSON.parse(raw) as Data;
         // users 가 생기기 전에 저장된 데모 데이터
         if (!this.data.users) this.data.users = demoUsers(this.data.settings);
+        // 일정이 생기기 전에 저장된 데모 데이터
+        if (!this.data.events) this.data.events = buildDemoData().events;
         return this.data;
       }
     } catch {

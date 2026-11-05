@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
-import { House, Layers, ListChecks, ReceiptText, Settings2, Plus, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { House, Layers, ListChecks, ReceiptText, CalendarDays, Settings2, Plus, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { isStandalone } from "@/lib/native";
 import { StoreProvider, useStore } from "@/lib/store";
 import { signInWithGoogle, signOut } from "@/lib/repo";
@@ -19,6 +19,7 @@ const TABS = [
   { href: "/plan", label: "플랜", icon: Layers },
   { href: "/check", label: "체크", icon: ListChecks },
   { href: "/ledger", label: "가계부", icon: ReceiptText },
+  { href: "/calendar", label: "달력", icon: CalendarDays },
 ];
 
 interface SheetCtx {
@@ -50,7 +51,7 @@ function Nav({ onRecord }: { onRecord: () => void }) {
           <span className="tip">설정</span>
         </Link>
       </nav>
-      {/* 폰: 떠 있는 네 칸 캡슐 + 따로 뜬 원형 기록 버튼. 버튼은 어느 탭에서나 같은 자리라 캡슐 폭이 그대로다 */}
+      {/* 폰: 떠 있는 다섯 칸 캡슐 + 따로 뜬 원형 기록 버튼. 버튼은 어느 탭에서나 같은 자리라 캡슐 폭이 그대로다 */}
       <div className="navbar">
         <nav className={`tabbar ${at < 0 ? "none" : ""}`} aria-label="주요 메뉴" style={{ ["--i" as string]: Math.max(0, at) }}>
           <span className="tab-pill" aria-hidden="true" />

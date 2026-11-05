@@ -1,10 +1,10 @@
 # TabBar
 
-폰 화면 아래에 떠 있는 네 칸 캡슐 메뉴로, 오른쪽에 따로 뜬 원형 "지출 기록" 버튼과 함께 씁니다.
+폰 화면 아래에 떠 있는 다섯 칸 캡슐 메뉴로, 오른쪽에 따로 뜬 원형 "지출 기록" 버튼과 함께 씁니다.
 
 ## 구성
 - **캡슐:** 화면 좌우·아래(안전 영역 위)에서 `nav-inset`만큼 떨어집니다. 높이 `nav-h`, `radius-chip`, `surface` 86% + blur 22px·saturate 180%, `shadow-nav`입니다.
-- **칸:** 홈 `House`, 플랜 `Layers`, 체크 `ListChecks`, 가계부 `ReceiptText`입니다. 아이콘 22px에 `tab-label` 글자를 둡니다.
+- **칸:** 홈 `House`, 플랜 `Layers`, 체크 `ListChecks`, 가계부 `ReceiptText`, 달력 `CalendarDays`입니다. 아이콘 22px에 `tab-label` 글자를 둡니다.
 - **고른 칸:**
   - `tab-active-bg` 알약이 위아래 5px 안쪽에서 감쌉니다. 아이콘은 `primary`, 글자는 `accent-ink`입니다.
   - 칸을 바꾸면 알약이 `dur-tab`·`ease-drawer`로 미끄러집니다.
@@ -21,6 +21,6 @@
 - 페이지 아래 여백: `nav-h + nav-inset × 2 + env(safe-area-inset-bottom)`
 
 ## 하지 말 것
-- 칸을 네 개보다 늘리지 않습니다.
+- 칸을 다섯 개보다 늘리지 않습니다(달력을 더하며 네 칸에서 다섯 칸이 됐어요. 칸 폭이 좁아 글자는 세 글자 안으로).
 - 원형 버튼을 캡슐 안에 넣지 않습니다.
 - 캡슐을 화면 끝에 붙이지 않습니다.
