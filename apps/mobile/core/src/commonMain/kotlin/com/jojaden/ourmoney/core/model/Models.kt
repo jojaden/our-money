@@ -248,6 +248,8 @@ data class Spending(
     @SerialName("installment_months") val installmentMonths: Int = 1,
     /** 카드 승인번호 — 같은 승인 건이 두 번 기록되지 않게 */
     @SerialName("approval_no") val approvalNo: String? = null,
+    /** 확인이 필요한 칸 (migrations/010: card·category·owner·installment·merchant·duplicate·canceled). 사람이 고쳐 저장하면 비운다 */
+    val review: List<String> = emptyList(),
     /** 서버가 채우는 칸 (migrations/004). rev 는 읽은 그대로 돌려보낸다 — 다른 기기가 그사이 고쳤으면 저장 거절 */
     val rev: Int? = null,
     @SerialName("created_by") val createdBy: Person? = null,

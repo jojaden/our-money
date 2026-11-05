@@ -758,6 +758,15 @@ create policy "members read members" on public.members for select to authenticat
 -- settings 는 지우지 않는다
 revoke delete on public.settings from authenticated;
 
+-- ========== 지출 확인 표시 (migrations/010 와 같음) ==========
+-- 카드 알림 자동 기록에서 확실하지 않아 비워 둔 칸. 사람이 고쳐 저장하면 앱이 비운다
+alter table public.spendings add column if not exists review text[] not null default '{}';
+alter table public.spendings drop constraint if exists spendings_review_ok;
+alter table public.spendings add constraint spendings_review_ok
+  check (review <@ array['card', 'category', 'owner', 'installment', 'merchant', 'duplicate', 'canceled']::text[]);
+create index if not exists spendings_review on public.spendings (date desc) where review <> '{}';
+comment on column public.spendings.review is '자동 기록에서 확인이 필요한 칸 (card·category·owner·installment·merchant·duplicate·canceled). 사람이 고쳐 저장하면 비운다';
+
 -- ---------- 실시간 동기화 ----------
 do $$
 declare t text;
