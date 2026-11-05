@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">우리 집</string>
     <string name="notice_listener">카드 결제 알림 기록</string>
+    <string name="match_channel">결제 알림 맞춤</string>
 </resources>
