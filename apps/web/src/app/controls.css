@@ -68,6 +68,18 @@
 .row .r { text-align: right; }
 .row .r .money { font: 600 16px/24px var(--font-display); }
 .row .r .s { text-align: right; }
+/* 완료한 납부의 금액: 눌러서 실제로 낸 금액을 적는다 (점선 밑줄이 "고칠 수 있음") */
+.row .r .amt-edit {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  text-decoration: underline dotted var(--faint);
+  text-underline-offset: 4px;
+  cursor: pointer;
+  position: relative;
+}
+.row .r .amt-edit::after { content: ""; position: absolute; inset: -10px -8px; } /* 누르는 자리를 44px 가까이 */
 .row.done .t, .row.done .r .money { color: var(--faint); }
 .row.done .r .money { font-weight: 500; }
 

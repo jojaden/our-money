@@ -254,10 +254,13 @@ data class CardBill(
     val billing: Account?,
 )
 
+/** 그달에 실제로 나간 금액: 납부 확인 때 다른 금액을 적었으면 그 금액, 아니면 플랜 금액 */
+val MonthItem.actualAmount: Long get() = if (paid && paidAmount != null) paidAmount else amount
+
 private fun AppData.cardUsage(cardId: String, month: String): Long {
     val p = periodOf(month, settings.cycleStart)
     val spent = spendings.filter { it.payKind == PayKind.CARD && it.accountId == cardId && it.date in p }.sumOf { it.amount }
-    val fixed = monthItems.filter { it.month == month && it.method == Method.CARD_AUTO && it.cardId == cardId }.sumOf { it.amount }
+    val fixed = monthItems.filter { it.month == month && it.method == Method.CARD_AUTO && it.cardId == cardId }.sumOf { it.actualAmount }
     return spent + fixed
 }
 
@@ -326,7 +329,7 @@ data class GoalProgress(val saved: Long, val target: Long)
 fun AppData.goalProgress(item: PlanItem): GoalProgress? {
     val goal = item.goalAmount ?: return null
     if (goal <= 0) return null
-    val paid = monthItems.filter { it.planItemId == item.id && itemDone(it) }.sumOf { it.amount }
+    val paid = monthItems.filter { it.planItemId == item.id && itemDone(it) }.sumOf { it.actualAmount }
     return GoalProgress((item.goalStart ?: 0) + paid, goal)
 }
 
@@ -352,7 +355,7 @@ fun AppData.itemsFromMonth(from: String, to: String, oneOffs: Boolean = false): 
     val active = planItems.filter { it.active }.map { it.id }.toSet()
     val out = mutableListOf<MonthItem>()
     for (i in itemsOf(from)) {
-        val reset = i.copy(paid = false, paidAt = null, paidBy = null, month = to)
+        val reset = i.copy(paid = false, paidAt = null, paidBy = null, paidAmount = null, month = to)
         if (i.planItemId != null) {
             if (i.planItemId !in active) continue
             out += reset.copy(id = "$to:${i.planItemId}")

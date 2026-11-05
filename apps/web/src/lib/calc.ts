@@ -364,6 +364,11 @@ export interface CardBill {
   billing: Account | null;
 }
 
+/** 그달에 실제로 나간 금액: 납부 확인 때 다른 금액을 적었으면 그 금액, 아니면 플랜 금액 */
+export function actualAmount(i: Pick<MonthItem, "amount" | "paid" | "paid_amount">): number {
+  return i.paid && i.paid_amount != null ? i.paid_amount : i.amount;
+}
+
 function cardUsage(data: Data, cardId: string, month: string): number {
   const p = periodOf(month, data.settings.cycle_start);
   const spent = sum(
@@ -372,7 +377,7 @@ function cardUsage(data: Data, cardId: string, month: string): number {
   );
   const fixed = sum(
     data.month_items.filter((i) => i.month === month && i.method === "card_auto" && i.card_id === cardId),
-    (i) => i.amount,
+    actualAmount,
   );
   return spent + fixed;
 }
@@ -441,7 +446,7 @@ export function goalProgress(data: Data, item: PlanItem): { saved: number; targe
   if (!item.goal_amount) return null;
   const paid = sum(
     data.month_items.filter((i) => i.plan_item_id === item.id && itemDone(data, i)),
-    (i) => i.amount,
+    actualAmount,
   );
   return { saved: (item.goal_start ?? 0) + paid, target: item.goal_amount };
 }
@@ -536,7 +541,7 @@ export function latestMonthBefore(data: Data, m: string): string | null {
  */
 export function itemsFromMonth(data: Data, from: string, to: string, opts: { oneOffs?: boolean } = {}): MonthItem[] {
   const active = new Set(data.plan_items.filter((p) => p.active).map((p) => p.id));
-  const reset = { paid: false, paid_at: null, paid_by: null } as const;
+  const reset = { paid: false, paid_at: null, paid_by: null, paid_amount: null } as const;
   const out: MonthItem[] = [];
   for (const i of itemsOf(data, from)) {
     if (i.plan_item_id) {

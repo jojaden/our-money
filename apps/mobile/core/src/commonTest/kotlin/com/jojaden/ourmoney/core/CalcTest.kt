@@ -137,8 +137,21 @@ class CalcTest {
         assertEquals(setOf("2026-12:rent", "2026-12:new"), dec.map { it.id }.toSet())
         assertEquals(1_150_000, dec.first { it.id == "2026-12:rent" }.amount)
         assertTrue(dec.none { it.paid })
+        assertTrue(dec.none { it.paidAmount != null })
         assertTrue(data.itemsFromMonth("2026-11", "2026-12", oneOffs = true).any { it.id == "2026-12:one-x" })
         assertEquals("2026-11", data.latestMonthBefore("2027-01"))
         assertNull(data.latestMonthBefore("2026-11"))
+    }
+
+    @Test fun paid_amount_feeds_card_bill_and_goal() {
+        // 통신비(카드 자동결제)가 플랜 98,001원인데 실제로 103,500원 나갔다
+        val items = nov.map { if (it.planItemId == "phone") it.copy(paid = true, paidAmount = 103_500) else it } +
+            item("save", Group.SAVING, 300_000, Owner.A, Method.ACCOUNT_AUTO, "acc-a").copy(paid = true, paidAmount = 250_000)
+        val plan = listOf(PlanItem("save", Group.SAVING, "save", 300_000, Owner.A, "acc-a", Method.ACCOUNT_AUTO, goalAmount = 1_000_000))
+        val data = AppData(settings = settings, accounts = accounts, planItems = plan, months = listOf(month), monthItems = items)
+        assertEquals(103_500, data.cardBills("2026-11").first().usingAmount)
+        assertEquals(250_000, data.goalProgress(plan.first())!!.saved)
+        // 완료가 아니면 적어 둔 금액은 보지 않는다
+        assertEquals(98_001, items.first { it.planItemId == "phone" }.copy(paid = false).actualAmount)
     }
 }
