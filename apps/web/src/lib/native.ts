@@ -25,7 +25,7 @@ export function inApp(): boolean {
  * - "card-notice": 카드 알림 모으기 화면
  * - { type: "ics", text }: 일정 .ics 를 파일로 만들어 공유 창 열기
  * - { type: "expect", items }: 이번 달 남은 할 일 — 결제 알림과 맞춰 보라고 (폰에만 둔다)
- * - { type: "matches" }: 결제 알림으로 맞춘 것 보내 달라고 (답장은 onApp 으로 온다)
+ * - { type: "matches" }: 결제 알림으로 맞춘 것과 확인할 지출을 보내 달라고 (답장은 onApp 으로 온다)
  * - { type: "applied", ids }: 체크를 마쳤으니 지우라고
  */
 export function toApp(
@@ -58,6 +58,19 @@ export interface AppMatch {
   amount: number;
 }
 
+/** 할 일과 맞지 않은 카드 결제(또는 그 취소) — 가계부에 "확인 필요"로 적는다 */
+export interface AppSpend {
+  id: string;
+  cancel: boolean;
+  amount: number;
+  merchant: string | null;
+  last4: string | null;
+  /** 할부 개월 (1 = 일시불), 모르면 null */
+  months: number | null;
+  /** 알림이 온 시각 (ms) */
+  at: number;
+}
+
 interface Bridge {
   postMessage(m: string): void;
   addEventListener(type: "message", fn: (e: { data: string }) => void): void;
@@ -68,14 +81,14 @@ function bridge(): Bridge | undefined {
   return typeof window === "undefined" ? undefined : (window as Window & { OurMoneyApp?: Bridge }).OurMoneyApp;
 }
 
-/** 앱이 보낸 답장 받기 (지금은 { type: "matches", items }). 앱 밖이면 아무것도 하지 않는다. 그만 받는 함수를 돌려준다 */
-export function onApp(fn: (msg: { type: "matches"; items: AppMatch[] }) => void): () => void {
+/** 앱이 보낸 답장 받기 (지금은 { type: "matches", items, spends }). 앱 밖이면 아무것도 하지 않는다. 그만 받는 함수를 돌려준다 */
+export function onApp(fn: (msg: { type: "matches"; items: AppMatch[]; spends: AppSpend[] }) => void): () => void {
   const b = bridge();
   if (!b) return () => {};
   const h = (e: { data: string }) => {
     try {
-      const msg = JSON.parse(e.data) as { type?: string; items?: AppMatch[] };
-      if (msg.type === "matches" && Array.isArray(msg.items)) fn({ type: "matches", items: msg.items });
+      const msg = JSON.parse(e.data) as { type?: string; items?: AppMatch[]; spends?: AppSpend[] };
+      if (msg.type === "matches" && Array.isArray(msg.items)) fn({ type: "matches", items: msg.items, spends: Array.isArray(msg.spends) ? msg.spends : [] });
     } catch {}
   };
   b.addEventListener("message", h);
