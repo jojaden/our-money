@@ -184,6 +184,18 @@ export interface Spending extends Meta {
   review?: ReviewField[];
 }
 
+/** 바뀐 기록 한 줄 (supabase/migrations/004 의 history, 트리거가 남긴다). 수정이면 바뀐 칸만 담긴다 */
+export interface HistoryRow {
+  id: number;
+  at: string;
+  person: Person | null;
+  table_name: string;
+  row_id: string | null;
+  op: "insert" | "update" | "delete";
+  before: Record<string, unknown> | null;
+  after: Record<string, unknown> | null;
+}
+
 export interface Member {
   email: string;
   person: Person;
