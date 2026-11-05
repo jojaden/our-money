@@ -319,6 +319,7 @@ function PassDetail({ p, from, onClose, onEdit }: { p: PassInfo; from: DOMRect; 
                     <span className="t">{r.memo || catName(data, r)}</span>
                     <span className="s">
                       {catName(data, r)} · {shortDate(r.date)}
+                      {r.inst ? ` · 할부 ${r.inst.no}/${r.inst.of}` : ""}
                     </span>
                   </span>
                   <span className="r">

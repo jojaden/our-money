@@ -17,6 +17,8 @@ import com.jojaden.ourmoney.core.model.PlanItem
 import com.jojaden.ourmoney.core.model.Settings
 import com.jojaden.ourmoney.core.model.SplitMode
 import com.jojaden.ourmoney.core.model.Spending
+import kotlinx.datetime.DatePeriod
+import kotlinx.datetime.plus
 
 // 플랜과 기록에서 이체 목록, 카드값, 정산, 예산 사용을 계산한다.
 // 화면에 보이는 모든 합계는 여기서 행(row)을 더해서 만든다. (웹 apps/web/src/lib/calc.ts 와 같은 규칙)
@@ -185,10 +187,35 @@ fun List<Check>.find(id: String): Check? = firstOrNull { it.id == id }
 
 /* ---------- 지출 ---------- */
 
+/** 할부 개월 (카드만, 1 = 일시불) */
+val Spending.installments: Int get() = if (payKind == PayKind.CARD) maxOf(1, installmentMonths) else 1
+
+/** 할부 no 회차(1부터)의 금액 — 매달 똑같이 나누고 남는 원은 첫 달에 */
+fun installmentShare(amount: Long, months: Int, no: Int): Long {
+    val base = amount / months
+    return if (no == 1) amount - base * (months - 1) else base
+}
+
+/**
+ * 그 달 기간의 지출. 할부는 산 달부터 개월 수만큼 매달 나눈 금액이 그 달 지출이 된다
+ * (예산·카드값·정산 모두 이 금액). 2회차부터는 산 날과 같은 날짜에 둔다. 웹 spendingsIn 과 같다.
+ */
 fun AppData.spendingsIn(month: String): List<Spending> {
-    val p = periodOf(month, settings.cycleStart)
-    return spendings.filter { it.date in p }
-        .sortedWith(compareByDescending<Spending> { it.date }.thenByDescending { it.createdAt })
+    val c = settings.cycleStart
+    val p = periodOf(month, c)
+    val out = mutableListOf<Spending>()
+    for (x in spendings) {
+        val n = x.installments
+        if (n == 1) {
+            if (x.date in p) out += x
+            continue
+        }
+        val no = monthsBetween(monthOf(x.date, c), month) + 1
+        if (no < 1 || no > n) continue
+        val at = if (no == 1) x.date else parseDate(x.date).plus(DatePeriod(months = no - 1)).toString()
+        out += x.copy(date = if (at in p) at else p.start, amount = installmentShare(x.amount, n, no))
+    }
+    return out.sortedWith(compareByDescending<Spending> { it.date }.thenByDescending { it.createdAt })
 }
 
 data class BudgetStatus(
@@ -258,8 +285,7 @@ data class CardBill(
 val MonthItem.actualAmount: Long get() = if (paid && paidAmount != null) paidAmount else amount
 
 private fun AppData.cardUsage(cardId: String, month: String): Long {
-    val p = periodOf(month, settings.cycleStart)
-    val spent = spendings.filter { it.payKind == PayKind.CARD && it.accountId == cardId && it.date in p }.sumOf { it.amount }
+    val spent = spendingsIn(month).filter { it.payKind == PayKind.CARD && it.accountId == cardId }.sumOf { it.amount }
     val fixed = monthItems.filter { it.month == month && it.method == Method.CARD_AUTO && it.cardId == cardId }.sumOf { it.actualAmount }
     return spent + fixed
 }
@@ -383,5 +409,5 @@ fun AppData.missingFromMonth(from: String, to: String, oneOffs: Boolean = false)
 fun AppData.spentToDay(month: String, owner: Owner, dayIndex: Int): Long {
     val p = periodOf(month, settings.cycleStart)
     val cut = shiftDays(p.start, dayIndex + 1)
-    return spendings.filter { it.owner == owner && it.date >= p.start && it.date < cut && it.date < p.end }.sumOf { it.amount }
+    return spendingsIn(month).filter { it.owner == owner && it.date < cut }.sumOf { it.amount }
 }

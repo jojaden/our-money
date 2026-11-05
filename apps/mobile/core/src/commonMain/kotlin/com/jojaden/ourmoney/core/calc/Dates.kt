@@ -32,6 +32,13 @@ fun addMonths(key: String, n: Int): String {
     return monthKey(d.year, d.month.number)
 }
 
+/** key 달이 from 달보다 몇 달 뒤인지 */
+fun monthsBetween(from: String, key: String): Int {
+    val (fy, fm) = ym(from)
+    val (ky, km) = ym(key)
+    return (ky - fy) * 12 + km - fm
+}
+
 /** 날짜가 속한 가계부 월. cycleStart 가 25면 10/25 은 11월이다. */
 fun monthOf(date: String, cycleStart: Int): String {
     val d = parseDate(date)

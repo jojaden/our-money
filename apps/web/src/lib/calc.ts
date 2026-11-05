@@ -277,11 +277,55 @@ export function findCheck(checks: Check[], id: string): Check | undefined {
 
 /* ---------- 지출 ---------- */
 
-export function spendingsIn(data: Data, month: string): Spending[] {
-  const p = periodOf(month, data.settings.cycle_start);
-  return data.spendings
-    .filter((x) => inPeriod(x.date, p))
-    .sort((x, y) => (x.date === y.date ? y.created_at.localeCompare(x.created_at) : y.date.localeCompare(x.date)));
+/** 그 달에 잡히는 지출 한 줄. 할부면 그 달 회차의 금액이고, 원래 기록은 inst.orig */
+export interface MonthSpending extends Spending {
+  inst?: { no: number; of: number; orig: Spending };
+}
+
+/** 할부 개월 (카드만, 1 = 일시불) */
+export function installmentsOf(x: Pick<Spending, "pay_kind" | "installment_months">): number {
+  return x.pay_kind === "card" ? Math.max(1, x.installment_months ?? 1) : 1;
+}
+
+/** 할부 no 회차(1부터)의 금액 — 매달 똑같이 나누고 남는 원은 첫 달에 */
+export function installmentShare(amount: number, months: number, no: number): number {
+  const base = Math.floor(amount / months);
+  return no === 1 ? amount - base * (months - 1) : base;
+}
+
+/** key 달이 from 달보다 몇 달 뒤인지 */
+function monthsBetween(from: string, key: string): number {
+  return (Number(key.slice(0, 4)) - Number(from.slice(0, 4))) * 12 + Number(key.slice(5, 7)) - Number(from.slice(5, 7));
+}
+
+/** 날짜를 n달 뒤 같은 날로 (그 달에 없는 날이면 말일) */
+function shiftMonths(date: string, n: number): string {
+  const d = parseYmd(date);
+  const first = new Date(d.getFullYear(), d.getMonth() + n, 1);
+  const last = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate();
+  return ymd(new Date(first.getFullYear(), first.getMonth(), Math.min(d.getDate(), last)));
+}
+
+/**
+ * 그 달 기간의 지출. 할부는 산 달부터 개월 수만큼 매달 나눈 금액이 그 달 지출이 된다
+ * (예산·카드값·정산 모두 이 금액). 2회차부터는 산 날과 같은 날짜에 둔다.
+ */
+export function spendingsIn(data: Data, month: string): MonthSpending[] {
+  const c = data.settings.cycle_start;
+  const p = periodOf(month, c);
+  const out: MonthSpending[] = [];
+  for (const x of data.spendings) {
+    const n = installmentsOf(x);
+    if (n === 1) {
+      if (inPeriod(x.date, p)) out.push(x);
+      continue;
+    }
+    const no = monthsBetween(monthOf(x.date, c), month) + 1;
+    if (no < 1 || no > n) continue;
+    const at = no === 1 ? x.date : shiftMonths(x.date, no - 1);
+    out.push({ ...x, date: inPeriod(at, p) ? at : p.start, amount: installmentShare(x.amount, n, no), inst: { no, of: n, orig: x } });
+  }
+  return out.sort((x, y) => (x.date === y.date ? y.created_at.localeCompare(x.created_at) : y.date.localeCompare(x.date)));
 }
 
 export function sum<T>(rows: T[], f: (r: T) => number): number {
@@ -370,9 +414,8 @@ export function actualAmount(i: Pick<MonthItem, "amount" | "paid" | "paid_amount
 }
 
 function cardUsage(data: Data, cardId: string, month: string): number {
-  const p = periodOf(month, data.settings.cycle_start);
   const spent = sum(
-    data.spendings.filter((x) => x.pay_kind === "card" && x.account_id === cardId && inPeriod(x.date, p)),
+    spendingsIn(data, month).filter((x) => x.pay_kind === "card" && x.account_id === cardId),
     (x) => x.amount,
   );
   const fixed = sum(
@@ -510,7 +553,7 @@ export function spentToDay(data: Data, month: string, owner: Owner, dayIndex: nu
   const cut = new Date(start.getFullYear(), start.getMonth(), start.getDate() + dayIndex + 1);
   const cutStr = ymd(cut);
   return sum(
-    data.spendings.filter((x) => x.owner === owner && x.date >= p.start && x.date < cutStr && x.date < p.end),
+    spendingsIn(data, month).filter((x) => x.owner === owner && x.date < cutStr),
     (x) => x.amount,
   );
 }

@@ -154,4 +154,19 @@ class CalcTest {
         // 완료가 아니면 적어 둔 금액은 보지 않는다
         assertEquals(98_001, items.first { it.planItemId == "phone" }.copy(paid = false).actualAmount)
     }
+
+    @Test fun installments_split_monthly_with_remainder_first() {
+        // 10/28(11월 기간)에 공동 카드로 100,000원 3개월 할부 → 33,334 / 33,333 / 33,333
+        val tv = Spending("tv", "2026-10-28", 100_000, null, PayKind.CARD, "card-joint", Owner.JOINT, Person.A, "TV", installmentMonths = 3)
+        val data = AppData(settings = settings, accounts = accounts, months = listOf(month), monthItems = nov, spendings = listOf(tv))
+        assertEquals(listOf(33_334L, 33_333L, 33_333L, 0L), listOf("2026-11", "2026-12", "2027-01", "2027-02").map { m -> data.spendingsIn(m).sumOf { it.amount } })
+        assertEquals("2026-11-28", data.spendingsIn("2026-12").single().date)
+        assertEquals(33_334, data.livingStatus("2026-11", "2026-11-03").spent)
+        // 카드값: 11월 사용분(통신비 + 1회차)이 12월에 청구된다
+        assertEquals(98_001 + 33_334L, data.cardBills("2026-12").first().dueAmount)
+        assertEquals(33_333, data.spentToDay("2026-12", Owner.JOINT, 10))
+        // 카드가 아니면 할부 개월을 보지 않는다
+        val cash = tv.copy(id = "cash", payKind = PayKind.CASH, accountId = null)
+        assertEquals(100_000, data.copy(spendings = listOf(cash)).spendingsIn("2026-11").single().amount)
+    }
 }
