@@ -91,34 +91,36 @@ export function EventSheet({ open, onOpenChange, event, date }: { open: boolean;
     } else if (hit.until) setEndTime(hit.until);
   };
 
-  const onTitle = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let v = e.target.value;
-    const pos = e.target.selectionStart ?? v.length;
-    // 한글 조합 중에는 글을 건드리지 않는다 (빈칸을 치면 조합이 끝난 뒤 다시 온다)
-    if (timed && !(e.nativeEvent as InputEvent).isComposing) {
-      const l = lastAt.current;
-      const typed = l && pos >= l.at ? v.slice(l.at, pos) : null;
-      const mm = typed ? /^(?:(\d{1,2})\s*분|반)\s$/.exec(typed) : null;
-      if (l && mm && Number(mm[1] ?? 30) <= 59) {
-        const cur = l.field === "start" ? startTime : endTime;
-        if (cur) (l.field === "start" ? setStartTime : setEndTime)(`${cur.slice(0, 3)}${String(mm[1] ?? 30).padStart(2, "0")}`);
-        v = v.slice(0, l.at) + v.slice(pos);
-        caret.current = l.at;
-        lastAt.current = null;
-      } else {
-        if (typed === null || !/^(?:\d{0,2}\s*분?|반)$/.test(typed)) lastAt.current = null;
-        const hit = findTime(v, now);
-        if (hit?.closed) {
-          const before = v.slice(0, hit.index).trimEnd();
-          const head = before ? `${before} ` : "";
-          v = head + v.slice(hit.end).trimStart();
-          caret.current = head.length;
-          applyTime(hit);
-          lastAt.current = { at: head.length, field: hit.start ? "start" : "end" };
-        }
-      }
+  /**
+   * 띄어 쓴 시간을 제목에서 떼어 시간 칸으로 (바로 이어 쓴 "40분 "·"반 "은 분만 고친다). 고친 제목을 돌려준다.
+   * 한글 조합 중에는 부르지 않는다 — 조합이 끝날 때(compositionend) 다시 부른다.
+   * 키보드에 따라 빈칸이 조합 안에서 같이 확정되어(안드로이드·사파리) 조합이 아닌 입력이 오지 않기 때문.
+   */
+  const take = (input: HTMLInputElement): string => {
+    let v = input.value;
+    const pos = input.selectionStart ?? v.length;
+    const l = lastAt.current;
+    const typed = l && pos >= l.at ? v.slice(l.at, pos) : null;
+    const mm = typed ? /^(?:(\d{1,2})\s*분|반)\s$/.exec(typed) : null;
+    if (l && mm && Number(mm[1] ?? 30) <= 59) {
+      const cur = l.field === "start" ? startTime : endTime;
+      if (cur) (l.field === "start" ? setStartTime : setEndTime)(`${cur.slice(0, 3)}${String(mm[1] ?? 30).padStart(2, "0")}`);
+      v = v.slice(0, l.at) + v.slice(pos);
+      caret.current = l.at;
+      lastAt.current = null;
+      return v;
     }
-    setTitle(v);
+    if (typed === null || !/^(?:\d{0,2}\s*분?|반)$/.test(typed)) lastAt.current = null;
+    const hit = findTime(v, now);
+    if (hit?.closed) {
+      const before = v.slice(0, hit.index).trimEnd();
+      const head = before ? `${before} ` : "";
+      v = head + v.slice(hit.end).trimStart();
+      caret.current = head.length;
+      applyTime(hit);
+      lastAt.current = { at: head.length, field: hit.start ? "start" : "end" };
+    }
+    return v;
   };
 
   // 고쳐 쓴 제목의 커서 자리, 카드 그림(뒤에 깐 글)의 가로 위치를 입력칸에 맞춘다
@@ -203,7 +205,9 @@ export function EventSheet({ open, onOpenChange, event, date }: { open: boolean;
               </span>
             </span>
           )}
-          <input ref={titleRef} id="ev-title" className="input" value={title} onChange={onTitle} onScroll={syncMirror} onSelect={syncMirror} placeholder={k.hint} maxLength={40} />
+          <input ref={titleRef} id="ev-title" className="input" value={title} onChange={(e) => setTitle(timed && !(e.nativeEvent as InputEvent).isComposing ? take(e.target) : e.target.value)}
+            onCompositionEnd={(e) => timed && setTitle(take(e.currentTarget))}
+            onScroll={syncMirror} onSelect={syncMirror} placeholder={k.hint} maxLength={40} />
         </div>
         {live ? (
           <p className="help" role="status">
