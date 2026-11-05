@@ -583,7 +583,8 @@ export function latestMonthBefore(data: Data, m: string): string | null {
 /**
  * from 달의 플랜을 to 달 항목으로 옮긴다.
  * - 반복 항목은 그 달의 금액·계좌·방식 그대로 (그 달에만 바꾼 값도 이어진다)
- * - 반복을 끈(삭제한) 항목과 기간이 끝난 항목은 빼고, 그 뒤에 새로 만든 반복 항목과 기간이 시작된 항목은 더한다
+ * - 반복을 끈(삭제한) 항목과 기간이 끝난 항목은 빼고, from 달을 만든 뒤에 새로 만든 반복 항목과 기간이 시작된 항목은 더한다
+ *   (from 달에 일부러 넣지 않은 반복 항목은 다시 끌어오지 않는다 — 빈 플랜에서 하나씩 만든 달)
  * - 일회성 항목은 oneOffs 가 켜져 있을 때만
  * id 가 결정적이라 두 폰이 동시에 만들어도 중복되지 않는다.
  */
@@ -601,7 +602,9 @@ export function itemsFromMonth(data: Data, from: string, to: string, opts: { one
     }
   }
   const have = new Set(out.map((i) => i.plan_item_id).filter(Boolean));
-  for (const t of snapshotItems(to, data.plan_items)) if (!have.has(t.plan_item_id)) out.push(t);
+  const since = monthRow(data, from)?.created_at ?? "";
+  const added = data.plan_items.filter((p) => !have.has(p.id) && ((p.created_at ?? "") > since || !planInMonth(p, from)));
+  out.push(...snapshotItems(to, added));
   return out;
 }
 

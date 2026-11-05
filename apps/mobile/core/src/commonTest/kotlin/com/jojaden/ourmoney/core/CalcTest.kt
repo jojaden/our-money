@@ -124,7 +124,8 @@ class CalcTest {
     @Test fun carry_over_keeps_last_month_amounts_and_adds_new_recurring() {
         val plan = listOf(
             PlanItem("rent", Group.FIXED, "rent", 1_100_000, Owner.JOINT, "acc-fixed", Method.ACCOUNT_AUTO),
-            PlanItem("new", Group.SAVING, "new", 300_000, Owner.A, "acc-a", Method.MANUAL),
+            // 11월 플랜을 만든 뒤에 새로 만든 반복 항목
+            PlanItem("new", Group.SAVING, "new", 300_000, Owner.A, "acc-a", Method.MANUAL, createdAt = "2026-11-10T00:00:00Z"),
             PlanItem("gone", Group.FIXED, "gone", 1, Owner.A, "acc-a", Method.MANUAL, active = false),
         )
         val oct = listOf(
@@ -185,5 +186,18 @@ class CalcTest {
         assertEquals(listOf("2027-03:ins"), data.itemsFromMonth("2027-02", "2027-03").map { it.id })
         val dec = AppData(settings = settings, planItems = plan, months = listOf(Month("2026-12")), monthItems = snapshotItems("2026-12", plan))
         assertTrue(dec.itemsFromMonth("2026-12", "2027-01").isEmpty())
+    }
+
+    @Test fun carry_over_skips_recurring_left_out_of_from_month() {
+        // 12월을 빈 플랜에서 인터넷 하나로 시작했다 → 1월에 12월을 가져와도 월세는 다시 끌어오지 않는다.
+        // 12월을 만든 뒤에 새로 만든 반복 항목(적금)은 더한다
+        val plan = listOf(
+            PlanItem("rent", Group.FIXED, "rent", 1_100_000, Owner.JOINT, "acc-fixed", Method.ACCOUNT_AUTO, createdAt = "2026-10-01T00:00:00Z"),
+            PlanItem("net", Group.FIXED, "net", 33_000, Owner.JOINT, "acc-fixed", Method.ACCOUNT_AUTO, createdAt = "2026-11-20T00:00:00Z"),
+            PlanItem("save", Group.SAVING, "save", 300_000, Owner.A, "acc-a", Method.MANUAL, createdAt = "2026-12-05T00:00:00Z"),
+        )
+        val dec = Month("2026-12", createdAt = "2026-11-20T00:00:00Z")
+        val data = AppData(settings = settings, planItems = plan, months = listOf(dec), monthItems = listOf(item("net", Group.FIXED, 33_000, Owner.JOINT, Method.ACCOUNT_AUTO, "acc-fixed", month = "2026-12")))
+        assertEquals(setOf("2027-01:net", "2027-01:save"), data.itemsFromMonth("2026-12", "2027-01").map { it.id }.toSet())
     }
 }

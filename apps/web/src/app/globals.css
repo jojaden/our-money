@@ -194,6 +194,8 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
 .firstrun .btn { margin-top: 20px; }
 .firstrun-actions { display: grid; gap: 8px; margin-top: 20px; }
 .firstrun-actions .btn { margin-top: 0; width: 100%; height: 50px; }
+/* 플랜 화면: 카드 아래에 빈 플랜이 이어진다 */
+.firstrun.inplan { margin-bottom: 20px; }
 
 /* ---------- 설정 ---------- */
 

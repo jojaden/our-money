@@ -379,7 +379,8 @@ fun AppData.latestMonthBefore(m: String): String? = months.map { it.id }.filter 
 
 /**
  * from 달의 플랜을 to 달 항목으로 옮긴다.
- * 반복 항목은 그 달의 금액·계좌·방식 그대로, 반복을 끈 항목과 기간 밖 항목은 빼고, 새 반복 항목과 기간이 시작된 항목은 더한다. 일회성은 oneOffs 일 때만.
+ * 반복 항목은 그 달의 금액·계좌·방식 그대로, 반복을 끈 항목과 기간 밖 항목은 빼고, from 달을 만든 뒤에 새로 만든 반복 항목과
+ * 기간이 시작된 항목은 더한다(from 달에 일부러 넣지 않은 반복 항목은 다시 끌어오지 않는다). 일회성은 oneOffs 일 때만. 웹과 같다.
  */
 fun AppData.itemsFromMonth(from: String, to: String, oneOffs: Boolean = false): List<MonthItem> {
     val active = planItems.filter { it.inMonth(to) }.map { it.id }.toSet()
@@ -395,7 +396,8 @@ fun AppData.itemsFromMonth(from: String, to: String, oneOffs: Boolean = false): 
         }
     }
     val have = out.mapNotNull { it.planItemId }.toSet()
-    out += snapshotItems(to, planItems).filter { it.planItemId !in have }
+    val since = months.firstOrNull { it.id == from }?.createdAt.orEmpty()
+    out += snapshotItems(to, planItems.filter { it.id !in have && (it.createdAt.orEmpty() > since || !it.inMonth(from)) })
     return out
 }
 
