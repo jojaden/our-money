@@ -6,7 +6,7 @@ import { useState } from "react";
 import { monthLabel, parseYmd } from "@/lib/format";
 import { Toggle } from "./ui";
 import Link from "next/link";
-import { ChevronDown, ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { useSheets } from "./Shell";
 
 function rangeText(month: string, cycle: number) {
@@ -17,8 +17,8 @@ function rangeText(month: string, cycle: number) {
 }
 
 /**
- * 페이지 머리 — 큰 제목 "‹ 11월 ▾ › 체크", 기간 줄, 결론.
- * 화살표는 바뀌는 것(달)만 감싸서 탭 이름 길이와 상관없이 늘 같은 자리에 있다. "11월 ▾"를 누르면 달 고르기.
+ * 페이지 머리 — 큰 제목 "‹ 11월 › 체크", 기간 줄, 결론.
+ * 화살표는 바뀌는 것(달)만 감싸서 탭 이름 길이와 상관없이 늘 같은 자리에 있다. "11월"을 누르면 달 고르기 (따로 ▾ 표시는 두지 않는다 — 제목을 누르면 열리는 것은 다들 안다).
  * 달을 넘겨도 이 줄은 제자리에 있고 달 이름만 그 방향에서 밀려 들어온다. 다른 달을 보면 "이번 달로"가 붙는다.
  */
 export function MonthHeader({ name, sub, children }: { /** 탭 이름 (홈은 없음) */ name?: string; /** 기간 줄 대신 (달력은 1일~말일) */ sub?: string; children?: React.ReactNode }) {
@@ -38,7 +38,6 @@ export function MonthHeader({ name, sub, children }: { /** 탭 이름 (홈은 �
             </button>
             <button type="button" className="month-btn" aria-haspopup="dialog" aria-label={`${label}, 다른 달 고르기`} onClick={openMonths}>
               <span className="m num">{label}</span>
-              <ChevronDown aria-hidden="true" />
             </button>
             <button type="button" className="month-arrow" aria-label={`다음 달 (${monthLabel(addMonths(month, 1))})`} onClick={() => setMonth(addMonths(month, 1))}>
               <ChevronRight aria-hidden="true" />

@@ -88,14 +88,13 @@ div.mini { display: flex; align-items: center; justify-content: center; gap: 2px
 .page-head .sub { margin-top: 6px; color: var(--faint); font: 400 14.5px/20px var(--font-text); }
 .page-head .to-now { height: 32px; padding: 0 12px; border: 0; border-radius: var(--radius-chip); background: var(--tab-active-bg); color: var(--text); font: 600 13.5px/1 var(--font-text); transition: transform var(--dur-press) var(--ease-press); }
 .page-head .to-now:active { transform: scale(0.96); }
-/* ‹ 11월 ▾ › — 큰 제목 글꼴 그대로. 화살표 글리프가 왼쪽 여백 선에 맞도록 버튼 여백만큼 당긴다. 누르는 칸은 44px */
+/* ‹ 11월 › — 큰 제목 글꼴 그대로. 화살표 글리프가 왼쪽 여백 선에 맞도록 버튼 여백만큼 당긴다. 누르는 칸은 44px */
 .page-head .month-step { display: flex; align-items: center; margin: -4px -6px -4px -10px; }
 .page-head .month-arrow { display: grid; flex: none; place-items: center; width: 36px; height: 44px; padding: 0; border: 0; border-radius: var(--radius-control); background: transparent; color: var(--faint); }
 .page-head .month-arrow svg { width: 24px; height: 24px; stroke-width: 2.25; }
-.page-head .month-btn { display: inline-flex; align-items: center; gap: 2px; height: 44px; padding: 0 4px 0 6px; border: 0; border-radius: var(--radius-control); background: transparent; color: var(--text); font: 700 32px/36px var(--font-display); letter-spacing: -0.02em; }
+.page-head .month-btn { display: inline-flex; align-items: center; height: 44px; padding: 0 6px; border: 0; border-radius: var(--radius-control); background: transparent; color: var(--text); font: 700 32px/36px var(--font-display); letter-spacing: -0.02em; }
 /* 1월이든 11월이든 오른쪽 화살표가 같은 자리에 오게 두 자리 폭을 잡는다 */
 .page-head .month-btn .m { display: inline-block; min-width: calc(2ch + 1em); text-align: center; }
-.page-head .month-btn svg { width: 18px; height: 18px; margin-top: 4px; color: var(--faint); stroke-width: 2.5; }
 .page-head :is(.month-arrow, .month-btn) { transition: transform var(--dur-press) var(--ease-press), background-color var(--dur-press) ease, color var(--dur-press) ease; }
 .page-head :is(.month-arrow, .month-btn):active { transform: scale(0.94); }
 @media (hover: hover) and (pointer: fine) {
@@ -230,7 +229,7 @@ div.mini { display: flex; align-items: center; justify-content: center; gap: 2px
 /* ---------- 화면 전환 ---------- */
 
 /* 탭을 바꾸면 짧은 교차 페이드, 달을 바꾸면 그 방향에서 밀려 들어온다.
-   달을 바꿀 때 큰 제목 줄(‹ 11월 ▾ ›)은 제자리에 두고 달 이름만 같은 방향에서 들어오며, 기간 줄·결론은 흐린 데서 나타난다 */
+   달을 바꿀 때 큰 제목 줄(‹ 11월 ›)은 제자리에 두고 달 이름만 같은 방향에서 들어오며, 기간 줄·결론은 흐린 데서 나타난다 */
 .page-enter.fade { animation: tabIn var(--dur-press) ease-out both; }
 .page-enter.from-right > :not(.page-head) { animation: pageInRight var(--dur-tab) var(--ease-drawer) both; }
 .page-enter.from-left > :not(.page-head) { animation: pageInLeft var(--dur-tab) var(--ease-drawer) both; }

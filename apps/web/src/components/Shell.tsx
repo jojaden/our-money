@@ -26,7 +26,7 @@ const TABS = [
 
 interface SheetCtx {
   openSpending: (s?: Spending) => void;
-  /** 달 고르기 — 큰 제목·위쪽 막대의 "11월 ▾" */
+  /** 달 고르기 — 큰 제목·위쪽 막대의 "11월" */
   openMonths: () => void;
 }
 const SheetContext = createContext<SheetCtx>({ openSpending: () => {}, openMonths: () => {} });
@@ -151,7 +151,7 @@ function PageMotion({ path, children }: { path: string; children: React.ReactNod
   const swipeable = path !== "/settings";
   const g = useRef<{ x: number; y: number; t: number; id: number; lock: "x" | "y" | null; dx: number } | null>(null);
 
-  // 달을 넘길 때 큰 제목 줄(‹ 11월 ▾ ›)은 제자리에 두고 아래 내용만 움직인다 — 화살표가 손가락 밑에서 달아나지 않게
+  // 달을 넘길 때 큰 제목 줄(‹ 11월 ›)은 제자리에 두고 아래 내용만 움직인다 — 화살표가 손가락 밑에서 달아나지 않게
   const parts = () => [...(box.current?.children ?? [])].filter((c) => !c.classList.contains("page-head")) as HTMLElement[];
   const slide = (transform: string, opacity: string, transition: string) => {
     for (const c of parts()) Object.assign(c.style, { transform, opacity, transition });
@@ -220,7 +220,7 @@ function PageMotion({ path, children }: { path: string; children: React.ReactNod
 
 /**
  * 위쪽 막대 — 내 동전 반쪽(설정)과, 굴렸을 때 가운데에 뜨는 작은 제목. 화면 위에 붙어 있다.
- * 달 넘기기는 큰 제목 줄(‹ 11월 ▾ ›)에 있고, 큰 제목 줄이 막대 밑으로 지나가면 막대가 유리 바탕이 되며
+ * 달 넘기기는 큰 제목 줄(‹ 11월 ›)에 있고, 큰 제목 줄이 막대 밑으로 지나가면 막대가 유리 바탕이 되며
  * 가운데에 ‹ 11월 체크 › 가 작게 떠오른다 (굴릴 때마다가 아니라 지나갈 때 한 번). 작은 제목을 누르면 달 고르기.
  */
 function TopBar({ path }: { path: string }) {
