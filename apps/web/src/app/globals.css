@@ -208,3 +208,44 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
   .set-sec + .set-sec { margin-top: 0; padding-top: 32px; border-top: 1px solid var(--border); }
   .settings-wrap { display: grid; gap: 32px; max-width: 1040px; }
 }
+
+/* ---------- 달력: 날짜 칸(쓴 돈·표시 점·기간 띠), 그날 목록 ---------- */
+
+.cal { padding: 12px 10px 14px; }
+.cal-week, .cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
+.cal-week span { padding: 2px 0 8px; color: var(--faint); font: 600 12px/16px var(--font-text); text-align: center; }
+.cal-week .sun, .cal-day.sun .n { color: var(--negative); }
+.cal-week .sat, .cal-day.sat .n { color: var(--joint-ink); }
+.cal-day {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  min-height: 62px;
+  padding: 6px 0 10px;
+  border: 0;
+  border-radius: var(--radius-inner);
+  background: none;
+  color: var(--text);
+  transition: background-color var(--dur-press) ease;
+}
+.cal-day.out { opacity: 0.35; }
+.cal-day .n { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; font: 600 14px/1 var(--font-display); font-variant-numeric: tabular-nums; }
+.cal-day.today .n { background: var(--primary); color: var(--on-primary); }
+.cal-day.picked { background: var(--well); }
+.cal-day .amt { color: var(--muted); font: 600 10.5px/14px var(--font-display); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; white-space: nowrap; }
+.cal-day .dots { display: flex; gap: 3px; margin-top: 1px; }
+.cal-day .dots i, .mark-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--primary); }
+/* 월급날은 그 사람 색, 카드 결제일·이체일은 고정비 색, 일정은 쓰는 사람 색(공동은 남색). k- 를 붙인다: .card 같은 공용 이름과 겹치지 않게 */
+.cal-day .dots .k-payday.a, .mark-dot.k-payday.a, .mark-dot.k-event.a, .cal-day .bar.a { background: var(--a); }
+.cal-day .dots .k-payday.b, .mark-dot.k-payday.b, .mark-dot.k-event.b, .cal-day .bar.b { background: var(--b); }
+.cal-day .dots .k-card, .cal-day .dots .k-item, .mark-dot.k-card, .mark-dot.k-item { background: var(--g-fixed); }
+.cal-day .bar { position: absolute; right: 0; left: 0; height: 3px; background: var(--primary); opacity: 0.55; }
+.cal-day .bar:nth-of-type(1) { bottom: 3px; }
+.cal-day .bar:nth-of-type(2) { bottom: 7px; }
+.cal-day .bar.first { left: 6px; border-radius: 2px 0 0 2px; }
+.cal-day .bar.last { right: 6px; border-radius: 0 2px 2px 0; }
+.cal-mark .t { display: flex; align-items: center; gap: 8px; }
+.cal-mark .mark-dot { flex: none; }
+

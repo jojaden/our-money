@@ -1,0 +1,211 @@
+"use client";
+
+import Link from "next/link";
+import { useState } from "react";
+import { Plus } from "lucide-react";
+import type { CalEvent } from "@/lib/types";
+import { useData } from "@/lib/store";
+import { nameOf } from "@/lib/calc";
+import { ddayText, marksIn, monthGrid, nextOccurrence, spentByDay, type Mark } from "@/lib/calendar";
+import { dateWithDay, num, shortDate } from "@/lib/format";
+import { MonthHeader } from "@/components/MonthHeader";
+import { CategoryIcon, Money } from "@/components/ui";
+import { EventSheet } from "@/components/EventSheet";
+import { useSheets } from "@/components/Shell";
+import { spendingVisual } from "@/lib/categories";
+
+const WEEK = ["일", "월", "화", "수", "목", "금", "토"];
+const ORDER: Record<Mark["kind"], number> = { event: 0, payday: 1, card: 2, item: 3 };
+
+/** 칸 안의 짧은 금액: 8,400 / 3.2만 / 120만 */
+function short(n: number): string {
+  if (n < 10_000) return num(n);
+  const man = n / 10_000;
+  return `${man >= 100 || Number.isInteger(man) ? Math.round(man) : man.toFixed(1)}만`;
+}
+
+/**
+ * 달력 — 날짜마다 그날 쓴 돈과 월급날·카드 결제일·이체일·일정. 날짜를 누르면 아래에 그날 것이 펼쳐진다.
+ * 위쪽 막대의 달 넘기기를 그대로 쓴다(가계부 달 이름 = 달력 달).
+ */
+export default function CalendarPage() {
+  const { data, month, today } = useData();
+  const s = data.settings;
+  const { openSpending } = useSheets();
+  const cells = monthGrid(month);
+  const from = cells[0];
+  const to = cells[cells.length - 1];
+  const marks = marksIn(data, from, to);
+  const spent = spentByDay(data, from, to);
+  const inMonth = (d: string) => d.slice(0, 7) === month;
+  const [picked, setPicked] = useState<string | null>(null);
+  const day = picked && inMonth(picked) ? picked : inMonth(today) ? today : `${month}-01`;
+  const [sheet, setSheet] = useState<{ open: boolean; key: number; event?: CalEvent; date: string }>({ open: false, key: 0, date: day });
+  const openEvent = (event?: CalEvent, date = day) => setSheet((x) => ({ open: true, key: x.key + 1, event, date }));
+
+  const monthSpent = [...spent.entries()].filter(([d]) => inMonth(d)).reduce((a, [, v]) => a + v, 0);
+  const monthEvents = new Set([...marks.entries()].filter(([d]) => inMonth(d)).flatMap(([, ms]) => ms.filter((m) => m.event).map((m) => m.event!.id))).size;
+  const dayMarks = [...(marks.get(day) ?? [])].sort((a, b) => ORDER[a.kind] - ORDER[b.kind]);
+  const daySpendings = data.spendings.filter((x) => x.date === day).sort((a, b) => b.created_at.localeCompare(a.created_at));
+  const ddays = data.events
+    .filter((e) => e.dday)
+    .map((e) => ({ e, o: nextOccurrence(e, today) }))
+    .filter((x): x is { e: CalEvent; o: NonNullable<typeof x.o> } => x.o !== null)
+    .sort((a, b) => a.o.start.localeCompare(b.o.start));
+
+  return (
+    <>
+      <MonthHeader title={(l) => `${l} 달력`} sub={`${Number(month.slice(5))}월 1일 – ${Number(cells.filter(inMonth).at(-1)!.slice(8))}일`}>
+        <p className="finding">
+          <span className="nw">
+            이번 달 쓴 돈 <strong><Money value={monthSpent} /></strong>
+          </span>{" "}
+          <span className="nw clause">
+            <span className="sep">· </span>일정 {monthEvents}개
+          </span>
+        </p>
+      </MonthHeader>
+
+      <div className="grid">
+        <div className="col span-7">
+          <section className="group" aria-label="달력">
+            <div className="card cal">
+              <div className="cal-week" aria-hidden="true">
+                {WEEK.map((w, i) => (
+                  <span key={w} className={i === 0 ? "sun" : i === 6 ? "sat" : ""}>
+                    {w}
+                  </span>
+                ))}
+              </div>
+              <div className="cal-grid" role="grid" aria-label={`${Number(month.slice(5))}월`}>
+                {cells.map((d, i) => {
+                  const ms = marks.get(d) ?? [];
+                  const kinds = [...new Set(ms.filter((m) => !(m.occ && m.occ.start !== m.occ.end)).map((m) => (m.kind === "payday" ? `k-payday ${m.owner}` : `k-${m.kind}`)))].slice(0, 3);
+                  const bars = ms.filter((m) => m.occ && m.occ.start !== m.occ.end).slice(0, 2);
+                  const amount = spent.get(d) ?? 0;
+                  const label = [dateWithDay(d), amount ? `쓴 돈 ${num(amount)}원` : "", ...ms.map((m) => m.title)].filter(Boolean).join(", ");
+                  return (
+                    <button
+                      key={d}
+                      type="button"
+                      className={`cal-day ${inMonth(d) ? "" : "out"} ${d === today ? "today" : ""} ${d === day ? "picked" : ""} ${i % 7 === 0 ? "sun" : i % 7 === 6 ? "sat" : ""}`}
+                      aria-label={label}
+                      aria-pressed={d === day}
+                      onClick={() => setPicked(d)}
+                    >
+                      <span className="n">{Number(d.slice(8))}</span>
+                      {amount > 0 && <span className="amt">{short(amount)}</span>}
+                      {kinds.length > 0 && (
+                        <span className="dots" aria-hidden="true">
+                          {kinds.map((k) => (
+                            <i key={k} className={k} />
+                          ))}
+                        </span>
+                      )}
+                      {bars.map((m) => (
+                        <i key={m.event!.id} className={`bar ${m.event!.owner} ${m.occ!.start === d ? "first" : ""} ${m.occ!.end === d ? "last" : ""}`} aria-hidden="true" />
+                      ))}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </section>
+
+          <section className="group" aria-labelledby="day-h">
+            <div className="group-head">
+              <h2 id="day-h">{dateWithDay(day)}</h2>
+              <button type="button" className="aside head-btn" onClick={() => openEvent(undefined, day)}>
+                <Plus aria-hidden="true" /> 일정 추가
+              </button>
+            </div>
+            <div className="card">
+              {dayMarks.length === 0 && daySpendings.length === 0 ? (
+                <p className="empty">이날은 일정도 기록도 없어요.</p>
+              ) : (
+                <div className="rows">
+                  {dayMarks.map((m, i) =>
+                    m.event ? (
+                      <button type="button" className="row no-lead cal-mark" key={`e${m.event.id}`} onClick={() => openEvent(m.event)}>
+                        <div style={{ minWidth: 0 }}>
+                          <div className="t">
+                            <i className={`mark-dot k-event ${m.event.owner}`} aria-hidden="true" />
+                            {m.title}
+                          </div>
+                          <div className="s">
+                            {m.occ && m.occ.start !== m.occ.end ? `${shortDate(m.occ.start)}~${shortDate(m.occ.end)}` : "하루"}
+                            {m.event.owner !== "joint" ? ` · ${nameOf(s, m.event.owner)}` : ""}
+                            {m.event.note ? ` · ${m.event.note}` : ""}
+                          </div>
+                        </div>
+                        <div className="r">
+                          {m.amount ? <Money value={m.amount} /> : null}
+                          {m.event.dday && m.occ && <div className="s">{ddayText(m.occ, today)}</div>}
+                        </div>
+                      </button>
+                    ) : (
+                      <Link href="/check" className="row no-lead cal-mark" key={`${m.kind}${i}`}>
+                        <div style={{ minWidth: 0 }}>
+                          <div className="t">
+                            <i className={`mark-dot k-${m.kind} ${m.owner ?? ""}`} aria-hidden="true" />
+                            {m.title}
+                          </div>
+                          <div className="s">{m.kind === "payday" ? "옮길 돈은 체크에서" : m.kind === "card" ? "카드값" : m.done ? "완료" : "이체·납부"}</div>
+                        </div>
+                        <div className="r">{m.amount ? <Money value={m.amount} /> : null}</div>
+                      </Link>
+                    ),
+                  )}
+                  {daySpendings.map((x) => (
+                    <button type="button" className="row" key={x.id} onClick={() => openSpending(x)}>
+                      <CategoryIcon visual={spendingVisual(data, x)} />
+                      <div style={{ minWidth: 0 }}>
+                        <div className="t">{x.memo || "지출"}</div>
+                        <div className="s">{x.owner === "joint" ? "공동" : `${nameOf(s, x.owner)} 용돈`}</div>
+                      </div>
+                      <div className="r">
+                        <Money value={x.amount} />
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
+        </div>
+
+        <div className="col span-5">
+          <section className="group" aria-labelledby="dday-h">
+            <div className="group-head">
+              <h2 id="dday-h">D-day</h2>
+              <button type="button" className="aside head-btn" onClick={() => openEvent(undefined, today)}>
+                <Plus aria-hidden="true" /> 일정 추가
+              </button>
+            </div>
+            <div className="card">
+              {ddays.length === 0 ? (
+                <p className="empty">재산세·신고 기간·기념일을 일정으로 만들고 D-day 세기를 켜면 여기에 모여요.</p>
+              ) : (
+                <div className="rows">
+                  {ddays.map(({ e, o }) => (
+                    <button type="button" className="row no-lead" key={e.id} onClick={() => openEvent(e)}>
+                      <div style={{ minWidth: 0 }}>
+                        <div className="t">{e.title}</div>
+                        <div className="s">{o.start === o.end ? dateWithDay(o.start) : `${shortDate(o.start)} ~ ${shortDate(o.end)}`}</div>
+                      </div>
+                      <div className="r">
+                        <span className={`pill ${o.start <= today ? "warning" : ""}`}>{ddayText(o, today)}</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <EventSheet key={sheet.key} open={sheet.open} event={sheet.event} date={sheet.date} onOpenChange={(open) => setSheet((x) => ({ ...x, open }))} />
+    </>
+  );
+}

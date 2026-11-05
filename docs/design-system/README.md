@@ -125,7 +125,7 @@
   - 막대는 화면 위에 붙어 있습니다. 큰 제목이 막대 밑으로 지나가면 막대가 유리(`surface` 72% + blur 20px, 아래 0.5px 선)가 되고 가운데에 작은 제목("11월 체크")이 떠오릅니다.
   - 다른 달을 보면 큰 제목 옆에 회색 알약 "이번 달로"가 붙습니다.
 - **하단 메뉴(폰):**
-  - 화면 아래에서 `nav-inset`만큼 띄운 캡슐(`nav-h`, `radius-chip`, `surface` 86% + blur 22px, `shadow-nav`)에 홈·플랜·체크·가계부 네 칸을 둡니다.
+  - 화면 아래에서 `nav-inset`만큼 띄운 캡슐(`nav-h`, `radius-chip`, `surface` 86% + blur 22px, `shadow-nav`)에 홈·플랜·체크·가계부·달력 다섯 칸을 둡니다.
   - 고른 칸은 `tab-active-bg` 알약이 감싸고 `dur-tab`·`ease-drawer`로 미끄러집니다.
   - 고른 칸의 아이콘은 `primary`, 글자는 `accent-ink`입니다. 나머지는 `muted`입니다.
 - **원형 기록 버튼:** 캡슐 오른쪽에 `nav-gap`만큼 떨어져 따로 뜹니다. 지름 `nav-h`, `primary` 채움에 흰 `Plus`입니다. 어느 탭에서나(설정 포함) 같은 자리에 두어 캡슐 폭이 바뀌지 않게 합니다.

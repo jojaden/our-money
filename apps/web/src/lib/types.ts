@@ -196,6 +196,30 @@ export interface HistoryRow {
   after: Record<string, unknown> | null;
 }
 
+export type Repeat = "none" | "monthly" | "yearly";
+
+/** 달력 일정 (supabase/migrations/011). 하루면 end_date 가 비고, 기간이면 끝 날까지(포함) */
+export interface CalEvent extends Meta {
+  id: string;
+  title: string;
+  note: string;
+  /** YYYY-MM-DD */
+  start_date: string;
+  end_date: string | null;
+  repeat: Repeat;
+  owner: Owner;
+  /** D-day 를 센다 */
+  dday: boolean;
+  /** 기간 동안 알림 모음(종) 맨 위에 고정 */
+  pin: boolean;
+  /** 며칠 전에 폰 알림 (비면 없음, 0 = 당일) */
+  remind_days: number | null;
+  /** 낼 돈 (선택) */
+  amount: number | null;
+}
+
+export const REPEAT_LABEL: Record<Repeat, string> = { none: "안 함", monthly: "매달", yearly: "매년" };
+
 export interface Member {
   email: string;
   person: Person;
@@ -220,6 +244,7 @@ export interface Data {
   categories: Category[];
   spendings: Spending[];
   users: User[];
+  events: CalEvent[];
 }
 
 export type TableName = Exclude<keyof Data, "settings"> | "settings";
