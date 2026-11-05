@@ -1,7 +1,7 @@
 "use client";
 
 import { useData } from "@/lib/store";
-import { currentMonth, itemsFromMonth, itemsOf, latestMonthBefore, periodOf, periodProgress } from "@/lib/calc";
+import { currentMonth, itemsFromMonth, itemsOf, latestMonthBefore, monthRow, periodOf, periodProgress } from "@/lib/calc";
 import { useState } from "react";
 import { monthLabel, parseYmd } from "@/lib/format";
 import { Toggle } from "./ui";
@@ -35,6 +35,7 @@ export function MonthHeader({ title, children }: { title?: (m: string) => string
         <p className="sub">
           {rangeText(month, data.settings.cycle_start)}
           {tail}
+          {monthRow(data, month)?.closed_at ? " · 마감" : ""}
         </p>
         {children}
       </div>

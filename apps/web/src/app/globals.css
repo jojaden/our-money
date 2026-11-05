@@ -111,6 +111,11 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
 .parts .p { display: flex; justify-content: space-between; gap: 12px; padding: 3px 0; font-size: 13px; color: var(--muted); }
 .parts .p .money { color: var(--text); }
 
+/* 달 마무리: 메모와 마감 (마감은 표시만) */
+.month-close textarea.input { height: auto; min-height: 88px; padding: 12px 14px; line-height: 22px; resize: vertical; }
+.month-close .card-foot .s { color: var(--faint); font-size: 13px; }
+.month-close .close-row { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--rule); }
+
 /* ---------- 가계부: 날짜 묶음, 분류 예산 줄 ---------- */
 
 .daygroup + .daygroup { margin-top: 8px; }
