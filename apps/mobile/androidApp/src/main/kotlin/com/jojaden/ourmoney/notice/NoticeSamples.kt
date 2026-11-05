@@ -1,6 +1,9 @@
 package com.jojaden.ourmoney.notice
 
 import android.content.Context
+import com.jojaden.ourmoney.core.notice.Payment
+import com.jojaden.ourmoney.core.notice.PaymentKind
+import com.jojaden.ourmoney.core.notice.parseNotice
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
@@ -46,6 +49,31 @@ object NoticeSamples {
         file(context).delete()
     }
 
-    /** 공개 저장소에 붙일 수 있게 숫자를 모두 0 으로 가린다 (금액·카드 끝자리·승인번호·시각). 문구 모양은 그대로 남는다 */
-    fun masked(s: NoticeSample): String = "[${s.pkg}]\n${s.title}\n${s.text}".replace(Regex("[0-9]"), "0")
+    /** 공개 저장소에 붙일 수 있게 숫자를 모두 0 으로 가린다 (금액·카드 끝자리·승인번호·시각). 문구 모양과 읽은 값은 그대로 남는다 */
+    fun masked(s: NoticeSample): String =
+        "[${s.pkg}]\n${s.title}\n${s.text}\n→ ${describe(parseNotice(s.title, s.text))}".replace(Regex("[0-9]"), "0")
+
+    private val KIND = mapOf(
+        PaymentKind.APPROVE to "사용",
+        PaymentKind.CANCEL to "취소",
+        PaymentKind.WITHDRAW to "출금",
+        PaymentKind.DEPOSIT to "입금",
+        PaymentKind.MOVE to "입출금(방향 모름)",
+    )
+
+    /** 해석기가 읽은 값 한 줄 — 모으기 화면과 복사한 글에서 맞게 읽었는지 확인하려고 */
+    fun describe(p: Payment?): String {
+        if (p == null) return "읽지 못했어요"
+        val months = when (p.months) {
+            null -> ""
+            1 -> "일시불"
+            else -> "${p.months}개월"
+        }
+        return listOf(
+            "${KIND.getValue(p.kind)} ${"%,d".format(p.amount)}원",
+            p.counterpart.orEmpty(),
+            p.last4?.let { "끝 $it" }.orEmpty(),
+            months,
+        ).filter { it.isNotEmpty() }.joinToString(" · ")
+    }
 }
