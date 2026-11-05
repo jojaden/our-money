@@ -92,6 +92,7 @@
   --ease-breathe: cubic-bezier(0.45, 0, 0.55, 1);
   --dur-press: 180ms;
   --dur-tab: 420ms;
+  --dur-swap: 260ms;
   --dur-pop: 560ms;
   --dur-count: 900ms;
   --dur-ring: 1100ms;

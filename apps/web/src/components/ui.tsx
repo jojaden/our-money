@@ -25,6 +25,7 @@ import type { Owner, Settings } from "@/lib/types";
 import { num } from "@/lib/format";
 import { nameOf } from "@/lib/calc";
 import { useStore } from "@/lib/store";
+import { Morph } from "./Morph";
 
 export function Money({ value, className = "", sign = false, animate = false }: { value: number | null | undefined; className?: string; sign?: boolean; animate?: boolean }) {
   const shown = useRolling(value ?? 0, animate);
@@ -250,13 +251,16 @@ export function Sheet({
         <Drawer.Overlay className="sheet-overlay" />
         <Drawer.Content className={`sheet ${className}`} aria-describedby={undefined}>
           <div className="sheet-handle" aria-hidden="true" />
-          <div className="sheet-head">
-            <Drawer.Title asChild>
+          {/* 제목이 바뀌면(예: 새 할 일 → 새 일정) 겹쳐 바뀌고, 칸이 생기고 빠지면 시트가 스르륵 늘고 준다 */}
+          <Morph className="sheet-head" track=":scope > *">
+            <Drawer.Title asChild key={title}>
               <h2>{title}</h2>
             </Drawer.Title>
             {headerAction}
+          </Morph>
+          <div className="sheet-body">
+            <Morph>{children}</Morph>
           </div>
-          <div className="sheet-body">{children}</div>
           {footer && <div className="sheet-foot">{footer}</div>}
         </Drawer.Content>
       </Drawer.Portal>
@@ -268,27 +272,30 @@ export function Toasts() {
   const { toasts, dismissToast, pending } = useStore();
   return (
     <div className="toasts" aria-live="polite">
-      {pending > 0 && (
-        <div className="toast" role="status">
-          <span>보내지 못한 저장 {pending}건 · 연결되면 자동으로 보내요</span>
-        </div>
-      )}
-      {toasts.map((t) => (
-        <div className="toast" key={t.id} role="status">
-          <span>{t.text}</span>
-          {t.undo && (
-            <button
-              type="button"
-              onClick={() => {
-                t.undo?.();
-                dismissToast(t.id);
-              }}
-            >
-              되돌리기
-            </button>
-          )}
-        </div>
-      ))}
+      {/* 사라진 토스트는 흐려지고 나머지는 제자리로 내려온다 (들어오기는 .toast 의 @starting-style) */}
+      <Morph className="toast-stack" track=":scope > *" enter={false}>
+        {pending > 0 && (
+          <div className="toast" role="status">
+            <span>보내지 못한 저장 {pending}건 · 연결되면 자동으로 보내요</span>
+          </div>
+        )}
+        {toasts.map((t) => (
+          <div className="toast" key={t.id} role="status">
+            <span>{t.text}</span>
+            {t.undo && (
+              <button
+                type="button"
+                onClick={() => {
+                  t.undo?.();
+                  dismissToast(t.id);
+                }}
+              >
+                되돌리기
+              </button>
+            )}
+          </div>
+        ))}
+      </Morph>
     </div>
   );
 }
