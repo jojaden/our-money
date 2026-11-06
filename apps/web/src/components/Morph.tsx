@@ -1,6 +1,7 @@
 "use client";
 
 import { Component, createRef, type ReactNode } from "react";
+import { cssTimeMs } from "@/lib/motion";
 
 /**
  * 안의 칸이 바뀔 때 스르륵 이어지게 하는 상자 (docs/design-system 움직임 "칸 바뀌기").
@@ -24,7 +25,7 @@ let T: { move: number; swap: number; drawer: string; out: string } | null = null
 export function tokens() {
   if (T) return T;
   const css = getComputedStyle(document.documentElement);
-  const ms = (n: string, d: number) => parseFloat(css.getPropertyValue(n)) || d;
+  const ms = (n: string, d: number) => cssTimeMs(css.getPropertyValue(n), d);
   const ease = (n: string) => css.getPropertyValue(n).trim() || "ease-out";
   T = { move: ms("--dur-tab", 420), swap: ms("--dur-swap", 260), drawer: ease("--ease-drawer"), out: ease("--ease-out") };
   return T;

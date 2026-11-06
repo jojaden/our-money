@@ -64,6 +64,8 @@ jobs:
       - name: 디자인 토큰 (tokens.json = tokens.css)
         run: python3 ../../scripts/design_preview.py --check
       - run: npm ci
+      - name: 애니메이션 시간 단위 회귀 테스트
+        run: node --test src/lib/motion.test.mjs
       - name: 정적 빌드 (타입 검사 포함)
         run: npx next build
 

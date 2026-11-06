@@ -1,6 +1,7 @@
 "use client";
 
 import { useId, useLayoutEffect, useRef } from "react";
+import { cssTimeMs } from "@/lib/motion";
 
 /**
  * 빛을 머금은 튜브 게이지 (docs/design-system README "게이지와 막대").
@@ -167,7 +168,7 @@ export function TubeArc({
 // ease-out, ease-value 토큰과 같은 모양의 곡선 (숫자와 끝 점을 호와 같은 박자로 움직이려고 JS 로 계산)
 const easeOut = (t: number) => 1 - Math.pow(1 - t, 4);
 const easeValue = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
-const ms = (token: string, fallback: number) => parseFloat(getComputedStyle(document.documentElement).getPropertyValue(token)) || fallback;
+const ms = (token: string, fallback: number) => cssTimeMs(getComputedStyle(document.documentElement).getPropertyValue(token), fallback);
 
 /** 키마다 마지막으로 보인 값 — 탭을 다시 열거나 달을 넘겨도 0 부터 다시 그리지 않는다 */
 const shown = new Map<string, number[]>();
@@ -196,10 +197,11 @@ export function useTween(key: string, to: number[], start: number[], draw: (v: n
     }
     const dur = prev ? ms("--dur-value", 800) : ms("--dur-ring", 1100);
     const ease = prev ? easeValue : easeOut;
-    const t0 = performance.now();
+    let t0: number | null = null;
     let raf = 0;
     drawRef.current(from);
     const step = (t: number) => {
+      t0 ??= t;
       const p = Math.min(1, (t - t0) / dur);
       const e = ease(p);
       const v = from.map((f, i) => f + (goal[i] - f) * e);

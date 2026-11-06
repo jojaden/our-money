@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import type { Check, Data, HistoryRow, Month, MonthItem, Person, Row, Spending, TableName } from "./types";
 import { getRepo, hasSupabase, currentMember, supabase, LIST_TABLES, ConflictError, RetryableError, upsertOp, deleteOp, type Change, type Op } from "./repo";
 import { addMonths, currentMonth, itemsFromMonth, latestMonthBefore, monthRow, periodOf, snapshotItems, withUserNames } from "./calc";
+import { createMonthMotion } from "./monthMotion";
 import { haptic } from "./native";
 
 type Auth =
@@ -327,12 +328,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     loadSpendingsFrom(periodOf(addMonths(month, -1), data.settings.cycle_start).start); // 지난달 비교·카드값까지
   }, [data, month, loadSpendingsFrom]);
 
+  const monthMotion = useMemo(() => createMonthMotion(), []);
+  useEffect(() => () => monthMotion.cancel(), [monthMotion]);
   const setMonth = useCallback((m: string) => {
-    setMonthState(m);
+    void monthMotion.run(() => setMonthState(m));
     try {
       sessionStorage.setItem(MONTH_KEY, m);
     } catch {}
-  }, []);
+  }, [monthMotion]);
 
   const setMe = useCallback((p: Person) => {
     setMeState(p);

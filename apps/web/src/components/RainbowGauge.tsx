@@ -32,15 +32,17 @@ export function RainbowGauge({ buckets, prev }: { buckets: Bucket[]; prev: { now
 
   useTween(
     "rainbow",
-    buckets.map((b) => b.spent),
-    buckets.map(() => 0),
+    buckets.flatMap((b) => [b.spent, b.budget]),
+    buckets.flatMap((b) => [0, b.budget]),
     (v) => {
-      v.forEach((x, i) => {
-        const b = buckets[i].budget;
+      buckets.forEach((_, i) => {
+        const x = v[i * 2];
+        const b = v[i * 2 + 1];
         drawArc(fills[i].current, knobs[i].current, SHAPES[i], b > 0 ? x / b : x > 0 ? 1 : 0);
       });
-      const total = v.reduce((a, x) => a + x, 0);
-      if (pctEl.current) pctEl.current.textContent = String(pctOf(total, budget));
+      const total = buckets.reduce((a, _, i) => a + v[i * 2], 0);
+      const animatedBudget = buckets.reduce((a, _, i) => a + v[i * 2 + 1], 0);
+      if (pctEl.current) pctEl.current.textContent = String(pctOf(total, animatedBudget));
       if (fig.current) fig.current.textContent = num(Math.round(total));
     },
   );

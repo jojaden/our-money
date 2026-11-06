@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { Check } from "lucide-react";
+import { cssTimeMs } from "@/lib/motion";
 
 /** 원으로 늘어놓을 수 있는 가장 많은 단계. 넘으면 진행선을 그리지 않는다 (docs/design-system/components/StepTrack) */
 export const MAX_STEPS = 8;
@@ -19,7 +20,7 @@ export function StepTrack({ done, total }: { done: number; total: number }) {
     const root = el.current;
     if (!root || done <= from || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const cs = getComputedStyle(root);
-    const duration = parseFloat(cs.getPropertyValue("--dur-pop")) || 560;
+    const duration = cssTimeMs(cs.getPropertyValue("--dur-pop"), 560);
     const easing = cs.getPropertyValue("--ease-pop").trim() || "ease-out";
     root.querySelectorAll<HTMLElement>(".step").forEach((n, i) => {
       if (i >= from && i < done) n.animate([{ transform: "scale(0.8)" }, { transform: "scale(1)" }], { duration, easing });
