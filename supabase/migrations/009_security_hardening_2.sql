@@ -38,6 +38,9 @@ begin
          and lower(au.email) = mail
          and au.email_confirmed_at is not null
          and lower(i.identity_data ->> 'email') = mail
+         -- 비밀번호도, 구글 말고 다른 로그인 방식도 없다: 남이 먼저 이메일로 가입해 둔 계정에 구글이 이어 붙은 것을 거른다 (013)
+         and coalesce(au.encrypted_password, '') = ''
+         and not exists (select 1 from auth.identities o where o.user_id = au.id and o.provider <> 'google')
     ) then
       return null;
     end if;
