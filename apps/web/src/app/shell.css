@@ -61,9 +61,8 @@ body:has(.canvas.home) {
   transition: opacity var(--dur-press) ease, transform var(--dur-tab) var(--ease-drawer);
 }
 .topbar.glass .bar-mini { opacity: 1; transform: none; }
-/* 작은 제목 ‹ 11월 체크 › — 누르면 달 고르기. 큰 제목이 보일 때는 inert. 이름까지 들어갈 자리가 없는 폰(~400px)에서는 ‹ 11월 › 만 */
-div.bar-mini { container-type: inline-size; display: flex; align-items: center; justify-content: center; gap: 2px; }
-@container (max-width: 157px) { .mini-title .nm { display: none; } }
+/* 작은 제목 ‹ 11월 › — 화면 이름은 생략하고, 누르면 달 고르기. 큰 제목이 보일 때는 inert. */
+div.bar-mini { display: flex; align-items: center; justify-content: center; gap: 2px; }
 .mini-title { min-width: 0; height: 36px; padding: 0 8px; overflow: hidden; border: 0; border-radius: var(--radius-control); background: transparent; color: var(--text); font: inherit; letter-spacing: inherit; text-overflow: ellipsis; white-space: nowrap; }
 .mini-step { display: grid; flex: none; place-items: center; width: 32px; height: 36px; padding: 0; border: 0; border-radius: var(--radius-control); background: transparent; color: var(--faint); }
 .mini-step svg { width: 18px; height: 18px; stroke-width: 2.25; }

@@ -307,7 +307,6 @@ function TopBar({ path }: { path: string }) {
           </button>
           <button type="button" className="mini-title" aria-haspopup="dialog" aria-label={`${full}, 다른 달 고르기`} onClick={() => openMonths()}>
             {title.lead}
-            {title.name && <span className="nm"> {title.name}</span>}
           </button>
           <button type="button" className="mini-step" aria-label={`다음 달 (${monthLabel(addMonths(month, 1))})`} onClick={() => setMonth(addMonths(month, 1))}>
             <ChevronRight aria-hidden="true" />
