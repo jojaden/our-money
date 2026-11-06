@@ -312,10 +312,10 @@ JDK 21, Android SDK(platform 37, build-tools 37)가 필요해요.
 ```bash
 cd apps/mobile
 ./gradlew :core:jvmTest              # 계산 테스트 (웹과 같은 규칙)
-./gradlew :androidApp:assembleDebug  # androidApp/build/outputs/apk/debug/
+./gradlew :androidApp:assembleDebug  # androidApp/build/outputs/apk/debug/ (내 폰에서 개발할 때만)
 ```
 
-자세한 내용은 [`apps/mobile/README.md`](apps/mobile/README.md)에 있어요.
+다른 사람에게 건네는 APK 는 출시 키로 서명한 `assembleRelease` 로 만들어요. 키 만들기와 확인 방법은 [`apps/mobile/README.md`](apps/mobile/README.md#출시용-apk-두-사람에게-건넬-것)에 있어요.
 
 ## 개발 규칙과 버전 관리
 
