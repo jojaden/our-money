@@ -16,6 +16,7 @@ import { SpendingSheet } from "./SpendingSheet";
 import { MonthSheet } from "./MonthSheet";
 import { BellButton } from "./Bell";
 import { NoticeSync } from "./NoticeSync";
+import { PageTransition } from "./PageTransition";
 import { LoadingScreen, StageScreen } from "./Stage";
 
 // 설정은 탭이 아니다 — 폰은 위쪽 막대의 내 동전 버튼, 데스크톱은 레일 맨 아래
@@ -239,7 +240,7 @@ function PageMotion({ path, children }: { path: string; children: React.ReactNod
     <div
       ref={box}
       key={`${path}|${month}`}
-      className="page-enter fade"
+      className="page-enter"
       style={{ touchAction: "pan-y" }}
       onPointerDown={onDown}
       onPointerMove={onMove}
@@ -409,7 +410,9 @@ function Frame({ children }: { children: React.ReactNode }) {
                   <TopBar path={path} />
                 </Suspense>
                 <InstallPrompt />
-                <PageMotion path={path}>{children}</PageMotion>
+                <Suspense fallback={null}>
+                  <PageTransition><PageMotion path={path}>{children}</PageMotion></PageTransition>
+                </Suspense>
               </main>
               {data && <SpendingSheet open={sheet.open} editing={sheet.editing} onOpenChange={(open) => setSheet((s) => ({ ...s, open }))} />}
               {data && <MonthSheet key={months.key} open={months.open} range={months.range} onOpenChange={(open) => setMonths((x) => ({ ...x, open }))} />}

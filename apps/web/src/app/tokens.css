@@ -94,6 +94,7 @@
   --ease-value: cubic-bezier(0.65, 0, 0.35, 1);
   --ease-breathe: cubic-bezier(0.45, 0, 0.55, 1);
   --dur-press: 180ms;
+  --dur-page: 200ms;
   --dur-tab: 420ms;
   --dur-swap: 260ms;
   --dur-pop: 560ms;

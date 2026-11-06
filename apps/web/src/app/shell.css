@@ -258,19 +258,39 @@ div.bar-mini { container-type: inline-size; display: flex; align-items: center; 
 
 /* ---------- 화면 전환 ---------- */
 
-/* 탭을 바꾸면 짧은 교차 페이드, 달을 바꾸면 그 방향에서 밀려 들어온다.
-   달을 바꿀 때 큰 제목 줄(‹ 11월 ›)은 제자리에 두고 달 이름만 같은 방향에서 들어오며, 기간 줄·결론은 흐린 데서 나타난다 */
-.page-enter.fade { animation: tabIn var(--dur-press) ease-out both; }
-.page-enter.from-right > :not(.page-head) { animation: pageInRight var(--dur-tab) var(--ease-drawer) both; }
-.page-enter.from-left > :not(.page-head) { animation: pageInLeft var(--dur-tab) var(--ease-drawer) both; }
-.page-enter.from-right .page-head .m { animation: monthInRight var(--dur-tab) var(--ease-drawer) both; }
-.page-enter.from-left .page-head .m { animation: monthInLeft var(--dur-tab) var(--ease-drawer) both; }
-.page-enter:is(.from-right, .from-left) .page-head :is(.to-now, .title-row ~ *) { animation: tabIn var(--dur-tab) var(--ease-out) both; }
-@keyframes monthInRight { from { opacity: 0; transform: translateX(12px); } }
-@keyframes monthInLeft { from { opacity: 0; transform: translateX(-12px); } }
+.route-page { min-height: calc(100dvh - 80px); background: var(--ground); view-transition-name: app-page; }
+.home .route-page { background: linear-gradient(180deg, var(--warm-50), var(--ground) 206px); }
+/* 이전 화면은 즉시 숨기고 새 화면만 짧게 움직여 방향감만 남긴다. */
+::view-transition-group(app-page) { animation: none; }
+::view-transition-image-pair(app-page) { isolation: isolate; }
+::view-transition-new(app-page) {
+  height: 100%;
+  object-fit: none;
+  object-position: top left;
+  mix-blend-mode: normal;
+  animation-duration: var(--dur-page);
+  animation-timing-function: var(--ease-out);
+  animation-fill-mode: both;
+}
+::view-transition-old(app-page) { display: none; }
+::view-transition-new(app-page) { animation-name: page-push-in; }
+html[data-navigation="back"]::view-transition-new(app-page) { animation-name: page-pop-in; }
+@keyframes page-push-in { from { transform: translateX(12px); } }
+@keyframes page-pop-in { from { transform: translateX(-12px); } }
+/* 셸은 공간의 기준점이다. 메뉴와 위쪽 막대는 페이지 위에서 제자리를 지킨다. */
+.topbar { view-transition-name: app-header; }
+.navbar { view-transition-name: app-nav; }
+@media (min-width: 1024px) { .rail { view-transition-name: app-rail; } }
+::view-transition-group(app-header), ::view-transition-group(app-nav), ::view-transition-group(app-rail) { z-index: 10; animation: none; }
+::view-transition-old(app-header), ::view-transition-old(app-nav), ::view-transition-old(app-rail), ::view-transition-old(root) { display: none; }
+::view-transition-new(app-header), ::view-transition-new(app-nav), ::view-transition-new(app-rail), ::view-transition-new(root) { animation: none; }
+::view-transition { pointer-events: none; }
+/* 이전 WebView에서도 새 화면의 도착 방향은 유지한다. */
+@supports not (view-transition-name: app-page) {
+  .route-page { animation: page-push-in var(--dur-page) var(--ease-out) both; }
+  html[data-navigation="back"] .route-page { animation-name: page-pop-in; }
+}
 @keyframes tabIn { from { opacity: 0; } to { opacity: 1; } }
-@keyframes pageInRight { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: none; } }
-@keyframes pageInLeft { from { opacity: 0; transform: translateX(-28px); } to { opacity: 1; transform: none; } }
 
 /* ---------- 토스트 ---------- */
 
@@ -324,6 +344,8 @@ div.bar-mini { container-type: inline-size; display: flex; align-items: center; 
 .install .s { color: var(--faint); font-size: 12.5px; }
 
 @media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
+  .route-page { animation: none !important; }
   .page-enter, .page-enter > *, .page-enter .page-head * { animation: none !important; }
   .fab, .fab-icon, .bell .badge { animation: none !important; transition: none !important; }
 }
