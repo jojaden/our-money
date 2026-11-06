@@ -6,6 +6,9 @@ import com.jojaden.ourmoney.core.notice.parseNotice
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.TimeSource
 
 // 결제 알림 읽기. 실제 알림의 모양만 따르고 이름·번호·금액은 지어낸 값이다(공개 저장소).
 
@@ -88,5 +91,20 @@ class NoticeTest {
     @Test
     fun 금액이_없으면_읽지_않는다() {
         assertNull(p("이번 달 카드 실적을 확인하세요"))
+    }
+
+    @Test
+    fun 가려진_번호_끝자리() {
+        assertEquals("5678", p("1234-****-****-5678\n승인 1,000원")?.last4)
+        assertEquals("4567", p("**12**4567 결제 1,000원")?.last4)
+    }
+
+    // 아무 앱이나 올린 긴 글이 해석을 붙잡지 않는다 (정규식 역추적, 금액마다 앞부분 다시 훑기)
+    @Test
+    fun 긴_글도_금방_읽는다() {
+        val start = TimeSource.Monotonic.markNow()
+        assertEquals(1L, p("*".repeat(5_000), title = "결제 1원")?.amount)
+        assertNull(p("누적" + " ".repeat(300) + "x" + "누적1원".repeat(100), title = "결제"))
+        assertTrue(start.elapsedNow() < 1.seconds)
     }
 }

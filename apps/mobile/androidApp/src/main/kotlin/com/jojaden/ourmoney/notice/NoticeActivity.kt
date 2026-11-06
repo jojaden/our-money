@@ -23,6 +23,7 @@ class NoticeActivity : ComponentActivity() {
     // 권한은 저장해 두지 않고 화면에 돌아올 때마다 다시 확인한다 (설정에서 언제든 끌 수 있다)
     private var enabled by mutableStateOf(false)
     private var samples by mutableStateOf(emptyList<NoticeSample>())
+    private var apps by mutableStateOf(emptyList<NoticeApp>())
     private var canNotify by mutableStateOf(true)
     /** 알림 권한을 "다시 묻지 않음"으로 거절했으면 설정 화면으로 보낸다 */
     private var notifyBlocked by mutableStateOf(false)
@@ -41,12 +42,18 @@ class NoticeActivity : ComponentActivity() {
                 enabled = enabled,
                 canNotify = canNotify,
                 samples = samples,
+                apps = apps,
+                onToggleApp = { pkg, on ->
+                    TrustedApps.set(this, pkg, on)
+                    apps = appsOf(samples)
+                },
                 onOpenSettings = ::openListenerSettings,
                 onAllowNotify = ::allowNotify,
                 onCopy = ::copyMasked,
                 onClear = {
                     NoticeSamples.clear(this)
                     samples = emptyList()
+                    apps = emptyList()
                 },
             )
         }
@@ -56,8 +63,16 @@ class NoticeActivity : ComponentActivity() {
         super.onResume()
         enabled = packageName in NotificationManagerCompat.getEnabledListenerPackages(this)
         samples = NoticeSamples.list(this)
+        apps = appsOf(samples)
         canNotify = MatchNotifier.canNotify(this)
     }
+
+    /** 모은 알림을 보낸 앱들 — 이름을 못 읽으면(패키지 공개 범위) 패키지 이름으로 */
+    private fun appsOf(list: List<NoticeSample>): List<NoticeApp> =
+        list.map { it.pkg }.distinct().map { pkg ->
+            val label = runCatching { packageManager.getApplicationLabel(packageManager.getApplicationInfo(pkg, 0)).toString() }.getOrDefault(pkg)
+            NoticeApp(pkg, label, TrustedApps.isOn(this, pkg), TrustedApps.isMessenger(this, pkg))
+        }
 
     private fun allowNotify() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !notifyBlocked) {

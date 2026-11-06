@@ -12,9 +12,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -29,8 +31,11 @@ private val Ink = Color(0xFF1C1C1E)
 private val Muted = Color(0xFF6E6E73)
 private val Card = Color(0xFFFFFFFF)
 
+/** 알림을 보낸 앱 한 줄 — 가계부에 쓰는지 */
+data class NoticeApp(val pkg: String, val label: String, val on: Boolean, val messenger: Boolean)
+
 /**
- * 카드 알림 모으기 화면 (임시). 알림 접근 권한 상태, 모은 알림 목록과 해석기가 읽은 값,
+ * 카드 알림 모으기 화면 (임시). 알림 접근 권한 상태, 가계부에 쓰는 앱, 모은 알림 목록과 해석기가 읽은 값,
  * 숫자를 가려 복사하기(해석 규칙을 만들 때 붙여 넣을 용도), 모두 지우기.
  */
 @Composable
@@ -38,6 +43,8 @@ fun NoticeScreen(
     enabled: Boolean,
     canNotify: Boolean,
     samples: List<NoticeSample>,
+    apps: List<NoticeApp>,
+    onToggleApp: (pkg: String, on: Boolean) -> Unit,
     onOpenSettings: () -> Unit,
     onAllowNotify: () -> Unit,
     onCopy: () -> Unit,
@@ -73,12 +80,42 @@ fun NoticeScreen(
                     }
                 }
             }
+            if (apps.isNotEmpty()) {
+                item(key = "apps", contentType = "apps") {
+                    Column(
+                        Modifier
+                            .padding(horizontal = 16.dp)
+                            .fillMaxWidth()
+                            .background(Card, RoundedCornerShape(16.dp))
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        Text("가계부에 쓰는 앱", fontSize = 17.sp, fontWeight = FontWeight.SemiBold, color = Ink)
+                        Text(
+                            "켠 앱의 결제 알림만 지출로 적고 할 일을 체크해요. 문자·메신저는 누구나 보낼 수 있어서 켜도 \"체크할까요?\"만 물어봐요.",
+                            fontSize = 13.sp,
+                            color = Muted,
+                        )
+                        // 앱 몇 개뿐이라 목록 안에서 그냥 그린다
+                        apps.forEach { a ->
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Column(Modifier.weight(1f)) {
+                                    Text(a.label, fontSize = 15.sp, color = Ink)
+                                    Text(if (a.messenger) "문자·메신저 · 켜면 체크만 물어봐요" else a.pkg, fontSize = 12.sp, color = Muted)
+                                }
+                                Switch(checked = a.on, onCheckedChange = { onToggleApp(a.pkg, it) })
+                            }
+                        }
+                    }
+                }
+            }
             if (samples.isEmpty()) {
                 item(key = "empty", contentType = "empty") {
                     Text("아직 모은 알림이 없어요.", Modifier.padding(horizontal = 20.dp), fontSize = 15.sp, color = Muted)
                 }
             }
-            items(samples, key = { "${it.at}:${it.pkg}:${it.text.hashCode()}" }, contentType = { "sample" }) { s ->
+            // 같은 앱·같은 글은 한 번만 모으므로(NoticeSamples.add) 시각·앱·글 전체가 겹치지 않는 키다 (글의 hashCode 는 겹칠 수 있다)
+            items(samples, key = { "${it.at}:${it.pkg}:${it.text}" }, contentType = { "sample" }) { s ->
                 Column(
                     Modifier
                         .padding(horizontal = 16.dp)
