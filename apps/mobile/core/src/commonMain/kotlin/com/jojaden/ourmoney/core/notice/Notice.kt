@@ -41,11 +41,22 @@ data class Payment(
 
 private val MONEY = Regex("""([0-9][0-9,]*)\s*원""")
 
-/** 금액처럼 보여도 거래 금액이 아닌 것 (누적·잔액·한도) */
-private val NOT_AMOUNT = Regex("""(누적|잔액|한도|이용가능)\s*[:：]?\s*$""")
+/** 결제 알림은 짧다 — 더 긴 글은 잘라서 읽는다 (아무 앱이나 올린 긴 글이 해석을 붙잡지 않게) */
+private const val MAX_BODY = 1000
 
-/** 가려진 번호 0000-00**-****-0000, 000000-**-***000 → 끝 숫자 */
-private val MASKED_NO = Regex("""[0-9*]+(?:-[0-9*]+)*\*[0-9*-]*?([0-9]{3,4})\b""")
+/** 금액처럼 보여도 거래 금액이 아닌 것 (누적·잔액·한도) — 금액 바로 앞 몇 글자만 본다 */
+private val NOT_AMOUNT = Regex("""(누적|잔액|한도|이용가능)[\s:：]*$""")
+private const val NOT_AMOUNT_WINDOW = 12
+
+/** 숫자·*·- 로만 된 조각 — 가려진 번호 후보. 수량자가 겹치지 않아 한 번 훑으면 끝난다 */
+private val NO_TOKEN = Regex("""[0-9*][0-9*\-]*""")
+private val DIGITS = Regex("""[0-9]+""")
+
+/** 가려진 번호 0000-00**-****-0000, 000000-**-***000 → 마지막 * 뒤 처음 나오는 3자리 이상 숫자의 끝 4자리 */
+private fun maskedLast(body: String): String? =
+    NO_TOKEN.findAll(body).map { it.value }.filter { '*' in it }.firstNotNullOfOrNull { token ->
+        DIGITS.findAll(token.substringAfterLast('*')).map { it.value }.firstOrNull { it.length >= 3 }?.takeLast(4)
+    }
 
 /** 괄호 속 끝자리 (0000) */
 private val PAREN_NO = Regex("""\(([0-9]{3,4})\)""")
@@ -70,8 +81,9 @@ private val STRIP = listOf(
 
 /** 제목과 본문을 읽어 돈의 움직임으로. 금액을 못 찾으면 null */
 fun parseNotice(title: String, text: String): Payment? {
-    val body = listOf(title, text).filter { it.isNotBlank() }.joinToString("\n")
-    val amount = MONEY.findAll(body).firstOrNull { !NOT_AMOUNT.containsMatchIn(body.substring(0, it.range.first)) }
+    val body = listOf(title, text).filter { it.isNotBlank() }.joinToString("\n").take(MAX_BODY)
+    val amount = MONEY.findAll(body)
+        .firstOrNull { !NOT_AMOUNT.containsMatchIn(body.substring(maxOf(0, it.range.first - NOT_AMOUNT_WINDOW), it.range.first)) }
         ?.groupValues?.get(1)?.replace(",", "")?.toLongOrNull()
         ?: return null
     // "입출금"은 통장 종류라 나감·들어옴을 가리지 않는다
@@ -85,7 +97,7 @@ fun parseNotice(title: String, text: String): Payment? {
         "입금" in words -> PaymentKind.DEPOSIT
         else -> PaymentKind.MOVE
     }
-    val last4 = MASKED_NO.find(body)?.groupValues?.get(1) ?: PAREN_NO.find(body)?.groupValues?.get(1)
+    val last4 = maskedLast(body) ?: PAREN_NO.find(body)?.groupValues?.get(1)
     val months = when {
         !card -> null
         "일시불" in body -> 1

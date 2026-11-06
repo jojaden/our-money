@@ -301,14 +301,17 @@ object SpendQueue {
     }
 }
 
-/** 결제 알림을 이번 달 남은 할 일과 맞춰 보고, 맞으면 대기열에 넣고 알린다. 맞지 않는 카드 결제는 확인할 지출로 (CardNoticeListener 에서) */
-fun onPayment(context: Context, p: Payment, at: Long) {
+/**
+ * 결제 알림을 이번 달 남은 할 일과 맞춰 보고, 맞으면 대기열에 넣고 알린다. 맞지 않는 카드 결제는 확인할 지출로 (CardNoticeListener 에서).
+ * [ask]: 문자·메신저처럼 누구나 보낼 수 있는 앱의 알림 — 체크는 늘 "체크할까요?"로 묻고, 지출로 적지 않는다.
+ */
+fun onPayment(context: Context, p: Payment, at: Long, ask: Boolean = false) {
     val on = Instant.ofEpochMilli(at).atZone(ZoneId.systemDefault()).toLocalDate().toString()
-    val m = matchPayment(p, on, Expects.list(context))
+    val m = matchPayment(p, on, Expects.list(context))?.let { if (ask) it.copy(sureness = Sureness.MAYBE) else it }
     if (m == null) {
-        if (p.isCard) SpendQueue.add(context, p, at)
+        if (p.isCard && !ask) SpendQueue.add(context, p, at)
         return
     }
-    val what = listOfNotNull(p.counterpart, if (p.isCard) "카드" else "계좌").joinToString(" · ")
+    val what = listOfNotNull(p.counterpart, if (p.isCard) "카드" else "계좌").joinToString(" · ").take(60)
     MatchQueue.add(context, m, what, at)?.let { MatchNotifier.show(context, it) }
 }

@@ -8,6 +8,10 @@ import { eul, parseYmd, ro, ymd } from "@/lib/format";
 import { guessFromMemo } from "@/lib/categories";
 import { appCan, onApp, toApp, type AppExpect, type AppSpend } from "@/lib/native";
 import { eventTasks, useTasks, type Task } from "./tasks";
+import { MAX_SPENDING } from "./ui";
+
+/** DB 가 받는 할부 개월 (spendings.installment_months check) */
+const MAX_MONTHS = 60;
 
 /** 결제 알림과 맞춰 볼 이름·카드 끝자리 — 폰 알림에 "관리비 230,000원이 나갔어요"처럼 쓰인다 */
 function expectOf(t: Task, data: Data): AppExpect | null {
@@ -37,11 +41,13 @@ function spendOf(data: Data, me: Person, n: AppSpend): Spending {
   const g = guessFromMemo(data, memo);
   const date = ymd(new Date(n.at));
   const dup = data.spendings.some((s) => s.date === date && s.amount === n.amount && s.pay_kind === "card" && (!card || s.account_id === card.id));
+  // 할부는 DB 가 받는 1~60개월만 — 그 밖이면 일시불로 두고 확인 필요
+  const months = n.months !== null && n.months >= 1 && n.months <= MAX_MONTHS ? n.months : null;
   const review: ReviewField[] = [];
   if (!card) review.push("card");
   if (!g.category_id) review.push("category");
   if (!g.from) review.push("owner");
-  if (n.months === null) review.push("installment");
+  if (months === null) review.push("installment");
   if (!memo) review.push("merchant");
   if (dup) review.push("duplicate");
   return {
@@ -56,7 +62,7 @@ function spendOf(data: Data, me: Person, n: AppSpend): Spending {
     memo,
     created_at: new Date().toISOString(),
     source: "notification",
-    installment_months: n.months ?? 1,
+    installment_months: months ?? 1,
     review,
   };
 }
@@ -116,10 +122,15 @@ export function NoticeSync() {
         }
       }
       const d = latestData.current;
-      // 이미 적은 것(앱이 지우기 전에 다시 보낸 것)은 건너뛴다
-      const rows = spends.filter((n) => !n.cancel && !d.spendings.some((s) => s.id === n.id)).map((n) => spendOf(d, me, n));
+      // 이미 적은 것(앱이 지우기 전에 다시 보낸 것)은 건너뛰고, DB 가 받지 않는 금액은 버린다
+      const rows = spends
+        .filter((n) => !n.cancel && !d.spendings.some((s) => s.id === n.id) && Number.isInteger(n.amount) && n.amount >= 1 && n.amount <= MAX_SPENDING)
+        .map((n) => spendOf(d, me, n));
       const canceled = spends.filter((n) => n.cancel).map((n) => canceledOf(d, n)).filter((s): s is Spending => Boolean(s));
-      toApp({ type: "applied", ids: [...items.map((m) => m.id), ...spends.map((n) => n.id)] });
+      // 체크(보낼 저장에 바로 들어간다)·취소·건너뛴 것은 앱에서 바로 지우고, 새로 적는 지출은 저장이 끝난 뒤에 지운다
+      // (저장이 거절되면 앱에 남아 다음에 다시 받는다)
+      const writing = new Set(rows.map((r) => r.id));
+      toApp({ type: "applied", ids: [...items.map((m) => m.id), ...spends.map((n) => n.id).filter((id) => !writing.has(id))] });
       if (done.length > 0) {
         const what = done.length > 1 ? `${done[0].title} 외 ${done.length - 1}건을` : eul(done[0].title);
         toast(`${what} 결제 알림으로 체크했어요`, () => {
@@ -129,7 +140,9 @@ export function NoticeSync() {
       if (rows.length > 0) {
         const check = rows.filter((r) => r.review!.length > 0).length;
         void upsert("spendings", rows).then((ok) => {
-          if (ok) toast(`결제 알림으로 지출 ${rows.length}건을 적었어요${check > 0 ? ` · 확인 필요 ${check}건` : ""}`, () => void remove("spendings", rows.map((r) => r.id)));
+          if (!ok) return;
+          toApp({ type: "applied", ids: [...writing] });
+          toast(`결제 알림으로 지출 ${rows.length}건을 적었어요${check > 0 ? ` · 확인 필요 ${check}건` : ""}`, () => void remove("spendings", rows.map((r) => r.id)));
         });
       }
       if (canceled.length > 0) {
