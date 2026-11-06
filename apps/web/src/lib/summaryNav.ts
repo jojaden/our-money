@@ -9,6 +9,7 @@ let pushed = false;
 
 /** 모아 보기로 — 이미 모아 보기에서 기간만 바꾸면 replace */
 export function enterSummary(router: Router, href: string, replace: boolean) {
+  document.documentElement.dataset.navigation = "forward";
   if (replace) router.replace(href);
   else {
     pushed = true;
@@ -18,6 +19,7 @@ export function enterSummary(router: Router, href: string, replace: boolean) {
 
 /** 모아 보기에서 달력으로 */
 export function leaveSummary(router: Router) {
+  document.documentElement.dataset.navigation = "back";
   if (pushed) {
     pushed = false;
     router.back();
