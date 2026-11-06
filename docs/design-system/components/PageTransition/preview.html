@@ -9,16 +9,13 @@
   p { margin: 0 0 24px; color: var(--muted); }
   ::view-transition-old(root) { display: none; }
   ::view-transition-new(root) { animation: none; }
-  ::view-transition-group(page) { animation-duration: var(--dur-tab); }
-  ::view-transition-old(page), ::view-transition-new(page) { mix-blend-mode: normal; animation-duration: var(--dur-tab); animation-timing-function: var(--ease-drawer); animation-fill-mode: both; }
+  ::view-transition-group(page) { animation: none; }
+  ::view-transition-new(page) { mix-blend-mode: normal; animation-duration: var(--dur-page); animation-timing-function: var(--ease-out); animation-fill-mode: both; }
   ::view-transition-new(page) { animation-name: push-in; }
-  ::view-transition-old(page) { animation-name: push-out; }
+  ::view-transition-old(page) { display: none; }
   html[data-back]::view-transition-new(page) { animation-name: pop-in; }
-  html[data-back]::view-transition-old(page) { z-index: 2; animation-name: pop-out; }
-  @keyframes push-in { from { transform: translateX(100%); } }
-  @keyframes push-out { to { transform: translateX(-25%); opacity: 0.7; } }
-  @keyframes pop-in { from { transform: translateX(-25%); opacity: 0.7; } }
-  @keyframes pop-out { to { transform: translateX(100%); } }
+  @keyframes push-in { from { transform: translateX(12px); } }
+  @keyframes pop-in { from { transform: translateX(-12px); } }
   @media (prefers-reduced-motion: reduce) { ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; } }
 </style>
 <header><button type="button" id="back" disabled>뒤로</button><strong>우리 집</strong></header>
@@ -31,7 +28,7 @@
     const update = () => {
       back.disabled = !detail;
       page.querySelector("h2").textContent = detail ? "이번 달 체크" : "이번 달";
-      page.querySelector("p").textContent = detail ? "뒤로를 누르면 이전 화면이 드러나요." : "새 화면과 돌아가는 방향을 확인해 보세요.";
+      page.querySelector("p").textContent = detail ? "뒤로를 누르면 반대 방향이 살짝 느껴져요." : "새 화면과 돌아가는 방향을 확인해 보세요.";
       page.querySelector("#open").hidden = detail;
     };
     if (document.startViewTransition) document.startViewTransition(update);
