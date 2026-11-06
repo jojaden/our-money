@@ -172,22 +172,13 @@ function Gate({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-/** 탭을 바꾸면 아래에서, 달을 바꾸면 그 방향에서 화면이 이어서 들어온다. */
 /**
- * 탭을 바꾸면 짧게 교차 페이드, 달을 바꾸면 그 방향에서 밀려 들어온다.
+ * 월 교체는 store의 monthMotion이 사라짐 → 교체 → 나타남 순서로 잇는다.
  * 좌우로 쓸면 손가락을 따라 움직이다가 충분히 끌거나 빠르게 튕기면 달이 넘어간다.
  */
 function PageMotion({ path, children }: { path: string; children: React.ReactNode }) {
   const { month, setMonth } = useStore();
-  const prev = useRef({ path, month });
   const box = useRef<HTMLDivElement>(null);
-  let dir = "fade";
-  if (prev.current.path === path && prev.current.month !== month && prev.current.month && month) {
-    dir = month > prev.current.month ? "from-right" : "from-left";
-  }
-  useEffect(() => {
-    prev.current = { path, month };
-  }, [path, month]);
 
   const swipeable = path !== "/settings";
   const g = useRef<{ x: number; y: number; t: number; id: number; lock: "x" | "y" | null; dx: number } | null>(null);
@@ -248,7 +239,7 @@ function PageMotion({ path, children }: { path: string; children: React.ReactNod
     <div
       ref={box}
       key={`${path}|${month}`}
-      className={`page-enter ${dir}`}
+      className="page-enter fade"
       style={{ touchAction: "pan-y" }}
       onPointerDown={onDown}
       onPointerMove={onMove}

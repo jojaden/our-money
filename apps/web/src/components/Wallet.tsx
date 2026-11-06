@@ -9,6 +9,7 @@ import { useData } from "@/lib/store";
 import { cardBills, checkId, findCheck, monthRow, nameOf, paydayDate, salaryAccount, spendingsIn } from "@/lib/calc";
 import { dDay, monthLabel, num, parseYmd, shortDate, ymd } from "@/lib/format";
 import { haptic } from "@/lib/native";
+import { cssTimeMs } from "@/lib/motion";
 import { spendingVisual } from "@/lib/categories";
 import { CategoryIcon, PersonGlyph, useBackToClose } from "./ui";
 import { useSheets } from "./Shell";
@@ -159,7 +160,7 @@ function PassDetail({ p, from, onClose, onEdit }: { p: PassInfo; from: DOMRect; 
     const cs = getComputedStyle(el);
     el.animate(
       [{ transform: `translate(${from.left - to.left}px, ${from.top - to.top}px) scale(${from.width / to.width})` }, { transform: "none" }],
-      { duration: parseFloat(cs.getPropertyValue("--dur-tab")) || 420, easing: cs.getPropertyValue("--ease-drawer").trim() || "ease-out" },
+      { duration: cssTimeMs(cs.getPropertyValue("--dur-tab"), 420), easing: cs.getPropertyValue("--ease-drawer").trim() || "ease-out" },
     );
   }, [from]);
 
@@ -181,7 +182,7 @@ function PassDetail({ p, from, onClose, onEdit }: { p: PassInfo; from: DOMRect; 
     const at = back.getBoundingClientRect();
     const cs = getComputedStyle(el);
     el.animate([{ transform: "none" }, { transform: `translate(${at.left - to.left}px, ${at.top - to.top}px) scale(${at.width / to.width})` }], {
-      duration: parseFloat(cs.getPropertyValue("--dur-tab")) || 420,
+      duration: cssTimeMs(cs.getPropertyValue("--dur-tab"), 420),
       easing: cs.getPropertyValue("--ease-drawer").trim() || "ease-out",
       fill: "forwards",
     }).onfinish = done;
