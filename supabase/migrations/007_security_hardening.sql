@@ -17,13 +17,15 @@
 -- ---------- 1. 멤버 ↔ 계정 ----------
 alter table public.members add column if not exists user_id uuid unique references auth.users(id) on delete set null;
 
--- 이미 로그인해서 users 에 있는 계정으로 채운다 (ensure_user 와 같은 조건: 이메일이 확인됐고 같은 이메일의 구글 계정)
+-- 이미 로그인해서 users 에 있는 계정으로 채운다 (ensure_user 와 같은 조건: 이메일이 확인됐고 같은 이메일의 구글 계정, 비밀번호·다른 로그인 방식 없음)
 update public.members m set user_id = u.id
   from public.users u
   join auth.users au on au.id = u.id and au.email_confirmed_at is not null
  where u.email = m.email and u.person = m.person and m.user_id is null
    and exists (select 1 from auth.identities i
-                where i.user_id = u.id and i.provider = 'google' and lower(i.identity_data ->> 'email') = m.email);
+                where i.user_id = u.id and i.provider = 'google' and lower(i.identity_data ->> 'email') = m.email)
+   and coalesce(au.encrypted_password, '') = ''
+   and not exists (select 1 from auth.identities o where o.user_id = u.id and o.provider <> 'google');
 
 -- 이메일을 바꾸면(사람이 다른 구글 계정으로 바뀜) 묶인 계정을 푼다
 create or replace function public.members_unbind() returns trigger
@@ -91,6 +93,9 @@ begin
          and lower(au.email) = mail
          and au.email_confirmed_at is not null
          and lower(i.identity_data ->> 'email') = mail
+         -- 비밀번호도, 구글 말고 다른 로그인 방식도 없다: 남이 먼저 이메일로 가입해 둔 계정에 구글이 이어 붙은 것을 거른다 (013)
+         and coalesce(au.encrypted_password, '') = ''
+         and not exists (select 1 from auth.identities o where o.user_id = au.id and o.provider <> 'google')
     ) then
       return null;
     end if;
