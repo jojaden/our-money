@@ -202,6 +202,7 @@ let layerSeq = 0;
 
 export function useBackToClose(open: boolean, onOpenChange: (v: boolean) => void) {
   const pushed = useRef(false);
+  const layer = useRef(0);
   const close = useRef(onOpenChange);
   close.current = onOpenChange;
   useEffect(() => {
@@ -212,10 +213,14 @@ export function useBackToClose(open: boolean, onOpenChange: (v: boolean) => void
       }
       return;
     }
-    const id = ++layerSeq;
-    const prev = window.history.state ?? {};
-    window.history.pushState({ ...prev, sheet: true, layers: [...(prev.layers ?? []), id] }, "");
-    pushed.current = true;
+    // StrictMode가 같은 열린 시트의 effect를 재설치해도 기록은 한 칸만 쌓는다.
+    if (!pushed.current) {
+      layer.current = ++layerSeq;
+      const prev = window.history.state ?? {};
+      window.history.pushState({ ...prev, sheet: true, layers: [...(prev.layers ?? []), layer.current] }, "");
+      pushed.current = true;
+    }
+    const id = layer.current;
     const onPop = () => {
       // 위에 겹친 창의 기록만 빠졌으면 이 창은 그대로 둔다
       if (!pushed.current || window.history.state?.layers?.includes(id)) return;
