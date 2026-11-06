@@ -17,8 +17,8 @@ function rangeText(month: string, cycle: number) {
 }
 
 /**
- * 페이지 머리 — 큰 제목 "‹ 11월 › 체크", 기간 줄, 결론.
- * 화살표는 바뀌는 것(달)만 감싸서 탭 이름 길이와 상관없이 늘 같은 자리에 있다. "11월"을 누르면 달 고르기 (따로 ▾ 표시는 두지 않는다 — 제목을 누르면 열리는 것은 다들 안다).
+ * 페이지 머리 — 큰 제목 "‹ 11월 ›", 기간 줄, 결론. 화면 이름은 읽는 제목에만 둔다.
+ * 화살표는 달만 감싸서 늘 같은 자리에 있다. "11월"을 누르면 달 고르기 (따로 ▾ 표시는 두지 않는다 — 제목을 누르면 열리는 것은 다들 안다).
  * 달을 넘겨도 이 줄은 제자리에 있고 달 이름만 그 방향에서 밀려 들어온다. 다른 달을 보면 "이번 달로"가 붙는다.
  */
 export function MonthHeader({ name, sub, children }: { /** 탭 이름 (홈은 없음) */ name?: string; /** 기간 줄 대신 (달력은 1일~말일) */ sub?: string; children?: React.ReactNode }) {
@@ -43,8 +43,8 @@ export function MonthHeader({ name, sub, children }: { /** 탭 이름 (홈은 �
               <ChevronRight aria-hidden="true" />
             </button>
           </div>
-          {/* 읽는 이름은 "11월 체크" — 위쪽 막대의 작은 제목도 이 글을 쓴다 */}
-          <h1 className={name ? undefined : "sr-only"}>
+          {/* 화면에는 월만 보이고, 읽는 이름과 달 고르기 접근성 이름에는 화면 이름을 남긴다 */}
+          <h1 className="sr-only">
             <span className="sr-only">{name ? `${label} ` : label}</span>
             {name}
           </h1>
