@@ -67,8 +67,9 @@
   --pill-warning-ink: #8a4a00;
   --pill-neutral-bg: var(--well);
   --pill-neutral-ink: var(--muted);
-  --edge: 20px;
-  --gap: 20px;
+  --edge: 12px;
+  --text-inset: 8px;
+  --gap: 10px;
   --pad: 24px;
   --list-inset: 52px;
   --control-height: 48px;

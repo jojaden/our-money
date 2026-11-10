@@ -55,16 +55,16 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
 
 /* ---------- 그리드 ---------- */
 
-.stack { display: grid; gap: 16px; }
-.grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; align-items: start; }
+.stack { display: grid; gap: var(--gap); }
+.grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--gap); align-items: start; }
 .grid > *, .card { min-width: 0; }
 @media (min-width: 1024px) {
-  .stack, .grid { gap: var(--gap); }
+  .stack, .grid { gap: 16px; }
   .grid { grid-template-columns: repeat(12, minmax(0, 1fr)); }
   .span-7 { grid-column: span 7; }
   .span-5 { grid-column: span 5; }
   .span-12 { grid-column: 1 / -1; }
-  .col { display: grid; gap: var(--gap); align-content: start; }
+  .col { display: grid; gap: 16px; align-content: start; }
 }
 /* 폰에서는 열을 풀고 o1~o7 순서로 한 줄에 세운다 */
 @media (max-width: 1023px) {
