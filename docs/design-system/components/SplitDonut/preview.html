@@ -1,0 +1,69 @@
+<!-- @dsCard group="Cards" height=620 subtitle="월급이 나뉘는 곳 — 조각을 누르면 튀어나오며 비율 말풍선, 이름을 누르면 아래에 항목이 펼쳐져요" -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alan+Sans:wght@300..900&family=Noto+Sans+KR:wght@400..800&display=swap">
+<style>
+  body { margin: 0; background: var(--ground); color: var(--text); font-family: var(--font-text); word-break: keep-all; -webkit-font-smoothing: antialiased; }
+  .stage { padding: 20px; }
+  .card { max-width: 390px; padding: var(--pad); box-sizing: border-box; background: var(--surface); border-radius: var(--radius-card); box-shadow: var(--shadow-card); }
+  .wrap { position: relative; width: 240px; margin: 0 auto; aspect-ratio: 1; }
+  svg { display: block; width: 100%; overflow: visible; }
+  circle { fill: none; transition: stroke-width var(--dur-swap) var(--ease-out); }
+  g { cursor: pointer; transition: transform var(--dur-swap) var(--ease-out), opacity var(--dur-swap) ease; }
+  g.dim { opacity: 0.45; }
+  .mid { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; pointer-events: none; }
+  .mid span { color: var(--faint); font-size: 13px; }
+  .mid b { font: 700 20px/26px var(--font-display); }
+  .tip { position: absolute; padding: 6px 10px; border-radius: 999px; background: var(--surface); box-shadow: var(--shadow-float); font-size: 13px; white-space: nowrap; transform: translate(-50%, -50%); pointer-events: none; }
+  ul { margin: 12px 0 0; padding: 0; list-style: none; }
+  li button { display: grid; grid-template-columns: 10px 1fr auto; align-items: center; gap: 10px; width: 100%; min-height: 44px; padding: 0 4px; border: 0; border-radius: var(--radius-small); background: none; font: 500 15px/22px var(--font-text); color: var(--text); text-align: left; }
+  li button.on { background: var(--well); }
+  li i { width: 10px; height: 10px; border-radius: 50%; }
+  li em { color: var(--faint); font-style: normal; font-size: 13px; margin-left: 4px; }
+  li strong { font: 600 15px/22px var(--font-display); }
+</style>
+<div class="stage"><div class="card">
+  <div class="wrap">
+    <svg viewBox="0 0 240 240" id="d"></svg>
+    <div class="mid" id="m"><span>두 사람 수입</span><b>7,000,000원</b></div>
+  </div>
+  <ul id="l"></ul>
+</div></div>
+<script>
+  const B = [["고정비", "--g-fixed", 1873900], ["공동 생활비", "--g-living", 1400000], ["용돈", "--g-allowance", 800000], ["저축·투자", "--g-saving", 2000000], ["남음", "--g-left", 926100]];
+  const total = B.reduce((a, b) => a + b[2], 0), R = 84, W = 34, C = 2 * Math.PI * R;
+  const svg = document.getElementById("d"), mid = document.getElementById("m"), list = document.getElementById("l"), wrap = svg.parentNode;
+  let at = 0, pick = -1;
+  const segs = B.map(([n, c, v], i) => {
+    const f = v / total, start = at; at += f;
+    const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    g.innerHTML = `<circle cx="120" cy="120" r="${R}" stroke="var(${c})" stroke-width="${W}" stroke-dasharray="${f * C - 2.5} ${C}" stroke-dashoffset="${-start * C}" transform="rotate(-90 120 120)"/>`;
+    g.onclick = () => choose(i);
+    svg.append(g);
+    return { g, mid: (start + f / 2) * 2 * Math.PI - Math.PI / 2, pct: Math.round(f * 100) };
+  });
+  B.forEach(([n, c, v], i) => {
+    const li = document.createElement("li");
+    li.innerHTML = `<button type="button"><i style="background:var(${c})"></i><span>${n}<em>${segs[i].pct}%</em></span><strong>${v.toLocaleString()}원</strong></button>`;
+    li.firstChild.onclick = () => choose(i);
+    list.append(li);
+  });
+  function choose(i) {
+    pick = pick === i ? -1 : i;
+    wrap.querySelector(".tip")?.remove();
+    segs.forEach((s, j) => {
+      const on = j === pick;
+      s.g.classList.toggle("dim", pick >= 0 && !on);
+      s.g.style.transform = on ? `translate(${Math.cos(s.mid) * 8}px, ${Math.sin(s.mid) * 8}px)` : "";
+      s.g.firstChild.setAttribute("stroke-width", on ? W + 8 : W);
+      list.children[j].firstChild.classList.toggle("on", on);
+    });
+    if (pick < 0) { mid.innerHTML = "<span>두 사람 수입</span><b>7,000,000원</b>"; return; }
+    const s = segs[pick], r = R + W / 2 + 22;
+    mid.innerHTML = `<span>${B[pick][0]}</span><b>${B[pick][2].toLocaleString()}원</b>`;
+    const tip = document.createElement("span");
+    tip.className = "tip";
+    tip.innerHTML = `${B[pick][0]} <b>${s.pct}%</b>`;
+    tip.style.left = `${((120 + Math.cos(s.mid) * r) / 240) * 100}%`;
+    tip.style.top = `${((120 + Math.sin(s.mid) * r) / 240) * 100}%`;
+    wrap.append(tip);
+  }
+</script>
