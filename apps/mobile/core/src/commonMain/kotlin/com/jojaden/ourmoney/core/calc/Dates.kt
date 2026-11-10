@@ -1,6 +1,7 @@
 package com.jojaden.ourmoney.core.calc
 
 import kotlinx.datetime.DatePeriod
+import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.daysUntil
@@ -106,5 +107,12 @@ fun dayIndexOf(month: String, cycleStart: Int, today: String): Int {
 }
 
 fun shiftDays(date: String, n: Int): String = parseDate(date).plus(DatePeriod(days = n)).toString()
+
+/** 주말이면 그 앞 금요일 (토 → 금, 일 → 금). 공휴일은 보지 않는다 */
+fun weekdayOnOrBefore(date: String): String = when (parseDate(date).dayOfWeek) {
+    DayOfWeek.SATURDAY -> shiftDays(date, -1)
+    DayOfWeek.SUNDAY -> shiftDays(date, -2)
+    else -> date
+}
 
 internal fun Double.roundHalfUp(): Long = kotlin.math.floor(this + 0.5).toLong()

@@ -131,9 +131,16 @@ export function paydayOf(s: Settings, p: Person): number {
   return (p === "a" ? s.payday_a : s.payday_b) ?? s.payday;
 }
 
-/** 이 가계부 달 안에서 이 사람의 월급날 (YYYY-MM-DD) */
+/** 주말이면 그 앞 금요일 (토 → 금, 일 → 금). 공휴일은 보지 않는다 */
+export function weekdayOnOrBefore(date: string): string {
+  const d = parseYmd(date);
+  const back = d.getDay() === 6 ? 1 : d.getDay() === 0 ? 2 : 0;
+  return back ? ymd(new Date(d.getFullYear(), d.getMonth(), d.getDate() - back)) : date;
+}
+
+/** 이 가계부 달 안에서 이 사람의 월급날 (YYYY-MM-DD). 주말이면 월급이 실제로 들어오는 앞 평일 */
 export function paydayDate(month: string, s: Settings, p: Person): string {
-  return dateInMonth(month, paydayOf(s, p), s.cycle_start);
+  return weekdayOnOrBefore(dateInMonth(month, paydayOf(s, p), s.cycle_start));
 }
 
 export function accountMap(accounts: Account[]): Map<string, Account> {

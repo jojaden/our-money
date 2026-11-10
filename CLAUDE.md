@@ -74,5 +74,5 @@ On the web, apply the principles (window size classes, `env(safe-area-inset-*)`,
 
 ## Status
 - Done: web app, Supabase + Google login, Vercel deploy, monorepo, mobile scaffold + calc port (tests pass, debug and signed release APK build), public repo with secret checks and versioning (v0.3.0), new design system applied to the web app, migrations 002-013 run in production.
-- Paydays differ per person (`payday_a`/`payday_b`, read via `paydayOf`; the old shared `payday` is only a fallback). Transfers are grouped by the payer's payday on the check page.
+- Paydays differ per person (`payday_a`/`payday_b`, read via `paydayOf`; the old shared `payday` is only a fallback). `paydayDate` moves a weekend payday to the Friday before (`weekdayOnOrBefore`, same in `Calc.kt`); public holidays are not handled. Transfers are grouped by the payer's payday on the check page.
 - Pending: card-notification auto-logging (collect samples → parser → save with `review`), widget, push; Play Console internal testing.

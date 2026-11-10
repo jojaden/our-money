@@ -70,8 +70,8 @@ fun Settings.salaryAccount(p: Person): String? = if (p == Person.A) salaryAccoun
 /** 이 사람의 월급날 (1~31). 사람별 월급날이 없으면(migrations/006 전) 예전 공통 월급날 */
 fun Settings.paydayOf(p: Person): Int = (if (p == Person.A) paydayA else paydayB) ?: payday
 
-/** 이 가계부 달 안에서 이 사람의 월급날 (YYYY-MM-DD) */
-fun Settings.paydayDate(month: String, p: Person): String = dateInMonth(month, paydayOf(p), cycleStart)
+/** 이 가계부 달 안에서 이 사람의 월급날 (YYYY-MM-DD). 주말이면 월급이 실제로 들어오는 앞 평일 */
+fun Settings.paydayDate(month: String, p: Person): String = weekdayOnOrBefore(dateInMonth(month, paydayOf(p), cycleStart))
 
 /** 이 항목의 돈이 결제일에 있어야 하는 계좌 */
 fun destinationOf(item: MonthItem, accounts: Map<String, Account>): String? {
