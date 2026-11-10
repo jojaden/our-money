@@ -17,7 +17,7 @@ function short(n: number): string {
 }
 
 /**
- * 달력 카드 — 날짜마다 일정 이름·쓴 돈·돈 일의 점. 아래 손잡이를 누르거나 위로 밀면 고른 날의 한 주로 접힌다.
+ * 달력 — 카드로 감싸지 않고 화면 너비를 다 쓴다. 날짜마다 일정 이름(입력한 사람 색)·쓴 돈·돈 일의 점. 아래 손잡이를 누르거나 위로 밀면 고른 날의 한 주로 접힌다.
  * 접을 때는 고른 주가 제자리에 남고 나머지 줄이 접혀 들어간다(높이·위치를 dur-tab·ease-drawer 로).
  * 접힌 동안 좌우로 밀면 주가 넘어가고(달을 넘으면 그 달로), 펼치면 지금처럼 달이 넘어간다. 접힘은 이 기기에 기억한다.
  */
@@ -133,7 +133,7 @@ export function CalendarCard({
   const dragged = useRef(false);
 
   return (
-    <div className={`card cal ${folded ? "folded" : ""}`}>
+    <div className={`cal ${folded ? "folded" : ""}`}>
       <div className="cal-week" aria-hidden="true">
         {WEEK.map((w, i) => (
           <span key={w} className={i === 0 ? "sun" : i === 6 ? "sat" : ""}>
@@ -173,7 +173,7 @@ export function CalendarCard({
               >
                 <span className="n">{Number(d.slice(8))}</span>
                 <span className="cal-events" aria-hidden="true">
-                  {events.slice(0, 3).map((m) => <span className={`cal-event ${m.event!.owner}`} key={m.event!.id}>{m.title}</span>)}
+                  {events.slice(0, 3).map((m) => <span className={`cal-event ${m.event!.created_by ?? ""}`} key={m.event!.id}>{m.title}</span>)}
                   {events.length > 3 && <span className="cal-more">+{events.length - 3}개</span>}
                 </span>
                 {amount > 0 && <span className="amt">{short(amount)}</span>}

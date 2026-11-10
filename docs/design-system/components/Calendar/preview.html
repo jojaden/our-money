@@ -13,7 +13,9 @@
   .day { display: flex; flex-direction: column; gap: 8px; min-width: 0; min-height: 88px; padding: 6px 2px; border: 0; border-radius: var(--radius-small); background: var(--well); color: var(--text); }
   .day.today { box-shadow: inset 0 0 0 1.5px var(--accent); }
   .n { font-family: var(--font-display); }
-  .event { overflow: hidden; width: 100%; padding: 2px; border-radius: 4px; color: var(--accent-ink); background: var(--accent-soft); text-align: left; font-size: 10px; white-space: nowrap; text-overflow: ellipsis; }
+  .event { --who: var(--joint); overflow: hidden; width: 100%; padding: 0 2px; border: 2px solid transparent; border-left-color: var(--who); border-radius: 4px; color: var(--text); background: color-mix(in srgb, var(--who) 24%, var(--surface)); text-align: left; font-size: 10px; font-weight: 600; white-space: nowrap; text-overflow: ellipsis; }
+  .event.a { --who: var(--a); background: color-mix(in srgb, var(--who) 32%, var(--surface)); }
+  .event.b { --who: var(--b); background: color-mix(in srgb, var(--who) 32%, var(--surface)); }
   dialog { position: fixed; inset: auto 0 0; width: 100%; max-width: 560px; min-height: 360px; max-height: 90dvh; margin: 0 auto; padding: 20px; overflow-y: auto; border: 0; border-radius: var(--radius-sheet) var(--radius-sheet) 0 0; background: var(--surface); color: var(--text); }
   dialog::backdrop { background: color-mix(in srgb,var(--text) 40%,transparent); }
   dialog[open] { animation: panel-in var(--dur-swap) var(--ease-out); }
@@ -36,6 +38,7 @@
 <dialog id="panel" aria-labelledby="panel-title"><div class="panel-head"><h2 id="panel-title"></h2><button type="button" class="icon" id="add" aria-label="선택한 날짜에 일정 추가"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v16M4 12h16"/></svg></button><button type="button" class="icon" id="close" aria-label="닫기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div><div id="body"></div></dialog>
 <script>
   const events = { 6: "저녁 약속", 10: "건강검진", 18: "가족 모임", 25: "월급날" };
+  const by = { 6: "a", 10: "b", 25: "a" }; // 입력한 사람 (18일은 모름 → 공동색)
   const grid = document.querySelector('.grid');
   const panel = document.querySelector('#panel');
   const title = document.querySelector('#panel-title');
@@ -47,8 +50,8 @@
     if(n>30){b.disabled=true;b.setAttribute('aria-hidden','true');grid.append(b);continue;}
     b.setAttribute('aria-label',`11월 ${n}일${events[n]?', '+events[n]:''}`);
     const date=document.createElement('span');date.className='n';date.textContent=n;b.append(date);
-    if(events[n]){const e=document.createElement('span');e.className='event';e.textContent=events[n];b.append(e);}
-    b.onclick=()=>{day=n;title.textContent=`11월 ${n}일`;add.hidden=false;body.replaceChildren();const row=document.createElement('p');row.className='entry';row.textContent=events[n]||'이날은 일정이 없어요. +로 일정을 추가해 보세요.';body.append(row);panel.showModal();};
+    if(events[n]){const e=document.createElement('span');e.className=`event ${by[n]??''}`;e.textContent=events[n];b.append(e);}
+    b.onclick=()=>{day=n;title.textContent=`11월 ${n}일`;add.hidden=false;body.replaceChildren();const row=document.createElement('p');row.className='entry';row.textContent=events[n]||'비어 있는 날이에요. 약속이나 할 일을 남겨 두면 달력에 바로 보여요.';body.append(row);panel.showModal();};
     grid.append(b);
   }
   document.querySelector('#menu').onclick=()=>{title.textContent='11월 모아 보기';add.hidden=true;body.innerHTML='<div class="tabs"><button type="button" data-tab="month">할 일·일정</button><button type="button" data-tab="dday">D-day</button></div><div class="entry" id="list">11월 6일 저녁 약속<br>11월 10일 건강검진</div>';body.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{document.querySelector('#list').textContent=b.dataset.tab==='dday'?'가족 모임 · D-12':'11월 6일 저녁 약속 · 11월 10일 건강검진';});panel.showModal();};
