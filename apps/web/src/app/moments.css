@@ -84,7 +84,7 @@
 .celebrate .next > span { flex: 1; min-width: 0; }
 .celebrate .next strong { display: block; font: 700 18px/26px var(--font-text); }
 .celebrate .next span span { color: var(--faint); font: 400 14.5px/20px var(--font-text); }
-.celebrate .next svg { flex: none; width: 22px; height: 22px; color: var(--primary); stroke-width: 2; }
+.celebrate .next svg { flex: none; width: 22px; height: 22px; color: var(--accent-ink); stroke-width: 2; }
 
 @keyframes celebrate-in { from { opacity: 0; } }
 @keyframes celebrate-out { to { opacity: 0; } }

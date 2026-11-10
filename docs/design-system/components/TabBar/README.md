@@ -6,7 +6,7 @@
 - **캡슐:** 화면 좌우·아래(안전 영역 위)에서 `nav-inset`만큼 떨어집니다. 높이 `nav-h`, `radius-chip`, `surface` 86% + blur 22px·saturate 180%, `shadow-nav`입니다.
 - **칸:** 홈 `House`, 플랜 `Layers`, 체크 `ListChecks`, 가계부 `ReceiptText`, 달력 `CalendarDays`입니다. 아이콘 22px에 `tab-label` 글자를 둡니다.
 - **고른 칸:**
-  - `tab-active-bg` 알약이 위아래 5px 안쪽에서 감쌉니다. 아이콘은 `primary`, 글자는 `accent-ink`입니다.
+  - Illuminating 노랑(`primary`) 알약이 위아래 5px 안쪽에서 감쌉니다. 그 위 아이콘과 글자는 진한 회색 `on-primary`입니다. 데스크톱 레일의 고른 칸도 같은 노랑입니다.
   - 칸을 바꾸면 알약이 `dur-tab`·`ease-drawer`로 미끄러집니다.
   - 누르는 동안 아이콘이 0.88로 줄었다가 `ease-press`로 돌아옵니다.
 - **원형 버튼:** 캡슐에서 `nav-gap` 떨어지고, 지름 `nav-h`입니다. `primary` 채움, 흰 아이콘 26px, `shadow-float`이며 누르면 0.94입니다.
