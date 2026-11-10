@@ -252,8 +252,6 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
 .cal-day .dots .k-payday.a, .mark-dot.k-payday.a, .mark-dot.k-event.a { background: var(--a); }
 .cal-day .dots .k-payday.b, .mark-dot.k-payday.b, .mark-dot.k-event.b { background: var(--b); }
 .cal-day .dots .k-card, .cal-day .dots .k-item, .mark-dot.k-card, .mark-dot.k-item { background: var(--g-fixed); }
-.cal-mark .t { display: flex; align-items: center; gap: 8px; }
-.cal-mark .mark-dot { flex: none; }
 .cal-summary, .cal-hint { color: var(--muted); font: 400 13px/20px var(--font-text); }
 .cal-summary { margin-top: 8px; }
 .cal-summary > span[aria-hidden] { margin: 0 4px; }
@@ -265,7 +263,56 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
 .cal-panel-actions { display: flex; flex: none; gap: 4px; }
 .cal-panel { min-height: min(60dvh, 520px); }
 .cal-panel .sheet-body { padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px)); }
-/* 빈 날: 상자 없이 가운데에 아이콘·안내·추가 버튼 */
+.cal-mark .t { display: flex; align-items: center; gap: 8px; }
+.cal-mark .mark-dot { flex: none; }
+/* 날짜 패널 (애플 캘린더 목록 참고): 떨어진 날 한 줄 → 일정 → 돈 일 → 쓴 돈. 묶음 사이는 선 대신 간격 */
+.cal-rel { margin: -6px 0 12px; color: var(--faint); font: 500 14.5px/20px var(--font-text); }
+.cal-sec + .cal-sec { margin-top: 20px; }
+.cal-sec .group-head { margin: 0 0 4px; }
+.cal-sec .group-head h3 { color: var(--faint); font: 500 14.5px/20px var(--font-text); }
+.cal-sec .group-head .aside .money { color: var(--text); font: 600 14.5px/20px var(--font-display); }
+/* 일정 줄: 시간 칸(하루 종일·시작/끝) | 입력한 사람 색 막대 | 제목·부가 | 금액·D-day | (할 일이면) 체크 */
+.ev-list { display: grid; gap: 2px; }
+.ev-row { --who: var(--joint); display: flex; align-items: center; gap: 4px; }
+.ev-row.a { --who: var(--a); }
+.ev-row.b { --who: var(--b); }
+.ev-open {
+  display: grid;
+  flex: 1;
+  grid-template-columns: 64px 4px minmax(0, 1fr) auto;
+  align-items: stretch;
+  column-gap: 12px;
+  min-width: 0;
+  min-height: var(--row);
+  margin: 0 -8px;
+  padding: 10px 8px;
+  border: 0;
+  border-radius: var(--radius-small);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  transition: background-color var(--dur-press) ease;
+}
+.ev-open:active { background: var(--well); }
+@media (hover: hover) and (pointer: fine) { .ev-open:hover { background: var(--well); } }
+.ev-time { display: flex; flex-direction: column; justify-content: center; gap: 2px; color: var(--text); font: 600 13px/18px var(--font-text); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ev-time b { font-weight: 600; }
+.ev-time span { color: var(--faint); font-weight: 500; }
+.ev-bar { border-radius: 2px; background: var(--who); }
+.ev-body { display: flex; flex-direction: column; justify-content: center; min-width: 0; }
+.ev-body .t { overflow: hidden; font: 600 16px/22px var(--font-text); letter-spacing: -0.01em; text-overflow: ellipsis; white-space: nowrap; }
+.ev-body .s { margin-top: 2px; overflow: hidden; color: var(--faint); font: 500 13px/18px var(--font-text); text-overflow: ellipsis; white-space: nowrap; }
+.ev-side { display: flex; flex-direction: column; align-items: flex-end; justify-content: center; gap: 4px; }
+.ev-side .money { font: 600 15px/20px var(--font-display); }
+.ev-row .check { margin: -6px -10px -6px 0; }
+.ev-row.done .ev-body .t { color: var(--faint); text-decoration: line-through; text-decoration-thickness: 1.5px; }
+.ev-row.done .ev-bar { opacity: 0.4; }
+/* 돈 일: 체크 동그라미와 같은 자리에 점을 두고 구분선은 글자부터 */
+.cal-money { --inset: 40px; }
+.mark-lead { display: flex; align-items: center; width: 28px; padding-left: 9px; }
+
+/* 빈 날(패널을 연 채로 내역이 다 지워졌을 때): 상자 없이 가운데에 아이콘·안내·추가 버튼 */
 .cal-empty { display: flex; flex-direction: column; align-items: center; padding: 36px 24px 12px; text-align: center; }
 .cal-empty-icon { display: grid; place-items: center; width: 56px; height: 56px; margin-bottom: 16px; border-radius: 50%; background: var(--accent-soft); color: var(--accent-ink); }
 .cal-empty-icon svg { width: 26px; height: 26px; }
@@ -283,7 +330,7 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
   .cal { margin-inline: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .cal-menu, .cal-add, .cal-close { transition: none; }
+  .cal-menu, .cal-add, .cal-close, .ev-open { transition: none; }
 }
 
 /* 할 일 일정: 앞 동그라미는 체크, 가운데는 눌러서 고치기 */
