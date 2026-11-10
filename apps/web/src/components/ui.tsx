@@ -256,11 +256,20 @@ export function Sheet({
   className?: string;
 }) {
   useBackToClose(open, onOpenChange);
+  const content = useRef<HTMLDivElement>(null);
   return (
     <Drawer.Root open={open} onOpenChange={onOpenChange}>
       <Drawer.Portal>
         <Drawer.Overlay className="sheet-overlay" />
-        <Drawer.Content className={`sheet ${className}`} aria-describedby={undefined}>
+        <Drawer.Content
+          ref={content}
+          className={`sheet ${className}`}
+          aria-describedby={undefined}
+          onOpenAutoFocus={(event) => {
+            event.preventDefault();
+            content.current?.focus({ preventScroll: true });
+          }}
+        >
           <div className="sheet-handle" aria-hidden="true" />
           {/* 제목이 바뀌면(예: 새 할 일 → 새 일정) 겹쳐 바뀌고, 칸이 생기고 빠지면 시트가 스르륵 늘고 준다 */}
           <Morph className="sheet-head" track=":scope > *">
