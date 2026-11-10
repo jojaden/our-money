@@ -33,7 +33,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="ko">
       <head>
         {/* 상태 막대 색. Next 가 관리하지 않게 직접 두고, 셸이 페이지마다 바꾼다 (홈은 따뜻한 띠) */}
-        <meta name="theme-color" content="#f5f8fe" />
+        <meta name="theme-color" content="#f3f3f1" />
         <link rel="preload" href="/fonts/pretendard/pretendard.css" as="style" />
         <link rel="preload" href="/fonts/alan-sans/alan-sans.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
         <link rel="stylesheet" href="/fonts/pretendard/pretendard.css" />

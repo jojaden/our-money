@@ -1,5 +1,5 @@
 <resources>
     <!-- 웹 manifest 의 theme_color(페이지 바탕), maskable 아이콘 가장자리(아이콘 바탕) -->
-    <color name="page">#F5F8FE</color>
+    <color name="page">#F3F3F1</color>
     <color name="icon_bg">#2C3A57</color>
 </resources>

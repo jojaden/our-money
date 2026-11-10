@@ -91,7 +91,7 @@ div.bar-mini { display: flex; align-items: center; justify-content: center; gap:
 /* 오른쪽 종·톱니 묶음, 왼쪽은 같은 폭을 비워 작은 제목을 가운데에 */
 .bar-actions { display: flex; flex: none; gap: 8px; }
 .bar-lead { display: flex; flex: none; align-items: center; width: calc(var(--topbar-btn) * 2 + 8px); }
-.sq.gear[aria-current="page"] { box-shadow: var(--shadow-raise), inset 0 0 0 2px var(--accent); color: var(--primary); }
+.sq.gear[aria-current="page"] { box-shadow: var(--shadow-raise), inset 0 0 0 2px var(--accent-ink); color: var(--accent-ink); }
 
 /* ---------- 페이지 머리 ---------- */
 
@@ -161,7 +161,7 @@ div.bar-mini { display: flex; align-items: center; justify-content: center; gap:
   left: 4px;
   width: calc((100% - 8px) / 5);
   border-radius: var(--radius-chip);
-  background: var(--tab-active-bg);
+  background: var(--primary);
   transform: translateX(calc(var(--i, 0) * 100%));
   transition: transform var(--dur-tab) var(--ease-drawer), opacity var(--dur-press) ease;
 }
@@ -169,8 +169,7 @@ div.bar-mini { display: flex; align-items: center; justify-content: center; gap:
 .tab { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; color: var(--muted); font: 600 12px/16px var(--font-text); }
 .tab svg { width: 22px; height: 22px; stroke-width: 2; transition: transform var(--dur-press) var(--ease-press); }
 .tab:active svg { transform: scale(0.88); }
-.tab[aria-current="page"] { color: var(--accent-ink); }
-.tab[aria-current="page"] svg { color: var(--primary); }
+.tab[aria-current="page"], .tab[aria-current="page"] svg { color: var(--on-primary); }
 .fab {
   display: grid;
   flex: none;
@@ -233,7 +232,7 @@ div.bar-mini { display: flex; align-items: center; justify-content: center; gap:
   .rail-btn { padding: 0; border: 0; background: transparent; }
   .rail a svg, .rail-btn svg { width: 20px; height: 20px; stroke-width: 2; }
   .rail-btn .badge { top: 2px; right: 2px; }
-  .rail a[aria-current="page"] { background: var(--tab-active-bg); color: var(--primary); }
+  .rail a[aria-current="page"] { background: var(--primary); color: var(--on-primary); }
   .rail .spacer { flex: 1; }
 }
 @media (hover: hover) and (pointer: fine) {

@@ -190,7 +190,7 @@ class MainActivity : ComponentActivity() {
 
     private companion object {
         /** 웹 배경 (tokens 의 page 색, manifest theme_color) */
-        val BG = "#F5F8FE".toColorInt()
+        val BG = "#F3F3F1".toColorInt()
         /** OAuth code 는 URL 안전 문자만 */
         val CODE = Regex("^[A-Za-z0-9._~-]{1,512}$")
         const val ICS = "text/calendar"
