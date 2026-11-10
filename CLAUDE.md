@@ -7,7 +7,7 @@ Household budget app for a couple (person `a` = repo owner, `b` = partner). Kore
 - `apps/mobile` — Kotlin Multiplatform: `core` (models, calc, Supabase), `ui` (Compose MP), `androidApp`, `iosApp` (placeholder). The Android app is **hybrid**: `MainActivity` hosts the web app in a WebView (screens are built once, on the web); only Android-only features (card-notification logging, widgets) are native. Google login opens in a Custom Tab and returns via `ourmoney://auth-callback`.
 - `supabase/` — `schema.sql` + `migrations/` (shared by web and mobile)
 - `PRODUCT.md` — product source of truth; `CHANGELOG.md` — versions
-- `README.md` — portfolio overview (screenshots, diagrams, minimal text); `docs/GUIDE.md` — demo-data walkthrough; `docs/ARCHITECTURE.md` — calc rules, data model, security, performance, dev rules; `docs/SETUP.md` — self-hosting. Screenshots in `docs/screenshots/` are taken from demo data (static build, 390px @2x, JPEG)
+- `README.md` — portfolio overview (screenshots, diagrams, minimal text); `docs/GUIDE.md` — demo-data walkthrough; `docs/DECISIONS.md` — design decisions with alternatives and diagrams (hybrid app, no backend, sync, …); `docs/ARCHITECTURE.md` — calc rules, data model, security, performance, dev rules; `docs/SETUP.md` — self-hosting. Screenshots in `docs/screenshots/` are taken from demo data (static build, 390px @2x, JPEG)
 - `docs/design-system/` — design source of truth: `tokens.json`, rules in `README.md`, per-component `README.md` + live `preview.html`. `DESIGN.md` only points into it (no values of its own).
 - `scripts/secret_check.py`, `.githooks/`, `.github/` — secret blocking, CI, PR rules, releases
 

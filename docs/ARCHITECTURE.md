@@ -1,6 +1,6 @@
 # 설계
 
-[← README](../README.md) · [사용 안내](GUIDE.md) · [직접 구축하기](SETUP.md)
+[← README](../README.md) · [왜 이렇게 만들었나](DECISIONS.md) · [사용 안내](GUIDE.md) · [직접 구축하기](SETUP.md)
 
 ## 왜 만들었나
 
