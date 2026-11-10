@@ -50,13 +50,18 @@ export default function PlanPage() {
             <span className={`dot ${g}`} aria-hidden="true" />
             {GROUP_LABEL[g]}
           </h2>
-          <span className="aside">
-            <Money value={totals[g]} /> · {pctOf(totals[g])}
+          <span className="aside head-tail">
+            <span>
+              <Money value={totals[g]} /> · {pctOf(totals[g])}
+            </span>
+            <button type="button" className="head-add" aria-label={`${GROUP_LABEL[g]} 추가`} onClick={() => setSheet({ open: true, group: g })}>
+              <Plus aria-hidden="true" />
+            </button>
           </span>
         </div>
         <div className="card">
           {rows.length === 0 ? (
-            <p className="empty">아직 항목이 없어요.</p>
+            <p className="empty">아직 항목이 없어요. 위 +로 더해요.</p>
           ) : (
             <div className="rows">
               {rows.map((i) => {
@@ -80,11 +85,6 @@ export default function PlanPage() {
               })}
             </div>
           )}
-          <div className="card-foot">
-            <button type="button" className="btn ghost" onClick={() => setSheet({ open: true, group: g })}>
-              <Plus aria-hidden="true" /> {GROUP_LABEL[g]} 추가
-            </button>
-          </div>
         </div>
       </section>
     );

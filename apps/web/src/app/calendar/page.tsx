@@ -338,7 +338,7 @@ function DayAgenda({ day, marks, onOpenEvent, onOpenSpending }: { day: string; m
                     <span className="mark-lead" aria-hidden="true"><i className={`mark-dot k-${m.kind} ${m.owner ?? ""}`} /></span>
                     <div style={{ minWidth: 0 }}>
                       <div className="t">{m.title}</div>
-                      <div className="s">나눌 돈은 체크에서</div>
+                      <div className="s">{m.nominal ? `${Number(m.nominal.slice(8))}일이 ${WEEKDAY[parseYmd(m.nominal).getDay()]}요일이라 앞 평일에 들어와요` : "나눌 돈은 체크에서"}</div>
                     </div>
                     <div className="r">{m.amount ? <Money value={m.amount} sign className="in" /> : null}</div>
                   </Link>

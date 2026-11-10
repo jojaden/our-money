@@ -2,7 +2,7 @@
 // 달력은 가계부 기간(예: 10/25~11/24)이 아니라 보통 달력 달(11/1~11/30)로 그린다.
 
 import type { CalEvent, Check, Data, MonthItem, Owner, Person, Spending } from "./types";
-import { actualAmount, cardBills, checkId, dateInMonth, findCheck, itemsOf, monthOf, monthRow, nameOf, needsPayCheck, paydayDate } from "./calc";
+import { actualAmount, cardBills, checkId, dateInMonth, findCheck, itemsOf, monthOf, monthRow, nameOf, needsPayCheck, paydayDate, paydayOf } from "./calc";
 import { dateWithDay, parseYmd, ymd } from "./format";
 
 /** 일정 한 번 (기간이면 start~end, 끝 날 포함) */
@@ -83,6 +83,8 @@ export interface Mark {
   event?: CalEvent;
   /** 기간 일정의 시작·끝 (칸마다 띠를 그린다) */
   occ?: Occurrence;
+  /** 월급날이 주말이라 앞 평일로 당겨졌으면 원래 날짜 */
+  nominal?: string;
 }
 
 /**
@@ -100,7 +102,9 @@ export function marksIn(data: Data, from: string, to: string): Map<string, Mark[
     const row = monthRow(data, key);
     for (const p of ["a", "b"] as const) {
       const income = row ? (p === "a" ? row.income_a : row.income_b) : p === "a" ? s.salary_a : s.salary_b;
-      add({ kind: "payday", date: paydayDate(key, s, p), title: `${nameOf(s, p)} 월급날`, amount: income > 0 ? income : null, owner: p });
+      const date = paydayDate(key, s, p);
+      const nominal = dateInMonth(key, paydayOf(s, p), s.cycle_start);
+      add({ kind: "payday", date, title: `${nameOf(s, p)} 월급날`, amount: income > 0 ? income : null, owner: p, nominal: nominal !== date ? nominal : undefined });
     }
     for (const b of cardBills(data, key)) {
       if (!b.dueDate || b.dueAmount <= 0) continue;

@@ -60,9 +60,17 @@ class CalcTest {
         assertEquals("2026-11-14", dateInMonth("2026-11", 14, 25))
     }
 
+    @Test fun weekend_payday_moves_to_friday() {
+        assertEquals("2026-10-23", weekdayOnOrBefore("2026-10-25")) // 일
+        assertEquals("2026-10-23", weekdayOnOrBefore("2026-10-24")) // 토
+        assertEquals("2026-10-23", weekdayOnOrBefore("2026-10-23")) // 금 그대로
+        assertEquals("2026-10-26", weekdayOnOrBefore("2026-10-26")) // 월 그대로
+    }
+
     @Test fun paydays_per_person() {
         val s = settings.copy(paydayA = 25, paydayB = 10)
-        assertEquals("2026-10-25", s.paydayDate("2026-11", Person.A))
+        // 2026-10-25 는 일요일 → 월급은 앞 금요일(10-23)에 들어온다
+        assertEquals("2026-10-23", s.paydayDate("2026-11", Person.A))
         assertEquals("2026-11-10", s.paydayDate("2026-11", Person.B))
         // 006 전(사람별 월급날 없음)에는 공통 월급날
         assertEquals(25, settings.paydayOf(Person.B))

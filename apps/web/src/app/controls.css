@@ -35,6 +35,13 @@
 .group-head .head-btn { display: inline-flex; align-items: center; gap: 4px; height: 28px; margin: -4px -8px; padding: 0 8px; border: 0; border-radius: var(--radius-chip); background: none; color: var(--accent-ink); font-weight: 600; transition: background-color var(--dur-press) var(--ease-out); }
 .group-head .head-btn:active { background: var(--well); }
 .group-head .head-btn svg { width: 15px; height: 15px; stroke-width: 2; }
+/* 제목 줄 오른쪽 끝의 둥근 추가 버튼 (플랜 버킷 카드): 덧말 옆에 아이콘만, 누르는 자리는 44px */
+.group-head .head-tail { display: inline-flex; align-items: center; gap: 6px; }
+.group-head .head-add { position: relative; display: grid; flex: none; place-items: center; width: 30px; height: 30px; margin: -6px -6px -6px 0; padding: 0; border: 0; border-radius: 50%; background: var(--accent-soft); color: var(--accent-ink); transition: transform var(--dur-press) var(--ease-press); }
+.group-head .head-add::after { content: ""; position: absolute; inset: -7px; }
+.group-head .head-add svg { width: 18px; height: 18px; stroke-width: 2.2; }
+.group-head .head-add:active { transform: scale(0.9); }
+@media (prefers-reduced-motion: reduce) { .group-head .head-add { transition: none; } }
 
 /* ---------- 금액 ---------- */
 
