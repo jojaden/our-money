@@ -245,6 +245,8 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
 .cal-event.b { --who: var(--b); background: color-mix(in srgb, var(--who) 32%, var(--surface)); }
 .cal-more { color: var(--muted); font: 500 10px/14px var(--font-text); text-align: left; }
 .cal-day .amt { margin-top: auto; }
+.cal-day .amt.in + .amt { margin-top: 0; }
+.cal-day .amt.in { color: var(--positive); }
 .cal-day .amt { color: var(--muted); font: 600 10.5px/14px var(--font-display); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; white-space: nowrap; }
 .cal-day .dots { display: flex; gap: 3px; margin-top: 1px; }
 .cal-day .dots i, .mark-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--primary); }

@@ -81,17 +81,19 @@ div.bar-mini { display: flex; align-items: center; justify-content: center; gap:
   padding: 0;
   border: 0;
   border-radius: var(--radius-control);
-  background: color-mix(in srgb, var(--surface) 70%, transparent);
-  box-shadow: var(--shadow-raise);
-  color: var(--muted);
-  transition: transform var(--dur-press) var(--ease-press), box-shadow var(--dur-press) ease;
+  background: transparent;
+  color: var(--text);
+  transition: transform var(--dur-press) var(--ease-press), color var(--dur-press) ease;
 }
-.sq svg { width: 20px; height: 20px; stroke-width: 2; }
+.sq svg { width: 24px; height: 24px; stroke-width: 1.9; }
 .sq:active { transform: scale(0.94); }
+/* 상자가 없으니 배지는 44px 칸 모서리가 아니라 종 아이콘 어깨에 */
+.sq.bell .badge { top: 3px; right: 2px; }
 /* 오른쪽 종·톱니 묶음, 왼쪽은 같은 폭을 비워 작은 제목을 가운데에 */
-.bar-actions { display: flex; flex: none; gap: 8px; }
-.bar-lead { display: flex; flex: none; align-items: center; width: calc(var(--topbar-btn) * 2 + 8px); }
-.sq.gear[aria-current="page"] { box-shadow: var(--shadow-raise), inset 0 0 0 2px var(--accent-ink); color: var(--accent-ink); }
+.bar-actions { display: flex; flex: none; gap: 0; margin-right: -10px; }
+.bar-lead { display: flex; flex: none; align-items: center; width: calc(var(--topbar-btn) * 2 - 10px); }
+.sq.gear[aria-current="page"] { color: var(--accent-ink); }
+.sq.gear[aria-current="page"] svg { stroke-width: 2.4; }
 
 /* ---------- 페이지 머리 ---------- */
 

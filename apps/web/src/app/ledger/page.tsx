@@ -141,7 +141,7 @@ export default function LedgerPage() {
                         </div>
                       </div>
                       <div className="r">
-                        <Money value={r.amount} />
+                        <Money value={-r.amount} />
                         {r.review?.length ? (
                           <div style={{ marginTop: 2 }}>
                             <span className="pill warning">확인 필요</span>

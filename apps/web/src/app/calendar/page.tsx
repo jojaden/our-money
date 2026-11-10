@@ -52,7 +52,7 @@ function CheckMark({ m }: { m: Mark }) {
           {st.done ? ` · ${st.by ? `${nameOf(s, st.by)} ` : ""}완료` : ""}
         </div>
       </Link>
-      <div className="r">{st.amount ? <Money value={st.amount} /> : null}</div>
+      <div className="r">{st.amount ? <Money value={-st.amount} /> : null}</div>
     </div>
   );
 }
@@ -340,7 +340,7 @@ function DayAgenda({ day, marks, onOpenEvent, onOpenSpending }: { day: string; m
                       <div className="t">{m.title}</div>
                       <div className="s">나눌 돈은 체크에서</div>
                     </div>
-                    <div className="r">{m.amount ? <Money value={m.amount} /> : null}</div>
+                    <div className="r">{m.amount ? <Money value={m.amount} sign className="in" /> : null}</div>
                   </Link>
                 ))}
               </div>
@@ -371,7 +371,7 @@ function DayAgenda({ day, marks, onOpenEvent, onOpenSpending }: { day: string; m
                       <div className="s">{x.owner === "joint" ? "공동" : `${nameOf(s, x.owner)} 용돈`}</div>
                     </div>
                     <div className="r">
-                      <Money value={x.amount} />
+                      <Money value={-x.amount} />
                     </div>
                   </button>
                 ))}

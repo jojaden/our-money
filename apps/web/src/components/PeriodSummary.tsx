@@ -134,7 +134,7 @@ export function PeriodSummary({ range, className = "" }: { range: Range; classNa
                           <div className="s">{`${shortDate(x.date)} · ${x.owner === "joint" ? "공동" : `${nameOf(s, x.owner)} 용돈`}`}</div>
                         </div>
                         <div className="r">
-                          <Money value={x.amount} />
+                          <Money value={-x.amount} />
                         </div>
                       </button>
                     ))}
