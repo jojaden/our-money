@@ -1,4 +1,4 @@
-/* 카드 — 튜브 게이지, 예산 카드(BudgetCard), 진행선(StepTrack), 무지개 게이지(RainbowGauge), 기록 타일(StatTiles),
+/* 카드 — 튜브 게이지, 예산 카드(BudgetCard), 진행선(StepTrack), 누적 지출(SpendCurve), 기록 타일(StatTiles),
    하루·분류 막대, 모으는 목표(GoalBar), 두 사람 월급의 흐름(PayFlow)
    규칙: docs/design-system README "게이지와 막대", components/<이름>/README.md */
 
@@ -123,24 +123,42 @@
   .step, .step-bar::after { transition: none; }
 }
 
-/* ---------- 가계부 머리: 무지개 게이지 (RainbowGauge) ---------- */
-
-/* 쓴 돈 버킷 두 겹. 하늘 머리 + 겹친 반원 + 흰 바탕으로 스며드는 그라데이션은 큰 예산 카드와 같은 틀 */
-.rainbow { overflow: hidden; padding: 0; }
-.rainbow p { margin: 0; }
-.rainbow .sky { padding: 22px 0 4px; background: linear-gradient(180deg, var(--sky-100) 0%, var(--glow) 55%, var(--surface) 100%); }
-.rainbow .arc { position: relative; width: min(100% - 40px, 320px); margin: 0 auto; filter: drop-shadow(0 6px 10px color-mix(in srgb, var(--accent-ink) 10%, transparent)); }
-.rainbow .layer + .layer { position: absolute; inset: 0; }
-.rainbow .layer.living { --c: var(--g-living); }
-.rainbow .layer.allowance { --c: var(--g-allowance); }
-.tube.rb0 .fl .halo, .tube.rb1 .fl .halo { filter: blur(5px); }
-.rainbow .arc .pct { position: absolute; right: 0; bottom: 4px; left: 0; }
-.rainbow .pct b { font-size: 40px; line-height: 42px; }
-.rainbow .panel { display: grid; justify-items: center; gap: 2px; padding: 10px var(--pad) var(--pad); text-align: center; }
-.rainbow .cap, .rainbow .used { color: var(--faint); font: 500 14.5px/20px var(--font-text); }
-.rainbow .fig { font: 700 36px/42px var(--font-display); letter-spacing: -0.02em; }
-.rainbow .fig .won { margin-left: 2px; color: var(--faint); font-size: 0.62em; font-weight: 600; }
-.rainbow .pace-pill { margin-top: 14px; }
+/* ---------- 가계부 머리: 이번 달 누적 지출 (SpendCurve) ----------
+   이번 달은 Illuminating 면 + primary-line 선, 지난달은 control 회색 비교 선. 오늘은 세로 점선.
+   축·눈금은 물러나게(rule·faint), 값은 글자색으로. 누르거나 끌면 그날 두 달 누적 말풍선 */
+.curve { padding-bottom: 8px; }
+.curve p { margin: 0; }
+.curve-title { font: 700 22px/30px var(--font-text); letter-spacing: -0.02em; }
+/* 금액에 형광펜처럼 Illuminating 을 긋는다(글자는 text 그대로라 읽힌다) */
+.curve-title .hl { font-family: var(--font-display); text-decoration: underline; text-decoration-color: var(--primary); text-decoration-thickness: 0.42em; text-underline-offset: -0.24em; text-decoration-skip-ink: none; }
+.curve-sub { margin-top: 6px !important; color: var(--faint); font: 500 14.5px/20px var(--font-text); }
+.curve-sub b { color: var(--text); font-weight: 600; }
+.curve-legend { display: flex; justify-content: flex-end; gap: 14px; margin-top: 14px; color: var(--faint); font: 500 12.5px/16px var(--font-text); }
+.curve-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.curve-legend span::before { content: ""; width: 14px; height: 3px; border-radius: 2px; background: var(--control); }
+.curve-legend .now::before { background: var(--primary-line); }
+.curve-plot { position: relative; margin: 4px -6px 0; }
+.curve-plot svg { display: block; width: 100%; height: auto; overflow: visible; touch-action: pan-y; }
+.curve-plot .grid { stroke: var(--rule); stroke-width: 1; }
+.curve-plot .ax { fill: var(--faint); font: 500 10.5px var(--font-text); font-variant-numeric: tabular-nums; }
+.curve-plot .today { stroke: var(--control); stroke-width: 1; stroke-dasharray: 3 3; }
+.curve-plot path { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.curve-plot path.then { stroke: var(--control); stroke-width: 2; }
+.curve-plot path.fill { fill: var(--primary); fill-opacity: 0.32; stroke: none; }
+.curve-plot path.now { stroke: var(--primary-line); stroke-width: 2.5; }
+.curve-plot .end { fill: var(--primary); stroke: var(--primary-line); stroke-width: 2; }
+.curve-plot .cross line { stroke: var(--muted); stroke-width: 1; }
+.curve-plot .cross circle { stroke: var(--surface); stroke-width: 2; }
+.curve-plot .cross .then { fill: var(--control); }
+.curve-plot .cross .now { fill: var(--primary-line); }
+.curve-unit { position: absolute; top: -18px; left: 6px; color: var(--faint); font: 500 11px/14px var(--font-text); }
+.curve-tip { position: absolute; top: -6px; z-index: 1; display: grid; gap: 1px; padding: 8px 12px; border-radius: var(--radius-small); background: var(--surface); box-shadow: var(--shadow-float); color: var(--text); font: 500 12.5px/17px var(--font-text); white-space: nowrap; pointer-events: none; transform: translate(-50%, -100%); }
+.curve-tip .then { color: var(--faint); }
+.curve-foot { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-top: 10px; color: var(--faint); font: 500 13px/18px var(--font-text); }
+.curve-foot .r { display: grid; justify-items: end; }
+.curve-foot b { color: var(--text); font: 700 16px/22px var(--font-display); }
+.curve-foot small { font: inherit; }
+.buckets .neg { color: var(--negative); }
 .buckets { width: 100%; margin: 16px 0 0; padding: 0; list-style: none; text-align: left; }
 .buckets li { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 12px 0; }
 .buckets li + li { background: linear-gradient(var(--rule), var(--rule)) 22px 0 / calc(100% - 22px) 0.6px no-repeat; }

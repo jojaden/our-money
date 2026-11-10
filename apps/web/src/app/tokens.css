@@ -13,6 +13,7 @@
   --muted: #45464a;
   --faint: #66676b;
   --primary: #f5df4d;
+  --primary-line: #9a8000;
   --primary-press: #e9cd2c;
   --on-primary: var(--text);
   --accent: var(--primary);
