@@ -211,7 +211,8 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
 
 /* ---------- 달력: 넓은 월 보기, 날짜 일정 패널, 메뉴의 월 전체 목록 ---------- */
 
-.cal { padding: 12px 4px 8px; }
+/* 카드 없이 화면 너비를 다 쓴다: 바깥 여백(--edge)을 거슬러 가장자리 4px까지, 가로 안전 영역(노치)은 피한다 */
+.cal { margin-inline: calc(max(4px, env(safe-area-inset-left, 0px)) - var(--edge)) calc(max(4px, env(safe-area-inset-right, 0px)) - var(--edge)); }
 .cal-week, .cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
 .cal-grid { gap: 4px 2px; }
 .cal-week span { padding: 2px 0 8px; color: var(--faint); font: 600 12px/16px var(--font-text); text-align: center; }
@@ -237,15 +238,17 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
 .cal-day.today .n { background: var(--primary); color: var(--on-primary); }
 .cal-day.picked { background: var(--accent-soft); box-shadow: inset 0 0 0 1.5px var(--accent); }
 .cal-events { display: flex; flex-direction: column; gap: 3px; width: 100%; min-width: 0; }
-.cal-event { display: -webkit-box; overflow: hidden; padding: 2px 3px; border-radius: 4px; background: var(--joint-soft); color: var(--joint-ink); font: 500 11px/14px var(--font-text); text-align: left; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
-.cal-event.a { background: var(--a-soft); color: var(--a-ink); }
-.cal-event.b { background: var(--b-soft); color: var(--b-ink); }
+/* 일정은 입력한 사람 색으로 칠한다(왼쪽 막대 + 옅은 바탕, 글자는 본문색이라 대비 유지). 누가 적었는지 모르면 공동색.
+   위아래 여백은 투명 테두리로 둔다: 패딩이면 두 줄로 자른 아래 셋째 줄이 비친다 */
+.cal-event { --who: var(--joint); display: -webkit-box; overflow: hidden; padding: 0 3px; border: 2px solid transparent; border-left-color: var(--who); border-radius: 4px; background: color-mix(in srgb, var(--who) 24%, var(--surface)); color: var(--text); font: 600 11px/14px var(--font-text); text-align: left; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.cal-event.a { --who: var(--a); background: color-mix(in srgb, var(--who) 32%, var(--surface)); }
+.cal-event.b { --who: var(--b); background: color-mix(in srgb, var(--who) 32%, var(--surface)); }
 .cal-more { color: var(--muted); font: 500 10px/14px var(--font-text); text-align: left; }
 .cal-day .amt { margin-top: auto; }
 .cal-day .amt { color: var(--muted); font: 600 10.5px/14px var(--font-display); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; white-space: nowrap; }
 .cal-day .dots { display: flex; gap: 3px; margin-top: 1px; }
 .cal-day .dots i, .mark-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--primary); }
-/* 월급날은 그 사람 색, 카드 결제일·이체일은 고정비 색, 일정은 쓰는 사람 색(공동은 남색). k- 를 붙인다: .card 같은 공용 이름과 겹치지 않게 */
+/* 월급날은 그 사람 색, 카드 결제일·이체일은 고정비 색, 일정은 입력한 사람 색(모르면 남색). k- 를 붙인다: .card 같은 공용 이름과 겹치지 않게 */
 .cal-day .dots .k-payday.a, .mark-dot.k-payday.a, .mark-dot.k-event.a { background: var(--a); }
 .cal-day .dots .k-payday.b, .mark-dot.k-payday.b, .mark-dot.k-event.b { background: var(--b); }
 .cal-day .dots .k-card, .cal-day .dots .k-item, .mark-dot.k-card, .mark-dot.k-item { background: var(--g-fixed); }
@@ -262,14 +265,22 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
 .cal-panel-actions { display: flex; flex: none; gap: 4px; }
 .cal-panel { min-height: min(60dvh, 520px); }
 .cal-panel .sheet-body { padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px)); }
-.cal-agenda .empty { padding: 32px 0; }
+/* 빈 날: 상자 없이 가운데에 아이콘·안내·추가 버튼 */
+.cal-empty { display: flex; flex-direction: column; align-items: center; padding: 36px 24px 12px; text-align: center; }
+.cal-empty-icon { display: grid; place-items: center; width: 56px; height: 56px; margin-bottom: 16px; border-radius: 50%; background: var(--accent-soft); color: var(--accent-ink); }
+.cal-empty-icon svg { width: 26px; height: 26px; }
+.cal-empty .t { color: var(--text); font: 700 17px/24px var(--font-text); }
+.cal-empty .s { max-width: 260px; margin: 6px 0 20px; color: var(--faint); font: 400 14.5px/21px var(--font-text); }
+.cal-empty .btn svg { width: 18px; height: 18px; }
 .cal-overview { margin-top: 24px; }
 .cal-overview .card { box-shadow: none; }
 @media (min-width: 720px) {
-  .cal { padding: 16px 12px 8px; }
   .cal-grid { gap: 6px; }
   .cal-day { padding: 8px 6px; }
   .cal-event { font-size: 12px; line-height: 18px; }
+}
+@media (min-width: 1024px) {
+  .cal { margin-inline: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
   .cal-menu, .cal-add, .cal-close { transition: none; }

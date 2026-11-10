@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Suspense, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ChevronLeft, Menu, Plus, X } from "lucide-react";
+import { CalendarPlus, ChevronLeft, Menu, Plus, X } from "lucide-react";
 import type { CalEvent, Spending } from "@/lib/types";
 import { useData } from "@/lib/store";
 import { actualAmount, findCheck, nameOf } from "@/lib/calc";
@@ -237,9 +237,15 @@ function DayAgenda({ day, marks, onOpenEvent, onOpenSpending }: { day: string; m
   return (
     <Morph className="cal-agenda" track=":scope > *, .rows > *">
       {dayMarks.length === 0 && daySpendings.length === 0 ? (
-        <p className="empty" key={day}>
-          이날은 일정도 기록도 없어요.
-        </p>
+        <div className="cal-empty" key={day}>
+          <span className="cal-empty-icon" aria-hidden="true"><CalendarPlus /></span>
+          <p className="t">비어 있는 날이에요</p>
+          <p className="s">약속이나 할 일을 남겨 두면 달력에 바로 보여요.</p>
+          <button type="button" className="btn sm secondary" onClick={() => onOpenEvent()}>
+            <Plus aria-hidden="true" />
+            일정 추가
+          </button>
+        </div>
       ) : (
         <div className="rows" key={day}>
           {dayMarks.map((m, i) =>
@@ -249,7 +255,7 @@ function DayAgenda({ day, marks, onOpenEvent, onOpenSpending }: { day: string; m
               <button type="button" className="row no-lead cal-mark" key={`e${m.event.id}`} onClick={() => onOpenEvent(m.event)}>
                 <div style={{ minWidth: 0 }}>
                   <div className="t">
-                    <i className={`mark-dot k-event ${m.event.owner}`} aria-hidden="true" />
+                    <i className={`mark-dot k-event ${m.event.created_by ?? ""}`} aria-hidden="true" />
                     {m.title}
                   </div>
                   <div className="s">
