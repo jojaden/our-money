@@ -31,6 +31,8 @@
 /* ---------- 금액 ---------- */
 
 .money { font-variant-numeric: tabular-nums; white-space: nowrap; }
+/* 들어오는 돈은 +와 positive(초록), 나가는 돈은 −와 기본 글자색 (토스·은행 앱처럼) */
+.money.in, .row .r .money.in { color: var(--positive); }
 .money .unit { margin-left: 1px; }
 .neg { color: var(--negative); }
 .dash { color: var(--faint); }

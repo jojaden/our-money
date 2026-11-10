@@ -158,7 +158,8 @@ export function CalendarCard({
             const events = ms.filter((m) => m.event);
             const kinds = [...new Set(ms.filter((m) => !m.event).map((m) => (m.kind === "payday" ? `k-payday ${m.owner}` : `k-${m.kind}`)))].slice(0, 3);
             const amount = spent.get(d) ?? 0;
-            const label = [dateWithDay(d), amount ? `쓴 돈 ${num(amount)}원` : "", ...ms.map((m) => m.title)].filter(Boolean).join(", ");
+            const income = ms.reduce((a, m) => a + (m.kind === "payday" ? (m.amount ?? 0) : 0), 0);
+            const label = [dateWithDay(d), income ? `들어올 돈 ${num(income)}원` : "", amount ? `쓴 돈 ${num(amount)}원` : "", ...ms.map((m) => m.title)].filter(Boolean).join(", ");
             const hidden = folded && Math.floor(i / 7) !== week;
             return (
               <button
@@ -176,6 +177,7 @@ export function CalendarCard({
                   {events.slice(0, 3).map((m) => <span className={`cal-event ${m.event!.created_by ?? ""}`} key={m.event!.id}>{m.title}</span>)}
                   {events.length > 3 && <span className="cal-more">+{events.length - 3}개</span>}
                 </span>
+                {income > 0 && <span className="amt in">+{short(income)}</span>}
                 {amount > 0 && <span className="amt">{short(amount)}</span>}
                 {kinds.length > 0 && (
                   <span className="dots" aria-hidden="true">

@@ -97,12 +97,16 @@ export function marksIn(data: Data, from: string, to: string): Map<string, Mark[
     out.set(m.date, [...(out.get(m.date) ?? []), m]);
   };
   for (let key = monthOf(from, s.cycle_start); key <= monthOf(to, s.cycle_start); key = nextKey(key)) {
-    for (const p of ["a", "b"] as const) add({ kind: "payday", date: paydayDate(key, s, p), title: `${nameOf(s, p)} 월급날`, owner: p });
+    const row = monthRow(data, key);
+    for (const p of ["a", "b"] as const) {
+      const income = row ? (p === "a" ? row.income_a : row.income_b) : p === "a" ? s.salary_a : s.salary_b;
+      add({ kind: "payday", date: paydayDate(key, s, p), title: `${nameOf(s, p)} 월급날`, amount: income > 0 ? income : null, owner: p });
+    }
     for (const b of cardBills(data, key)) {
       if (!b.dueDate || b.dueAmount <= 0) continue;
       add({ kind: "card", date: b.dueDate, title: `${b.card.name} 결제`, amount: b.dueAmount, owner: b.card.owner, bill: { id: checkId("card", key, b.card.id), month: key } });
     }
-    if (monthRow(data, key)) {
+    if (row) {
       for (const i of itemsOf(data, key)) {
         if (!i.due_day || !needsPayCheck(i)) continue;
         add({ kind: "item", date: dateInMonth(key, i.due_day, s.cycle_start), title: i.name, amount: i.amount, owner: i.payer, item: i });
