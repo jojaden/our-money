@@ -256,13 +256,17 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
 .cal-summary { margin-top: 8px; }
 .cal-summary > span[aria-hidden] { margin: 0 4px; }
 .cal-hint { margin: 12px 0 0; text-align: center; }
-.cal-menu, .cal-add, .cal-close { display: grid; flex: none; place-items: center; width: 44px; height: 44px; padding: 0; border: 0; border-radius: var(--radius-control); background: var(--well); color: var(--muted); transition: transform var(--dur-press) var(--ease-press); }
-.cal-menu svg, .cal-add svg, .cal-close svg { width: 22px; height: 22px; }
-.cal-add { background: var(--accent-soft); color: var(--accent-ink); }
-.cal-menu:active, .cal-add:active, .cal-close:active { transform: scale(0.94); }
-.cal-panel-actions { display: flex; flex: none; gap: 4px; }
+.cal-menu, .cal-close { display: grid; flex: none; place-items: center; width: 44px; height: 44px; padding: 0; border: 0; border-radius: var(--radius-control); background: var(--well); color: var(--muted); transition: transform var(--dur-press) var(--ease-press); }
+.cal-menu svg, .cal-close svg { width: 22px; height: 22px; }
+/* 패널 닫기는 상자 없이 아이콘만 (누르는 자리는 44px 유지) */
+.cal-close { margin-right: -10px; background: transparent; }
+.cal-menu:active, .cal-close:active { transform: scale(0.94); }
 .cal-panel { min-height: min(60dvh, 520px); }
 .cal-panel .sheet-body { padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px)); }
+/* 날짜 패널은 아래에 "N월 N일에 일정 추가"를 둔다: 선 없이 띄우고, 본문 아래 여백은 버튼이 맡는다 */
+.cal-panel:has(.sheet-foot) .sheet-body { flex: 1; padding-bottom: 8px; }
+.cal-panel .sheet-foot { box-shadow: none; }
+.cal-add svg { width: 20px; height: 20px; }
 .cal-mark .t { display: flex; align-items: center; gap: 8px; }
 .cal-mark .mark-dot { flex: none; }
 /* 날짜 패널 (애플 캘린더 목록 참고): 떨어진 날 한 줄 → 일정 → 돈 일 → 쓴 돈. 묶음 사이는 선 대신 간격 */
@@ -308,7 +312,7 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
 .ev-row .check { margin: -6px -10px -6px 0; }
 .ev-row.done .ev-body .t { color: var(--faint); text-decoration: line-through; text-decoration-thickness: 1.5px; }
 .ev-row.done .ev-bar { opacity: 0.4; }
-/* 돈 일: 체크 동그라미와 같은 자리에 점을 두고 구분선은 글자부터 */
+/* 들어올 돈·나갈 돈: 체크 동그라미와 같은 자리에 점을 두고 구분선은 글자부터 */
 .cal-money { --inset: 40px; }
 .mark-lead { display: flex; align-items: center; width: 28px; padding-left: 9px; }
 
@@ -330,7 +334,7 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
   .cal { margin-inline: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .cal-menu, .cal-add, .cal-close, .ev-open { transition: none; }
+  .cal-menu, .cal-close, .ev-open { transition: none; }
 }
 
 /* 할 일 일정: 앞 동그라미는 체크, 가운데는 눌러서 고치기 */

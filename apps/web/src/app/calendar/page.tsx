@@ -29,7 +29,7 @@ function dayTitle(day: string): string {
   return `${d.getMonth() + 1}월 ${d.getDate()}일 ${WEEKDAY[d.getDay()]}요일`;
 }
 
-/** 그날의 돈 일(이체·납부·카드값) — 앞 동그라미로 끝내고, 나머지를 누르면 체크 화면으로 */
+/** 그날 나갈 돈(이체·납부·카드값) — 앞 동그라미로 끝내고, 나머지를 누르면 체크 화면으로 */
 function CheckMark({ m }: { m: Mark }) {
   const { data, toggleCheck, togglePaid } = useData();
   const s = data.settings;
@@ -264,10 +264,13 @@ function CalendarMonth() {
         onOpenChange={(open) => { if (!open) setPanelOpen(false); }}
         title={panel === "day" ? dayTitle(day) : `${monthLabel(month)} 모아 보기`}
         className="cal-panel"
-        headerAction={<div className="cal-panel-actions">
-          {panel === "day" && <button type="button" className="cal-add" aria-label={`${dateWithDay(day)} 일정 추가`} onClick={() => editEvent()}><Plus aria-hidden="true" /></button>}
-          <button type="button" className="cal-close" aria-label="달력 패널 닫기" onClick={() => setPanelOpen(false)}><X aria-hidden="true" /></button>
-        </div>}
+        headerAction={<button type="button" className="cal-close" aria-label="달력 패널 닫기" onClick={() => setPanelOpen(false)}><X aria-hidden="true" /></button>}
+        footer={panel === "day" ? (
+          <button type="button" className="btn block cal-add" onClick={() => editEvent()}>
+            <Plus aria-hidden="true" />
+            {`${Number(day.slice(5, 7))}월 ${Number(day.slice(8))}일에 일정 추가`}
+          </button>
+        ) : undefined}
       >
         <div onClickCapture={(e) => {
           // 패널 안의 체크 링크도 먼저 패널 기록을 닫고 이동한다.
@@ -288,19 +291,20 @@ function CalendarMonth() {
   );
 }
 
-/** 날짜 패널: 얼마나 떨어진 날인지, 그 아래 일정 → 돈 일 → 쓴 돈을 묶어서 보여 준다. */
+/** 날짜 패널: 얼마나 떨어진 날인지, 그 아래 일정 → 들어올 돈 → 나갈 돈 → 쓴 돈을 묶어서 보여 준다. */
 function DayAgenda({ day, marks, onOpenEvent, onOpenSpending }: { day: string; marks: Mark[]; onOpenEvent: (event?: CalEvent) => void; onOpenSpending: (spending: Spending) => void }) {
   const { data, today } = useData();
   const s = data.settings;
   // 하루 종일(시각 없음)이 먼저, 그다음 시작 시각 순
   const events = marks.filter((m) => m.event).sort((a, b) => (a.event!.start_time ?? "").localeCompare(b.event!.start_time ?? ""));
-  const money = marks.filter((m) => !m.event).sort((a, b) => ORDER[a.kind] - ORDER[b.kind]);
+  const incoming = marks.filter((m) => m.kind === "payday");
+  const outgoing = marks.filter((m) => m.kind === "card" || m.kind === "item").sort((a, b) => ORDER[a.kind] - ORDER[b.kind]);
   const daySpendings = data.spendings.filter((x) => x.date === day).sort((a, b) => b.created_at.localeCompare(a.created_at));
   const spentTotal = daySpendings.reduce((a, x) => a + x.amount, 0);
   const counts = [events.length ? `일정 ${events.length}개` : "", daySpendings.length ? `지출 ${daySpendings.length}건` : ""].filter(Boolean);
   return (
     <Morph className="cal-agenda" track=":scope > *, .rows > *, .ev-list > *">
-      {events.length === 0 && money.length === 0 && daySpendings.length === 0 ? (
+      {events.length === 0 && incoming.length === 0 && outgoing.length === 0 && daySpendings.length === 0 ? (
         <div className="cal-empty" key={day}>
           <span className="cal-empty-icon" aria-hidden="true"><CalendarPlus /></span>
           <p className="t">비어 있는 날이에요</p>
@@ -323,26 +327,32 @@ function DayAgenda({ day, marks, onOpenEvent, onOpenSpending }: { day: string; m
               </div>
             </section>
           )}
-          {money.length > 0 && (
-            <section className="cal-sec" aria-labelledby="cal-money-h">
+          {incoming.length > 0 && (
+            <section className="cal-sec" aria-labelledby="cal-in-h">
               <div className="group-head">
-                <h3 id="cal-money-h">돈 일</h3>
+                <h3 id="cal-in-h">들어올 돈</h3>
               </div>
               <div className="rows cal-money">
-                {money.map((m, i) =>
-                  m.item || m.bill ? (
-                    <CheckMark key={`${m.kind}${i}`} m={m} />
-                  ) : (
-                    <Link href="/check" className="row cal-mark" key={`${m.kind}${i}`}>
-                      <span className="mark-lead" aria-hidden="true"><i className={`mark-dot k-${m.kind} ${m.owner ?? ""}`} /></span>
-                      <div style={{ minWidth: 0 }}>
-                        <div className="t">{m.title}</div>
-                        <div className="s">옮길 돈은 체크에서</div>
-                      </div>
-                      <div className="r">{m.amount ? <Money value={m.amount} /> : null}</div>
-                    </Link>
-                  ),
-                )}
+                {incoming.map((m, i) => (
+                  <Link href="/check" className="row cal-mark" key={`${m.kind}${i}`}>
+                    <span className="mark-lead" aria-hidden="true"><i className={`mark-dot k-${m.kind} ${m.owner ?? ""}`} /></span>
+                    <div style={{ minWidth: 0 }}>
+                      <div className="t">{m.title}</div>
+                      <div className="s">나눌 돈은 체크에서</div>
+                    </div>
+                    <div className="r">{m.amount ? <Money value={m.amount} /> : null}</div>
+                  </Link>
+                ))}
+              </div>
+            </section>
+          )}
+          {outgoing.length > 0 && (
+            <section className="cal-sec" aria-labelledby="cal-out-h">
+              <div className="group-head">
+                <h3 id="cal-out-h">나갈 돈</h3>
+              </div>
+              <div className="rows cal-money">
+                {outgoing.map((m, i) => <CheckMark key={`${m.kind}${i}`} m={m} />)}
               </div>
             </section>
           )}
