@@ -203,8 +203,11 @@ class SupabaseRepo implements Repo {
   }
 
   async apply(ops: Op[]): Promise<OpResult[]> {
-    // id 순서로 보낸다: 두 폰이 같은 줄들을 다른 순서로 저장해도 서로 잠금을 기다리다 교착(deadlock)하지 않게
-    const sorted = ops.map((o) => (o.op === "upsert" ? { ...o, rows: [...o.rows].sort((a, b) => (String(a.id) < String(b.id) ? -1 : 1)) } : o));
+    // id 순서로 보낸다: 두 폰이 같은 줄들을 다른 순서로 저장해도 서로 잠금을 기다리다 교착(deadlock)하지 않게.
+    // 한 op 안에 같은 id 가 두 번이면 마지막 줄만 보낸다 (서버는 같은 id 를 한 문장에 두 번 쓰지 못한다 — migrations/014)
+    const sorted = ops.map((o) =>
+      o.op === "upsert" ? { ...o, rows: [...new Map(o.rows.map((r) => [String(r.id), r])).values()].sort((a, b) => (String(a.id) < String(b.id) ? -1 : 1)) } : o,
+    );
     if (sorted.length === 0) return [];
     if (sorted.length > 1) {
       const { data, error, status } = await this.db.rpc("apply_batch", { ops: sorted });
