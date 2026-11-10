@@ -17,7 +17,7 @@ function short(n: number): string {
 }
 
 /**
- * 달력 카드 — 날짜마다 그날 쓴 돈과 표시(점·기간 막대). 아래 손잡이를 누르거나 위로 밀면 고른 날의 한 주로 접힌다.
+ * 달력 카드 — 날짜마다 일정 이름·쓴 돈·돈 일의 점. 아래 손잡이를 누르거나 위로 밀면 고른 날의 한 주로 접힌다.
  * 접을 때는 고른 주가 제자리에 남고 나머지 줄이 접혀 들어간다(높이·위치를 dur-tab·ease-drawer 로).
  * 접힌 동안 좌우로 밀면 주가 넘어가고(달을 넘으면 그 달로), 펼치면 지금처럼 달이 넘어간다. 접힘은 이 기기에 기억한다.
  */
@@ -36,8 +36,8 @@ export function CalendarCard({
   spent: Map<string, number>;
   day: string;
   today: string;
-  /** 그 달 밖의 날이면 그 달로 넘어가서 고른다 */
-  onPick: (d: string) => void;
+  /** 그 달 밖이면 그 달로 넘어간다. 주 스와이프는 날짜 패널을 열지 않는다. */
+  onPick: (d: string, openDay: boolean) => void;
 }) {
   const inMonth = (d: string) => d.slice(0, 7) === month;
   const [folded, setFolded] = useState(() => {
@@ -122,7 +122,7 @@ export function CalendarCard({
       Object.assign(clip.current.style, { transition: "", transform: "", opacity: "" });
       const dir = s.dx < 0 ? 1 : -1;
       swiped.current = dir;
-      onPick(addDays(day, 7 * dir));
+      onPick(addDays(day, 7 * dir), false);
     } else {
       Object.assign(clip.current.style, { transition: "transform var(--dur-tab) var(--ease-drawer), opacity 300ms ease", transform: "", opacity: "" });
     }
@@ -155,8 +155,8 @@ export function CalendarCard({
         <div ref={grid} className="cal-grid" role="grid" aria-label={`${Number(month.slice(5))}월`}>
           {cells.map((d, i) => {
             const ms = marks.get(d) ?? [];
-            const kinds = [...new Set(ms.filter((m) => !(m.occ && m.occ.start !== m.occ.end)).map((m) => (m.kind === "payday" ? `k-payday ${m.owner}` : `k-${m.kind}`)))].slice(0, 3);
-            const bars = ms.filter((m) => m.occ && m.occ.start !== m.occ.end).slice(0, 2);
+            const events = ms.filter((m) => m.event);
+            const kinds = [...new Set(ms.filter((m) => !m.event).map((m) => (m.kind === "payday" ? `k-payday ${m.owner}` : `k-${m.kind}`)))].slice(0, 3);
             const amount = spent.get(d) ?? 0;
             const label = [dateWithDay(d), amount ? `쓴 돈 ${num(amount)}원` : "", ...ms.map((m) => m.title)].filter(Boolean).join(", ");
             const hidden = folded && Math.floor(i / 7) !== week;
@@ -169,9 +169,13 @@ export function CalendarCard({
                 aria-pressed={d === day}
                 aria-hidden={hidden || undefined}
                 tabIndex={hidden ? -1 : undefined}
-                onClick={() => onPick(d)}
+                onClick={() => onPick(d, true)}
               >
                 <span className="n">{Number(d.slice(8))}</span>
+                <span className="cal-events" aria-hidden="true">
+                  {events.slice(0, 3).map((m) => <span className={`cal-event ${m.event!.owner}`} key={m.event!.id}>{m.title}</span>)}
+                  {events.length > 3 && <span className="cal-more">+{events.length - 3}개</span>}
+                </span>
                 {amount > 0 && <span className="amt">{short(amount)}</span>}
                 {kinds.length > 0 && (
                   <span className="dots" aria-hidden="true">
@@ -180,9 +184,6 @@ export function CalendarCard({
                     ))}
                   </span>
                 )}
-                {bars.map((m) => (
-                  <i key={m.event!.id} className={`bar ${m.event!.owner} ${m.occ!.start === d ? "first" : ""} ${m.occ!.end === d ? "last" : ""}`} aria-hidden="true" />
-                ))}
               </button>
             );
           })}

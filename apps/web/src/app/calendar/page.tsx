@@ -3,15 +3,15 @@
 import Link from "next/link";
 import { Suspense, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ChevronLeft } from "lucide-react";
-import type { CalEvent } from "@/lib/types";
+import { ChevronLeft, Menu, Plus, X } from "lucide-react";
+import type { CalEvent, Spending } from "@/lib/types";
 import { useData } from "@/lib/store";
 import { actualAmount, findCheck, nameOf } from "@/lib/calc";
 import { ddayText, eventTodo, marksIn, monthGrid, nextOccurrence, rangeDays, rangeOf, rangeText, spentByDay, timeText, type Mark, type Range } from "@/lib/calendar";
 import { leaveSummary, resetSummary } from "@/lib/summaryNav";
-import { dateWithDay, shortDate } from "@/lib/format";
+import { dateWithDay, monthLabel, shortDate } from "@/lib/format";
 import { MonthHeader } from "@/components/MonthHeader";
-import { CategoryIcon, CheckButton, Money } from "@/components/ui";
+import { afterSheet, CategoryIcon, CheckButton, Money, Seg, Sheet } from "@/components/ui";
 import { EventSheet } from "@/components/EventSheet";
 import { MonthTodo } from "@/components/MonthTodo";
 import { CalendarCard } from "@/components/CalendarCard";
@@ -132,165 +132,198 @@ function PeriodView({ range }: { range: Range }) {
   );
 }
 
-/**
- * 달력 — 날짜마다 그날 쓴 돈과 월급날·카드 결제일·이체일·일정. 날짜를 누르면 아래에 그날 것이 펼쳐진다(할 일 일정은 바로 체크).
- * 더하기는 이 화면의 주된 버튼 "일정 추가" 하나(폰은 아래 원형 버튼, 데스크톱은 머리줄). 고른 날로 시트가 열리고 맨 위에서 할 일·일정·D-day 를 고른다.
- * 옆에 이번 달 할 일·일정과 D-day (폰에서는 달력 → 그날 → 할 일 → D-day). 기간 모아 보기는 제목의 "11월"을 눌러 연다.
- */
-/** 다른 달의 날을 골라 그 달로 넘어갈 때, 새로 그린 달력이 그날을 고른 채 시작하도록 잠깐 들고 있는다 */
-let carried: string | null = null;
+/** 다른 달의 날짜를 눌렀을 때 새 달에서도 선택과 날짜 패널 열기를 이어 간다. */
+let carried: { date: string; openDay: boolean } | null = null;
 
+/** 월 달력은 넓게, 날짜 내역과 월 전체 목록은 요청할 때만 아래 패널로 보여 준다. */
 function CalendarMonth() {
   const { data, month, today, setMonth } = useData();
-  const s = data.settings;
+  const router = useRouter();
   const { openSpending } = useSheets();
   const cells = monthGrid(month);
-  const from = cells[0];
-  const to = cells[cells.length - 1];
-  const marks = marksIn(data, from, to);
-  const spent = spentByDay(data, from, to);
+  const marks = marksIn(data, cells[0], cells[cells.length - 1]);
+  const spent = spentByDay(data, cells[0], cells[cells.length - 1]);
   const inMonth = (d: string) => d.slice(0, 7) === month;
-  const [picked, setPicked] = useState<string | null>(() => (carried && inMonth(carried) ? carried : null));
+  const [picked, setPicked] = useState<string | null>(() => carried && inMonth(carried.date) ? carried.date : null);
   const day = picked && inMonth(picked) ? picked : inMonth(today) ? today : `${month}-01`;
+  const [panel, setPanel] = useState<"day" | "month" | "dday">(() => carried?.openDay ? "day" : "month");
+  const [panelOpen, setPanelOpen] = useState(Boolean(carried?.openDay));
+  const showPanel = (value: "day" | "month" | "dday") => { setPanel(value); setPanelOpen(true); };
+  const returnPanel = useRef<"day" | "month" | "dday" | null>(null);
   const [sheet, setSheet] = useState<{ open: boolean; key: number; event?: CalEvent; date: string }>({ open: false, key: 0, date: day });
   useEffect(() => {
     carried = null;
     resetSummary();
   }, []);
-  // 다른 달의 날(앞뒤 회색 칸, 접힌 주를 넘길 때)이면 그 달로 넘어가서 고른다
-  const pick = (d: string) => {
-    if (inMonth(d)) return setPicked(d);
-    carried = d;
-    setMonth(d.slice(0, 7));
+  const pick = (date: string, openDay: boolean) => {
+    if (inMonth(date)) {
+      setPicked(date);
+      if (openDay) showPanel("day");
+    } else {
+      carried = { date, openDay };
+      setMonth(date.slice(0, 7));
+    }
   };
   const openEvent = (event?: CalEvent, date = day) => setSheet((x) => ({ open: true, key: x.key + 1, event, date }));
-  usePrimaryAction("일정 추가", "event", () => openEvent(undefined, day));
-
+  // 패널이 쌓은 기록을 되돌린 뒤 편집·지출 시트를 연다. 뒤로가기가 페이지를 건너뛰지 않게 한다.
+  const closeThen = (run: () => void) => {
+    afterSheet(run);
+    setPanelOpen(false);
+  };
+  const editEvent = (event?: CalEvent) => {
+    returnPanel.current = panel;
+    closeThen(() => openEvent(event));
+  };
+  const closeEvent = (open: boolean) => {
+    if (!open && returnPanel.current) {
+      const back = returnPanel.current;
+      returnPanel.current = null;
+      afterSheet(() => showPanel(back));
+    }
+    setSheet((x) => ({ ...x, open }));
+  };
+  usePrimaryAction("일정 추가", "event", () => openEvent());
   const monthSpent = [...spent.entries()].filter(([d]) => inMonth(d)).reduce((a, [, v]) => a + v, 0);
   const monthEvents = new Set([...marks.entries()].filter(([d]) => inMonth(d)).flatMap(([, ms]) => ms.filter((m) => m.event).map((m) => m.event!.id))).size;
-  // 일정이 먼저(하루 종일 → 시간 순), 그다음 월급날·카드값·이체
-  const dayMarks = [...(marks.get(day) ?? [])].sort((a, b) => ORDER[a.kind] - ORDER[b.kind] || (a.event?.start_time ?? "").localeCompare(b.event?.start_time ?? ""));
-  const daySpendings = data.spendings.filter((x) => x.date === day).sort((a, b) => b.created_at.localeCompare(a.created_at));
-  const ddays = data.events
-    .filter((e) => e.dday)
-    .map((e) => ({ e, o: nextOccurrence(e, today) }))
-    .filter((x): x is { e: CalEvent; o: NonNullable<typeof x.o> } => x.o !== null)
-    .sort((a, b) => a.o.start.localeCompare(b.o.start));
 
   return (
     <>
-      <MonthHeader name="달력" sub={`${Number(month.slice(5))}월 1일 – ${Number(cells.filter(inMonth).at(-1)!.slice(8))}일`}>
-        <p className="finding">
-          <span className="nw">
-            이번 달 쓴 돈 <strong><Money value={monthSpent} /></strong>
-          </span>{" "}
-          <span className="nw clause">
-            <span className="sep">· </span>일정 {monthEvents}개
-          </span>
-        </p>
+      <MonthHeader
+        name="달력"
+        sub={`${Number(month.slice(5))}월 1일 – ${Number(cells.filter(inMonth).at(-1)!.slice(8))}일`}
+        leading={<button type="button" className="cal-menu" aria-label="달력 메뉴: 이번 달 할 일·일정과 D-day" aria-haspopup="dialog" onClick={() => showPanel("month")}><Menu aria-hidden="true" /></button>}
+      >
+        <p className="cal-summary">일정 {monthEvents}개 <span aria-hidden="true">·</span> 이번 달 쓴 돈 <Money value={monthSpent} /></p>
       </MonthHeader>
-
-      <div className="grid">
-        <div className="col span-7">
-          <section className="group o1" aria-label="달력">
-            <CalendarCard month={month} cells={cells} marks={marks} spent={spent} day={day} today={today} onPick={pick} />
-          </section>
-
-          <section className="group o2" aria-labelledby="day-h">
-            <div className="group-head">
-              <h2 id="day-h">{dateWithDay(day)}</h2>
+      <section className="calendar-month" aria-label="월 달력">
+        <CalendarCard month={month} cells={cells} marks={marks} spent={spent} day={day} today={today} onPick={pick} />
+        <p className="cal-hint">날짜를 누르면 그날 일정과 기록이 열려요.</p>
+      </section>
+      <Sheet
+        open={panelOpen}
+        onOpenChange={(open) => { if (!open) setPanelOpen(false); }}
+        title={panel === "day" ? dateWithDay(day) : `${monthLabel(month)} 모아 보기`}
+        className="cal-panel"
+        headerAction={<div className="cal-panel-actions">
+          {panel === "day" && <button type="button" className="cal-add" aria-label={`${dateWithDay(day)} 일정 추가`} onClick={() => editEvent()}><Plus aria-hidden="true" /></button>}
+          <button type="button" className="cal-close" aria-label="달력 패널 닫기" onClick={() => setPanelOpen(false)}><X aria-hidden="true" /></button>
+        </div>}
+      >
+        <div onClickCapture={(e) => {
+          // 패널 안의 체크 링크도 먼저 패널 기록을 닫고 이동한다.
+          if (!(e.target as Element).closest('a[href="/check"], a[href="/check/"]') || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+          e.preventDefault();
+          closeThen(() => router.push("/check"));
+        }}>
+          {panel === "day" ? <DayAgenda day={day} marks={marks.get(day) ?? []} onOpenEvent={editEvent} onOpenSpending={(x) => closeThen(() => openSpending(x))} /> : <>
+            <Seg label="달력 모아 보기" value={panel === "dday" ? "dday" : "month"} onChange={(value) => setPanel(value)} options={[{ value: "month", label: "할 일·일정" }, { value: "dday", label: "D-day" }]} />
+            <div className="cal-overview">
+              {panel === "dday" ? <DdayList onOpenEvent={editEvent} /> : <MonthTodo month={month} onOpenEvent={editEvent} />}
             </div>
-            {/* 다른 날을 고르면 그날 목록이 겹쳐 바뀐다 */}
-            <Morph className="card" track=":scope > *, .rows > *">
-              {dayMarks.length === 0 && daySpendings.length === 0 ? (
-                <p className="empty" key={day}>
-                  이날은 일정도 기록도 없어요.
-                </p>
-              ) : (
-                <div className="rows" key={day}>
-                  {dayMarks.map((m, i) =>
-                    (m.event?.todo && m.occ) || m.item || m.bill ? (
-                      <CheckMark key={m.event ? `e${m.event.id}` : `${m.kind}${i}`} m={m} onOpen={() => openEvent(m.event)} />
-                    ) : m.event ? (
-                      <button type="button" className="row no-lead cal-mark" key={`e${m.event.id}`} onClick={() => openEvent(m.event)}>
-                        <div style={{ minWidth: 0 }}>
-                          <div className="t">
-                            <i className={`mark-dot k-event ${m.event.owner}`} aria-hidden="true" />
-                            {m.title}
-                          </div>
-                          <div className="s">
-                            {[m.occ && m.occ.start !== m.occ.end ? `${shortDate(m.occ.start)}~${shortDate(m.occ.end)}` : "", timeText(m.event)].filter(Boolean).join(" · ") || "하루"}
-                            {m.event.owner !== "joint" ? ` · ${nameOf(s, m.event.owner)}` : ""}
-                            {m.event.note ? ` · ${m.event.note}` : ""}
-                          </div>
-                        </div>
-                        <div className="r">
-                          {m.amount ? <Money value={m.amount} /> : null}
-                          {m.event.dday && m.occ && <div className="s">{ddayText(m.occ, today)}</div>}
-                        </div>
-                      </button>
-                    ) : (
-                      <Link href="/check" className="row no-lead cal-mark" key={`${m.kind}${i}`}>
-                        <div style={{ minWidth: 0 }}>
-                          <div className="t">
-                            <i className={`mark-dot k-${m.kind} ${m.owner ?? ""}`} aria-hidden="true" />
-                            {m.title}
-                          </div>
-                          <div className="s">옮길 돈은 체크에서</div>
-                        </div>
-                        <div className="r">{m.amount ? <Money value={m.amount} /> : null}</div>
-                      </Link>
-                    ),
-                  )}
-                  {daySpendings.map((x) => (
-                    <button type="button" className="row" key={x.id} onClick={() => openSpending(x)}>
-                      <CategoryIcon visual={spendingVisual(data, x)} />
-                      <div style={{ minWidth: 0 }}>
-                        <div className="t">{x.memo || "지출"}</div>
-                        <div className="s">{x.owner === "joint" ? "공동" : `${nameOf(s, x.owner)} 용돈`}</div>
-                      </div>
-                      <div className="r">
-                        <Money value={x.amount} />
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </Morph>
-          </section>
+          </>}
         </div>
-
-        <div className="col span-5">
-          <MonthTodo month={month} onOpenEvent={(e) => openEvent(e)} className="o3" />
-
-          <section className="group o4" aria-labelledby="dday-h">
-            <div className="group-head">
-              <h2 id="dday-h">D-day</h2>
-            </div>
-            <Morph className="card" track=":scope > *, .rows > *">
-              {ddays.length === 0 ? (
-                <p className="empty">날짜를 고르고 일정 추가(+)에서 D-day를 고르면(기념일·만기) 여기에 모여요. 할 일도 D-day 세기를 켜면 같이 모여요.</p>
-              ) : (
-                <div className="rows">
-                  {ddays.map(({ e, o }) => (
-                    <button type="button" className="row no-lead" key={e.id} onClick={() => openEvent(e)}>
-                      <div style={{ minWidth: 0 }}>
-                        <div className="t">{e.title}</div>
-                        <div className="s">{o.start === o.end ? dateWithDay(o.start) : `${shortDate(o.start)} ~ ${shortDate(o.end)}`}</div>
-                      </div>
-                      <div className="r">
-                        <span className={`pill ${o.start <= today ? "warning" : ""}`}>{ddayText(o, today)}</span>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </Morph>
-          </section>
-        </div>
-      </div>
-
-      <EventSheet key={sheet.key} open={sheet.open} event={sheet.event} date={sheet.date} onOpenChange={(open) => setSheet((x) => ({ ...x, open }))} />
+      </Sheet>
+      <EventSheet key={sheet.key} open={sheet.open} event={sheet.event} date={sheet.date} onOpenChange={closeEvent} />
     </>
+  );
+}
+
+/** 날짜 패널: 그날 일정·돈 일·지출만 날짜 순으로 보여 준다. */
+function DayAgenda({ day, marks, onOpenEvent, onOpenSpending }: { day: string; marks: Mark[]; onOpenEvent: (event?: CalEvent) => void; onOpenSpending: (spending: Spending) => void }) {
+  const { data, today } = useData();
+  const s = data.settings;
+  const dayMarks = [...marks].sort((a, b) => ORDER[a.kind] - ORDER[b.kind] || (a.event?.start_time ?? "").localeCompare(b.event?.start_time ?? ""));
+  const daySpendings = data.spendings.filter((x) => x.date === day).sort((a, b) => b.created_at.localeCompare(a.created_at));
+  return (
+    <Morph className="cal-agenda" track=":scope > *, .rows > *">
+      {dayMarks.length === 0 && daySpendings.length === 0 ? (
+        <p className="empty" key={day}>
+          이날은 일정도 기록도 없어요.
+        </p>
+      ) : (
+        <div className="rows" key={day}>
+          {dayMarks.map((m, i) =>
+            (m.event?.todo && m.occ) || m.item || m.bill ? (
+              <CheckMark key={m.event ? `e${m.event.id}` : `${m.kind}${i}`} m={m} onOpen={() => onOpenEvent(m.event)} />
+            ) : m.event ? (
+              <button type="button" className="row no-lead cal-mark" key={`e${m.event.id}`} onClick={() => onOpenEvent(m.event)}>
+                <div style={{ minWidth: 0 }}>
+                  <div className="t">
+                    <i className={`mark-dot k-event ${m.event.owner}`} aria-hidden="true" />
+                    {m.title}
+                  </div>
+                  <div className="s">
+                    {[m.occ && m.occ.start !== m.occ.end ? `${shortDate(m.occ.start)}~${shortDate(m.occ.end)}` : "", timeText(m.event)].filter(Boolean).join(" · ") || "하루"}
+                    {m.event.owner !== "joint" ? ` · ${nameOf(s, m.event.owner)}` : ""}
+                    {m.event.note ? ` · ${m.event.note}` : ""}
+                  </div>
+                </div>
+                <div className="r">
+                  {m.amount ? <Money value={m.amount} /> : null}
+                  {m.event.dday && m.occ && <div className="s">{ddayText(m.occ, today)}</div>}
+                </div>
+              </button>
+            ) : (
+              <Link href="/check" className="row no-lead cal-mark" key={`${m.kind}${i}`}>
+                <div style={{ minWidth: 0 }}>
+                  <div className="t">
+                    <i className={`mark-dot k-${m.kind} ${m.owner ?? ""}`} aria-hidden="true" />
+                    {m.title}
+                  </div>
+                  <div className="s">옮길 돈은 체크에서</div>
+                </div>
+                <div className="r">{m.amount ? <Money value={m.amount} /> : null}</div>
+              </Link>
+            ),
+          )}
+          {daySpendings.map((x) => (
+            <button type="button" className="row" key={x.id} onClick={() => onOpenSpending(x)}>
+              <CategoryIcon visual={spendingVisual(data, x)} />
+              <div style={{ minWidth: 0 }}>
+                <div className="t">{x.memo || "지출"}</div>
+                <div className="s">{x.owner === "joint" ? "공동" : `${nameOf(s, x.owner)} 용돈`}</div>
+              </div>
+              <div className="r">
+                <Money value={x.amount} />
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+    </Morph>
+  );
+}
+
+function DdayList({ onOpenEvent }: { onOpenEvent: (event: CalEvent) => void }) {
+  const { data, today } = useData();
+  const ddays = data.events.filter((e) => e.dday)
+    .map((e) => ({ e, o: nextOccurrence(e, today) }))
+    .filter((x): x is { e: CalEvent; o: NonNullable<typeof x.o> } => x.o !== null)
+    .sort((a, b) => a.o.start.localeCompare(b.o.start));
+  return (
+    <section className="group cal-ddays" aria-labelledby="dday-h">
+      <div className="group-head">
+        <h2 id="dday-h">D-day</h2>
+      </div>
+      <Morph className="card" track=":scope > *, .rows > *">
+        {ddays.length === 0 ? (
+          <p className="empty">날짜를 고르고 일정 추가(+)에서 D-day를 고르면(기념일·만기) 여기에 모여요. 할 일도 D-day 세기를 켜면 같이 모여요.</p>
+        ) : (
+          <div className="rows">
+            {ddays.map(({ e, o }) => (
+              <button type="button" className="row no-lead" key={e.id} onClick={() => onOpenEvent(e)}>
+                <div style={{ minWidth: 0 }}>
+                  <div className="t">{e.title}</div>
+                  <div className="s">{o.start === o.end ? dateWithDay(o.start) : `${shortDate(o.start)} ~ ${shortDate(o.end)}`}</div>
+                </div>
+                <div className="r">
+                  <span className={`pill ${o.start <= today ? "warning" : ""}`}>{ddayText(o, today)}</span>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+      </Morph>
+    </section>
   );
 }

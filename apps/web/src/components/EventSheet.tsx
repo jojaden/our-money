@@ -33,7 +33,7 @@ function newId() {
 }
 
 function kindOf(e?: CalEvent): Kind {
-  if (!e) return "todo";
+  if (!e) return "event";
   return e.todo ? "todo" : e.dday ? "dday" : "event";
 }
 
@@ -183,9 +183,12 @@ export function EventSheet({ open, onOpenChange, event, date }: { open: boolean;
         )
       }
       footer={
-        <button type="button" className="btn block" disabled={!valid} onClick={() => void save()}>
-          저장
-        </button>
+        <>
+          <button type="button" className="btn secondary" onClick={() => onOpenChange(false)}>취소</button>
+          <button type="button" className="btn block" disabled={!valid} onClick={() => void save()}>
+            저장
+          </button>
+        </>
       }
     >
       <div className="field">
