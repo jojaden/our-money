@@ -1,5 +1,5 @@
 /* 카드 — 튜브 게이지, 예산 카드(BudgetCard), 진행선(StepTrack), 누적 지출(SpendCurve), 기록 타일(StatTiles),
-   하루·분류 막대, 모으는 목표(GoalBar), 두 사람 월급의 흐름(PayFlow)
+   하루·분류 막대, 모으는 목표(GoalBar)
    규칙: docs/design-system README "게이지와 막대", components/<이름>/README.md */
 
 /* ---------- 튜브 게이지 ---------- */
@@ -249,70 +249,6 @@
 
 /* 플랜 머리: 결론 아래 작은 버튼 */
 .page-head .import-btn { margin-top: 12px; }
-
-/* ---------- 두 사람 월급의 흐름 (PayFlow) ---------- */
-
-.flow-lanes { display: grid; gap: 24px; }
-.flow-who { display: flex; align-items: center; gap: 10px; }
-.flow-who .name { font: 600 16px/24px var(--font-text); }
-.flow-who .inc { margin-left: auto; font: 600 16px/24px var(--font-display); }
-.flow-who .inc .unit { color: var(--faint); font-size: 0.8em; }
-.flow-track { position: relative; margin-top: 12px; }
-/* 한 줄로 이어 붙인 튜브. 조각 사이 2px 은 카드 바탕이 비친다 */
-.flow-bar {
-  position: relative;
-  display: flex;
-  gap: 2px;
-  height: 14px;
-  overflow: hidden;
-  border-radius: var(--radius-chip);
-  background: var(--surface);
-  clip-path: inset(0 100% 0 0 round 7px);
-  transition: clip-path var(--dur-ring) var(--ease-out), width var(--dur-value) var(--ease-value);
-}
-.flow-bar::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 55%, transparent) 0%, color-mix(in srgb, var(--surface) 12%, transparent) 45%, transparent 70%);
-  box-shadow: inset 0 -1.5px 2px color-mix(in srgb, var(--text) 12%, transparent);
-  pointer-events: none;
-}
-.flow-lanes.shown .flow-bar { clip-path: inset(0 0 0 0 round 7px); }
-.flow-lane + .flow-lane .flow-bar { transition-delay: 120ms, 0ms; }
-.flow-bar .seg { min-width: 4px; background: var(--k); cursor: pointer; transition: opacity var(--dur-tab) var(--ease-out), flex-grow var(--dur-value) var(--ease-value); }
-.flow-lanes.focus .seg:not(.on) { opacity: 0.22; }
-/* 배분이 월급보다 많으면 월급 자리에 눈금 */
-.flow-tick { position: absolute; top: -4px; bottom: -4px; width: 2px; margin-left: -1px; border-radius: 2px; background: var(--text); }
-.flow-foot { display: flex; justify-content: space-between; gap: 12px; margin: 8px 0 0; color: var(--muted); font: 500 14.5px/20px var(--font-text); }
-.flow-foot b { color: var(--text); font-weight: 700; }
-.flow-foot b.neg { color: var(--negative); }
-.flow-foot i { display: inline-block; width: 8px; height: 8px; margin-right: 6px; border-radius: var(--radius-chip); background: var(--k); vertical-align: 1px; }
-/* 범례가 곧 고르기 버튼 */
-.flow-key {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 4px;
-  margin: 22px -7px 0;
-  padding-top: 14px;
-  background: linear-gradient(var(--rule), var(--rule)) 7px 0 / calc(100% - 14px) 0.6px no-repeat;
-}
-.flow-key button { display: inline-flex; align-items: center; gap: 5px; height: 30px; padding: 0 7px; border: 0; border-radius: var(--radius-chip); background: none; color: var(--muted); font: 500 12.5px/30px var(--font-text); transition: background-color var(--dur-press) var(--ease-out), transform var(--dur-press) var(--ease-press); }
-.flow-key button:active { transform: scale(0.96); }
-.flow-key i { width: 8px; height: 8px; border-radius: var(--radius-chip); background: var(--k); }
-.flow-key i.left { box-shadow: inset 0 0 0 1px var(--control); }
-.flow-key button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent-ink); font-weight: 600; }
-.flow-note { margin: 10px 0 0; color: var(--faint); font: 500 12.5px/16px var(--font-text); }
-@media (min-width: 1024px) {
-  .flow-lanes { grid-template-columns: 1fr 1fr; column-gap: 40px; }
-  .flow-key { justify-content: flex-start; column-gap: 16px; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .flow-bar, .flow-bar .seg, .flow-key button { transition: none; }
-}
 
 /* ---------- 강조 카드 (HighlightCard): 화면에 하나. 옅은 하늘 그라데이션, 그림자 없음 ---------- */
 
