@@ -7,12 +7,13 @@ import type { Person } from "@/lib/types";
 import { METHOD_LABEL } from "@/lib/types";
 import { useData } from "@/lib/store";
 import { addMonths, currentMonth, nameOf, paydayDate, periodOf } from "@/lib/calc";
-import { ddayText, nextOccurrence, timeText } from "@/lib/calendar";
+import { ddayText, nextOccurrence, summaryHref, timeText } from "@/lib/calendar";
 import { dateWithDay, num, parseYmd, shortDate } from "@/lib/format";
 import { asking, byUrgency, dueState, eventTasks, useTasks, waiting, type Task } from "./tasks";
 import { TaskRow } from "./TaskRow";
 import { afterSheet, Sheet } from "./ui";
 import { usePendingClose } from "./ClosePrompt";
+import { WeekReport, weekSummary } from "./WeekReport";
 
 const SEEN_KEY = "our-money-bell-seen";
 /** 월급날은 며칠 전부터 알리나 */
@@ -41,6 +42,7 @@ function daysUntil(today: string, d: string) {
  * - 확인할 지출: 결제 알림으로 적어서 카드·분류 등 확인할 칸이 남은 지출 (가계부의 "확인 필요")
  * - 지난 것 / 오늘·곧: 이체·납부·카드값·정산은 3일 안, 할 일은 3일과 그 할 일의 미리 알림 중 긴 쪽 안. 월급날 전 이체는 빼고
  * - 다가오는 날: 월급날(3일 안), 미리 알림을 켠 일정·D-day(그 날 수 안)
+ * - 지난주 돌아보기: 일·월·화요일에 지난주(일~토) 쓴 돈 (주마다 새 알림 하나)
  */
 function useAlerts() {
   const { data, today, toggleCheck } = useData();
@@ -81,15 +83,17 @@ function useAlerts() {
     }
     upcoming.sort((a, b) => a.date.localeCompare(b.date));
     const reviews = data.spendings.filter((x) => x.review?.length);
+    const week = weekSummary(data, today);
 
     return {
+      week,
       pinned,
       late: urgent.filter((t) => t.due! < today),
       soon: urgent.filter((t) => t.due! >= today),
       asks,
       reviews,
       upcoming,
-      keys: [...pinned.map((t) => t.key), ...urgent.map((t) => t.key), ...asks.map((t) => `ask:${t.key}`), ...reviews.map((x) => `rv:${x.id}`), ...upcoming.map((u) => u.key)],
+      keys: [...pinned.map((t) => t.key), ...urgent.map((t) => t.key), ...asks.map((t) => `ask:${t.key}`), ...reviews.map((x) => `rv:${x.id}`), ...upcoming.map((u) => u.key), ...(week ? [week.key] : [])],
     };
   }, [data, month, s, tasks, today, toggleCheck]);
 }
@@ -160,10 +164,16 @@ export function BellButton({ rail = false }: { rail?: boolean }) {
       <Sheet open={open} onOpenChange={setOpen} title="알림">
         {empty ? (
           <p className="empty" key="empty">
-            지금 챙길 것이 없어요. 마감하지 않은 지난달, 기한이 3일 안으로 다가온 이체·납부·할 일, 다가오는 월급날, 미리 알림을 켠 일정이 여기에 모여요.
+            지금 챙길 것이 없어요. 마감하지 않은 지난달, 기한이 3일 안으로 다가온 이체·납부·할 일, 다가오는 월급날, 미리 알림을 켠 일정, 그리고 일요일마다 지난주 돌아보기가 여기에 모여요.
           </p>
         ) : (
           <>
+            {a.week && (
+              <div className="field" key="week">
+                <h3 className="sum-h">지난주 돌아보기</h3>
+                <WeekReport w={a.week} onOpen={() => go(summaryHref(a.week!.week))} />
+              </div>
+            )}
             {close && (
               <div className="field" key="close">
                 <h3 className="sum-h">지난달 마무리</h3>

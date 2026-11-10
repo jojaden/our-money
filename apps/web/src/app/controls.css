@@ -417,6 +417,17 @@ button.row:active, a.row:active { background: var(--well); transform: scale(0.98
 /* 알림 모음의 다가오는 날: 동그란 아이콘 바탕은 그 사람 색(공동은 인디고), D-day 는 따뜻한 색 */
 .alert-ic { display: grid; flex: none; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: var(--accent-soft); color: var(--accent-ink); }
 .alert-ic svg { width: 18px; height: 18px; stroke-width: 2; }
+/* 지난주 돌아보기 (WeekReport): 큰 한 줄 + 일~토 하루 지출 선. 누르면 그 주 모아 보기 */
+.week-report { display: grid; gap: 4px; width: 100%; padding: 16px; border: 0; border-radius: var(--radius-inner); background: var(--raised); color: var(--text); text-align: left; transition: transform var(--dur-press) var(--ease-press); }
+.week-report:active { transform: scale(0.98); }
+.wr-title { font: 700 19px/26px var(--font-text); letter-spacing: -0.02em; }
+.wr-title .hl { font-family: var(--font-display); text-decoration: underline; text-decoration-color: var(--primary); text-decoration-thickness: 0.42em; text-underline-offset: -0.24em; text-decoration-skip-ink: none; }
+.wr-sub { color: var(--faint); font: 500 13px/18px var(--font-text); }
+.wr-line { display: block; width: 100%; height: auto; margin-top: 8px; overflow: visible; }
+.wr-line path { fill: none; stroke: var(--primary-line); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.wr-line circle { fill: var(--primary); stroke: var(--primary-line); stroke-width: 2; }
+.wr-days { display: grid; grid-template-columns: repeat(7, 1fr); color: var(--faint); font: 500 11px/14px var(--font-text); text-align: center; }
+@media (prefers-reduced-motion: reduce) { .week-report { transition: none; } }
 .alert-ic.a { background: var(--a-soft); color: var(--a-ink, var(--text)); }
 .alert-ic.b { background: var(--b-soft); color: var(--b-ink, var(--text)); }
 .alert-ic.dday { background: var(--warm-100); color: var(--warning); }
