@@ -26,7 +26,7 @@ description: 두 사람의 한 달 돈 흐름을 다정하고 차분하게 보�
 | 컨트롤 | [Button](docs/design-system/components/Button/README.md) · [Chip](docs/design-system/components/Chip/README.md) · [Segmented](docs/design-system/components/Segmented/README.md) · [ListRow](docs/design-system/components/ListRow/README.md) |
 | 홈 | [BudgetCard](docs/design-system/components/BudgetCard/README.md) · [PayFlow](docs/design-system/components/PayFlow/README.md) · [HighlightCard](docs/design-system/components/HighlightCard/README.md) |
 | 체크 | [StepTrack](docs/design-system/components/StepTrack/README.md) · [Celebrate](docs/design-system/components/Celebrate/README.md) |
-| 가계부 | [RainbowGauge](docs/design-system/components/RainbowGauge/README.md) · [StatTiles](docs/design-system/components/StatTiles/README.md) |
+| 가계부 | [SpendCurve](docs/design-system/components/SpendCurve/README.md) · [StatTiles](docs/design-system/components/StatTiles/README.md) |
 | 플랜 | [GoalBar](docs/design-system/components/GoalBar/README.md) |
 | 지갑 | [Wallet](docs/design-system/components/Wallet/README.md) · [AddPass](docs/design-system/components/AddPass/README.md) |
 | 처음과 기다림 | [Login](docs/design-system/components/Login/README.md) · [Loading](docs/design-system/components/Loading/README.md) |
@@ -40,7 +40,7 @@ description: 두 사람의 한 달 돈 흐름을 다정하고 차분하게 보�
 | `tokens.css` | `tokens.json`에서 만든 CSS 변수. 손으로 고치지 않습니다. |
 | `globals.css` | 바탕 규칙, 12열 그리드, 여러 화면이 나눠 쓰는 작은 조각 |
 | `controls.css` | 카드, 목록 줄, 버튼, 칩, 세그먼트, 입력, 토글, 체크 링, 알약, 시트 |
-| `cards.css` | 튜브 게이지, BudgetCard, PayFlow, StepTrack, RainbowGauge, StatTiles, 막대, GoalBar |
+| `cards.css` | 튜브 게이지, BudgetCard, PayFlow, StepTrack, SpendCurve, StatTiles, 막대, GoalBar |
 | `moments.css` | 100% 축하, 로그인·로딩의 따뜻한 무대 |
 | `wallet.css` | 지갑, 카드 상세, AddPass, 작은 카드 |
 | `shell.css` | 위쪽 막대, 하단 캡슐, 데스크톱 레일, 화면 전환, 토스트 |

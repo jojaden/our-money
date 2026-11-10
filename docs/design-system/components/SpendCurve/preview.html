@@ -1,0 +1,46 @@
+<!-- @dsCard group="Cards" height=470 subtitle="가계부 머리 — 이번 달 누적 지출(노랑 면·선)과 지난달(회색 선), 오늘 점선. 그래프를 누르면 그날 두 달 누적이 떠요" -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alan+Sans:wght@300..900&family=Noto+Sans+KR:wght@400..800&display=swap">
+<style>
+  body { margin: 0; background: var(--ground); color: var(--text); font-family: var(--font-text); word-break: keep-all; -webkit-font-smoothing: antialiased; }
+  p, h3 { margin: 0; }
+  .stage { padding: 20px; }
+  .card { max-width: 390px; padding: var(--pad); box-sizing: border-box; background: var(--surface); border-radius: var(--radius-card); box-shadow: var(--shadow-card); }
+  h3 { font: 700 22px/30px var(--font-text); letter-spacing: -0.02em; }
+  .hl { font-family: var(--font-display); text-decoration: underline; text-decoration-color: var(--primary); text-decoration-thickness: 0.42em; text-underline-offset: -0.24em; text-decoration-skip-ink: none; }
+  .sub { margin-top: 6px; color: var(--faint); font-size: 14.5px; }
+  .sub b { color: var(--text); font-weight: 600; }
+  .legend { display: flex; justify-content: flex-end; gap: 14px; margin-top: 14px; color: var(--faint); font-size: 12.5px; }
+  .legend span::before { content: ""; display: inline-block; width: 14px; height: 3px; margin-right: 6px; vertical-align: middle; border-radius: 2px; background: var(--control); }
+  .legend .now::before { background: var(--primary-line); }
+  svg { display: block; width: 100%; margin-top: 4px; }
+  .grid { stroke: var(--rule); }
+  .ax { fill: var(--faint); font: 500 10.5px var(--font-text); }
+  .then { fill: none; stroke: var(--control); stroke-width: 2; }
+  .area { fill: var(--primary); fill-opacity: 0.32; }
+  .now { fill: none; stroke: var(--primary-line); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
+  .today { stroke: var(--control); stroke-dasharray: 3 3; }
+  .end { fill: var(--primary); stroke: var(--primary-line); stroke-width: 2; }
+  .foot { display: flex; justify-content: space-between; margin-top: 10px; color: var(--faint); font-size: 13px; }
+  .foot b { display: block; color: var(--text); font: 700 16px/22px var(--font-display); text-align: right; }
+</style>
+<div class="stage"><div class="card">
+  <h3>이번 달 누적 지출은<br><span class="hl">821,900원</span>이에요</h3>
+  <p class="sub">지난달 이맘때보다 <b>81,758원</b> 더 썼어요</p>
+  <div class="legend"><span>지난달</span><span class="now">이번 달</span></div>
+  <svg viewBox="0 0 340 184" id="c"></svg>
+  <div class="foot"><span>11월 10일 기준</span><span><b>821,900원</b>지난달 같은 날 740,142원</span></div>
+</div></div>
+<script>
+  const n = 31, PL = 34, PR = 10, PT = 12, PB = 24, PW = 340 - PL - PR, PH = 184 - PT - PB, max = 1_000_000;
+  const x = (i) => PL + (i / (n - 1)) * PW, y = (v) => PT + PH - (v / max) * PH;
+  let a = 0, b = 0;
+  const now = [], then = [];
+  for (let i = 0; i < n; i++) { b += [52, 8, 0, 31, 12, 0, 44][i % 7] * 1000; then.push(b); if (i <= 16) { a += [61, 0, 19, 40, 9, 72, 0][i % 7] * 1000; now.push(a); } }
+  const path = (vs) => vs.map((v, i) => `${i ? "L" : "M"}${x(i)} ${y(v)}`).join(" ");
+  const svg = document.getElementById("c");
+  svg.innerHTML = [0, 500000, 1000000].map((t) => `<line class="grid" x1="${PL}" x2="${340 - PR}" y1="${y(t)}" y2="${y(t)}"/><text class="ax" x="${PL - 6}" y="${y(t) + 4}" text-anchor="end">${t / 10000}</text>`).join("")
+    + `<text class="ax" x="${PL}" y="178">10.25</text><text class="ax" x="${340 - PR}" y="178" text-anchor="end">11.24</text>`
+    + `<line class="today" x1="${x(16)}" x2="${x(16)}" y1="${PT}" y2="${PT + PH}"/>`
+    + `<path class="then" d="${path(then)}"/><path class="area" d="${path(now)} L${x(16)} ${y(0)} L${x(0)} ${y(0)} Z"/><path class="now" d="${path(now)}"/>`
+    + `<circle class="end" cx="${x(16)}" cy="${y(a)}" r="4.5"/>`;
+</script>

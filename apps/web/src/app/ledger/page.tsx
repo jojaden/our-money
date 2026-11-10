@@ -4,12 +4,12 @@ import { useMemo, useState } from "react";
 import type { Owner, PayKind, Spending } from "@/lib/types";
 import { PAY_KIND_LABEL } from "@/lib/types";
 import { useData } from "@/lib/store";
-import { addMonths, allowanceStatus, categoryUse, dayIndexOf, groupTotals, itemsOf, livingStatus, nameOf, periodOf, settlementOf, spendingsIn, spentToDay, sum, type MonthSpending } from "@/lib/calc";
+import { addMonths, allowanceStatus, categoryUse, groupTotals, itemsOf, livingStatus, nameOf, periodOf, settlementOf, spendingsIn, sum, type MonthSpending } from "@/lib/calc";
 import { dayLabel, iga, num } from "@/lib/format";
 import { MonthHeader } from "@/components/MonthHeader";
 import { CategoryIcon, Money, Who } from "@/components/ui";
 import { DailyBars } from "@/components/DailyBars";
-import { RainbowGauge } from "@/components/RainbowGauge";
+import { SpendCurve } from "@/components/SpendCurve";
 import { StatTiles } from "@/components/StatTiles";
 import { categoryVisual, spendingVisual } from "@/lib/categories";
 import { isFresh } from "@/lib/fresh";
@@ -38,7 +38,6 @@ export default function LedgerPage() {
   );
   const total = sum(rows, (r) => r.amount);
   const living = livingStatus(data, month, today);
-  const prevSame = spentToDay(data, addMonths(month, -1), "joint", dayIndexOf(month, s.cycle_start, today));
   const allowance = allowanceStatus(data, month, me, today);
   const allowA = allowanceStatus(data, month, "a", today);
   const allowB = allowanceStatus(data, month, "b", today);
@@ -68,7 +67,13 @@ export default function LedgerPage() {
       <MonthHeader name="가계부" />
       <div className="grid">
         <div className="col span-7">
-        <RainbowGauge
+        <SpendCurve
+          month={month}
+          prevMonth={addMonths(month, -1)}
+          cycleStart={s.cycle_start}
+          today={today}
+          rows={all}
+          prevRows={spendingsIn(data, addMonths(month, -1))}
           buckets={[
             { key: "living", name: "공동 생활비", budget: living.budget, spent: living.spent },
             {
@@ -79,7 +84,6 @@ export default function LedgerPage() {
               note: `${nameOf(s, "a")} ${num(allowA.spent)} · ${nameOf(s, "b")} ${num(allowB.spent)}`,
             },
           ]}
-          prev={prevSame > 0 ? { now: living.spent, then: prevSame } : null}
         />
         <section className="group o1" aria-labelledby="daily-h">
           <div className="group-head">

@@ -6,29 +6,9 @@ import { cssTimeMs } from "@/lib/motion";
 /**
  * 빛을 머금은 튜브 게이지 (docs/design-system README "게이지와 막대").
  * 채운 호는 옅은 시작에서 진한 끝(지금 자리)으로 번지고, 굵기 방향으로 은은한 입체(안쪽 그늘·바깥쪽 빛)를 덧씌우며,
- * 둘레에 같은 색 빛이 돈다. 끝 점은 테두리 없는 흰 점. 반원(half)은 홈 첫 카드, 270°(ring)는 작은 카드,
- * 겹친 반원(rb0 바깥·rb1 안쪽)은 가계부 무지개 게이지에 쓴다.
+ * 둘레에 같은 색 빛이 돈다. 끝 점은 테두리 없는 흰 점. 반원(half)은 홈 첫 카드, 270°(ring)는 작은 카드에 쓴다.
  */
 type Pt = [number, number];
-
-/** 무지개 게이지의 겹친 반원 한 겹 (같은 중심, 같은 viewBox) */
-function rainbow(r: number) {
-  const [cx, cy, w] = [160, 156, 18];
-  return {
-    box: "0 0 320 168",
-    d: `M${cx - r} ${cy} A${r} ${r} 0 0 1 ${cx + r} ${cy}`,
-    text: null,
-    c: [cx, cy, r],
-    w,
-    halo: 6,
-    knob: 5,
-    mile: [3.5, 1.8],
-    at: (p: number): Pt => {
-      const a = Math.PI * (1 - p);
-      return [cx + r * Math.cos(a), cy - r * Math.sin(a)];
-    },
-  } as const;
-}
 
 const ARC = {
   half: {
@@ -60,9 +40,6 @@ const ARC = {
       return [46 + 38 * Math.cos(a), 46 + 38 * Math.sin(a)];
     },
   },
-  // 호 사이 5px
-  rb0: rainbow(136),
-  rb1: rainbow(113),
 } as const;
 export type ArcShape = keyof typeof ARC;
 
