@@ -1,0 +1,101 @@
+# 사용 안내 — 예시 데이터로 따라 해 보기
+
+[← README](../README.md)
+
+## 0. 예시 데이터 열기
+
+```bash
+cd apps/web && npm install && npm run dev   # http://localhost:3000
+```
+
+`.env.local` 이 없으면 **예시 데이터** 모드로 열려요(왼쪽 위 노란 알약). 고친 내용은 그 브라우저에만 남아요.
+배포된 앱은 등록된 두 계정만 들어갈 수 있어요.
+
+## 화면 지도
+
+```mermaid
+flowchart TB
+  top["위쪽: 🔔 알림 · ⚙️ 설정"]
+  subgraph tabs["아래 메뉴"]
+    H["홈<br/>남은 생활비 · 할 일"] --- P["플랜<br/>월급 나누기"] --- C["체크<br/>옮길 돈 · 납부"] --- L["가계부<br/>지출"] --- K["달력<br/>일정 · 돈 흐름"]
+  end
+  fab(["＋ 원형 버튼<br/>홈·가계부: 지출 기록 / 달력: 일정 추가"])
+  top --- tabs --- fab
+```
+
+| 표시 | 뜻 |
+|---|---|
+| 🟡 노랑 채움 | 누를 곳 · 고른 탭 · 오늘 |
+| 🟠 주황 · 🩷 분홍 · 🟡 노랑 | 현빈 · 예진 · 공동 (일정은 **입력한 사람** 색) |
+| **−89,000원** · <span>**+3,800,000원**</span> | 나간 돈 · 들어올 돈(초록) |
+
+---
+
+## 1. 홈
+
+<img src="screenshots/home.jpg" width="240"> <img src="screenshots/home-todo.jpg" width="240">
+
+- [ ] 반원 게이지의 **오늘** 점: 오늘까지 써도 되는 선 → "예상보다 172,642원 덜 썼어요"
+- [ ] **10월이 끝났어요 → 10월 마감하기**: 지난달 마감
+- [ ] **이번 달 할 일**의 동그라미 누르기 → 완료, 줄이 끝낸 쪽으로 이동
+
+## 2. 플랜 — 월급이 나뉘는 곳
+
+<img src="screenshots/plan.jpg" width="240"> <img src="screenshots/plan-pick.jpg" width="240"> <img src="screenshots/plan-items.jpg" width="240">
+
+- [ ] 원형 그래프의 **주황 조각** 누르기 → 튀어나오며 "고정비 27%"
+- [ ] 아래 **고정비** 이름 누르기 → 월세·관리비… 항목이 펼쳐짐
+- [ ] 위 **현빈 / 예진** → 그 사람 월급 기준으로 다시 그림 (공동 항목은 비율만큼)
+- [ ] 카드 제목 줄의 **＋** → 그 묶음에 항목 추가
+
+## 3. 체크 — 옮길 돈 · 납부 · 카드값
+
+<img src="screenshots/check.jpg" width="240">
+
+- [ ] **현빈 월급날** 카드: 급여통장 → 각 통장으로 옮길 돈. 동그라미로 체크, 진행선이 채워짐
+- [ ] 월급날이 주말이면 **앞 금요일**로 표시 (25일 일요일 → 23일)
+- [ ] 아래 **고정비 납부 확인 · 카드값 준비 · 두 사람 정산 · 11월 마무리**
+
+## 4. 가계부 — 지출
+
+<img src="screenshots/ledger.jpg" width="240"> <img src="screenshots/ledger-daily.jpg" width="240"> <img src="screenshots/spending.jpg" width="240">
+
+- [ ] 누적 그래프를 **누르고 끌기** → 그날 이번 달 · 지난달 누적
+- [ ] 오른쪽 아래 **＋** → 금액 · 어디에 · 분류 · 결제수단 → **기록하기**
+- [ ] **자주 쓰는 지출** 버튼 한 번으로 다시 넣기, 메모를 치면 분류가 따라옴
+- [ ] **모든 기록**의 칩으로 카드/현금/이체 · 공동/현빈/예진 거르기
+
+## 5. 달력 — 일정과 돈 흐름
+
+<img src="screenshots/calendar.jpg" width="240"> <img src="screenshots/calendar-day.jpg" width="240"> <img src="screenshots/event.jpg" width="240">
+
+- [ ] 일정 칩 색 = **입력한 사람**, 초록 **+380만** = 월급날
+- [ ] **5일** 누르기 → 일정 · 나갈 돈 · 쓴 돈(합계)이 묶인 패널
+- [ ] 아무것도 없는 날 → 패널 없이 날짜만 고름, 아래 버튼이 **"N월 N일에 일정 추가"**
+- [ ] 패널 맨 아래 **일정 추가** → 할 일 / 일정 / D-day
+
+<img src="screenshots/calendar-month.jpg" width="240">
+
+- [ ] 왼쪽 위 **☰** → 이번 달 할 일 · D-day 모아 보기
+- [ ] 아래로 **손잡이를 밀어 올리기** → 한 주로 접기, 좌우로 밀어 주 넘기기
+
+## 6. 알림 — 지난주 돌아보기
+
+<img src="screenshots/bell.jpg" width="240"> <img src="screenshots/week.jpg" width="240">
+
+- [ ] 🔔 → 일·월·화요일엔 맨 위에 **"지난주는 522,900원 썼어요"** + 요일별 선
+- [ ] 카드 누르기 → 그 주 **모아 보기**(공동/현빈/예진, 분류별)
+- [ ] 지난 것 · 잘 나갔나요? · 다가오는 날(월급날 · D-day)
+
+## 7. 설정 — 지갑
+
+<img src="screenshots/wallet.jpg" width="240"> <img src="screenshots/card.jpg" width="240">
+
+- [ ] 카드·통장이 실물처럼 겹친 **지갑**, 누르면 이번 달 카드값 · 옮겨 올 돈 · 최근 사용
+- [ ] 이름 · 월급날 · 분담 비율 · 한 달 기준일 · 분류 예산 · 변경 이력 · CSV 내보내기
+
+## 데스크톱
+
+<img src="screenshots/desktop-home.jpg" width="49%"> <img src="screenshots/desktop-calendar.jpg" width="49%">
+
+넓은 화면에서는 왼쪽 레일 + 두 열 배치로 바뀌어요.

@@ -1,355 +1,144 @@
-# 우리 집 가계부 (OUR MONEY)
+<div align="center">
 
-두 사람의 월급을 어디로 나눌지 정하고, 매달 옮길 돈·고정비 납부·카드값 준비를 체크하고, 생활비 지출을 카드/현금/이체로 기록하는 부부용 가계부예요.
+<img src="apps/web/public/icon-192.png" width="72" alt="앱 아이콘: 한 지붕 아래 두 동전">
 
-> **공개 저장소 안내**
-> 이 앱은 저희 부부 두 사람만 쓰는 앱이에요. 기능 구성과 설계를 공유하려고 코드를 공개합니다.
-> - 저장소에는 **실제 데이터도 연결 정보도 없어요.** 금액과 지출은 Supabase DB 에만 있고, 키와 주소는 `.env.local`(무시되는 파일)에만 있어요.
-> - 화면과 예시 데이터의 이름(현빈·예진)과 금액은 모두 **가상**이에요.
-> - 배포된 앱에는 등록된 두 구글 계정만 들어갈 수 있어요 (DB 의 Row Level Security). 직접 쓰려면 아래 [직접 구축하기](#직접-구축하기)대로 자기 Supabase 프로젝트를 만들면 돼요.
+# 우리 집 가계부 · OUR MONEY
 
-<table>
-  <tr>
-    <td align="center"><img src="docs/screenshots/home.png" width="180" alt="홈 화면: 남은 공동 생활비 반원 게이지"><br><sub>홈</sub></td>
-    <td align="center"><img src="docs/screenshots/plan.png" width="180" alt="플랜 화면: 두 사람 월급이 나뉘는 막대"><br><sub>플랜</sub></td>
-    <td align="center"><img src="docs/screenshots/check.png" width="180" alt="체크 화면: 월급날 옮길 돈 진행선"><br><sub>체크</sub></td>
-    <td align="center"><img src="docs/screenshots/ledger.png" width="180" alt="가계부 화면: 무지개 게이지"><br><sub>가계부</sub></td>
-  </tr>
-  <tr>
-    <td align="center"><img src="docs/screenshots/spending.png" width="180" alt="지출 기록 시트"><br><sub>지출 기록</sub></td>
-    <td align="center"><img src="docs/screenshots/wallet.png" width="180" alt="지갑: 카드와 통장 묶음"><br><sub>지갑</sub></td>
-    <td align="center"><img src="docs/screenshots/card.png" width="180" alt="카드 상세: 카드값·결제일·최근 사용"><br><sub>카드 상세</sub></td>
-    <td align="center"><img src="docs/screenshots/settings.png" width="180" alt="설정 화면"><br><sub>설정</sub></td>
-  </tr>
-</table>
+**부부 두 사람의 월급 배분 → 이체 체크 → 지출 기록 → 일정까지, 한 달을 한 앱으로**
 
-## 목차
+![version](https://img.shields.io/badge/version-v0.4.1-f5df4d?style=flat-square&labelColor=222326)
+![Next.js](https://img.shields.io/badge/Next.js_16-PWA-222326?style=flat-square)
+![Supabase](https://img.shields.io/badge/Supabase-Postgres_·_RLS_·_Realtime-939597?style=flat-square&labelColor=222326)
+![Kotlin](https://img.shields.io/badge/Kotlin_Multiplatform-Android-939597?style=flat-square&labelColor=222326)
 
-- [왜 만들었나](#왜-만들었나)
-- [기능과 동작 방식](#기능과-동작-방식)
-- [설계](#설계)
-- [저장소 구조](#저장소-구조)
-- [직접 구축하기](#직접-구축하기)
-- [개발 규칙과 버전 관리](#개발-규칙과-버전-관리)
+<img src="docs/screenshots/home.jpg" width="19%" alt="홈"> <img src="docs/screenshots/plan.jpg" width="19%" alt="플랜 원형 그래프"> <img src="docs/screenshots/check.jpg" width="19%" alt="체크"> <img src="docs/screenshots/ledger.jpg" width="19%" alt="가계부 누적 지출"> <img src="docs/screenshots/calendar.jpg" width="19%" alt="달력">
 
-## 왜 만들었나
+</div>
 
-원래 구글 시트("OUR MONEY · 우리 집 부부 가계부")로 관리했는데, 폰에서 보고 고치기가 너무 힘들었어요. 저희 집은 이렇게 돈이 움직여요.
+> 저희 부부 두 사람만 쓰는 앱이라 코드만 공개해요. 저장소에 실제 데이터·연결 정보는 없고, 화면의 이름(현빈·예진)과 금액은 모두 가상이에요.
 
-- 두 사람은 **각자 자기 통장으로 월급을 받고**, 그중 일부만 공동 통장으로 옮겨요. 월급날은 **서로 달라서**, 각자 자기 월급날에 자기 몫을 옮겨요. 금액은 거의 정해져 있어요.
-- 고정비는 카드 자동결제, 계좌 자동이체, 직접 이체로 여러 통장에서 나가요.
-- 매달 하는 일: 각자 월급날 → 플랜 확인 → 내 월급통장에서 이체 → 체크 → 고정비·저축이 나갔는지 확인 → 카드 결제일 전에 카드값 준비.
+## 한눈에
 
-일반 가계부 앱은 지출만 기록해요. 이 앱은 **플랜에서 "이번 달 누가 어느 통장으로 얼마를 옮겨야 하는지"를 계산**해 주는 데 초점을 맞췄어요. 통장 잔액 추적은 일부러 넣지 않았어요.
+| 기간 | 역할 | 사용자 | 커밋 · PR | 버전 · DB 이전 |
+|:---:|:---:|:---:|:---:|:---:|
+| 2026.11.03 – 11.10 | 기획 · 디자인 · 웹 · 안드로이드 · DB (1인) | 2명 | 162 · 68 | v0.4.1 · 13개 |
 
-## 기능과 동작 방식
+## 문제 → 해결
 
-각 기능마다 무엇을 하는지, 어떻게 계산하는지, 코드가 어디 있는지 적었어요. 계산은 모두 `apps/web/src/lib/calc.ts` 에 있고, 모바일 `apps/mobile/core/.../calc/Calc.kt` 에 같은 규칙으로 옮겨져 있어요.
-
-### 1. 플랜: 월급이 나뉘는 곳
-
-| | |
+| 전에 (구글 시트) | 이제 (이 앱) |
 |---|---|
-| 하는 일 | 그달 수입을 **고정비 · 공동 생활비 · 용돈 · 저축·투자** 네 묶음에 배분해요. 항목마다 누구 돈인지(현빈/예진/공동), 나가는 방식(카드 자동결제/계좌 자동이체/직접 이체/현금), 돈이 있어야 하는 계좌, 날짜를 정해요. |
-| 화면 | 두 사람의 월급이 어디로 가는지 사람마다 막대 하나로 보여 줘요. 배분률, 남는 돈, 저축률도 함께 보여 줘요. 저축 항목에 목표 금액을 넣으면 진행률이 나와요. |
-| 계산 | 공동 항목은 분담 비율로 나눠요. 비율은 **정한 비율**(예: 50:50)이나 **월급 비율** 중에서 골라요. A 몫은 반올림하고, B 는 나머지를 가져가서 합이 원래 금액과 꼭 맞아요 (`split`, `shareOf`, `lanes`). |
-| 데이터 | 반복 항목은 `plan_items`(템플릿)에 두고, 달마다 `month_items` 로 복사해 그달만 바꿀 수 있어요. id 는 `${달}:${템플릿 id}` 로 정해져 있어서, 두 폰이 동시에 달을 시작해도 항목이 두 번 생기지 않아요. |
+| 폰에서 칸을 찾아 고치기 어려움 | 엄지 하나로 10초 안에 지출 기록 |
+| "이번 달 누가 어디로 얼마 옮기지?"를 매달 계산 | 플랜에서 **이체 목록을 자동으로** 만들고 체크 |
+| 한 사람이 고치면 다른 사람은 모름 | 두 폰에 **실시간** 반영, 동시에 고쳐도 충돌을 막음 |
 
-### 2. 체크: 옮길 돈
+```mermaid
+flowchart LR
+  P["💰 월급날<br/>(주말이면 앞 금요일)"] --> A["플랜<br/>4개 묶음으로 나누기"]
+  A --> B["체크<br/>옮길 돈 · 납부 · 카드값"]
+  B --> C["가계부<br/>지출 기록 · 누적 그래프"]
+  C --> D["달력<br/>일정 · 들어올/나갈 돈"]
+  D --> E["지난주 돌아보기<br/>달 마감"]
+  E -->|"다음 달 이어받기"| A
+```
 
-| | |
-|---|---|
-| 하는 일 | "현빈 급여통장 → 공동 생활비통장 781,450원"처럼 **이번 달 해야 할 이체 목록**을 자동으로 만들어요. 다 옮기면 체크해요. |
-| 계산 | 플랜 항목마다 돈이 있어야 하는 계좌를 찾아요. 카드 자동결제 항목은 그 카드의 결제계좌예요. 그다음 부담하는 사람의 월급통장 → 그 계좌로 금액을 모아 **줄 하나**로 묶어요. 같은 통장이면 옮길 필요가 없어서 빠져요 (`destinationOf`, `transfersOf`). |
-| 월급날 | 두 사람은 월급날이 달라요(설정 → 두 사람에서 각자 고름, `payday_a`/`payday_b`). 체크 화면은 **"현빈 월급날 · 10월 25일", "예진 월급날 · 11월 10일"** 처럼 사람마다 한 묶음이고, 이번 달에 먼저 오는 월급날이 위에 와요. 월급날 전의 이체는 "11/10 월급날"로만 보여 주고 재촉하지 않아요. 홈 맨 위에는 "오늘은 현빈 월급날이에요 · 옮길 돈 3건", 다음 월급날까지 남은 날이 나와요 (`paydayOf`, `paydayDate`). |
-| 미리 옮기기 | 결제일이 그 사람의 이번 월급날보다 빠르면(예: 월세 10/27, 월급 11/10) 이번 월급으로는 늦어요. 그런 줄은 "미리"로 표시하고 "지난 월급(10/10)에서 미리 옮겨요"라고 알려 줘요. 31일처럼 그달에 없는 날은 말일로 봐요. |
-| 상태 | 날짜가 지났는데 체크하지 않은 줄은 "10/26 지남"으로 표시하고, 홈 맨 위 한 줄 요약에도 나와요. 누가 체크했는지 기록돼요(`checks.done_by`). |
+## 화면
 
-### 3. 체크: 고정비 납부 · 저축 · 카드값 · 정산
+| 플랜 | 체크 | 가계부 | 달력 | 알림 |
+|:---:|:---:|:---:|:---:|:---:|
+| <img src="docs/screenshots/plan-pick.jpg" width="160"> | <img src="docs/screenshots/check.jpg" width="160"> | <img src="docs/screenshots/ledger.jpg" width="160"> | <img src="docs/screenshots/calendar-day.jpg" width="160"> | <img src="docs/screenshots/bell.jpg" width="160"> |
+| 조각을 누르면 튀어나오는 원형 그래프 | 월급날마다 옮길 돈 진행선 | 이번 달 vs 지난달 누적 지출 | 애플 캘린더식 날짜 패널 | 지난주 돌아보기 |
 
-- **고정비·저축 납부 확인:** 자동이체와 카드 자동결제 항목은 "실제로 나갔는지"를 따로 체크해요 (`needsPayCheck`, `itemDone`).
-- **카드값 준비:** 카드마다 **지난 기간에 그 카드로 쓴 지출 + 그 카드로 나가는 자동결제 고정비**를 더해서, 이번 달 결제일에 결제계좌에 있어야 할 금액을 보여 줘요 (`cardBills`).
-- **두 사람 정산:** 공동 지출을 개인 카드나 지갑으로 먼저 냈다면 상대방 몫을 계산해서 "예진 → 현빈 12,000원"처럼 보여 줘요. 공동 계좌로 낸 건 정산할 필요가 없어서 빠져요 (`settlementOf`).
+<img src="docs/screenshots/desktop-plan.jpg" width="100%" alt="데스크톱: 플랜">
 
-### 4. 가계부: 지출 기록
+👉 **[예시 데이터로 직접 써 보기 (사용 안내)](docs/GUIDE.md)**
 
-| | |
-|---|---|
-| 하는 일 | 금액, 어디에 썼는지, 분류, 결제수단(카드/현금/계좌이체), 어떤 카드나 계좌, 누구 돈인지를 기록해요. |
-| 알아서 채워 주는 것 | **누구 돈인지는 "내 용돈"이 기본값**이에요(로그인한 사람). 메모를 치면 **같은 메모로 쓴 지난 기록**을 따라 분류를 고르고, 없으면 낱말 규칙(마트→장보기, 배달→외식)으로 골라요 (`guessFromMemo`). 최근 90일 동안 자주 쓴 지출은 버튼 하나로 다시 넣을 수 있어요 (`presetsOf`). 금액은 +1만/+5만/+10만으로 더할 수 있어요. |
-| 예산 | 공동 지출은 공동 생활비에서, 개인 지출은 그 사람 용돈에서 빠져요. 반원 게이지는 사용률이고, 게이지 위 "오늘" 표시는 **오늘까지 써도 되는 예상선**이에요. "오늘까지 예상보다 61,613원 덜 썼어요"와 하루에 쓸 수 있는 금액도 보여 줘요 (`budgetStatus`, `spentToDay`). |
-| 화면 | 하루별 지출 막대와 평균선, 지난달 같은 날짜까지와 비교, 분류별 예산 대비, 결제수단·사람 필터를 보여 줘요. |
-
-### 5. 한 달 단위와 달 넘기기
-
-- **한 달 기준일:** 기준일이 25일이면 11월은 10월 25일 ~ 11월 24일이에요 (`periodOf`, `monthOf`). 보통 먼저 월급을 받는 사람의 월급날에 맞춰요.
-- **자동으로 이어받기:** 새 달이 되면 가장 최근 달의 플랜을 그대로 복사해서 시작하고 "11월이 시작돼서 10월 플랜을 그대로 이어받았어요"라고 알려 줘요 (`latestMonthBefore`, `itemsFromMonth`).
-- **다른 달에서 불러오기:** 다른 달에 있고 이번 달에 없는 항목만 골라 가져와요. 되돌리기도 돼요 (`missingFromMonth`, `ImportSheet.tsx`).
-
-### 6. 두 사람이 함께 쓰기
-
-- **로그인:** 구글 로그인을 써요. DB 의 `members` 표에 있는 두 사람의 구글 계정만 데이터를 읽고 쓸 수 있어요(처음 로그인할 때 계정이 묶여요). 구글 계정을 바꿨다면 Supabase 의 `members` 에서 그 사람의 이메일을 새 계정으로 바꿔야 해요(앱의 "등록되지 않은 계정" 화면에는 이 안내를 두지 않아요).
-- **계정별 이름과 용돈:** 로그인하면 그 계정의 `users` 줄이 생겨요(`ensure_user()`). 화면의 이름은 각 계정의 이름이고, 이름은 본인만 바꿀 수 있어요(DB 가 `name` 열의 본인 줄 수정만 허용). 홈과 가계부의 용돈 카드는 로그인한 사람의 용돈이에요.
-- **실시간:** 한 사람이 체크하거나 기록하면 다른 폰에 바로 반영돼요. 바뀐 테이블만 다시 읽고, 200ms 안에 몰린 변경은 한 번에 처리해요. 앱으로 돌아왔을 때 30초 넘게 지났으면 전체를 다시 읽어요.
-- **빠르게 보이기:** 체크와 기록은 화면에 먼저 반영하고 서버에 저장해요(낙관적 업데이트). 다른 폰에서 바뀐 내용은 바뀐 줄만 받아서 붙여요(테이블을 다시 읽지 않음).
-- **동시에 고치면:** 줄마다 `rev`(버전)가 있어서, 내가 읽은 뒤 다른 폰이 먼저 고친 줄을 저장하면 서버가 거절하고 앱이 최신 내용을 다시 불러와요. 저장은 순서대로 하나씩 보내고, 내가 방금 저장한 rev 는 이어서 맞춰요(빠른 연속 수정·되돌리기). 내용이 같은 저장은 쓰지 않아요.
-- **한 번에 저장:** 새 달 시작(달 + 항목), 항목 저장(플랜 + 이번 달), 항목 빼기(이번 달 삭제 + 다음 달부터 끄기)는 `apply_batch()` 한 번으로 보내서 전부 되거나 전부 안 돼요. 반쪽만 저장된 달이 남지 않아요.
-- **연결이 끊겨도:** 저장은 대기열에 줄을 서서 순서대로 나가요. 네트워크·서버 문제면 0.5·1·2초(무작위로 섞음) 뒤 최대 3번 다시 보내고, 그래도 안 되면 폰에 보관했다가 연결이 돌아오면 보내요. 화면에는 "보내지 못한 저장 n건"이 보이고, 앱을 다시 열어도 남아 있어요. 같은 저장을 여러 번 보내도 안전해요(id 로 upsert, 내용이 같으면 DB 가 rev 확인 전에 건너뜀, 지운 줄을 또 지우면 0줄). 충돌(`OM409`)이나 잘못된 값은 다시 보내지 않고 최신 내용으로 다시 읽어요.
-- **사고 막기:** 앱 계정은 한 문장으로 200줄 넘게 고치거나 지울 수 없어요(조건이 빠진 UPDATE·DELETE 사고 방지, SQL Editor 는 제외). 금액 상한(지출 1억, 항목·수입 10억)과 음수 금지, 이름·메모 길이, 태그 10개, 날짜·달 형식은 DB 의 CHECK 제약이 지켜요. 지운 줄 수를 받아서 지워지지 않았으면 다시 보여 줘요.
-- **기록:** 모든 줄에 누가·언제 만들고 고쳤는지(`created_by`, `updated_at`, `updated_by`)가 남고, `history` 에 추가·수정·삭제의 바뀐 칸이 쌓여요. 모두 DB 트리거가 채워서 앱이 바꿀 수 없어요.
-- **데모 모드:** Supabase 설정 없이 열면 가상 예시 데이터로 모든 화면을 써 볼 수 있어요. 데이터는 그 브라우저에만 저장돼요.
-- **내보내기:** 설정에서 전체 지출을 CSV 로 받을 수 있어요(날짜·id 순서로 1,000줄씩 이어 받음).
-
-### 7. 폰 앱처럼
-
-- **PWA:** 홈 화면에 설치하면 주소창 없이 앱처럼 열려요. 서비스워커는 앱 껍데기, 폰트, 정적 파일만 캐시하고 데이터는 항상 서버에서 받아요.
-- **화면 느낌:** 아래에 떠 있는 캡슐 메뉴와 원형 기록 버튼, 바텀시트(뒤로 가기로 닫힘), 달 사이 스와이프, 굴리면 유리로 바뀌는 위쪽 막대, 숫자가 굴러가는 애니메이션, 진동 피드백을 넣었어요. 설정의 지갑에는 카드와 통장이 실물 카드처럼 겹쳐 있고, 누르면 카드값·결제일·최근 사용이 펼쳐져요. 한 달 할 일을 다 끝내면 축하 화면이 떠요. 디자인 기준은 [`docs/design-system/`](docs/design-system/README.md)이에요.
-- **앱 아이콘:** 한 지붕 아래 살구색·분홍색 동전 두 개가 겹치고, 겹친 부분(흰색)이 둘이 함께 관리하는 돈이에요 (`apps/web/scripts/icons.mjs` 로 생성).
-
-## 설계
-
-### 구조
+## 아키텍처
 
 ```mermaid
 flowchart LR
   subgraph phone["두 사람의 폰"]
-    web["웹앱 PWA<br/>Next.js 정적 빌드"]
-    app["안드로이드 앱<br/>Kotlin Multiplatform (개발 중)"]
+    pwa["웹앱 PWA<br/>Next.js 정적 빌드"]
+    android["안드로이드<br/>WebView + 카드 알림 리스너"]
   end
-  subgraph supabase["Supabase"]
+  subgraph supa["Supabase (백엔드 서버 없음)"]
     auth["Google OAuth"]
-    db[("Postgres<br/>RLS: members 두 이메일")]
+    db[("Postgres<br/>RLS · 트리거 · apply_batch")]
     rt["Realtime"]
   end
-  vercel["Vercel 정적 호스팅"] -->|"HTML·JS"| web
-  web -->|"supabase-js (PostgREST)"| db
-  app -->|"supabase-kt"| db
-  web -->|"로그인"| auth
-  app -->|"로그인"| auth
-  db -->|"변경 알림"| rt
-  rt -->|"구독"| web
-  rt -->|"구독"| app
+  vercel["Vercel"] -->|정적 파일| pwa
+  android -.->|같은 화면| pwa
+  pwa -->|PostgREST| db
+  pwa --> auth
+  db --> rt -->|바뀐 줄| pwa
 ```
 
-- **백엔드 서버가 없어요.** 앱이 Supabase 의 자동 REST API(PostgREST)를 바로 불러요. 누가 무엇을 읽고 쓸 수 있는지는 DB 의 Row Level Security 가 정해요.
-- 웹은 `output: "export"` 정적 빌드라 모든 화면이 브라우저에서 그려져요. Vercel 이 아닌 다른 정적 호스팅에도 올릴 수 있어요.
-- 저장소 접근은 `Repo` 인터페이스로 감싸져 있어요. 구현은 `SupabaseRepo` 와 데모용 `LocalRepo`(localStorage) 두 가지예요 (`apps/web/src/lib/repo.ts`).
-
-### 데이터 모델
+### 저장 한 번이 두 폰에 닿기까지
 
 ```mermaid
-erDiagram
-  plan_items ||--o{ month_items : "달마다 복사"
-  months ||--o{ month_items : "그달 항목"
-  months ||--o{ checks : "이체·카드값·정산 체크"
-  accounts ||--o{ plan_items : "돈이 있어야 하는 계좌"
-  accounts ||--o{ spendings : "쓴 카드·계좌"
-  categories ||--o{ spendings : "분류"
-  members ||--o| users : "로그인한 계정"
-  members {
-    text email PK "소문자"
-    text person "a 또는 b"
-  }
-  users {
-    uuid id PK "auth.users.id"
-    text person "a 또는 b"
-    text name "본인만 수정"
-  }
-  settings {
-    int id PK "한 줄"
-    int ratio_a "공동비용 분담"
-    int cycle_start "한 달 기준일"
-    int payday_a "현빈 월급날"
-    int payday_b "예진 월급날"
-  }
-  accounts {
-    text id PK
-    text kind "bank 또는 card"
-    text owner "a, b, joint"
-    text billing_account_id "카드 결제계좌"
-  }
-  plan_items {
-    text id PK
-    text group "fixed, living, allowance, saving"
-    text payer "a, b, joint"
-    text method "card_auto, account_auto, manual, cash"
-  }
-  month_items {
-    text id PK "달:템플릿id"
-    boolean paid "납부 확인"
-  }
-  spendings {
-    text id PK
-    date date
-    text pay_kind "card, cash, transfer"
-    text owner "a, b, joint"
-    text paid_by "a 또는 b"
-    text source "manual, preset, notification, import"
-    text approval_no "카드 승인번호 (중복 방지)"
-  }
-  history {
-    bigint id PK
-    text table_name
-    text row_id
-    text op "insert, update, delete"
-    jsonb after "바뀐 칸만"
-  }
+sequenceDiagram
+  participant A as 현빈 폰
+  participant Q as 저장 대기열 (outbox)
+  participant DB as Postgres
+  participant B as 예진 폰
+  A->>A: 화면에 먼저 반영 (낙관적)
+  A->>Q: 줄 서기 · 폰에 보관
+  Q->>DB: apply_batch(ops) 한 트랜잭션
+  DB->>DB: stamp_row(rev 확인) · log_change(기록) · guard_bulk(200줄 한도)
+  alt rev 가 낡음
+    DB-->>A: OM409 → 최신 내용 다시 읽기
+  else 성공
+    DB-->>Q: 저장된 줄
+    DB-->>B: Realtime: 바뀐 줄만
+  end
 ```
 
-모든 데이터 테이블에는 `rev`, `created_at/by`, `updated_at/by` 가 있어요(그림에서는 생략). 전체 정의는 [`supabase/schema.sql`](supabase/schema.sql)에 있어요. 테이블 10개, RLS 정책, 트리거, 외래키, Realtime 등록, 기본 분류가 들어 있어요.
+## 엔지니어링 포인트
 
-### 보안
-
-- 모든 테이블에 `members only` 정책이 걸려 있어요: `using ((select public.is_member()))`. `is_member()` 는 **지금 로그인한 계정(`auth.uid()`)이 `members.user_id` 로 묶여 있는지** 확인해요. 토큰 속 이메일만으로는 멤버가 되지 않아요.
-- 계정은 처음 로그인할 때 `ensure_user()` 가 묶어요. 이때 서버의 계정 기록(`auth.users`)에서 같은 이메일이고, 이메일이 확인됐고, 구글로 로그인한 계정인지 봐요. 비밀번호나 구글 말고 다른 로그인 방식이 붙은 계정은 묶지 않아요(남이 먼저 그 이메일로 가입해 둔 계정에 구글이 이어 붙은 경우). 이미 다른 계정이 묶여 있으면 같은 이메일이어도 들어올 수 없어요.
-- 익명(anon) 키는 어떤 테이블에도 권한이 없어요. 로그인 사용자도 `members` 는 읽기만 하고, 트리거 함수는 직접 부를 수 없어요.
-- 웹은 `vercel.json` 의 보안 헤더(CSP: 스크립트·연결은 자기 주소와 Supabase 만, 다른 사이트 안에 넣기 금지 등)로 한 겹 더 막아요.
-- 멤버 관리(SQL Editor): 계정을 바꿀 때는 `update public.members set email = '<새 구글 이메일>' where person = 'b';` 이메일을 바꾸면 묶인 계정이 풀리고 새 계정이 처음 로그인할 때 다시 묶여요. 멤버에서 뺄 때는 `delete from public.members where person = 'b';` 바로 아무것도 읽고 쓰지 못해요. `auth.users` 만 지우면 아직 만료되지 않은 로그인이 남아요.
-- 웹에 들어가는 Supabase 주소와 anon 키는 원래 공개되는 값이에요(배포된 JS 에 그대로 있어요). 이 키만으로는 RLS 를 넘을 수 없어요. 반대로 **service_role 키는 앱에도 저장소에도 절대 넣지 않아요.**
-- 저장소에는 비밀값이 들어가지 못하게 세 겹으로 막아요: 커밋 전 훅, CI 검사, GitHub push protection ([개발 규칙](#개발-규칙과-버전-관리)).
-
-### 성능
-
-- RLS 함수를 `(select …)` 로 감싸서 쿼리마다 한 번만 실행돼요(initPlan). 이메일은 소문자로 저장해서 기본키 인덱스로 바로 찾아요.
-- 지출은 `(date desc, id desc)` 인덱스를 쓰고, 처음에는 최근 400일만 받아요. 더 지난 달을 열면 그 기간만 더 받아요.
-- Supabase API 는 한 번에 최대 1,000줄만 돌려줘서, 모든 목록은 1,000줄씩 이어 받아요. OFFSET 대신 "마지막 줄 다음부터"(keyset: `date < 마지막 날짜 or (같은 날짜 and id < 마지막 id)`)로 물어서 받는 도중 줄이 생기거나 지워져도 빠지거나 겹치지 않고, 몇 번째 페이지든 인덱스에서 바로 시작해요.
-- 여러 줄을 저장할 때는 id 순서로 보내서, 두 폰이 같은 줄들을 동시에 저장해도 서로 잠금을 기다리다 교착(deadlock)하지 않아요.
-- 카드·계좌별 지출은 `(account_id, date desc)`, 분류별은 `(category_id, date desc)` 부분 인덱스로 찾아요. 외래키가 걸린 칸에는 인덱스가 있어서 참조 확인이 빨라요.
-- 수정은 모두 기본키(`id`) 하나로 찾아요. 같은 내용의 저장은 트리거가 건너뛰어서 쓰기·기록·실시간 알림이 늘지 않아요.
-- `history` 는 `(at desc)` 와 `(table_name, row_id, at desc)` 인덱스로 "최근 바뀐 것", "이 줄의 이력"을 찾아요.
-- 이미 쓰던 DB 에는 [`supabase/migrations/`](supabase/migrations/)의 파일을 번호 순서대로 실행해요(002 성능, 003 계정별 이름, 004 기록·충돌, 005 한도·한 번에 저장·대량 사고 방지, 006 사람별 월급날, 007 멤버를 계정에 묶기·권한 정리, 008 지갑 카드 색, 009 첫 연결을 구글 계정으로 확인, 010 지출 확인 표시, 011 달력 일정, 012 일정 할 일, 013 첫 연결은 구글로만 로그인한 계정). 002~004 는 007 을 실행한 뒤에는 다시 실행하지 않아요(실행하면 바로 멈춰요).
-
-## 저장소 구조
-
-```
-our-money/
-├─ apps/
-│  ├─ web/                    Next.js 웹앱(PWA)
-│  │  ├─ src/lib/calc.ts         이체·카드값·정산·예산·달 넘기기 계산
-│  │  ├─ src/lib/repo.ts         저장소 (Supabase / 데모 localStorage)
-│  │  ├─ src/lib/store.tsx       상태, 낙관적 업데이트, 실시간 동기화, 새 달 자동 시작
-│  │  ├─ src/lib/categories.ts   분류 아이콘, 메모로 분류 추측, 자주 쓰는 지출
-│  │  ├─ src/lib/demo-data.ts    데모 예시 데이터 (가상)
-│  │  ├─ src/app/*/page.tsx      홈·플랜·체크·가계부·설정
-│  │  ├─ src/components/         바텀시트(지출·항목·카드·통장·분류·불러오기), 공용 UI(게이지·막대·숫자)
-│  │  └─ scripts/icons.mjs       앱 아이콘 생성
-│  └─ mobile/                 Kotlin Multiplatform — 안드로이드(지금), iOS(나중에)
-│     ├─ core/                   모델, 계산(웹과 같은 규칙), 테스트
-│     ├─ ui/                     Compose Multiplatform 화면
-│     ├─ androidApp/             안드로이드 앱 (카드 알림·위젯 같은 플랫폼 기능)
-│     └─ iosApp/                 iOS 앱 자리 (macOS 에서만 빌드)
-├─ supabase/                  schema.sql + migrations/ (웹·모바일 공통)
-├─ scripts/secret_check.py    비밀값 검사 (커밋 전 훅 · CI)
-├─ scripts/design_preview.py  디자인 시스템 미리보기 페이지 만들기
-├─ docs/design-system/        디자인 시스템 (토큰 · 컴포넌트 규칙 · 움직이는 미리보기)
-├─ docs/screenshots/          README 화면
-├─ PRODUCT.md · DESIGN.md     제품 정의 · 디자인 길잡이 (docs/design-system 을 가리킴)
-└─ CHANGELOG.md               버전별 변경 기록
-```
-
-## 직접 구축하기
-
-### 0. 데모로 먼저 보기
-
-```bash
-cd apps/web
-npm install
-npm run dev          # http://localhost:3000 — .env.local 이 없으면 데모 모드
-```
-
-> WSL 에서 `/mnt/c` 아래에 두면 파일 변경 알림이 오지 않아요. 그럴 때는 `WATCHPACK_POLLING=true npx next dev --webpack` 으로 실행하세요.
-
-### 1. Supabase 프로젝트 (DB · 로그인 · 실시간)
-
-1. https://supabase.com 에서 새 프로젝트를 만들어요. 무료 플랜이면 충분하고, 지역은 서울(Northeast Asia)을 추천해요.
-2. **SQL Editor** 에 [`supabase/schema.sql`](supabase/schema.sql) 전체를 붙여넣고 Run 해요.
-3. 맨 아래 주석 처리된 `insert into public.members …` 두 줄을 두 사람의 구글 이메일(소문자)로 바꿔서 실행해요. `'a'` 가 설정의 첫 번째 사람이에요.
-4. **Project Settings → API** 에서 `Project URL` 과 `anon`(publishable) 키를 복사해요. `service_role` 키는 쓰지 않아요.
-
-### 2. 구글 로그인
-
-1. https://console.cloud.google.com → API 및 서비스 → **OAuth 동의 화면**을 만들어요. 외부, 테스트 사용자에 두 사람의 이메일을 넣어요.
-2. **사용자 인증 정보 → OAuth 클라이언트 ID(웹 애플리케이션)** 를 만들어요.
-   - 승인된 리디렉션 URI: `https://<프로젝트>.supabase.co/auth/v1/callback`
-3. Supabase **Authentication → Sign In / Providers → Google** 을 켜고 클라이언트 ID 와 시크릿을 넣어요.
-   - 같은 화면에서 **Email** 제공자는 꺼요(이 앱은 구글로만 로그인해요). 켜 두면 아무나 이메일로 가입해 로그인 상태가 될 수 있어요. 멤버가 아니라 가계부 내용은 못 보지만, 실시간 알림으로 지운 항목의 id 와 시각은 받을 수 있어요.
-   - **Allow anonymous sign-ins** 와 **Allow manual linking** 은 꺼 둬요.
-   - **Allow new users to sign up** 은 두 사람이 모두 한 번 로그인할 때까지 켜 둬요(끄면 처음 로그인하는 구글 계정도 막혀요). 둘 다 들어온 뒤에는 꺼도 돼요.
-4. Supabase **Authentication → URL Configuration**:
-   - Site URL: 배포 주소
-   - Redirect URLs: 배포 주소, `http://localhost:3000`, `ourmoney://auth-callback`(안드로이드 앱에서 로그인한 뒤 앱으로 돌아오는 주소)
-
-### 3. 환경 변수
-
-`apps/web/.env.local` (로컬)과 Vercel 프로젝트의 Environment Variables 에 넣어요. 이 파일은 `.gitignore` 와 비밀값 검사가 막아서 저장소에 올라가지 않아요.
-
-```
-NEXT_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
-```
-
-### 4. 배포 (Vercel)
-
-```bash
-npx vercel login
-npx vercel deploy --prod --yes --cwd apps/web    # 저장소 루트에서
-```
-
-처음 실행하면 프로젝트를 만들고 `apps/web/.vercel` 에 연결 정보를 저장해요(저장소에는 올라가지 않아요). GitHub 저장소를 Vercel 에서 Import 할 때는 Root Directory 를 `apps/web` 으로 정해요.
-
-### 5. 폰에 설치
-
-크롬으로 배포 주소를 열고 → 메뉴(⋮) → **홈 화면에 추가** → 설치해요. 두 사람이 같은 주소로 설치하고 각자 구글 계정으로 로그인하면 돼요.
-
-### 6. 처음 설정 순서
-
-설정 탭에서 ① 이름·월급 ② 계좌와 카드(월급통장, 공동통장, 적금·증권 계좌, 카드와 결제계좌) ③ 월급통장 지정 ④ 분담 방식·한 달 기준일 순서로 정해요. 그다음 플랜 탭에서 이번 달 플랜을 시작하고 항목(월세, 보험, 통신비, 공동 생활비, 용돈, 적금…)을 넣으면 돼요.
-
-### 7. 안드로이드 앱 빌드 (개발 중)
-
-JDK 21, Android SDK(platform 37, build-tools 37)가 필요해요.
-
-```bash
-cd apps/mobile
-./gradlew :core:jvmTest              # 계산 테스트 (웹과 같은 규칙)
-./gradlew :androidApp:assembleDebug  # androidApp/build/outputs/apk/debug/ (내 폰에서 개발할 때만)
-```
-
-다른 사람에게 건네는 APK 는 출시 키로 서명한 `assembleRelease` 로 만들어요. 키 만들기와 확인 방법은 [`apps/mobile/README.md`](apps/mobile/README.md#출시용-apk-두-사람에게-건넬-것)에 있어요.
-
-## 개발 규칙과 버전 관리
-
-### 비밀값 막기 (세 겹)
-
-| 언제 | 무엇이 | 막는 것 |
+| 문제 | 해결 | 결과 |
 |---|---|---|
-| 커밋할 때 | `.githooks/pre-commit` → `scripts/secret_check.py --staged` | 커밋하려는 파일과 더하는 줄 |
-| PR · main 푸시 | GitHub Actions `test` → `비밀값 검사` | 추적 중인 모든 파일(`secret_check.py`) + **모든 커밋 기록**(gitleaks) |
-| 푸시할 때 | GitHub secret scanning push protection | 알려진 서비스 토큰이 든 푸시 |
+| 두 폰이 같은 줄을 동시에 고침 | 줄마다 `rev`, 트리거가 낡은 rev 를 `OM409` 로 거절 | 덮어쓰기 0, 충돌 시 자동 새로고침 |
+| 지하철에서 저장이 끊김 | 대기열(outbox) + 지수 백오프·지터 재시도, id upsert 라 재전송 안전 | 저장이 사라지지 않음 |
+| 달 시작 = 달 + 항목 수십 줄 | `apply_batch` 한 트랜잭션, 같은 칸 구성끼리 한 문장으로 (014) | 500줄 **114ms → 20ms** (약 5배) |
+| PostgREST 는 1,000줄까지 | `(date, id)` keyset 페이지, OFFSET 없음 | 받는 도중 줄이 바뀌어도 빠짐·겹침 없음 |
+| 이메일만으로 멤버가 되면 위험 | RLS 를 `auth.uid()` 에 묶고, 처음 로그인은 구글 계정만 연결 | 남이 만든 같은 이메일 계정 차단 |
+| 웹·안드로이드 계산이 어긋날 위험 | 같은 규칙을 `calc.ts` · `Calc.kt` 로, 코어 테스트 41개 | 월급날 주말 당김까지 같은 결과 |
+| 카드 알림을 지출로 | 알림 해석기 + 확실하지 않은 칸은 `review` 로 남기기 | 사람이 확인할 칸만 표시 |
+| 실수로 대량 삭제 | 문장 단위 트리거 `guard_bulk` (200줄 초과 거절) | 조건 빠진 DELETE 사고 방지 |
 
-`secret_check.py` 가 막는 것:
-- **파일:** `.env*`(`.env.example` 제외), 키스토어·인증서, `local.properties`, `google-services.json`, `.vercel/`, 로컬 에이전트 폴더
-- **내용:** Supabase 키(JWT, `sb_secret_`, `sb_publishable_`)와 실제 프로젝트 주소, Google OAuth 시크릿과 API 키, GitHub·Vercel·Slack·AWS·OpenAI·Anthropic 토큰, 개인 키, 비밀번호가 든 DB 주소, 예시가 아닌 이메일 주소
+## 디자인 시스템
 
-```bash
-git config core.hooksPath .githooks     # 클론한 뒤 한 번: 커밋 전 검사 켜기
-python3 scripts/secret_check.py         # 직접 돌려 보기
+<img src="docs/screenshots/palette.jpg" width="100%" alt="Pantone 2021 Ultimate Gray · Illuminating 팔레트">
+
+- 색·글꼴·간격·움직임은 [`tokens.json`](docs/design-system/tokens.json) 하나에서 → `tokens.css` 생성, CI 가 어긋남을 막음
+- 노랑은 흰 바탕과 대비가 1.35:1 → **넓은 채움에만**, 글자·선은 올리브(`accent-ink` 8.1:1)
+- 컴포넌트 22개마다 규칙 + 움직이는 미리보기 → [`docs/design-system/`](docs/design-system/README.md)
+
+## 버전
+
+```mermaid
+timeline
+  title 8일, 5번의 릴리스
+  11.03 : v0.1.0 플랜 · 체크 · 가계부 · 구글 로그인 · 실시간
+  11.05 : v0.2.0 디자인 시스템 · 지갑 · rev 충돌 막기
+  11.06 : v0.3.0 할부 · 실제로 낸 금액 · 달 마무리 · 변경 이력 · 안드로이드 하이브리드
+  11.10 : v0.4.0 Pantone 색 · 원형/누적 그래프 · 달력 패널 · 토스식 카드 · 지난주 돌아보기
+        : v0.4.1 DB 쿼리 다듬기 (묶음 저장 5배)
 ```
-
-### 브랜치 · PR · 버전
-
-- `main` 에 바로 푸시할 수 없어요. 브랜치(`feat/…`, `fix/…`)에서 작업하고 PR 로 합쳐요. 합치려면 CI(`비밀값 검사`, `웹 빌드`, `모바일 테스트·빌드`, `PR 규칙 점검`)가 통과해야 해요.
-- 커밋 메시지는 한국어로 써요. 제목은 `무엇 — 어떻게`, 본문에는 바꾼 이유를 적어요.
-- 앱이 바뀌는 변경은 [`CHANGELOG.md`](CHANGELOG.md) "다음 버전"에 한 줄을 적어요. DB 를 바꿨다면 `supabase/migrations/` 에 새 파일을 만들고, `schema.sql` 도 고치고, "**DB 이전:**" 줄에 실행할 파일을 적어요. PR 규칙 점검이 이걸 확인해요. 알아챌 변경이 아니면 `변경기록 없음` 라벨을 붙여요.
-- **릴리스:**
-  1. "다음 버전"을 `vX.Y.Z — 날짜`로 바꿔요.
-  2. `apps/web/package.json` 의 `version` 과 안드로이드 `versionName` 을 같은 번호로 올려요(`versionCode` 도 +1).
-  3. PR 을 합쳐요.
-  4. `git tag -a vX.Y.Z && git push origin vX.Y.Z` 를 실행하면 [Releases](https://github.com/jojaden/our-money/releases)가 자동으로 만들어져요.
 
 ## 기술
 
-- **웹:** Next.js 16 (App Router, 정적 export), React 19, vaul(바텀시트), lucide-react(아이콘), Pretendard(자체 호스팅)
-- **DB · 인증 · 실시간:** Supabase (Postgres + RLS + Google OAuth + Realtime)
-- **모바일:** Kotlin 2.4, Compose Multiplatform 1.12, AGP 9.5, supabase-kt 3.8, kotlinx-datetime
-- **CI:** GitHub Actions (비밀값 검사, 웹 빌드, 모바일 테스트·APK, PR 규칙, 태그 릴리스)
+| 영역 | 사용 |
+|---|---|
+| 웹 | Next.js 16 (App Router, 정적 export) · React 19 · vaul · lucide-react · Pretendard / Alan Sans |
+| DB · 인증 · 실시간 | Supabase — Postgres · RLS · PL/pgSQL 트리거 · Google OAuth · Realtime |
+| 모바일 | Kotlin 2.4 · Compose Multiplatform 1.12 · AGP 9.5 · supabase-kt · NotificationListenerService |
+| 품질 | GitHub Actions (비밀값 3겹 · 웹 빌드 · 모바일 테스트 · PR 규칙 · 태그 릴리스) · Playwright 화면 검증 · PGlite 로 SQL 검증 |
+
+## 더 보기
+
+| 문서 | 내용 |
+|---|---|
+| [사용 안내](docs/GUIDE.md) | 예시 데이터로 모든 기능 따라 해 보기 |
+| [설계](docs/ARCHITECTURE.md) | 계산 규칙 · 데이터 모델 · 보안 · 성능 · 저장소 구조 · 개발 규칙 |
+| [직접 구축하기](docs/SETUP.md) | Supabase · 구글 로그인 · 배포 · 폰 설치 · 안드로이드 빌드 |
+| [디자인 시스템](docs/design-system/README.md) · [변경 기록](CHANGELOG.md) | 화면 규칙 · 버전별 변경 |
