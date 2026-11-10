@@ -27,7 +27,7 @@ body:has(.canvas.home) {
   align-items: center;
   gap: 8px;
   margin: 0 calc(var(--edge) * -1);
-  padding: calc(6px + env(safe-area-inset-top, 0px)) var(--edge) 6px;
+  padding: calc(6px + env(safe-area-inset-top, 0px)) calc(var(--edge) + var(--text-inset)) 6px;
 }
 /* 큰 제목이 막대 밑으로 지나가면 유리 바탕 + 가운데 작은 제목.
    유리는 아래 선 없이 막대 밑으로 16px 더 내려와 그 16px 동안 옅어진다 (막대 안은 그대로, 흐림이 글 위에서 서서히 걷힘) */
@@ -97,7 +97,7 @@ div.bar-mini { display: flex; align-items: center; justify-content: center; gap:
 
 /* ---------- 페이지 머리 ---------- */
 
-.page-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin: 6px 0 24px; }
+.page-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin: 6px 0 20px; padding-inline: var(--text-inset); }
 .page-head .title-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
 .page-head h1 { font: 700 32px/36px var(--font-display); letter-spacing: -0.02em; }
 .page-head .sub { margin-top: 6px; color: var(--faint); font: 400 14.5px/20px var(--font-text); }

@@ -17,10 +17,18 @@
 .card-head a.aside::after, .budget-head a.aside::after, .group-head a.aside::after { content: ""; width: 7px; height: 7px; margin-left: 2px; border-top: 1.6px solid currentColor; border-right: 1.6px solid currentColor; transform: rotate(45deg); }
 .card-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 14px; }
 
-/* 섹션 이름표: 카드 안 머리 대신 카드 묶음 위에 짧게 (README "레이아웃") */
+/* 섹션 이름표 (README "레이아웃"): 카드 하나인 섹션은 아래에서 카드 안 제목이 되고, 카드 여럿을 묶은 섹션만 위에 짧게 */
 .group { min-width: 0; }
 .group-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 12px 4px 10px; }
 .group-head h2 { color: var(--faint); font: 500 14.5px/20px var(--font-text); }
+/* 페이지의 섹션 이름표는 카드 안 글자 쪽으로 들인다 */
+.canvas .group-head { margin-inline: calc(var(--text-inset) + 4px); }
+/* 이름표 + 카드 하나인 섹션은 섹션이 곧 카드 (토스처럼 제목이 카드 안 맨 위에).
+   꾸밈 없는 보통 카드(Morph 로 감싼 것, 달 마무리 포함)만 — 그라데이션 머리 같은 특별한 카드와 카드 여럿을 묶은 섹션은 그대로 둔다 */
+.canvas .group:has(> .group-head + :is([class="card"], [class="morph card"], [class="card month-close"]):last-child) { padding: 20px var(--pad) var(--pad); border-radius: var(--radius-card); background: var(--surface); box-shadow: var(--shadow-card); }
+.canvas .group:has(> .group-head + :is([class="card"], [class="morph card"], [class="card month-close"]):last-child) > .group-head { margin: 0 0 6px; }
+.canvas .group:has(> .group-head + :is([class="card"], [class="morph card"], [class="card month-close"]):last-child) > .group-head h2 { color: var(--text); font: 700 19px/26px var(--font-text); letter-spacing: -0.02em; }
+.canvas .group:has(> .group-head + :is([class="card"], [class="morph card"], [class="card month-close"]):last-child) > :is([class="card"], [class="morph card"], [class="card month-close"]) { padding: 0; border-radius: 0; background: none; box-shadow: none; }
 .group-head .aside { color: var(--faint); font: 500 14.5px/20px var(--font-text); white-space: nowrap; }
 /* 이름표 앞 버킷 색 점, 이름표 오른쪽의 작은 글자 버튼(수정 등) */
 .group-head h2 .dot { display: inline-block; width: 8px; height: 8px; margin-right: 8px; vertical-align: 1px; }

@@ -110,7 +110,7 @@
   flex-direction: column;
   align-items: center;
   min-height: 100dvh;
-  padding: env(safe-area-inset-top, 0px) max(var(--edge), env(safe-area-inset-right, 0px)) calc(30px + env(safe-area-inset-bottom, 0px)) max(var(--edge), env(safe-area-inset-left, 0px));
+  padding: env(safe-area-inset-top, 0px) max(calc(var(--edge) + var(--text-inset)), env(safe-area-inset-right, 0px)) calc(30px + env(safe-area-inset-bottom, 0px)) max(calc(var(--edge) + var(--text-inset)), env(safe-area-inset-left, 0px));
   overflow: hidden;
   background: radial-gradient(130% 75% at 50% 36%, color-mix(in srgb, var(--warm-50) 35%, var(--surface)) 0%, var(--warm-50) 40%, var(--warm-100) 100%);
   text-align: center;
