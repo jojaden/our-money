@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useData } from "@/lib/store";
 import type { Spending } from "@/lib/types";
-import { allowanceStatus, cardBills, itemsOf, lanes, livingStatus, monthRow, nameOf, spendingsIn } from "@/lib/calc";
+import { allowanceStatus, cardBills, livingStatus, nameOf, spendingsIn } from "@/lib/calc";
 import { PAY_KIND_LABEL } from "@/lib/types";
 import { iga, num, ro } from "@/lib/format";
 import { FirstRun, MonthHeader } from "@/components/MonthHeader";
@@ -11,7 +11,6 @@ import { CategoryIcon, Money } from "@/components/ui";
 import { spendingVisual } from "@/lib/categories";
 import { isFresh } from "@/lib/fresh";
 import { BudgetCard, TaskGauge } from "@/components/BudgetCard";
-import { PayFlow } from "@/components/PayFlow";
 import { asking, byUrgency, dueState, useTasks, waiting } from "@/components/tasks";
 import { dDay, shortDate } from "@/lib/format";
 import { TaskRow } from "@/components/TaskRow";
@@ -36,11 +35,8 @@ export default function Home() {
     );
   }
 
-  const m = monthRow(data, month);
-  const items = itemsOf(data, month);
   const living = livingStatus(data, month, today);
   const allowance = allowanceStatus(data, month, me, today);
-  const ls = lanes(s, m, items);
   const open = tasks.filter((t) => !t.done).sort(byUrgency);
   const doneCount = tasks.length - open.length;
   const overdue = open.filter((t) => dueState(t.due, today, false) === "overdue" && !asking(t, today));
@@ -265,15 +261,6 @@ export default function Home() {
           </section>
         </div>
 
-        <section className="card o6 span-12" aria-labelledby="lanes-h">
-          <div className="card-head">
-            <h2 id="lanes-h">두 사람 월급의 흐름</h2>
-            <Link className="aside" href="/plan">
-              플랜 보기
-            </Link>
-          </div>
-          <PayFlow lanes={ls} s={s} />
-        </section>
       </div>
     </>
   );
