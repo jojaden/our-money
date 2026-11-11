@@ -223,7 +223,7 @@ export default function Home() {
           <section className="group o5" aria-labelledby="recent-h">
             <div className="group-head">
               <h2 id="recent-h">최근 기록</h2>
-              <Link className="aside" href="/ledger">
+              <Link className="aside" href="/ledger/all/?from=home">
                 전체 보기
               </Link>
             </div>

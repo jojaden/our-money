@@ -231,7 +231,7 @@ export function BellButton({ rail = false }: { rail?: boolean }) {
               <div className="field" key="reviews">
                 <h3 className="sum-h">확인할 지출</h3>
                 <div className="rows" style={{ ["--inset" as string]: "52px" }}>
-                  <button type="button" className="row" onClick={() => go("/ledger")}>
+                  <button type="button" className="row" onClick={() => go("/ledger/all/?review=1")}>
                     <span className="alert-ic" aria-hidden="true">
                       <ReceiptText />
                     </span>

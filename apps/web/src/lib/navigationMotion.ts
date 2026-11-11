@@ -9,6 +9,9 @@ export function completeNavigationMotion(href?: string) {
   traversalRoute = undefined;
 }
 
+/** 이 탭에서 앱 안으로 몇 번 들어왔는지 — 0 이면 주소로 바로 연 첫 화면이라 뒤로 갈 앱 화면이 없다 */
+export const historyDepth = (): number => window.history.state?.[POSITION] ?? 0;
+
 const route = (href: string) => {
   const url = new URL(href, window.location.href);
   return `${url.pathname.replace(/\/$/, "") || "/"}${url.search}`;

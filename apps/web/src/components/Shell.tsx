@@ -20,6 +20,8 @@ import { PageTransition } from "./PageTransition";
 import { LoadingScreen, StageScreen } from "./Stage";
 
 // 설정은 탭이 아니다 — 폰은 위쪽 막대의 내 동전 버튼, 데스크톱은 레일 맨 아래
+const onTab = (path: string, href: string) => path === href || (href !== "/" && path.startsWith(`${href}/`));
+
 const TABS = [
   { href: "/", label: "홈", icon: House },
   { href: "/plan", label: "플랜", icon: Layers },
@@ -70,7 +72,8 @@ function norm(p: string) {
 
 function Nav() {
   const path = norm(usePathname() ?? "/");
-  const at = TABS.findIndex((t) => t.href === path);
+  // 탭 아래 상세 화면(/ledger/all)도 그 탭에 있다
+  const at = TABS.findIndex((t) => onTab(path, t.href));
   const primary = usePrimary();
   // 버튼이 빠질 때도 줄어드는 동안은 마지막 아이콘을 보여 준다
   const [last, setLast] = useState<Primary | null>(null);
@@ -81,7 +84,7 @@ function Nav() {
       <nav className="rail" aria-label="주요 메뉴">
         <Mark size={32} />
         {TABS.map(({ href, label, icon: Icon }) => (
-          <Link key={href} href={href} aria-current={path === href ? "page" : undefined} aria-label={label}>
+          <Link key={href} href={href} aria-current={onTab(path, href) ? "page" : undefined} aria-label={label}>
             <Icon aria-hidden="true" />
             <span className="tip">{label}</span>
           </Link>
@@ -102,7 +105,7 @@ function Nav() {
               key={href}
               href={href}
               className="tab"
-              aria-current={path === href ? "page" : undefined}
+              aria-current={onTab(path, href) ? "page" : undefined}
               onClick={(e) => {
                 if (path === href) {
                   e.preventDefault();
