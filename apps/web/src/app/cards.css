@@ -129,8 +129,8 @@
 .curve { padding-bottom: 8px; }
 .curve p { margin: 0; }
 .curve-title { font: 700 22px/30px var(--font-text); letter-spacing: -0.02em; }
-/* 금액에 형광펜처럼 Illuminating 을 긋는다(글자는 text 그대로라 읽힌다) */
-.curve-title .hl { font-family: var(--font-display); text-decoration: underline; text-decoration-color: var(--primary); text-decoration-thickness: 0.42em; text-underline-offset: -0.24em; text-decoration-skip-ink: none; }
+/* 문장 속 금액은 밑줄 대신 글자 색(accent-ink)으로 강조한다 — 라이트는 올리브, 다크는 Illuminating 노랑 */
+.curve-title .hl, .wr-title .hl { color: var(--accent-ink); font-family: var(--font-display); }
 .curve-sub { margin-top: 6px !important; color: var(--faint); font: 500 14.5px/20px var(--font-text); }
 .curve-sub b { color: var(--text); font-weight: 600; }
 .curve-legend { display: flex; justify-content: flex-end; gap: 14px; margin-top: 14px; color: var(--faint); font: 500 12.5px/16px var(--font-text); }
@@ -140,6 +140,8 @@
 /* "누적 / 하루별" 글자 탭 — 알약 안 글자가 카드 글자 선에 맞게 들이고, 범례는 탭 줄 오른쪽에 */
 .curve .text-tabs { margin: 12px 0 0 -12px; }
 .curve .text-tabs + .curve-legend { margin-top: -26px; }
+/* 탭 줄 아래로 그래프를 내려 위쪽 단위 글자("만원")가 탭을 덮지 않게 */
+.curve .text-tabs + .curve-legend + .curve-plot { margin-top: 30px; }
 .curve-daily { margin-top: 12px; }
 .curve-plot { position: relative; margin: 4px -6px 0; }
 .curve-plot svg { display: block; width: 100%; height: auto; overflow: visible; touch-action: pan-y; }
