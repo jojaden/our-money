@@ -38,10 +38,12 @@
 .pace-pill.warn { background: var(--pill-warning-bg); color: var(--pill-warning-ink); }
 .pace-pill.bad { background: var(--pill-negative-bg); color: var(--pill-negative-ink); }
 
-/* 결제수단 나눔: 목록만 (점·이름·%·금액) */
-.budget .kinds { width: 100%; max-width: 440px; margin-top: 16px; }
-.kinds .buckets { margin-top: 0; }
-.kinds .n .v { margin-left: 4px; }
+/* 결제수단 나눔: 한 줄에 점 · 이름 · % 만 (막대·금액 없음) */
+.budget .kinds { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-top: 14px; color: var(--muted); font: 500 14px/20px var(--font-text); }
+.budget .kinds > span { display: inline-flex; align-items: center; gap: 6px; }
+.budget .kinds i { width: 8px; height: 8px; border-radius: var(--radius-chip); background: var(--k); }
+.budget .kinds b { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+.budget.compact .kinds { margin-top: 10px; font-size: 13px; }
 .kinds .k-card { --k: var(--kind-card); }
 .kinds .k-cash { --k: var(--kind-cash); }
 .kinds .k-transfer { --k: var(--kind-transfer); }
@@ -50,7 +52,6 @@
 .budget-body { padding: 10px var(--pad) var(--pad); }
 .budget.compact .fig { font-size: 28px; line-height: 34px; }
 .budget-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; margin-top: 12px; }
-.budget .kinds-line { margin-top: 10px; color: var(--faint); font: 500 12.5px/16px var(--font-text); }
 .budget-foot:empty { display: none; }
 
 /* 체크 화면 머리: 결론 한 줄 + 같은 진행 막대 */

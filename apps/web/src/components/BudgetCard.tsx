@@ -105,17 +105,7 @@ export function BudgetCard({
           <PacePill status={status} />
           {daily}
         </div>
-        {compact ? (
-          KINDS.some((k) => status.byKind[k] > 0) && (
-            <p className="kinds-line">
-              {KINDS.filter((k) => status.byKind[k] > 0)
-                .map((k) => `${PAY_KIND_LABEL[k]} ${num(status.byKind[k])}원`)
-                .join(" · ")}
-            </p>
-          )
-        ) : (
-          <Kinds byKind={status.byKind} />
-        )}
+        <Kinds byKind={status.byKind} />
       </div>
     </section>
   );
@@ -132,27 +122,23 @@ function shares(values: number[]): number[] {
 }
 
 /**
- * 결제수단 나눔 — 목록(점·이름·%·금액)만. 바로 위 예산 막대와 같은 모양의 막대를 또 두면 뜻이 섞여서, 숫자로 충분한 이곳은 막대를 그리지 않는다.
- * 0원인 수단은 빼고, 순서와 색은 카드·현금·계좌이체로 고정한다(금액 순으로 다시 칠하지 않는다).
+ * 결제수단 나눔 — 한 줄에 점 · 이름 · % 만 ("● 카드 88%  ● 현금 12%"). 바로 위 예산 막대와 겹쳐 보이지 않게 막대는 그리지 않고,
+ * 금액은 위 "…중 …썼어요"에 이미 있어서 비중만 말한다. 0원인 수단은 빼고, 순서와 점 색은 카드·현금·계좌이체로 고정한다.
  */
 function Kinds({ byKind }: { byKind: LivingStatus["byKind"] }) {
   const parts = KINDS.filter((k) => byKind[k] > 0);
   if (parts.length === 0) return null;
   const pct = shares(parts.map((k) => byKind[k]));
   return (
-    <div className="kinds">
-      <ul className="buckets" aria-label="결제수단별">
-        {parts.map((k, i) => (
-          <li key={k} className={`k-${k}`}>
-            <i aria-hidden="true" />
-            <span className="n">
-              {PAY_KIND_LABEL[k]} <span className="v">{pct[i] > 0 ? `${pct[i]}%` : "1% 미만"}</span>
-            </span>
-            <b>{num(byKind[k])}원</b>
-          </li>
-        ))}
-      </ul>
-    </div>
+    <p className="kinds">
+      <span className="sr-only">결제수단별: </span>
+      {parts.map((k, i) => (
+        <span key={k} className={`k-${k}`}>
+          <i aria-hidden="true" />
+          {PAY_KIND_LABEL[k]} <b>{pct[i] > 0 ? `${pct[i]}%` : "1% 미만"}</b>
+        </span>
+      ))}
+    </p>
   );
 }
 
