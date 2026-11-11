@@ -188,7 +188,7 @@
 - **탭:** 홈 `House`, 플랜 `Layers`, 체크 `ListChecks`, 가계부 `ReceiptText`이고, 기록은 `Plus`입니다.
 - **지갑:** 추가 `Plus`, 찾기 `Search`, 더 보기 `Ellipsis`, 닫기 `X`, 고치기 `Pencil`, 거르기 `SlidersHorizontal`, 옮긴 돈 `ArrowLeftRight`입니다.
 - **메타 줄:** 진행은 `Target`, 기한은 `Clock`, 이동은 `ChevronRight`입니다.
-- **기록 타일:** `TrendingUp`, `Flame`, `ReceiptText`, `PiggyBank`입니다.
+- **기록 타일:** 분류 아이콘과 같은 채운 두 톤 그림(오르는 막대 · 불꽃 · 영수증 · 돼지 저금통)입니다.
 - **속도 알약:** 덜 씀은 `TrendingDown`, 더 씀은 `TrendingUp`, 예산 초과는 `CircleAlert`입니다(16px).
 - **로그인 버튼:** `LogIn`(20px)입니다.
 - **분류 아이콘은 예외입니다.** 지출 줄·분류별 예산·분류 칩의 앞 동그라미는 외곽선이 아니라 직접 그린 **채운 두 톤 그림**(분류 색 실루엣 + 흰 디테일)입니다. 작은 원 안에서 얇은 선은 흐리고 찌그러져 보여서입니다. 규칙은 [CategoryIcon](components/CategoryIcon/README.md).

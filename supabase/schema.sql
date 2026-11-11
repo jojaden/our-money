@@ -872,12 +872,13 @@ end $$;
 insert into public.categories (id, name, budget, sort) values
   ('cat-grocery', '장보기', 0, 1),
   ('cat-eatout', '외식·배달', 0, 2),
-  ('cat-home', '생활용품', 0, 3),
-  ('cat-car', '교통·차량', 0, 4),
-  ('cat-health', '병원·약', 0, 5),
-  ('cat-event', '경조사', 0, 6),
-  ('cat-fun', '문화·여가', 0, 7),
-  ('cat-etc', '기타', 0, 8)
+  ('cat-cafe', '카페·간식', 0, 3),
+  ('cat-home', '생활용품', 0, 4),
+  ('cat-car', '교통·차량', 0, 5),
+  ('cat-health', '병원·약', 0, 6),
+  ('cat-event', '경조사', 0, 7),
+  ('cat-fun', '문화·여가', 0, 8),
+  ('cat-etc', '기타', 0, 9)
 on conflict do nothing;
 
 -- ---------- 두 사람 등록 (이메일을 바꿔서 실행) ----------

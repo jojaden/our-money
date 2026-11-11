@@ -4,9 +4,12 @@
 
 import type { CatIcon } from "@/lib/categories";
 
+/** 분류 그림 + 가계부 "이번 달 기록" 타일 그림 */
+export type GlyphName = CatIcon | "trend" | "flame" | "piggy";
+
 type Glyph = () => React.ReactElement;
 
-const G: Record<CatIcon, Glyph> = {
+const G: Record<GlyphName, Glyph> = {
   // 장보기 — 손잡이 달린 바구니, 흰 살
   basket: () => (
     <>
@@ -134,9 +137,34 @@ const G: Record<CatIcon, Glyph> = {
       <rect className="d" x="8.3" y="11" width="4.8" height="1.7" rx=".85" />
     </>
   ),
+  // 이번 달 기록 — 가장 많이 쓴 날: 오르는 막대 셋, 가장 높은 막대만 진하게
+  trend: () => (
+    <>
+      <rect x="3" y="13" width="4.6" height="8" rx="1.6" opacity=".45" />
+      <rect x="9.7" y="8.6" width="4.6" height="12.4" rx="1.6" opacity=".7" />
+      <rect x="16.4" y="3.6" width="4.6" height="17.4" rx="1.6" />
+      <rect className="d" x="17.5" y="6" width="2.4" height="1.4" rx=".7" opacity=".7" />
+    </>
+  ),
+  // 무지출 연속: 불꽃, 흰 속불
+  flame: () => (
+    <>
+      <path d="M12.6 2.2c.4 3 3.1 4.6 4.9 7.1A7.6 7.6 0 0 1 19 13.8 7 7 0 0 1 5 13.8c0-2.4 1-4.3 2.6-5.8.3 1.6 1.1 2.7 2.3 3.2-.6-3.6.6-6.9 2.7-9z" />
+      <path className="d" d="M12 21a3.3 3.3 0 0 1-3.3-3.3c0-1.7 1.2-2.7 2.3-3.9.2 1 .8 1.6 1.5 1.8.1-1.3.6-2.3 1.4-3 .3 1.6 1.4 2.5 1.4 4.6A3.3 3.3 0 0 1 12 21z" />
+    </>
+  ),
+  // 이번 달 저축: 동전이 들어가는 돼지 저금통, 흰 구멍과 눈
+  piggy: () => (
+    <>
+      <path d="M10.6 5.2h3.2a7.2 7.2 0 0 1 5.5 2.6l1.3-.4a.8.8 0 0 1 1 .9l-.3 2.3c.4.7.6 1.4.7 2.2h.3a.8.8 0 0 1 .8.8v1.8a.8.8 0 0 1-.8.8h-.9a7 7 0 0 1-2.4 2.6v1.8a1.4 1.4 0 0 1-1.4 1.4h-1.3a1.4 1.4 0 0 1-1.4-1.3l-.1-.6h-3.2l-.1.6a1.4 1.4 0 0 1-1.4 1.3H7.8a1.4 1.4 0 0 1-1.4-1.4v-2.2A7 7 0 0 1 3.4 12.3c0-3.9 3.2-7.1 7.2-7.1z" />
+      <rect className="d" x="9.4" y="7.4" width="4.6" height="1.6" rx=".8" />
+      <circle className="d" cx="17.6" cy="11" r=".95" />
+      <circle cx="11.7" cy="2.6" r="2" />
+    </>
+  ),
 };
 
-export function CatGlyph({ icon }: { icon: CatIcon }) {
+export function CatGlyph({ icon }: { icon: GlyphName }) {
   const Glyph = G[icon];
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">

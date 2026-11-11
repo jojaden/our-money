@@ -80,7 +80,8 @@ const plan: PlanItem[] = [
 
 const categories: Category[] = [
   ["cat-grocery", "장보기", 500_000],
-  ["cat-eatout", "외식·배달", 300_000],
+  ["cat-eatout", "외식·배달", 220_000],
+  ["cat-cafe", "카페·간식", 80_000],
   ["cat-home", "생활용품", 150_000],
   ["cat-car", "교통·차량", 150_000],
   ["cat-health", "병원·약", 50_000],
