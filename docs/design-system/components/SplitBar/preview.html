@@ -1,0 +1,48 @@
+<!-- @dsCard group="Cards" height=520 subtitle="월급이 나뉘는 곳 — 수입 큰 숫자, 한 줄 쌓은 막대, 이름을 누르면 그 조각만 남고 항목이 펼쳐져요" -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alan+Sans:wght@300..900&family=Noto+Sans+KR:wght@400..800&display=swap">
+<style>
+  body { margin: 0; background: var(--ground); color: var(--text); font-family: var(--font-text); word-break: keep-all; -webkit-font-smoothing: antialiased; }
+  .stage { padding: 20px; }
+  .card { max-width: 390px; padding: var(--pad); box-sizing: border-box; background: var(--surface); border-radius: var(--radius-card); box-shadow: var(--shadow-card); }
+  .total { display: grid; gap: 2px; margin: 0; }
+  .total span { color: var(--faint); font: 600 15px/20px var(--font-text); }
+  .total b { font: 700 34px/40px var(--font-display); letter-spacing: -0.02em; }
+  .total small { margin-left: 2px; font: 700 22px/1 var(--font-text); }
+  .track { display: flex; gap: 2px; height: 12px; margin: 14px 0 4px; overflow: hidden; border-radius: var(--radius-chip); }
+  .track i { flex: 1 1 0; min-width: 3px; transition: opacity var(--dur-swap) ease; }
+  .track i.dim { opacity: 0.3; }
+  ul { margin: 8px -12px 0; padding: 0; list-style: none; }
+  li button { display: grid; grid-template-columns: 10px 1fr auto; align-items: center; gap: 10px; width: 100%; min-height: 48px; padding: 0 12px; border: 0; border-radius: var(--radius-small); background: none; font: 500 15.5px/22px var(--font-text); color: var(--text); text-align: left; }
+  li button.on { background: var(--well); }
+  li i { width: 10px; height: 10px; border-radius: 50%; }
+  li em { color: var(--faint); font-style: normal; font-size: 13.5px; margin-left: 4px; }
+  li strong { font: 600 15.5px/22px var(--font-display); }
+</style>
+<div class="stage"><div class="card">
+  <p class="total"><span>두 사람 수입</span><b>7,000,000<small>원</small></b></p>
+  <div class="track" id="t" aria-hidden="true"></div>
+  <ul id="l"></ul>
+</div></div>
+<script>
+  const B = [["고정비", "--g-fixed", 1873900], ["공동 생활비", "--g-living", 1400000], ["용돈", "--g-allowance", 800000], ["저축·투자", "--g-saving", 2000000], ["남음", "--g-left", 926100]];
+  const total = B.reduce((a, b) => a + b[2], 0);
+  const track = document.getElementById("t"), list = document.getElementById("l");
+  let pick = -1;
+  const segs = B.map(([n, c, v]) => {
+    const i = document.createElement("i");
+    i.style.background = `var(${c})`;
+    i.style.flexGrow = v;
+    track.append(i);
+    return i;
+  });
+  B.forEach(([n, c, v], k) => {
+    const li = document.createElement("li");
+    li.innerHTML = `<button type="button"><i style="background:var(${c})"></i><span>${n}<em>${Math.round((v / total) * 100)}%</em></span><strong>${v.toLocaleString()}원</strong></button>`;
+    li.firstChild.onclick = () => {
+      pick = pick === k ? -1 : k;
+      segs.forEach((s, j) => s.classList.toggle("dim", pick >= 0 && j !== pick));
+      [...list.children].forEach((x, j) => x.firstChild.classList.toggle("on", j === pick));
+    };
+    list.append(li);
+  });
+</script>

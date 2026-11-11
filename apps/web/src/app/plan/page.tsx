@@ -1,16 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, Plus, Pencil, Download } from "lucide-react";
+import { ChevronDown, ChevronRight, Plus, Pencil, Download } from "lucide-react";
 import { ImportSheet } from "@/components/ImportSheet";
 import type { Group, MonthItem, PlanItem } from "@/lib/types";
 import { GROUP_LABEL, GROUP_ORDER, METHOD_LABEL } from "@/lib/types";
 import { blankMonth, useData } from "@/lib/store";
-import { goalProgress, groupTotals, incomeOf, itemsOf, lanes, monthRow, nameOf, ratioA, sum } from "@/lib/calc";
+import { goalProgress, groupTotals, incomeOf, itemsOf, lanes, monthRow, nameOf, ratioA } from "@/lib/calc";
 import { monthLabel, num } from "@/lib/format";
 import { FirstRun, MonthHeader } from "@/components/MonthHeader";
 import { Money, Who } from "@/components/ui";
-import { SplitDonut } from "@/components/SplitDonut";
+import { SplitBar } from "@/components/SplitBar";
 import { GoalBar } from "@/components/GoalBar";
 import { IncomeSheet, ItemSheet } from "@/components/ItemSheet";
 
@@ -29,8 +29,6 @@ export default function PlanPage() {
   const items = itemsOf(data, month);
   const totals = groupTotals(items);
   const income = incomeOf(m);
-  const allocated = sum(GROUP_ORDER, (g) => totals[g]);
-  const left = income - allocated;
   const ls = lanes(s, m, items);
   const rA = ratioA(s, m);
   const accName = (id: string | null) => (id ? data.accounts.find((a) => a.id === id)?.name ?? "삭제된 계좌" : null);
@@ -113,38 +111,7 @@ export default function PlanPage() {
 
   return (
     <>
-      <MonthHeader name="플랜">
-        <p className="finding">
-          {income === 0 ? (
-            "아직 이번 달 수입을 적지 않았어요."
-          ) : left >= 0 ? (
-            <>
-              <span className="nw">
-                수입 <Money value={income} /> 중 <strong>{pctOf(allocated)}</strong>를 나눴고
-              </span>{" "}
-              <span className="nw">
-                <strong>
-                  <Money value={left} />
-                </strong>
-                이 남아요.
-              </span>
-            </>
-          ) : (
-            <>
-              수입보다{" "}
-              <strong className="neg">
-                <Money value={-left} />
-              </strong>{" "}
-              더 나눴어요.
-            </>
-          )}
-        </p>
-        {saved && data.months.length > 1 && (
-          <button type="button" className="btn secondary sm import-btn" onClick={() => setImportOpen(true)}>
-            <Download aria-hidden="true" /> 다른 달에서 불러오기
-          </button>
-        )}
-      </MonthHeader>
+      <MonthHeader name="플랜" />
 
       {!saved && <FirstRun inPlan />}
 
@@ -158,7 +125,7 @@ export default function PlanPage() {
             </span>
           </div>
           <div className="card">
-            <SplitDonut s={s} lanes={ls} items={items} rA={rA} onOpenItem={(item) => setSheet({ open: true, item })} />
+            <SplitBar s={s} lanes={ls} items={items} rA={rA} onOpenItem={(item) => setSheet({ open: true, item })} />
           </div>
         </section>
         {renderGroup("fixed")}
@@ -180,6 +147,16 @@ export default function PlanPage() {
               ))}
             </div>
           </section>
+        )}
+        {saved && data.months.length > 1 && (
+          <button type="button" className="card import-row o8" onClick={() => setImportOpen(true)}>
+            <Download aria-hidden="true" />
+            <span>
+              <strong>다른 달에서 항목 가져오기</strong>
+              <small>지운 항목을 되살리거나 예전 달 항목을 다시 넣어요</small>
+            </span>
+            <ChevronRight aria-hidden="true" className="chev" />
+          </button>
         )}
         </div>
 

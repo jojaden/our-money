@@ -66,10 +66,10 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
   .span-12 { grid-column: 1 / -1; }
   .col { display: grid; gap: 16px; align-content: start; }
 }
-/* 폰에서는 열을 풀고 o1~o7 순서로 한 줄에 세운다 */
+/* 폰에서는 열을 풀고 o1~o8 순서로 한 줄에 세운다 */
 @media (max-width: 1023px) {
   .col { display: contents; }
-  .o1 { order: 1; } .o2 { order: 2; } .o3 { order: 3; } .o4 { order: 4; } .o5 { order: 5; } .o6 { order: 6; } .o7 { order: 7; }
+  .o1 { order: 1; } .o2 { order: 2; } .o3 { order: 3; } .o4 { order: 4; } .o5 { order: 5; } .o6 { order: 6; } .o7 { order: 7; } .o8 { order: 8; }
 }
 
 /* ---------- 찾은 문장·보조 줄 ---------- */
@@ -357,12 +357,12 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
 /* 할 일 일정: 앞 동그라미는 체크, 가운데는 눌러서 고치기 */
 .row-open { min-width: 0; padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; }
 
-/* 이번 달 할 일: 끝낸 비율 막대 (transform 만 움직인다) */
+/* 이번 달 할 일: 끝낸 비율 막대 — 다른 진행과 같은 Meter(thin, accent) */
 .month-todo .mt-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 8px; color: var(--faint); font: 600 13px/18px var(--font-text); }
 .month-todo .mt-head h3 { font: inherit; }
 .month-todo .rows + .mt-head, .month-todo .empty + .mt-head { margin-top: 18px; }
-.month-todo .mt-bar { height: 6px; margin-bottom: 8px; overflow: hidden; border-radius: var(--radius-chip); background: var(--well); }
-.month-todo .mt-bar i { display: block; height: 100%; border-radius: inherit; background: var(--step-done); transform-origin: left; transition: transform var(--dur-ring) var(--ease-out); }
+.month-todo .mt-bar { margin-bottom: 8px; }
+.month-todo .mt-bar .meter { margin: 0; }
 
 /* 모아 보기: TextTabs → 칩 → 카드들 */
 .sum-controls { display: grid; gap: 12px; margin-bottom: 12px; }
@@ -376,10 +376,6 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
 .sum-owners li { display: grid; justify-items: start; gap: 4px; min-width: 0; padding: 10px 12px; border-radius: var(--radius-inner); background: var(--raised); }
 .sum-owners .s { color: var(--faint); font: 500 12.5px/16px var(--font-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
 .sum-owners .money { font: 600 15px/20px var(--font-display); font-variant-numeric: tabular-nums; }
-
-@media (prefers-reduced-motion: reduce) {
-  .month-todo .mt-bar i { transition: none; }
-}
 
 /* 이번 달 일정: 앞에 날짜(쓰는 사람 색 바탕), 지난 일정은 옅게 */
 .date-lead { display: grid; place-items: center; align-content: center; gap: 2px; flex: none; width: 40px; height: 40px; border-radius: var(--radius-chip); background: var(--joint-soft); color: var(--text); }

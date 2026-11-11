@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { AlertTriangle, Check, ChevronDown, Clock, Target } from "lucide-react";
+import { AlertTriangle, Check, ChevronDown, ChevronRight, Clock, Target } from "lucide-react";
 import { useData } from "@/lib/store";
 import { addMonths, currentMonth, monthRow, nameOf, periodOf } from "@/lib/calc";
 import { FirstRun, MonthHeader } from "@/components/MonthHeader";
@@ -14,6 +14,7 @@ import { MAX_STEPS, StepTrack } from "@/components/StepTrack";
 import { Celebrate } from "@/components/Celebrate";
 import { MonthClose } from "@/components/MonthClose";
 import { Morph } from "@/components/Morph";
+import { TaskMeter } from "@/components/BudgetCard";
 
 /** 할 일 줄 — 끝낸 줄은 아래 "✓ 끝낸 N건 · 보기" 한 줄로 접어 남은 일만 보이게 한다 */
 function Rows({ tasks, expandable, fromShown }: { tasks: Task[]; expandable?: boolean; fromShown?: boolean }) {
@@ -59,6 +60,58 @@ function Section({ id, title, tasks, empty, foot }: { id: string; title: string;
         {tasks.length === 0 ? <p className="empty">{empty}</p> : <Rows tasks={tasks} />}
         {foot}
       </Morph>
+    </section>
+  );
+}
+
+/**
+ * 맨 위 요약 카드 (토스·뱅크샐러드의 요약 카드처럼) — 화면 머리는 달만 두고 답은 여기에.
+ * 큰 숫자는 남은 건수, 그 아래 진행 막대, 남은 묶음마다 한 줄(건수 · 금액). 줄을 누르면 그 섹션으로 내려간다.
+ */
+function CheckSummary({ label, done, total, parts }: { label: string; done: number; total: number; parts: { id: string; name: string; tasks: Task[] }[] }) {
+  const left = total - done;
+  const rows = parts
+    .map((p) => {
+      const l = p.tasks.filter((t) => !t.done);
+      return { ...p, count: l.length, amount: l.reduce((a, t) => a + t.amount, 0) };
+    })
+    .filter((p) => p.count > 0);
+  const go = (id: string) => {
+    const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    document.getElementById(id)?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+  };
+  return (
+    <section className="card check-sum" aria-labelledby="sum-h">
+      <div className="sum-head">
+        <h2 id="sum-h" className="hero-label">{label}</h2>
+        <span className="num">{`${done} / ${total}`}</span>
+      </div>
+      <p className="hero-amt">
+        {left === 0 ? (
+          "모두 끝냈어요"
+        ) : (
+          <>
+            {left}
+            <small>건 남았어요</small>
+          </>
+        )}
+      </p>
+      <TaskMeter done={done} total={total} />
+      {rows.length > 0 && (
+        <ul className="sum-left">
+          {rows.map((r) => (
+            <li key={r.id}>
+              <button type="button" onClick={() => go(r.id)}>
+                <span className="n">{r.name}</span>
+                <span className="v">
+                  {r.count}건{r.amount > 0 && <> · <Money value={r.amount} /></>}
+                </span>
+                <ChevronRight aria-hidden="true" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
     </section>
   );
 }
@@ -155,25 +208,7 @@ export default function CheckPage() {
 
   return (
     <>
-      <MonthHeader name="체크">
-        <p className="finding">
-          {left.length === 0 ? (
-            "이번 달 체크를 모두 마쳤어요."
-          ) : (
-            <>
-              <span className="nw">
-                <strong className="num">
-                  {done} / {tasks.length}
-                </strong>{" "}
-                완료
-              </span>{" "}
-              <span className="nw clause">
-                <span className="sep">· </span>남은 일 {left.length}건
-              </span>
-            </>
-          )}
-        </p>
-      </MonthHeader>
+      <MonthHeader name="체크" />
 
       {issues.length > 0 && (
         <div className="notice" role="note" style={{ marginBottom: 16 }}>
@@ -187,6 +222,18 @@ export default function CheckPage() {
 
       <div className="grid">
         <div className="col span-7">
+          <CheckSummary
+            label={`${monthLabel(month)} 체크`}
+            done={done}
+            total={tasks.length}
+            parts={[
+              { id: "payday-h", name: "옮길 돈", tasks: transfers },
+              { id: "fixed", name: "고정비", tasks: fixed },
+              { id: "saving", name: "저축·투자", tasks: saving },
+              { id: "cards", name: "카드값", tasks: bills },
+              { id: "settle", name: "두 사람 정산", tasks: settle ? [settle] : [] },
+            ]}
+          />
           <section className="group" aria-labelledby="payday-h">
             <div className="group-head">
               <h2 id="payday-h">월급날에 옮길 돈</h2>
