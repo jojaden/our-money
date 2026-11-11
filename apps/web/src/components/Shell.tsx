@@ -6,6 +6,7 @@ import { createContext, Suspense, useCallback, useContext, useEffect, useRef, us
 import { House, Layers, ListChecks, ReceiptText, CalendarDays, CalendarPlus, Settings, Plus, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { appCan, isStandalone, toApp, useInApp } from "@/lib/native";
 import { useTheme } from "@/lib/theme";
+import { useRouter } from "next/navigation";
 import { StoreProvider, useStore } from "@/lib/store";
 import { signInWithGoogle, signOut } from "@/lib/repo";
 import { addMonths, type MonthSpending } from "@/lib/calc";
@@ -18,6 +19,7 @@ import { MonthSheet } from "./MonthSheet";
 import { BellButton } from "./Bell";
 import { NoticeSync } from "./NoticeSync";
 import { CalendarSync } from "./CalendarSync";
+import { ReminderSync } from "./ReminderSync";
 import { PageTransition } from "./PageTransition";
 import { LoadingScreen, StageScreen } from "./Stage";
 
@@ -332,6 +334,9 @@ function TopBar({ path }: { path: string }) {
   );
 }
 
+/** 앱이 열어 달라는 화면 (위젯 → 달력, 폰 알림 → 달력·체크) */
+const OPEN_PATHS: Record<string, string> = { calendar: "/calendar/", check: "/check/" };
+
 /** 브라우저로 열었을 때만, 홈 화면에 앱으로 설치하라고 한 번 권한다 */
 function InstallPrompt() {
   const [evt, setEvt] = useState<(Event & { prompt: () => Promise<void> }) | null>(null);
@@ -393,7 +398,8 @@ function Frame({ children }: { children: React.ReactNode }) {
   const path = norm(usePathname() ?? "/");
   const { data } = useStore();
   const app = useInApp();
-  const { dark } = useTheme();
+  const { dark, choice } = useTheme();
+  const router = useRouter();
 
   // 상태 막대 색을 화면 위쪽 색에 맞춘다 (홈은 따뜻한 띠, 나머지는 바탕). 테마를 바꾸면 다시
   useEffect(() => {
@@ -404,8 +410,19 @@ function Frame({ children }: { children: React.ReactNode }) {
 
   // 안드로이드 앱: 시스템 막대 아이콘과 웹뷰 바탕을 테마에 맞추게 알린다
   useEffect(() => {
-    if (app) toApp({ type: "theme", dark });
-  }, [app, dark]);
+    if (app) toApp({ type: "theme", dark, choice });
+  }, [app, dark, choice]);
+
+  // 안드로이드 앱: 위젯·폰 알림을 눌러 이미 열린 앱으로 오면 앱이 "ourmoney-open" 으로 화면을 알린다 (정해 둔 화면만)
+  useEffect(() => {
+    if (!app) return;
+    const open = (e: Event) => {
+      const key = String((e as CustomEvent).detail);
+      if (Object.hasOwn(OPEN_PATHS, key)) router.push(OPEN_PATHS[key]);
+    };
+    window.addEventListener("ourmoney-open", open);
+    return () => window.removeEventListener("ourmoney-open", open);
+  }, [app, router]);
 
   return (
     <SheetContext.Provider value={{ openSpending, openMonths }}>
@@ -430,6 +447,8 @@ function Frame({ children }: { children: React.ReactNode }) {
               {data && app && <NoticeSync />}
               {/* 안드로이드 앱: 홈 화면 달력 위젯에 달력 요약 넘기기, 위젯을 누르면 달력으로 */}
               {data && app && appCan("widget") && <CalendarSync />}
+              {/* 안드로이드 앱: 일정 미리 알림 · 월급날 · 나갈 돈 전날 폰 알림 */}
+              {data && app && appCan("remind") && <ReminderSync />}
             </Gate>
           </div>
           <Toasts />

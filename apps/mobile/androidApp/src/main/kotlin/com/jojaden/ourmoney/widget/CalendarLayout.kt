@@ -2,6 +2,8 @@ package com.jojaden.ourmoney.widget
 
 import android.os.Build
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
@@ -50,20 +52,45 @@ import kotlinx.datetime.number
 import kotlinx.datetime.plus
 
 // 달력 위젯 화면. 색은 docs/design-system/tokens.json 의 값을 옮겼다 (위젯은 CSS 변수를 못 읽는다) — 토큰을 바꾸면 여기도.
+// 테마는 웹 설정 › 화면을 따른다: 밝게·어둡게는 그 색으로, 기기 설정은 폰의 다크 모드에 맞춰 런처가 고른다(낮·밤 색 둘 다 넘김).
+
+/** 사람·버킷 색 — 테마와 상관없이 같다 */
 private object C {
-    val text = Color(0xFF222326) // text
-    val faint = Color(0xFF66676B) // faint
-    val muted = Color(0xFF45464A) // muted
-    val rule = Color(0xFFE1E1DD) // rule
-    val accentInk = Color(0xFF5C5000) // accent-ink
-    val sunday = Color(0xFFC9202E) // negative
-    val saturday = Color(0xFF3563C9) // saturday
-    val positive = Color(0xFF367940) // positive
     val a = Color(0xFFFF9359) // a
     val b = Color(0xFFFF709B) // b
     val joint = Color(0xFFF5DF4D) // joint = primary
     val out = Color(0xFFFF6D39) // g-fixed
+    val onPrimary = ColorProvider(Color(0xFF222326)) // on-primary (노란 오늘 위)
 }
+
+/** 테마를 따르는 색 (라이트 값, 다크 값) */
+private class Pal(private val theme: String) {
+    private fun c(day: Long, night: Long): ColorProvider = when (theme) {
+        "dark" -> ColorProvider(Color(night))
+        "system" -> androidx.glance.color.ColorProvider(Color(day), Color(night))
+        else -> ColorProvider(Color(day))
+    }
+    val text = c(0xFF222326, 0xFFECECEE) // text
+    val faint = c(0xFF66676B, 0xFF9E9EA4) // faint
+    val muted = c(0xFF45464A, 0xFFC3C3C6) // muted
+    val accentInk = c(0xFF5C5000, 0xFFF2DC6A) // accent-ink
+    val sunday = c(0xFFC9202E, 0xFFFF5B63) // negative
+    val saturday = c(0xFF3563C9, 0xFF6F9BFF) // saturday
+    val positive = c(0xFF367940, 0xFF5FC77A) // positive
+    /** 바탕(surface)·나눔선(rule) — 모서리·밤 색을 런처가 고르도록 drawable 로 */
+    val bg = when (theme) {
+        "dark" -> R.drawable.widget_bg_dark
+        "system" -> R.drawable.widget_bg_auto
+        else -> R.drawable.widget_bg
+    }
+    val rule = when (theme) {
+        "dark" -> R.drawable.widget_rule_dark
+        "system" -> R.drawable.widget_rule_auto
+        else -> R.drawable.widget_rule
+    }
+}
+
+private val LocalPal = staticCompositionLocalOf { Pal("light") }
 
 private fun Dot.color() = when (this) {
     Dot.A -> C.a
@@ -75,12 +102,13 @@ private fun Dot.color() = when (this) {
 private val WEEK = listOf("일", "월", "화", "수", "목", "금", "토")
 private val WEEKDAY = listOf("월요일", "화요일", "수요일", "목요일", "금요일", "토요일", "일요일")
 
-private fun style(size: TextUnit, color: Color, bold: Boolean = false) =
-    TextStyle(color = ColorProvider(color), fontSize = size, fontWeight = if (bold) FontWeight.Bold else FontWeight.Normal)
+private fun style(size: TextUnit, color: ColorProvider, bold: Boolean = false) =
+    TextStyle(color = color, fontSize = size, fontWeight = if (bold) FontWeight.Bold else FontWeight.Normal)
 
-/** 위젯 한 장 — 어디를 눌러도 앱의 달력 화면 */
+/** 위젯 한 장 — 어디를 눌러도 앱의 달력 화면. theme 은 light · dark · system */
 @Composable
-fun CalendarContent(cal: WidgetCalendar?, today: LocalDate) {
+fun CalendarContent(cal: WidgetCalendar?, today: LocalDate, theme: String) {
+    val pal = Pal(theme)
     val size = LocalSize.current
     val wide = size.width >= 250.dp
     val tall = size.height >= 260.dp
@@ -90,14 +118,16 @@ fun CalendarContent(cal: WidgetCalendar?, today: LocalDate) {
     } else {
         GlanceModifier
     }
-    Box(
-        GlanceModifier.fillMaxSize().appWidgetBackground().background(ImageProvider(R.drawable.widget_bg)).then(rounded)
-            .clickable(open).padding(if (wide) 16.dp else 12.dp),
-    ) {
-        when {
-            wide && tall -> Large(cal, today)
-            wide -> Medium(cal, today)
-            else -> MonthGrid(cal, today, dots = false, header = true)
+    CompositionLocalProvider(LocalPal provides pal) {
+        Box(
+            GlanceModifier.fillMaxSize().appWidgetBackground().background(ImageProvider(pal.bg)).then(rounded)
+                .clickable(open).padding(if (wide) 16.dp else 12.dp),
+        ) {
+            when {
+                wide && tall -> Large(cal, today)
+                wide -> Medium(cal, today)
+                else -> MonthGrid(cal, today, dots = false, header = true)
+            }
         }
     }
 }
@@ -105,10 +135,11 @@ fun CalendarContent(cal: WidgetCalendar?, today: LocalDate) {
 /** 넓게(4×2): 왼쪽 오늘 + 다가오는 두 개, 오른쪽 이번 달 */
 @Composable
 private fun Medium(cal: WidgetCalendar?, today: LocalDate) {
+    val pal = LocalPal.current
     Row(GlanceModifier.fillMaxSize()) {
         Column(GlanceModifier.defaultWeight().fillMaxHeight()) {
-            Text(WEEKDAY[today.dayOfWeek.isoDayNumber - 1], style = style(12.sp, C.accentInk, bold = true))
-            Text("${today.day}", style = style(34.sp, C.text, bold = true))
+            Text(WEEKDAY[today.dayOfWeek.isoDayNumber - 1], style = style(12.sp, pal.accentInk, bold = true))
+            Text("${today.day}", style = style(34.sp, pal.text, bold = true))
             Spacer(GlanceModifier.height(4.dp))
             UpList(cal, today, 2)
         }
@@ -127,7 +158,7 @@ private fun Large(cal: WidgetCalendar?, today: LocalDate) {
             MonthGrid(cal, today, dots = true, header = true)
         }
         Spacer(GlanceModifier.height(8.dp))
-        Box(GlanceModifier.fillMaxWidth().height(1.dp).background(C.rule)) {}
+        Box(GlanceModifier.fillMaxWidth().height(1.dp).background(ImageProvider(LocalPal.current.rule))) {}
         Spacer(GlanceModifier.height(8.dp))
         UpList(cal, today, 3)
     }
@@ -136,19 +167,20 @@ private fun Large(cal: WidgetCalendar?, today: LocalDate) {
 /** 이번 달 칸 — 오늘은 노란 동그라미, 일요일 빨강·토요일 파랑, 그 달이 아닌 칸은 비운다 */
 @Composable
 private fun MonthGrid(cal: WidgetCalendar?, today: LocalDate, dots: Boolean, header: Boolean) {
+    val pal = LocalPal.current
     val cells = monthCells(today.year, today.month.number)
     val small = !dots
     val num = if (small) 10.sp else 13.sp
     val circle: Dp = if (small) 16.dp else 24.dp
     Column(GlanceModifier.fillMaxSize()) {
         if (header) {
-            Text("${today.month.number}월", style = style(if (small) 12.sp else 15.sp, C.accentInk, bold = true))
+            Text("${today.month.number}월", style = style(if (small) 12.sp else 15.sp, pal.accentInk, bold = true))
             Spacer(GlanceModifier.height(if (small) 2.dp else 6.dp))
         }
         Row(GlanceModifier.fillMaxWidth()) {
             WEEK.forEachIndexed { i, w ->
                 Box(GlanceModifier.defaultWeight(), contentAlignment = Alignment.Center) {
-                    Text(w, style = style(if (small) 9.sp else 11.sp, dayColor(i, C.faint)))
+                    Text(w, style = style(if (small) 9.sp else 11.sp, dayColor(i, pal.faint, pal)))
                 }
             }
         }
@@ -164,25 +196,26 @@ private fun MonthGrid(cal: WidgetCalendar?, today: LocalDate, dots: Boolean, hea
     }
 }
 
-private fun dayColor(index: Int, base: Color) = when (index) {
-    0 -> C.sunday
-    6 -> C.saturday
+private fun dayColor(index: Int, base: ColorProvider, pal: Pal) = when (index) {
+    0 -> pal.sunday
+    6 -> pal.saturday
     else -> base
 }
 
 @Composable
 private fun Day(d: LocalDate, isToday: Boolean, num: TextUnit, circle: Dp, dots: List<Dot>) {
+    val pal = LocalPal.current
     val color = when {
-        isSunday(d) -> C.sunday
-        isSaturday(d) -> C.saturday
-        else -> C.text
+        isSunday(d) -> pal.sunday
+        isSaturday(d) -> pal.saturday
+        else -> pal.text
     }
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Box(
             (if (isToday) GlanceModifier.background(ImageProvider(R.drawable.widget_today)) else GlanceModifier).size(circle),
             contentAlignment = Alignment.Center,
         ) {
-            Text("${d.day}", style = style(num, if (isToday) C.text else color, bold = isToday))
+            Text("${d.day}", style = style(num, if (isToday) C.onPrimary else color, bold = isToday))
         }
         if (dots.isNotEmpty()) {
             Row {
@@ -198,9 +231,10 @@ private fun Day(d: LocalDate, isToday: Boolean, num: TextUnit, circle: Dp, dots:
 /** 다가오는 것 — 왼쪽 색 막대(누구), 이름, 언제 · 금액/시간 */
 @Composable
 private fun UpList(cal: WidgetCalendar?, today: LocalDate, n: Int) {
+    val pal = LocalPal.current
     val items = cal?.upcoming(today, n).orEmpty()
     if (items.isEmpty()) {
-        Text(if (cal == null) "앱을 열면 일정이 보여요" else "다가오는 일정이 없어요", style = style(12.sp, C.faint), maxLines = 2)
+        Text(if (cal == null) "앱을 열면 일정이 보여요" else "다가오는 일정이 없어요", style = style(12.sp, pal.faint), maxLines = 2)
         return
     }
     Column(GlanceModifier.fillMaxWidth()) {
@@ -213,16 +247,17 @@ private fun UpList(cal: WidgetCalendar?, today: LocalDate, n: Int) {
 
 @Composable
 private fun UpRow(item: UpItem, today: LocalDate) {
+    val pal = LocalPal.current
     Row(GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Box(GlanceModifier.width(3.dp).height(30.dp).background(item.dot.color())) {}
         Spacer(GlanceModifier.width(8.dp))
         Column(GlanceModifier.defaultWeight()) {
-            Text(item.title, style = style(13.sp, C.text, bold = true), maxLines = 1)
-            Text(whenText(item, today), style = style(11.sp, C.faint), maxLines = 1)
+            Text(item.title, style = style(13.sp, pal.text, bold = true), maxLines = 1)
+            Text(whenText(item, today), style = style(11.sp, pal.faint), maxLines = 1)
         }
         if (item.note.isNotEmpty()) {
             Spacer(GlanceModifier.width(6.dp))
-            Text(item.note, style = style(12.sp, if (item.income) C.positive else C.muted, bold = item.income), maxLines = 1)
+            Text(item.note, style = style(12.sp, if (item.income) pal.positive else pal.muted, bold = item.income), maxLines = 1)
         }
     }
 }

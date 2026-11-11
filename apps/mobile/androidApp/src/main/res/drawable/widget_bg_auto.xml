@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 달력 위젯 바탕 — 기기 설정: 런처가 폰의 다크 모드에 맞춰 values/values-night 색을 고른다 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="@color/widget_surface" />
+    <corners android:radius="20dp" />
+</shape>

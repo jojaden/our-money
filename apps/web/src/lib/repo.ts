@@ -509,8 +509,9 @@ export async function signOut() {
   try {
     localStorage.removeItem("our-money-outbox");
   } catch {}
-  // 안드로이드 앱이면 홈 화면 달력 위젯의 일정도 지운다
+  // 안드로이드 앱이면 홈 화면 달력 위젯의 일정과 예약한 폰 알림도 지운다
   toApp({ type: "calendar-clear" });
+  toApp({ type: "reminders", items: [] });
   await supabase()?.auth.signOut();
   window.location.reload();
 }
