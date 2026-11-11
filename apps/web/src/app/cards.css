@@ -239,6 +239,21 @@
 .highlight .reward b { font: 700 20px/28px var(--font-display); font-variant-numeric: tabular-nums; }
 .highlight .reward > span { color: var(--faint); font: 500 14.5px/20px var(--font-text); }
 
+/* ---------- 홈 맨 위 알림 카드 (Nudge): 화면 머리 문장 대신. 아이콘 원 · 한 줄 · › ---------- */
+.nudge { display: grid; grid-template-columns: 36px minmax(0, 1fr) 18px; align-items: center; gap: 12px; padding-block: 14px; color: var(--text); transition: transform var(--dur-press) var(--ease-press); }
+.nudge:active { transform: scale(0.98); }
+.nudge .ic { display: grid; place-items: center; width: 36px; height: 36px; border-radius: var(--radius-chip); background: var(--pill-neutral-bg); color: var(--pill-neutral-ink); }
+.nudge .ic svg { width: 20px; height: 20px; stroke-width: 2.2; }
+.nudge.negative .ic { background: var(--pill-negative-bg); color: var(--pill-negative-ink); }
+.nudge.warning .ic { background: var(--pill-warning-bg); color: var(--pill-warning-ink); }
+.nudge.positive .ic { background: var(--pill-positive-bg); color: var(--pill-positive-ink); }
+.nudge .t { font: 500 15.5px/22px var(--font-text); letter-spacing: -0.01em; }
+.nudge .t strong { font-weight: 700; }
+.nudge .chev { width: 18px; height: 18px; color: var(--faint); }
+@media (prefers-reduced-motion: reduce) {
+  .nudge { transition: none; }
+}
+
 /* ---------- 지난달 마감 묻기 (ClosePrompt, 홈 맨 위) ---------- */
 
 /* 빈 자리는 칸 간격까지 0 (카드가 빠질 때 간격도 같이 줄어든다) */

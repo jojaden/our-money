@@ -121,8 +121,6 @@ div.bar-mini { display: flex; align-items: center; justify-content: center; gap:
   .page-head :is(.month-arrow, .month-btn):hover, .mini-title:hover, .mini-step:hover { background: var(--tab-active-bg); color: var(--text); }
   .back-btn:hover, .range-btn:hover { background: var(--tab-active-bg); }
 }
-.finding { margin-top: 12px; font: 600 18px/28px var(--font-text); letter-spacing: -0.015em; }
-.finding strong { font-weight: 700; }
 .head-action { display: none; }
 
 /* ---------- 하단 캡슐 (TabBar) + 원형 기록 버튼 ---------- */
