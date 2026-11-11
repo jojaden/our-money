@@ -12,9 +12,8 @@ on:
 permissions:
   contents: read
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+# 겹친 실행을 취소하지 않는다: PR 을 라벨과 함께 만들면 opened·labeled 가 동시에 와서
+# 하나가 취소되고, 취소된 검사가 실패처럼 보인다. 몇 초면 끝나는 검사라 모두 끝까지 돌린다.
 
 jobs:
   rules:
