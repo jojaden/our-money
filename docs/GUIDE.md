@@ -60,7 +60,7 @@ flowchart TB
 
 ## 4. 가계부 — 지출
 
-<img src="screenshots/ledger.jpg" width="240"> <img src="screenshots/ledger-daily.jpg" width="240"> <img src="screenshots/spending.jpg" width="240">
+<img src="screenshots/ledger.jpg" width="240"> <img src="screenshots/ledger-daily.jpg" width="240"> <img src="screenshots/ledger-all.jpg" width="240"> <img src="screenshots/spending.jpg" width="240">
 
 - [ ] 누적 그래프를 **누르고 끌기** → 그날 이번 달 · 지난달 누적
 - [ ] 오른쪽 아래 **＋** → 금액 · 어디에 · 분류 · 결제수단 → **기록하기**
@@ -92,7 +92,7 @@ flowchart TB
 
 ## 7. 설정 — 지갑
 
-<img src="screenshots/wallet.jpg" width="240"> <img src="screenshots/card.jpg" width="240">
+<img src="screenshots/settings.jpg" width="240"> <img src="screenshots/wallet.jpg" width="240"> <img src="screenshots/card.jpg" width="240">
 
 - [ ] 카드·통장이 실물처럼 겹친 **지갑**, 누르면 이번 달 카드값 · 옮겨 올 돈 · 최근 사용
 - [ ] 폰에서는 묶음 목록(두 사람 · 공동비용 나누기 · 한 달의 기준 · 지갑 · 분류와 예산 · 예시 데이터)에서 하나를 눌러 그 묶음만 고치고, **‹ 설정**으로 돌아오기. 데스크톱은 모든 묶음이 한 화면에
