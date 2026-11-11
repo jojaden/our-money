@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Plus, Download, BellRing, CalendarDays, CalendarRange, ChevronLeft, ChevronRight, FlaskConical, History, LogOut, RotateCcw, Receipt, Scale, Smartphone, SunMoon, Tags, UserRound, Users, Wallet as Wallet2, WalletCards } from "lucide-react";
+import { Download, BellRing, CalendarDays, CalendarRange, ChevronLeft, ChevronRight, FlaskConical, History, LogOut, RotateCcw, Receipt, Scale, Smartphone, SunMoon, Tags, UserRound, Users, Wallet as Wallet2, WalletCards } from "lucide-react";
 import type { Account, AccountKind, Category, Person, Settings } from "@/lib/types";
 import { PAY_KIND_LABEL } from "@/lib/types";
 import { useData } from "@/lib/store";
@@ -451,7 +451,7 @@ export default function SettingsPage() {
             </div>
             <div className="card-foot" style={{ justifyContent: "flex-start" }}>
               <button type="button" className="btn ghost" onClick={() => setCat({ open: true })}>
-                <Plus aria-hidden="true" /> 분류 추가
+                분류 추가
               </button>
             </div>
           </div>

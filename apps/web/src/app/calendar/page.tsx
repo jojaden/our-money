@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Suspense, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { CalendarPlus, ChevronLeft, Menu, Plus, X } from "lucide-react";
+import { CalendarPlus, ChevronLeft, Menu, X } from "lucide-react";
 import type { CalEvent, Spending } from "@/lib/types";
 import { useData } from "@/lib/store";
 import { actualAmount, findCheck, nameOf } from "@/lib/calc";
@@ -267,7 +267,6 @@ function CalendarMonth() {
         headerAction={<button type="button" className="cal-close" aria-label="달력 패널 닫기" onClick={() => setPanelOpen(false)}><X aria-hidden="true" /></button>}
         footer={panel === "day" ? (
           <button type="button" className="btn block cal-add" onClick={() => editEvent()}>
-            <Plus aria-hidden="true" />
             {`${Number(day.slice(5, 7))}월 ${Number(day.slice(8))}일에 일정 추가`}
           </button>
         ) : undefined}
@@ -310,7 +309,6 @@ function DayAgenda({ day, marks, onOpenEvent, onOpenSpending }: { day: string; m
           <p className="t">비어 있는 날이에요</p>
           <p className="s">약속이나 할 일을 남겨 두면 달력에 바로 보여요.</p>
           <button type="button" className="btn sm secondary" onClick={() => onOpenEvent()}>
-            <Plus aria-hidden="true" />
             일정 추가
           </button>
         </div>
