@@ -1,4 +1,4 @@
-/* 카드 — 가로 막대(Meter), 예산 카드(BudgetCard), 진행선(StepTrack), 누적 지출(SpendCurve), 기록 타일(StatTiles),
+/* 카드 — 가로 막대(Meter), 예산 카드(BudgetCard), 진행 막대(StepTrack), 누적 지출(SpendCurve), 기록 타일(StatTiles),
    하루·분류 막대, 모으는 목표(GoalBar)
    규칙: docs/design-system README "숫자와 막대", components/<이름>/README.md */
 
@@ -10,6 +10,10 @@
 .meter.thin { height: 8px; }
 .meter .track { position: absolute; inset: 0; overflow: hidden; border-radius: var(--radius-chip); background: var(--well); }
 .meter .fill { position: absolute; inset: 0; border-radius: inherit; background: var(--c, var(--accent)); transform: translateX(-100%); will-change: transform; }
+.meter.over { --c: var(--negative); }
+/* 정해진 값(value)으로 그리는 막대: CSS 전환으로 옮기고, 처음 한 번은 .flat 에서 자란다 */
+.meter .fill.css { transition: transform var(--dur-ring) var(--ease-out); }
+.flat .meter .fill.css { transform: translateX(-100%) !important; }
 .budget[data-over] { --c: var(--negative); }
 /* 이정표: 오늘까지 써도 되는 선. 막대 위아래로 4px 나오는 진한 눈금, 큰 카드는 위에 "오늘" */
 .meter .mile { position: absolute; top: -4px; bottom: -4px; width: 2px; margin-left: -1px; border-radius: 1px; background: var(--text); }
@@ -54,14 +58,9 @@
 .budget-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; margin-top: 12px; }
 .budget-foot:empty { display: none; }
 
-/* 체크 화면 머리: 결론 한 줄 + 같은 진행 막대 */
-.progress-line { margin-top: 12px; }
-.progress-line .meter { max-width: 420px; margin: 10px 0 0; }
-.progress-line .finding { margin: 0; }
+/* ---------- 칸 나눈 진행 막대 (StepTrack) ---------- */
 
-/* ---------- 체크포인트 진행선 (StepTrack) ---------- */
-
-/* 월급날 카드: 제목 → 메타 줄 → 진행선 → 기한 줄 → 할 일 줄 */
+/* 월급날 카드: 제목 → 메타 줄 → 진행 막대 → 기한 줄 → 할 일 줄 */
 .payday .card-head { margin-bottom: 6px; }
 .payday .card-head h3 { font: 600 17px/24px var(--font-text); letter-spacing: -0.01em; }
 .step-meta { display: flex; align-items: flex-start; gap: 6px; margin: 0; color: var(--faint); font: 500 12.5px/18px var(--font-text); }
@@ -69,20 +68,14 @@
 .step-meta b { color: var(--muted); font-family: var(--font-display); font-weight: 600; }
 .step-meta strong { color: var(--muted); font-weight: 600; }
 .step-meta .money { color: var(--muted); }
-.step-track { display: flex; align-items: center; margin: 10px 0; }
-.step-wrap { display: flex; flex: 1; align-items: center; }
-.step-wrap:first-child { flex: none; }
-.step { flex: none; display: grid; place-items: center; width: 20px; height: 20px; box-sizing: border-box; border: 2px solid var(--well); border-radius: var(--radius-chip); background: var(--surface); color: var(--on-primary); transition: background-color var(--dur-press) var(--ease-out), border-color var(--dur-press) var(--ease-out); }
-.step svg { width: 12px; height: 12px; stroke-width: 3; opacity: 0; }
-.step.done { border-color: var(--primary); background: var(--primary); }
-.step.done svg { opacity: 1; }
-/* 이음선: 끝내면 왼쪽에서 차오른다 */
-.step-bar { position: relative; flex: 1; height: 4px; overflow: hidden; background: var(--well); }
-.step-bar::after { content: ""; position: absolute; inset: 0; background: var(--primary); transform: scaleX(0); transform-origin: left; transition: transform var(--dur-value) var(--ease-value); }
-.step-bar.done::after { transform: none; }
+/* 칸 나눈 진행 막대: 칸마다 Meter 와 같은 트랙(well)·채움(accent). 채움은 칸 폭만 한 띠를 translateX 로 밀어 넣는다 */
+.step-track { display: flex; gap: 4px; height: 8px; margin: 10px 0; }
+.step-track i { position: relative; flex: 1; overflow: hidden; border-radius: var(--radius-chip); background: var(--well); }
+.step-track i::after { content: ""; position: absolute; inset: 0; border-radius: inherit; background: var(--accent); transform: translateX(-100%); transition: transform var(--dur-value) var(--ease-value); }
+.step-track i.done::after { transform: none; }
 .payday .rows { margin-top: 10px; }
 @media (prefers-reduced-motion: reduce) {
-  .step, .step-bar::after { transition: none; }
+  .step-track i::after { transition: none; }
 }
 
 /* ---------- 가계부 머리: 이번 달 누적 지출 (SpendCurve) ----------
@@ -129,16 +122,16 @@
 .curve-foot .r { display: grid; justify-items: end; }
 .curve-foot b { color: var(--text); font: 700 16px/22px var(--font-display); }
 .curve-foot small { font: inherit; }
+/* 예산 목록: 이름 ─ %(숫자) → 예산 대비 막대(Meter thin, accent 한 색) → 쓴 돈 / 예산 */
 .buckets .neg { color: var(--negative); }
 .buckets { width: 100%; margin: 16px 0 0; padding: 0; list-style: none; text-align: left; }
-.buckets li { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 12px 0; }
-.buckets li + li { background: linear-gradient(var(--rule), var(--rule)) 22px 0 / calc(100% - 22px) 0.6px no-repeat; }
-.buckets i { width: 10px; height: 10px; border-radius: var(--radius-chip); background: var(--k); }
-.buckets .living { --k: var(--g-living); }
-.buckets .allowance { --k: var(--g-allowance); }
+.buckets li { padding: 12px 0; }
+.buckets li + li { background: linear-gradient(var(--rule), var(--rule)) 0 0 / 100% 0.6px no-repeat; }
+.buckets .bh { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 0; }
 .buckets .n { font: 500 16px/24px var(--font-text); letter-spacing: -0.01em; }
+.buckets .meter { margin: 8px 0 6px; }
 .buckets .v { color: var(--faint); font: 500 12.5px/16px var(--font-text); font-variant-numeric: tabular-nums; }
-.buckets b { font: 600 17px/24px var(--font-display); font-variant-numeric: tabular-nums; }
+.buckets b { font: 700 20px/26px var(--font-display); font-variant-numeric: tabular-nums; }
 
 /* ---------- 이번 달 기록 (StatTiles) ---------- */
 
@@ -153,7 +146,7 @@
 
 /* ---------- 하루별 지출 막대 (DailyBars) ---------- */
 
-/* 막대는 게이지와 같은 번짐: 바닥 옅은 생활비 색 → 위 진한 끝. 앱에서 처음 한 번만 바닥에서 자란다 */
+/* 막대는 accent 한 색(번지지 않게). 앱에서 처음 한 번만 바닥에서 자란다 */
 .daily-head { display: flex; align-items: baseline; gap: 8px; min-height: 30px; }
 .daily-head .k { color: var(--faint); font: 500 14.5px/20px var(--font-text); }
 .daily-head .v { font: 700 22px/28px var(--font-display); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
@@ -170,7 +163,7 @@
   width: 100%;
   max-width: 10px;
   border-radius: var(--radius-chip);
-  background: linear-gradient(0deg, color-mix(in srgb, var(--g-living) 46%, var(--surface)), var(--g-living));
+  background: var(--accent);
   transition: height var(--dur-ring) var(--ease-out), opacity var(--dur-press) ease;
 }
 .daily-bars.flat .db span { height: 0 !important; }
@@ -181,16 +174,12 @@
 .db:focus-visible span { outline: 2px solid var(--accent-ink); outline-offset: 2px; }
 .daily-x { display: flex; justify-content: space-between; margin: 8px 34px 0 0; color: var(--faint); font: 500 12px/16px var(--font-text); font-variant-numeric: tabular-nums; }
 
-/* ---------- 분류 막대 (예산 눈금) ---------- */
+/* ---------- 분류 막대: Meter(thin) 그대로, 눈금 = 그 분류 예산 ---------- */
 
-.catbar { position: relative; height: 8px; margin-top: 8px; border-radius: var(--radius-chip); background: var(--well); }
-.catbar > span { position: absolute; inset: 0 auto 0 0; border-radius: var(--radius-chip); background: linear-gradient(90deg, color-mix(in srgb, var(--g-living) 46%, var(--surface)), var(--g-living)); transition: width var(--dur-ring) var(--ease-out); }
-.rows.flat .catbar > span { width: 0 !important; }
-.catbar > span.over { background: linear-gradient(90deg, color-mix(in srgb, var(--negative) 46%, var(--surface)), var(--negative)); }
-.catbar > i { position: absolute; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; border-radius: 2px; background: var(--text); }
+.catrow .meter { margin: 8px 0 0; }
 
 @media (prefers-reduced-motion: reduce) {
-  .db span, .catbar > span { transition: none; }
+  .db span, .meter .fill.css { transition: none; }
 }
 
 /* ---------- 모으는 목표 (GoalBar) ---------- */

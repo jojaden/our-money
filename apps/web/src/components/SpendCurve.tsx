@@ -5,6 +5,8 @@ import type { Spending } from "@/lib/types";
 import { periodOf } from "@/lib/calc";
 import { num, parseYmd, ymd } from "@/lib/format";
 import { TextTabs } from "./ui";
+import { Meter } from "./Meter";
+import { useRevealOnce } from "./reveal";
 
 export interface CurveBucket {
   key: "living" | "allowance";
@@ -71,6 +73,7 @@ export function SpendCurve({
   /** 하루별 지출 막대 (가계부) */
   daily?: React.ReactNode;
 }) {
+  const bucketsGrown = useRevealOnce("buckets");
   const days = daysOf(month, cycleStart);
   const prevDays = daysOf(prevMonth, cycleStart);
   const n = days.length;
@@ -241,16 +244,16 @@ export function SpendCurve({
       </>
       )}
 
-      <ul className="buckets">
+      <ul className={`buckets${bucketsGrown ? "" : " flat"}`}>
         {buckets.map((b) => (
-          <li key={b.key} className={b.key}>
-            <i aria-hidden="true" />
-            <div>
-              <p className="n">{b.name}</p>
-              <p className="v">{num(b.spent)} / {num(b.budget)}원</p>
-              {b.note && <p className="v">{b.note}</p>}
-            </div>
-            <b className={b.spent > b.budget ? "neg" : undefined}>{pctOf(b.spent, b.budget)}%</b>
+          <li key={b.key}>
+            <p className="bh">
+              <span className="n">{b.name}</span>
+              <b className={b.spent > b.budget ? "neg" : undefined}>{pctOf(b.spent, b.budget)}%</b>
+            </p>
+            <Meter thin value={b.budget > 0 ? b.spent / b.budget : 0} over={b.spent > b.budget} />
+            <p className="v">{num(b.spent)} / {num(b.budget)}원</p>
+            {b.note && <p className="v">{b.note}</p>}
           </li>
         ))}
       </ul>

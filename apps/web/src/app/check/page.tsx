@@ -10,7 +10,6 @@ import { Money } from "@/components/ui";
 import { byUrgency, eventTasks, useTasks, type PaydayGroup, type Task } from "@/components/tasks";
 import { dDay, dateWithDay, monthLabel, shortDate } from "@/lib/format";
 import { TaskRow } from "@/components/TaskRow";
-import { TaskMeter } from "@/components/BudgetCard";
 import { MAX_STEPS, StepTrack } from "@/components/StepTrack";
 import { Celebrate } from "@/components/Celebrate";
 import { MonthClose } from "@/components/MonthClose";
@@ -64,7 +63,7 @@ function Section({ id, title, tasks, empty, foot }: { id: string; title: string;
   );
 }
 
-/** 한 사람의 월급날: 그날 자기 월급통장에서 옮길 돈. 머리는 진행선(StepTrack), 아래는 할 일 줄 */
+/** 한 사람의 월급날: 그날 자기 월급통장에서 옮길 돈. 머리는 칸 나눈 진행 막대(StepTrack), 아래는 할 일 줄 */
 function PaydaySection({ g, today, name }: { g: PaydayGroup; today: string; name: string }) {
   const id = `pay-${g.person}`;
   const left = g.transfers.filter((t) => !t.done);
@@ -157,26 +156,23 @@ export default function CheckPage() {
   return (
     <>
       <MonthHeader name="체크">
-        <div className="progress-line">
-          <p className="finding">
-            {left.length === 0 ? (
-              "이번 달 체크를 모두 마쳤어요."
-            ) : (
-              <>
-                <span className="nw">
-                  <strong className="num">
-                    {done} / {tasks.length}
-                  </strong>{" "}
-                  완료
-                </span>{" "}
-                <span className="nw clause">
-                  <span className="sep">· </span>남은 일 {left.length}건
-                </span>
-              </>
-            )}
-          </p>
-          <TaskMeter done={done} total={tasks.length} />
-        </div>
+        <p className="finding">
+          {left.length === 0 ? (
+            "이번 달 체크를 모두 마쳤어요."
+          ) : (
+            <>
+              <span className="nw">
+                <strong className="num">
+                  {done} / {tasks.length}
+                </strong>{" "}
+                완료
+              </span>{" "}
+              <span className="nw clause">
+                <span className="sep">· </span>남은 일 {left.length}건
+              </span>
+            </>
+          )}
+        </p>
       </MonthHeader>
 
       {issues.length > 0 && (

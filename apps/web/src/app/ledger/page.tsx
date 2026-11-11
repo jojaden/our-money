@@ -7,6 +7,7 @@ import { num } from "@/lib/format";
 import { MonthHeader } from "@/components/MonthHeader";
 import { CategoryIcon, Money } from "@/components/ui";
 import { DailyBars } from "@/components/DailyBars";
+import { Meter } from "@/components/Meter";
 import { SpendCurve } from "@/components/SpendCurve";
 import { StatTiles } from "@/components/StatTiles";
 import { SpendingDays } from "@/components/SpendingDays";
@@ -91,10 +92,13 @@ export default function LedgerPage() {
                   <CategoryIcon visual={categoryVisual(c.id ? c.name : null)} size="sm" />
                   <div style={{ minWidth: 0 }}>
                     <div className="t">{c.name}</div>
-                    <div className="catbar" role="img" aria-label={`${c.name} ${num(c.spent)}원${c.budget > 0 ? ` / 예산 ${num(c.budget)}원` : ""}`}>
-                      <span className={c.budget > 0 && c.spent > c.budget ? "over" : ""} style={{ width: `${Math.min(100, (c.spent / maxCat) * 100)}%` }} />
-                      {c.budget > 0 && <i style={{ left: `${Math.min(100, (c.budget / maxCat) * 100)}%` }} />}
-                    </div>
+                    <Meter
+                      thin
+                      value={c.spent / maxCat}
+                      over={c.budget > 0 && c.spent > c.budget}
+                      mile={c.budget > 0 ? c.budget / maxCat : null}
+                      label={`${c.name} ${num(c.spent)}원${c.budget > 0 ? ` / 예산 ${num(c.budget)}원` : ""}`}
+                    />
                   </div>
                   <div className="r">
                     <Money value={c.spent} className={c.budget > 0 && c.spent > c.budget ? "neg" : ""} />

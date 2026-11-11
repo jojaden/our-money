@@ -8,6 +8,7 @@ import { categoryName, categoryVisual, spendingVisual } from "@/lib/categories";
 import { dateWithDay, num, parseYmd, shortDate } from "@/lib/format";
 import { CategoryIcon, Money, Who } from "./ui";
 import { HighlightCard } from "./HighlightCard";
+import { Meter } from "./Meter";
 import { Morph } from "./Morph";
 import { useSheets } from "./Shell";
 
@@ -111,9 +112,7 @@ export function PeriodSummary({ range, className = "" }: { range: Range; classNa
                           <CategoryIcon visual={c.categoryId ? categoryVisual(name) : spendingVisual(data, { category_id: null, owner: c.owner })} size="sm" />
                           <div style={{ minWidth: 0 }}>
                             <div className="t">{name}</div>
-                            <div className="catbar" role="img" aria-label={`${name} ${num(c.amount)}원`}>
-                              <span style={{ width: `${(c.amount / maxCat) * 100}%` }} />
-                            </div>
+                            <Meter thin value={c.amount / maxCat} label={`${name} ${num(c.amount)}원`} />
                           </div>
                           <div className="r">
                             <Money value={c.amount} />
