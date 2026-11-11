@@ -19,6 +19,9 @@ import { usePrimaryAction, useSheets } from "@/components/Shell";
 import { ClosePrompt } from "@/components/ClosePrompt";
 import { Morph } from "@/components/Morph";
 
+/** 홈에 보이는 할 일 수 — 급한 순으로 이만큼만, 나머지는 체크 화면에서 */
+const HOME_TODOS = 3;
+
 export default function Home() {
   const { data, month, today, me } = useData();
   const { tasks, paydays, started } = useTasks(month);
@@ -182,40 +185,45 @@ export default function Home() {
           <section className="group o3" aria-labelledby="todo-h">
             <div className="group-head">
               <h2 id="todo-h">이번 달 할 일</h2>
-              <Link className="aside" href="/check">
-                체크
-              </Link>
             </div>
             <div className="card">
-              {/* 숫자가 먼저, 그 아래 진행 막대, 그다음 상태 */}
+              {/* 체크 요약 카드와 같은 모양: 큰 숫자(남은 건수) ─ 끝낸 수, 막대, 기한 지난 일만 한 줄 */}
               <div className="todo-progress">
-                <div className="big num">
-                  {doneCount}
-                  <span> / {tasks.length} 완료</span>
+                <div className="todo-top">
+                  <p className="big num">
+                    {open.length === 0 ? (
+                      "모두 끝냈어요"
+                    ) : (
+                      <>
+                        {open.length}
+                        <span>건 남았어요</span>
+                      </>
+                    )}
+                  </p>
+                  <span className="done num">{`${doneCount} / ${tasks.length}`}</span>
                 </div>
                 <TaskMeter done={doneCount} total={tasks.length} />
-                <div className="sub">
-                  {overdue.length > 0 ? <span className="neg">기한 지난 일 {overdue.length}건</span> : open.length > 0 ? `남은 일 ${open.length}건` : "모두 마쳤어요"}
-                  {overdue.length > 0 && open.length > overdue.length ? ` · 남은 일 ${open.length}건` : ""}
-                </div>
+                {overdue.length > 0 && <p className="sub neg">기한 지난 일 {overdue.length}건</p>}
               </div>
               {open.length === 0 ? (
                 <p className="empty">남은 이체·납부가 없어요.</p>
               ) : (
                 <div className="rows" style={{ ["--inset" as string]: "40px" }}>
-                  {open.slice(0, 6).map((t) => (
+                  {open.slice(0, HOME_TODOS).map((t) => (
                     <TaskRow key={t.key} task={t} />
                   ))}
                 </div>
               )}
-              <div className="card-foot">
-                <span className="kpi-sub" style={{ margin: 0 }}>
-                  {open.length > 6 ? `외 ${open.length - 6}건` : ""}
-                </span>
-                <Link href="/check" className="btn secondary sm">
-                  전체 체크리스트
-                </Link>
-              </div>
+              {/* 급한 순 3건만 — 나머지는 체크에서 (가계부 "모든 기록 N건 보기"와 같은 줄) */}
+              <Link className="more-row" href="/check">
+                {open.length > HOME_TODOS ? (
+                  <>
+                    남은 일 <b>{open.length}건</b> 모두 보기
+                  </>
+                ) : (
+                  "체크에서 보기"
+                )}
+              </Link>
             </div>
           </section>
 

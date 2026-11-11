@@ -99,9 +99,11 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
 /* ---------- 체크: 할 일 진행, 이체 화살표 줄, 나눠 내는 몫 ---------- */
 
 .todo-progress { margin: 0 0 12px; padding-bottom: 14px; border-bottom: 1px solid var(--rule); }
-.todo-progress .big { font-family: var(--font-display); font-size: 26px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.1; }
-.todo-progress .big span { font-size: 16px; font-weight: 600; color: var(--faint); letter-spacing: -0.01em; }
-.todo-progress .sub { margin-top: 4px; color: var(--faint); font-size: 14px; font-weight: 500; }
+.todo-top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.todo-progress .big { margin: 0; font-family: var(--font-display); font-size: 26px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.1; }
+.todo-progress .big span { margin-left: 2px; font-family: var(--font-text); font-size: 17px; font-weight: 700; letter-spacing: -0.01em; }
+.todo-progress .done { color: var(--faint); font: 600 14px/20px var(--font-display); }
+.todo-progress .sub { margin: 6px 0 0; font-size: 14px; font-weight: 500; }
 
 .row .t.flow { display: flex; flex-wrap: wrap; align-items: center; column-gap: 6px; row-gap: 0; white-space: normal; overflow: visible; }
 .flow .acc { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
@@ -275,6 +277,9 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
 .cal-hint { margin: 12px 0 0; text-align: center; }
 .cal-menu, .cal-close { display: grid; flex: none; place-items: center; width: 44px; height: 44px; padding: 0; border: 0; border-radius: var(--radius-control); background: var(--well); color: var(--muted); transition: transform var(--dur-press) var(--ease-press); }
 .cal-menu svg, .cal-close svg { width: 22px; height: 22px; }
+/* 달력 메뉴: 제목 줄 오른쪽 끝, 아이콘 아래 짧은 이름(아래 탭처럼). 옆으로 넓어지지 않게 폭은 아이콘 자리만큼 */
+.cal-menu { align-content: center; gap: 2px; width: 52px; height: 52px; margin: -4px -8px 0 0; background: transparent; }
+.cal-menu span { font: 600 11px/14px var(--font-text); letter-spacing: -0.02em; white-space: nowrap; }
 /* 패널 닫기는 상자 없이 아이콘만 (누르는 자리는 44px 유지) */
 .cal-close { margin-right: -10px; background: transparent; }
 .cal-menu:active, .cal-close:active { transform: scale(0.94); }

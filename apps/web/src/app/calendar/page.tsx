@@ -251,7 +251,12 @@ function CalendarMonth() {
       <MonthHeader
         name="달력"
         sub={`${Number(month.slice(5))}월 1일 – ${Number(cells.filter(inMonth).at(-1)!.slice(8))}일`}
-        leading={<button type="button" className="cal-menu" aria-label="달력 메뉴: 이번 달 할 일·일정과 D-day" aria-haspopup="dialog" onClick={() => showPanel("month")}><Menu aria-hidden="true" /></button>}
+        trailing={
+          <button type="button" className="cal-menu" aria-label="모아 보기: 이번 달 할 일·일정과 D-day" aria-haspopup="dialog" onClick={() => showPanel("month")}>
+            <Menu aria-hidden="true" />
+            <span aria-hidden="true">모아보기</span>
+          </button>
+        }
       >
         <p className="cal-summary">일정 {monthEvents}개 <span aria-hidden="true">·</span> 이번 달 쓴 돈 <Money value={monthSpent} /></p>
       </MonthHeader>
