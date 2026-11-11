@@ -2,6 +2,8 @@
 
 import { useSyncExternalStore } from "react";
 import type { WidgetCalendar } from "./calendar";
+import type { Reminder } from "./reminders";
+import type { ThemeChoice } from "./theme";
 
 /** 짧은 진동 (안드로이드). 의미 있는 순간에만: 완료, 저장, 삭제. */
 export function haptic(pattern: number | number[] = 10) {
@@ -29,7 +31,10 @@ export function inApp(): boolean {
  * - { type: "matches" }: 결제 알림으로 맞춘 것과 확인할 지출을 보내 달라고 (답장은 onApp 으로 온다)
  * - { type: "applied", ids }: 체크를 마쳤으니 지우라고
  * - { type: "calendar", ... }: 홈 화면 달력 위젯이 그릴 달력 요약 / { type: "calendar-clear" }: 로그아웃할 때 지우라고
- * - { type: "theme", dark }: 화면 테마가 어두운지 — 시스템 막대 아이콘과 웹뷰 바탕을 맞추라고
+ * - { type: "theme", dark, choice }: 화면 테마 — 시스템 막대 아이콘·웹뷰 바탕·달력 위젯을 맞추라고
+ * - { type: "reminders", items }: 앞으로 35일의 폰 알림 (lib/reminders.ts)
+ * - { type: "notify-status" } 폰 알림을 허용했는지 알려 달라고(답은 "ourmoney-notify" 이벤트),
+ *   { type: "notify-ask" } 허용을 물어 달라고(영구 거절이면 알림 설정 화면), { type: "notify-settings" } 알림 종류 설정 화면
  */
 export function toApp(
   message:
@@ -40,7 +45,11 @@ export function toApp(
     | { type: "applied"; ids: string[] }
     | ({ type: "calendar" } & WidgetCalendar)
     | { type: "calendar-clear" }
-    | { type: "theme"; dark: boolean },
+    | { type: "theme"; dark: boolean; choice: ThemeChoice }
+    | { type: "reminders"; items: Reminder[] }
+    | { type: "notify-status" }
+    | { type: "notify-ask" }
+    | { type: "notify-settings" },
 ) {
   bridge()?.postMessage(typeof message === "string" ? message : JSON.stringify(message));
 }
@@ -102,7 +111,7 @@ export function onApp(fn: (msg: { type: "matches"; items: AppMatch[]; spends: Ap
 }
 
 /** 이 앱이 그 일을 할 수 있나 — 앱이 user agent 에 OurMoneyCan/… 로 알린다 (예전 앱에는 없다) */
-export function appCan(feature: "ics" | "match" | "widget"): boolean {
+export function appCan(feature: "ics" | "match" | "widget" | "remind"): boolean {
   return typeof navigator !== "undefined" && new RegExp(`\\bOurMoneyCan/\\S*\\b${feature}\\b`).test(navigator.userAgent);
 }
 

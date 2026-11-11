@@ -4,6 +4,8 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- 결제 알림이 이번 달 할 일과 맞을 때 알리려고 (Android 13+ 는 사용자가 허용해야 한다, 카드 알림 화면에서 묻는다) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- 폰 알림(일정·월급날·나갈 돈)의 알람은 재부팅하면 지워져서 다시 건다 -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <!-- 로그인 크롬 맞춤 탭을 찾으려고 (Android 11+ 패키지 공개 범위) -->
     <queries>
@@ -73,6 +75,23 @@
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/calendar_widget_info" />
+        </receiver>
+
+        <!-- 폰 알림 알람이 울릴 때: 이 앱의 PendingIntent 만 부른다 -->
+        <receiver
+            android:name=".remind.ReminderReceiver"
+            android:exported="false" />
+
+        <!-- 재부팅·앱 업데이트·시간 바뀜에 알림 알람을 다시 건다. 시스템 방송이라 내보내지 않아도 받는다 -->
+        <receiver
+            android:name=".remind.RescheduleReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+            </intent-filter>
         </receiver>
 
         <!-- 카드 결제 알림 읽기: 시스템(BIND_NOTIFICATION_LISTENER_SERVICE 를 가진 쪽)만 붙을 수 있다 -->

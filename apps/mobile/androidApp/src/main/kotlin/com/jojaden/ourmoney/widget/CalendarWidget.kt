@@ -18,6 +18,7 @@ import androidx.glance.appwidget.state.updateAppWidgetState
 import androidx.glance.currentState
 import androidx.glance.state.GlanceStateDefinition
 import androidx.glance.state.PreferencesGlanceStateDefinition
+import com.jojaden.ourmoney.MainActivity
 import com.jojaden.ourmoney.core.calendar.WidgetCalendar
 import com.jojaden.ourmoney.core.calendar.parseWidgetCalendar
 import kotlinx.coroutines.CoroutineScope
@@ -67,7 +68,9 @@ class CalendarWidget : GlanceAppWidget() {
             val rev = currentState<Preferences>()[REV] ?: 0
             val cal = remember(rev) { CalendarStore.read(context) }
             val today = remember(rev) { LocalDate.now().toKotlinLocalDate() }
-            CalendarContent(cal, today)
+            // 웹 설정 › 화면의 테마 (앱이 웹에서 받아 둔다) — 바뀌면 앱이 판을 올린다
+            val theme = remember(rev) { context.getSharedPreferences(MainActivity.PREFS, Context.MODE_PRIVATE).getString(MainActivity.THEME, null) ?: "light" }
+            CalendarContent(cal, today, theme)
         }
     }
 

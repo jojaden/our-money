@@ -1,4 +1,6 @@
 <resources>
     <!-- 다크 테마의 페이지 바탕 (tokens ground 의 dark 값) -->
     <color name="page">#17171C</color>
+    <color name="widget_surface">#202027</color>
+    <color name="widget_rule">#32323B</color>
 </resources>

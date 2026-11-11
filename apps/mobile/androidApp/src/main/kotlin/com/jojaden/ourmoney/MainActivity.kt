@@ -4,6 +4,13 @@ import android.annotation.SuppressLint
 import android.content.ClipData
 import android.content.Intent
 import android.content.res.Configuration
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import android.provider.Settings
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
+import androidx.core.content.edit
 import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
@@ -29,7 +36,9 @@ import com.jojaden.ourmoney.notice.Expects
 import com.jojaden.ourmoney.notice.MatchQueue
 import com.jojaden.ourmoney.notice.NoticeActivity
 import com.jojaden.ourmoney.notice.SpendQueue
+import com.jojaden.ourmoney.remind.Reminders
 import com.jojaden.ourmoney.widget.CalendarStore
+import com.jojaden.ourmoney.widget.CalendarWidget
 import org.json.JSONObject
 import java.io.File
 
@@ -45,7 +54,9 @@ import java.io.File
  *   결제 알림 맞추기: {"type":"expect"} 이번 달 남은 할 일 받기, {"type":"matches"} 맞춘 것과 확인할 지출을 답장으로 보내기,
  *   {"type":"applied"} 웹이 체크를 마친 것 지우기. 앱으로 돌아올 때마다 웹에 "ourmoney-resume" 를 알려 다시 가져가게 한다.
  *   달력 위젯: {"type":"calendar",…} 달력 요약 저장(위젯이 그린다), {"type":"calendar-clear"} 로그아웃할 때 지우기.
- * - 위젯을 누르면 EXTRA OPEN=calendar 로 열린다: 처음 열 때는 달력 주소로, 이미 열려 있으면 웹에 "ourmoney-open" 을 알려 달력으로 옮긴다.
+ *   화면 테마: {"type":"theme","dark","choice"} 시스템 막대·바탕·위젯 색. 폰 알림: {"type":"reminders","items"} 앞으로의 알림 저장,
+ *   {"type":"notify-status"} 허용 여부를 "ourmoney-notify" 로 알리기, {"type":"notify-ask"} 허용 묻기, {"type":"notify-settings"} 알림 설정 화면.
+ * - 위젯·폰 알림을 누르면 EXTRA OPEN=calendar|check 로 열린다: 처음 열 때는 그 주소로, 이미 열려 있으면 웹에 "ourmoney-open" 을 알려 옮긴다.
  * - 뒤로 가기는 웹의 기록을 따른다 (웹은 시트·상세를 기록 한 칸으로 연다).
  */
 class MainActivity : ComponentActivity() {
@@ -70,7 +81,7 @@ class MainActivity : ComponentActivity() {
             settings.allowContentAccess = false
             settings.mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
             // 웹이 앱 안인지, 이 앱이 무엇을 할 수 있는지 알도록 (로그인 돌아올 주소, 카드 알림 메뉴, 일정 공유)
-            settings.userAgentString = "${settings.userAgentString} OurMoneyApp/${BuildConfig.VERSION_NAME} OurMoneyCan/ics,match,widget"
+            settings.userAgentString = "${settings.userAgentString} OurMoneyApp/${BuildConfig.VERSION_NAME} OurMoneyCan/ics,match,widget,remind"
             webViewClient = ShellClient()
         }
         if (WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)) {
@@ -113,10 +124,19 @@ class MainActivity : ComponentActivity() {
 
     private fun onMessage(msg: JSONObject, raw: String, reply: JavaScriptReplyProxy) {
         when (msg.optString("type")) {
-            "theme" -> msg.optBoolean("dark").let { dark ->
+            "theme" -> {
+                val dark = msg.optBoolean("dark")
+                val choice = msg.optString("choice").takeIf { it in THEMES } ?: if (dark) "dark" else "light"
                 applyTheme(dark)
-                getSharedPreferences(PREFS, MODE_PRIVATE).edit().putBoolean(DARK, dark).apply()
+                val prefs = getSharedPreferences(PREFS, MODE_PRIVATE)
+                val widgetChanged = prefs.getString(THEME, null) != choice
+                prefs.edit { putBoolean(DARK, dark).putString(THEME, choice) }
+                if (widgetChanged) CalendarWidget.refreshAsync(this)
             }
+            "reminders" -> Reminders.save(this, msg.optJSONArray("items"))
+            "notify-status" -> tellNotify()
+            "notify-ask" -> askNotify()
+            "notify-settings" -> openNotifySettings()
             "ics" -> shareIcs(msg.optString("text"))
             "calendar" -> CalendarStore.save(this, raw)
             "calendar-clear" -> CalendarStore.clear(this)
@@ -148,15 +168,45 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         val callback = callbackUrl(intent)
+        val open = intent.getStringExtra(OPEN)?.takeIf { it in OPEN_PATHS }
         when {
             callback != null -> web.loadUrl(callback)
-            intent.getStringExtra(OPEN) == OPEN_CALENDAR -> web.evaluateJavascript("window.dispatchEvent(new CustomEvent('ourmoney-open',{detail:'calendar'}))", null)
+            open != null -> web.evaluateJavascript("window.dispatchEvent(new CustomEvent('ourmoney-open',{detail:'$open'}))", null)
         }
     }
 
-    /** 위젯에서 열면 달력 주소. 정해 둔 값(calendar)만 쓴다 */
+    /** 위젯·폰 알림에서 열면 그 화면 주소. 정해 둔 값(OPEN_PATHS)만 쓴다 */
     private fun openUrl(intent: Intent?): String? =
-        if (intent?.getStringExtra(OPEN) == OPEN_CALENDAR) home.buildUpon().path("/calendar/").clearQuery().build().toString() else null
+        OPEN_PATHS[intent?.getStringExtra(OPEN)]?.let { home.buildUpon().path(it).clearQuery().build().toString() }
+
+    /* ---------- 폰 알림 허용 (웹 설정 › 폰 알림의 버튼에서만 묻는다 — 열자마자 묻지 않는다) ---------- */
+
+    private val notifyPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { tellNotify() }
+
+    /** 허용 여부는 늘 그 자리에서 읽는다 (저장해 두지 않는다) */
+    private fun tellNotify() {
+        web.evaluateJavascript("window.dispatchEvent(new CustomEvent('ourmoney-notify',{detail:${Reminders.canNotify(this)}}))", null)
+    }
+
+    private fun askNotify() {
+        val prefs = getSharedPreferences(PREFS, MODE_PRIVATE)
+        val granted = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+        val asked = prefs.getBoolean(ASKED, false)
+        when {
+            // 권한은 있는데 꺼 둔 경우(Android 12 이하 포함)나, 한 번 물었는데 다시 묻지 말라고 한 경우 → 이 앱의 알림 설정 화면
+            granted || (asked && !shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS)) -> openNotifySettings()
+            else -> {
+                prefs.edit { putBoolean(ASKED, true) }
+                notifyPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
+    }
+
+    private fun openNotifySettings() {
+        Reminders.ensureChannels(this)
+        runCatching { startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, packageName)) }
+    }
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
@@ -219,12 +269,18 @@ class MainActivity : ComponentActivity() {
         /** 위젯이 앱을 열 때 넘기는 값 — 어느 화면으로 */
         const val OPEN = "open"
         const val OPEN_CALENDAR = "calendar"
+        const val OPEN_CHECK = "check"
+        private val OPEN_PATHS = mapOf(OPEN_CALENDAR to "/calendar/", OPEN_CHECK to "/check/")
+        private val THEMES = setOf("light", "dark", "system")
+        /** 웹이 고른 화면 테마 (위젯이 따른다) */
+        const val THEME = "theme"
+        private const val ASKED = "notify-asked"
 
         /** 웹 배경 (tokens 의 ground — 라이트, 다크) */
         private val BG = "#F3F3F1".toColorInt()
         private val BG_DARK = "#17171C".toColorInt()
         /** 웹이 마지막으로 알린 테마 (다음에 열 때 웹이 뜨기 전 바탕) */
-        private const val PREFS = "shell"
+        const val PREFS = "shell"
         private const val DARK = "dark"
         /** OAuth code 는 URL 안전 문자만 */
         private val CODE = Regex("^[A-Za-z0-9._~-]{1,512}$")

@@ -3,14 +3,14 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Plus, Download, BellRing, CalendarDays, CalendarRange, ChevronLeft, ChevronRight, FlaskConical, History, LogOut, RotateCcw, Scale, SunMoon, Tags, UserRound, Users, WalletCards } from "lucide-react";
+import { Plus, Download, BellRing, CalendarDays, CalendarRange, ChevronLeft, ChevronRight, FlaskConical, History, LogOut, RotateCcw, Receipt, Scale, Smartphone, SunMoon, Tags, UserRound, Users, Wallet as Wallet2, WalletCards } from "lucide-react";
 import type { Account, AccountKind, Category, Person, Settings } from "@/lib/types";
 import { PAY_KIND_LABEL } from "@/lib/types";
 import { useData } from "@/lib/store";
 import { nameOf, paydayOf } from "@/lib/calc";
 import { num } from "@/lib/format";
 import { resetDemo, signOut } from "@/lib/repo";
-import { toApp, useInApp } from "@/lib/native";
+import { appCan, toApp, useInApp } from "@/lib/native";
 import { AmountInput, Money, Seg, Who } from "@/components/ui";
 import { CategorySheet } from "@/components/SettingsSheets";
 import { AddPass } from "@/components/AddPass";
@@ -22,8 +22,9 @@ import { leaveDetail } from "@/lib/navigationMotion";
 import { setTheme, useTheme, type ThemeChoice } from "@/lib/theme";
 
 /** 설정 묶음 — 폰은 목록(/settings/)에서 하나를 눌러 그 묶음만(/settings/?s=…) 보고, 데스크톱은 모두 한 화면에 둔다 */
-type SecId = "people" | "split" | "cycle" | "wallet" | "categories" | "display" | "account";
-const SEC_IDS: SecId[] = ["people", "split", "cycle", "wallet", "categories", "display", "account"];
+type SecId = "people" | "split" | "cycle" | "wallet" | "categories" | "display" | "notify" | "account";
+// notify(폰 알림)는 안드로이드 앱 안에서만
+const SEC_IDS: SecId[] = ["people", "split", "cycle", "wallet", "categories", "display", "notify", "account"];
 
 const THEMES: { value: ThemeChoice; label: string }[] = [
   { value: "light", label: "밝게" },
@@ -46,7 +47,10 @@ export default function SettingsPage() {
   const s = data.settings;
   const router = useRouter();
   const q = useSearchParams().get("s");
-  const sec = SEC_IDS.find((id) => id === q) ?? null;
+  const app = useInApp();
+  const canRemind = app && appCan("remind");
+  const secIds = SEC_IDS.filter((id) => id !== "notify" || canRemind);
+  const sec = secIds.find((id) => id === q) ?? null;
   const [draft, setDraft] = useState<Settings>(s);
   const myName = nameOf(s, me);
   const [nameDraft, setNameDraft] = useState(myName);
@@ -69,7 +73,6 @@ export default function SettingsPage() {
   // 열 때마다 처음 상태(모든 일정)로
   const [ics, setIcs] = useState({ open: false, key: 0 });
   const openIcs = () => setIcs((x) => ({ open: true, key: x.key + 1 }));
-  const app = useInApp();
 
   useEffect(() => setDraft(s), [s]);
 
@@ -95,6 +98,20 @@ export default function SettingsPage() {
   };
   const demo = auth.state === "demo";
   const theme = useTheme().choice;
+  // 폰 알림 허용 여부 — 앱이 "ourmoney-notify" 로 알려 준다 (열 때·돌아올 때마다 다시 묻는다)
+  const [notifyOn, setNotifyOn] = useState<boolean | null>(null);
+  useEffect(() => {
+    if (!canRemind) return;
+    const got = (e: Event) => setNotifyOn((e as CustomEvent).detail === true);
+    const ask = () => toApp({ type: "notify-status" });
+    window.addEventListener("ourmoney-notify", got);
+    window.addEventListener("ourmoney-resume", ask);
+    ask();
+    return () => {
+      window.removeEventListener("ourmoney-notify", got);
+      window.removeEventListener("ourmoney-resume", ask);
+    };
+  }, [canRemind]);
   const SECS: Record<SecId, { title: string; desc: string; summary: string; icon: typeof Users }> = {
     people: {
       title: "두 사람",
@@ -131,6 +148,12 @@ export default function SettingsPage() {
       desc: "밝은 화면과 어두운 화면 중에 골라요. 기기 설정을 고르면 폰의 다크 모드를 따라가요. 이 기기에만 저장돼요.",
       summary: THEMES.find((t) => t.value === theme)!.label,
       icon: SunMoon,
+    },
+    notify: {
+      title: "폰 알림",
+      desc: "앱을 마지막으로 연 때의 일정으로 이 폰에 미리 알려요. 종류마다 폰 설정에서 끌 수 있어요.",
+      summary: notifyOn === null ? "" : notifyOn ? "켜져 있어요" : "꺼져 있어요",
+      icon: Smartphone,
     },
     account: {
       title: demo ? "예시 데이터" : "계정",
@@ -188,7 +211,7 @@ export default function SettingsPage() {
         <nav className="set-list" aria-label="설정 묶음">
           <div className="card">
             <div className="rows" style={{ ["--inset" as string]: "48px" }}>
-              {SEC_IDS.map((id) => {
+              {secIds.map((id) => {
                 const { title, summary, icon: Icon } = SECS[id];
                 return (
                   <Link key={id} className="row" href={`/settings/?s=${id}`}>
@@ -446,6 +469,45 @@ export default function SettingsPage() {
             </div>
           </div>
         </section>
+
+        {canRemind && (
+          <section className={on("notify")} aria-labelledby="notify-h">
+            <div className="head">
+              <h2 id="notify-h">{SECS.notify.title}</h2>
+              <p>{SECS.notify.desc}</p>
+            </div>
+            <div className="card">
+              <div className="rows" style={{ ["--inset" as string]: "48px", marginBottom: 14 }}>
+                {[
+                  { icon: CalendarDays, t: "일정 미리 알림", s: "일정에서 고른 날 아침 9시" },
+                  { icon: Wallet2, t: "월급날", s: "내 월급날 아침 9시 · 그날 옮길 돈" },
+                  { icon: Receipt, t: "내일 나갈 돈", s: "고정비 · 카드값 전날 저녁 8시" },
+                ].map(({ icon: Icon, t, s: sub }) => (
+                  <div className="row" key={t}>
+                    <span className="alert-ic" aria-hidden="true"><Icon /></span>
+                    <div style={{ minWidth: 0 }}>
+                      <div className="t">{t}</div>
+                      <div className="s">{sub}</div>
+                    </div>
+                    <span />
+                  </div>
+                ))}
+              </div>
+              <div className="card-head" style={{ marginBottom: 0, alignItems: "center" }}>
+                <span>{notifyOn ? "폰 알림이 켜져 있어요" : "폰 알림이 꺼져 있어요"}</span>
+                {notifyOn ? (
+                  <button type="button" className="btn secondary sm" onClick={() => toApp({ type: "notify-settings" })}>
+                    알림 종류 고르기
+                  </button>
+                ) : (
+                  <button type="button" className="btn sm" onClick={() => toApp({ type: "notify-ask" })}>
+                    알림 켜기
+                  </button>
+                )}
+              </div>
+            </div>
+          </section>
+        )}
 
         <section className={on("account")} aria-labelledby="me-h">
           <div className="head">

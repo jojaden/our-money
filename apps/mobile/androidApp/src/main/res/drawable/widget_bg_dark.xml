@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 달력 위젯 바탕 — 어둡게 (tokens surface 의 dark) -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="#202027" />
+    <corners android:radius="20dp" />
+</shape>
