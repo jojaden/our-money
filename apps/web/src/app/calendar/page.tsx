@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Suspense, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { CalendarPlus, ChevronLeft, Menu, X } from "lucide-react";
+import { CalendarPlus, ChevronDown, ChevronLeft, X } from "lucide-react";
 import type { CalEvent, Spending } from "@/lib/types";
 import { useData } from "@/lib/store";
 import { actualAmount, findCheck, nameOf } from "@/lib/calc";
@@ -15,6 +15,7 @@ import { afterSheet, CategoryIcon, CheckButton, Money, Seg, Sheet } from "@/comp
 import { EventSheet } from "@/components/EventSheet";
 import { MonthTodo } from "@/components/MonthTodo";
 import { CalendarCard } from "@/components/CalendarCard";
+import { useCalendarStage } from "@/components/calendarStage";
 import { Morph, slideIn } from "@/components/Morph";
 import { PeriodSummary } from "@/components/PeriodSummary";
 import { usePrimaryAction, useSheets } from "@/components/Shell";
@@ -192,7 +193,7 @@ function carry(next: typeof carried) {
   carried = next;
 }
 
-/** 월 달력은 넓게, 날짜 내역과 월 전체 목록은 요청할 때만 아래 패널로 보여 준다. */
+/** 월 달력은 화면을 꽉 채우고, 날짜 내역은 누를 때 아래 패널로, 이번 달 할 일·일정·D-day 는 달력 아래(내려서 본다)에 둔다. */
 function CalendarMonth() {
   const { data, month, today, setMonth } = useData();
   const router = useRouter();
@@ -203,10 +204,11 @@ function CalendarMonth() {
   const inMonth = (d: string) => d.slice(0, 7) === month;
   const [picked, setPicked] = useState<string | null>(() => carried && inMonth(carried.date) ? carried.date : null);
   const day = picked && inMonth(picked) ? picked : inMonth(today) ? today : `${month}-01`;
-  const [panel, setPanel] = useState<"day" | "month" | "dday">(() => carried?.openDay ? "day" : "month");
+  // 날짜 패널(그날 내역)만 시트로 연다. 모아 보기는 달력 아래에 있다
   const [panelOpen, setPanelOpen] = useState(Boolean(carried?.openDay));
-  const showPanel = (value: "day" | "month" | "dday") => { setPanel(value); setPanelOpen(true); };
-  const returnPanel = useRef<"day" | "month" | "dday" | null>(null);
+  const returnPanel = useRef(false);
+  const [moreTab, setMoreTab] = useState<"month" | "dday">("month");
+  const { more, page, hint, openMore } = useCalendarStage();
   const [sheet, setSheet] = useState<{ open: boolean; key: number; event?: CalEvent; date: string }>({ open: false, key: 0, date: day });
   useEffect(() => {
     carried = null;
@@ -218,7 +220,7 @@ function CalendarMonth() {
     const open = openDay && hasDay(date);
     if (inMonth(date)) {
       setPicked(date);
-      if (open) showPanel("day");
+      if (open) setPanelOpen(true);
     } else {
       carry({ date, openDay: open });
       setMonth(date.slice(0, 7));
@@ -231,14 +233,13 @@ function CalendarMonth() {
     setPanelOpen(false);
   };
   const editEvent = (event?: CalEvent) => {
-    returnPanel.current = panel;
+    returnPanel.current = true;
     closeThen(() => openEvent(event));
   };
   const closeEvent = (open: boolean) => {
     if (!open && returnPanel.current) {
-      const back = returnPanel.current;
-      returnPanel.current = null;
-      afterSheet(() => showPanel(back));
+      returnPanel.current = false;
+      afterSheet(() => setPanelOpen(true));
     }
     setSheet((x) => ({ ...x, open }));
   };
@@ -248,33 +249,42 @@ function CalendarMonth() {
 
   return (
     <>
-      <MonthHeader
-        name="달력"
-        sub={`${Number(month.slice(5))}월 1일 – ${Number(cells.filter(inMonth).at(-1)!.slice(8))}일`}
-        trailing={
-          <button type="button" className="cal-menu" aria-label="모아 보기: 이번 달 할 일·일정과 D-day" aria-haspopup="dialog" onClick={() => showPanel("month")}>
-            <Menu aria-hidden="true" />
-            <span aria-hidden="true">모아보기</span>
-          </button>
-        }
-      >
-        <p className="cal-summary">일정 {monthEvents}개 <span aria-hidden="true">·</span> 이번 달 쓴 돈 <Money value={monthSpent} /></p>
-      </MonthHeader>
-      <section className="calendar-month" aria-label="월 달력">
-        <CalendarCard month={month} cells={cells} marks={marks} spent={spent} day={day} today={today} onPick={pick} />
-        <p className="cal-hint">일정이나 기록이 있는 날을 누르면 그날 내역이 열려요.</p>
-      </section>
+      {/* 폰: 처음엔 달력만 화면에 꽉 차고(하단 메뉴는 숨고 일정 추가 버튼이 가운데로), 아래로 내리면 모아 보기와 메뉴가 나온다 */}
+      <div className="cal-page" ref={page}>
+        <div className="cal-stage">
+          <MonthHeader name="달력" sub={`${Number(month.slice(5))}월 1일 – ${Number(cells.filter(inMonth).at(-1)!.slice(8))}일`}>
+            <p className="cal-summary">일정 {monthEvents}개 <span aria-hidden="true">·</span> 이번 달 쓴 돈 <Money value={monthSpent} /></p>
+          </MonthHeader>
+          <section className="calendar-month" aria-label="월 달력">
+            <CalendarCard month={month} cells={cells} marks={marks} spent={spent} day={day} today={today} onPick={pick} />
+          </section>
+        </div>
+        <section className="cal-more" ref={more} aria-labelledby="cal-more-h">
+          <div className="group-head">
+            <h2 id="cal-more-h">{monthLabel(month)} 모아 보기</h2>
+          </div>
+          <Seg label="달력 모아 보기" value={moreTab} onChange={setMoreTab} options={[{ value: "month", label: "할 일·일정" }, { value: "dday", label: "D-day" }]} />
+          <div className="cal-overview">
+            {moreTab === "dday" ? <DdayList onOpenEvent={openEvent} /> : <MonthTodo month={month} onOpenEvent={openEvent} />}
+          </div>
+        </section>
+      </div>
+      {hint && (
+        <button type="button" className="cal-down" aria-label="아래로 내려 모아 보기" onClick={openMore}>
+          <ChevronDown aria-hidden="true" />
+        </button>
+      )}
       <Sheet
         open={panelOpen}
         onOpenChange={(open) => { if (!open) setPanelOpen(false); }}
-        title={panel === "day" ? dayTitle(day) : `${monthLabel(month)} 모아 보기`}
+        title={dayTitle(day)}
         className="cal-panel"
         headerAction={<button type="button" className="cal-close" aria-label="달력 패널 닫기" onClick={() => setPanelOpen(false)}><X aria-hidden="true" /></button>}
-        footer={panel === "day" ? (
+        footer={
           <button type="button" className="btn block cal-add" onClick={() => editEvent()}>
             {`${Number(day.slice(5, 7))}월 ${Number(day.slice(8))}일에 일정 추가`}
           </button>
-        ) : undefined}
+        }
       >
         <div onClickCapture={(e) => {
           // 패널 안의 체크 링크도 먼저 패널 기록을 닫고 이동한다.
@@ -282,12 +292,7 @@ function CalendarMonth() {
           e.preventDefault();
           closeThen(() => router.push("/check"));
         }}>
-          {panel === "day" ? <DayAgenda day={day} marks={marks.get(day) ?? []} onOpenEvent={editEvent} onOpenSpending={(x) => closeThen(() => openSpending(x))} /> : <>
-            <Seg label="달력 모아 보기" value={panel === "dday" ? "dday" : "month"} onChange={(value) => setPanel(value)} options={[{ value: "month", label: "할 일·일정" }, { value: "dday", label: "D-day" }]} />
-            <div className="cal-overview">
-              {panel === "dday" ? <DdayList onOpenEvent={editEvent} /> : <MonthTodo month={month} onOpenEvent={editEvent} />}
-            </div>
-          </>}
+          <DayAgenda day={day} marks={marks.get(day) ?? []} onOpenEvent={editEvent} onOpenSpending={(x) => closeThen(() => openSpending(x))} />
         </div>
       </Sheet>
       <EventSheet key={sheet.key} open={sheet.open} event={sheet.event} date={sheet.date} onOpenChange={closeEvent} />

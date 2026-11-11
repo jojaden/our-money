@@ -1,4 +1,4 @@
-<!-- @dsCard group="Navigation" height=640 subtitle="달력은 넓게, 월 전체 목록은 메뉴로. 날짜를 누르면 그날 패널과 +가 열립니다." -->
+<!-- @dsCard group="Navigation" height=640 subtitle="첫 화면은 달력만, 아래로 내리면 이번 달 모아 보기. 날짜를 누르면 그날 패널과 +가 열립니다." -->
 <style>
   * { box-sizing: border-box; }
   body { margin: 0; padding: 16px; background: var(--ground); color: var(--text); font-family: var(--font-text); }
@@ -31,10 +31,10 @@
   @keyframes panel-in { from { transform: translateY(100%); } }
   @media (prefers-reduced-motion: reduce) { dialog[open] { animation: none; } }
 </style>
-<header class="cal-head"><button class="icon" type="button" id="menu" aria-label="달력 메뉴"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button><h1>11월</h1></header>
+<header class="cal-head"><h1>11월</h1></header>
 <div class="week" aria-hidden="true"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div>
 <div class="grid" aria-label="11월 달력"></div>
-<p class="help">날짜를 누르면 그날 일정이 열려요.</p>
+<section class="more" aria-labelledby="more-h"><h2 id="more-h" class="help">11월 모아 보기 (달력 아래로 내리면)</h2><div class="tabs"><button type="button" data-tab="month">할 일·일정</button><button type="button" data-tab="dday">D-day</button></div><div class="entry" id="list">11월 6일 저녁 약속 · 11월 10일 건강검진</div></section>
 <dialog id="panel" aria-labelledby="panel-title"><div class="panel-head"><h2 id="panel-title"></h2><button type="button" class="icon" id="add" aria-label="선택한 날짜에 일정 추가"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v16M4 12h16"/></svg></button><button type="button" class="icon" id="close" aria-label="닫기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div><div id="body"></div></dialog>
 <script>
   const events = { 6: "저녁 약속", 10: "건강검진", 18: "가족 모임", 25: "월급날" };
@@ -54,7 +54,7 @@
     b.onclick=()=>{day=n;title.textContent=`11월 ${n}일`;add.hidden=false;body.replaceChildren();const row=document.createElement('p');row.className='entry';row.textContent=events[n]||'비어 있는 날이에요. 약속이나 할 일을 남겨 두면 달력에 바로 보여요.';body.append(row);panel.showModal();};
     grid.append(b);
   }
-  document.querySelector('#menu').onclick=()=>{title.textContent='11월 모아 보기';add.hidden=true;body.innerHTML='<div class="tabs"><button type="button" data-tab="month">할 일·일정</button><button type="button" data-tab="dday">D-day</button></div><div class="entry" id="list">11월 6일 저녁 약속<br>11월 10일 건강검진</div>';body.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{document.querySelector('#list').textContent=b.dataset.tab==='dday'?'가족 모임 · D-12':'11월 6일 저녁 약속 · 11월 10일 건강검진';});panel.showModal();};
+  document.querySelectorAll('.more [data-tab]').forEach(b=>b.onclick=()=>{document.querySelector('#list').textContent=b.dataset.tab==='dday'?'가족 모임 · D-12':'11월 6일 저녁 약속 · 11월 10일 건강검진';});
   add.onclick=()=>{title.textContent='새 일정';add.hidden=true;body.innerHTML=`<label>제목<input placeholder="일정 제목"></label><label>날짜<input type="date" value="2026-11-${String(day).padStart(2,'0')}"></label><p class="help">앱에서는 시간·반복·누구·알림·메모도 설정할 수 있어요.</p>`;};
   document.querySelector('#close').onclick=()=>panel.close();
 </script>
