@@ -401,10 +401,10 @@ function Frame({ children }: { children: React.ReactNode }) {
   const { dark, choice } = useTheme();
   const router = useRouter();
 
-  // 상태 막대 색을 화면 위쪽 색에 맞춘다 (홈은 따뜻한 띠, 나머지는 바탕). 테마를 바꾸면 다시
+  // 상태 막대 색을 바탕에 맞춘다. 테마를 바꾸면 다시
   useEffect(() => {
     if (!data) return;
-    const color = getComputedStyle(document.documentElement).getPropertyValue(path === "/" ? "--warm-100" : "--ground").trim();
+    const color = getComputedStyle(document.documentElement).getPropertyValue("--ground").trim();
     document.querySelector('meta[name="theme-color"]')?.setAttribute("content", color);
   }, [path, data, dark]);
 

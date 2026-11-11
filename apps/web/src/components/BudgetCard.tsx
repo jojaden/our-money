@@ -6,14 +6,14 @@ import { CircleAlert, TrendingDown, TrendingUp } from "lucide-react";
 import type { LivingStatus } from "@/lib/calc";
 import { PAY_KIND_LABEL } from "@/lib/types";
 import { num } from "@/lib/format";
-import { TubeArc, drawArc, useTween } from "./Gauge";
+import { Meter, drawMeter, useTween } from "./Meter";
 
 const KINDS = ["card", "cash", "transfer"] as const;
 
 /**
- * 예산 하나의 남은 돈 — 답 숫자 하나와 튜브 게이지 (docs/design-system/components/BudgetCard).
- * 홈 첫 카드(공동 생활비)는 반원 호 아래로 하늘색이 흰 바탕에 스며드는 큰 카드, 내 용돈은 270° 게이지의 작은 카드.
- * 호·끝 점·%·남은 돈은 한 값으로 같은 박자에 움직이고, 글 줄과 속도 알약은 바로 바뀐다.
+ * 예산 하나의 남은 돈 — 숫자가 가장 크고, 그 아래 예산 대비 가로 막대, 그다음 상태·설명 (docs/design-system/components/BudgetCard).
+ * 홈 첫 카드(공동 생활비)와 내 용돈 작은 카드가 같은 모양이고 크기만 다르다. 막대의 눈금은 오늘까지 써도 되는 선.
+ * 막대·남은 돈은 한 값으로 같은 박자에 움직이고, 글 줄과 속도 알약은 바로 바뀐다.
  */
 export function BudgetCard({
   id,
@@ -35,23 +35,20 @@ export function BudgetCard({
   empty?: React.ReactNode;
 }) {
   const root = useRef<HTMLElement>(null);
-  const fill = useRef<SVGGElement>(null);
-  const knob = useRef<SVGCircleElement>(null);
-  const pctEl = useRef<HTMLSpanElement>(null);
+  const fill = useRef<HTMLElement>(null);
   const cap = useRef<HTMLSpanElement>(null);
   const fig = useRef<HTMLSpanElement>(null);
   const { budget, spent, left, pace } = status;
-  const shape = compact ? "ring" : "half";
 
   useTween(`budget-${bucket}`, [spent, budget], [0, budget], ([v, b]) => {
     const over = v > b;
-    drawArc(fill.current, knob.current, shape, b > 0 ? v / b : v > 0 ? 1 : 0);
+    drawMeter(fill.current, b > 0 ? v / b : v > 0 ? 1 : 0);
     root.current?.toggleAttribute("data-over", over);
-    if (pctEl.current) pctEl.current.textContent = String(b > 0 ? Math.round((v / b) * 100) : 0);
     if (cap.current) cap.current.textContent = over ? "예산 초과" : "남은 돈";
     if (fig.current) fig.current.textContent = num(Math.round(Math.abs(b - v)));
   });
 
+  const kind = compact ? "compact" : "lead";
   const head = (
     <div className="budget-head">
       <h2 id={id}>{title}</h2>
@@ -64,7 +61,7 @@ export function BudgetCard({
   );
   if (budget === 0 && spent === 0 && empty) {
     return (
-      <section className={`card budget ${compact ? "compact" : "lead"} ${bucket} ${className}`} aria-labelledby={id}>
+      <section className={`card budget ${kind} ${bucket} ${className}`} aria-labelledby={id}>
         {head}
         <p className="empty">{empty}</p>
       </section>
@@ -74,37 +71,6 @@ export function BudgetCard({
   const pct = budget > 0 ? Math.round((spent / budget) * 100) : 0;
   const mile = pace !== null && budget > 0 ? pace / budget : null;
   const label = `예산의 ${pct}% 사용${mile !== null ? `, 오늘까지 예상 ${Math.round(mile * 100)}%` : ""}`;
-  const gauge = (
-    <>
-      <TubeArc shape={shape} label={label} mile={mile} mileText="오늘" fillRef={fill} knobRef={knob} />
-      <div className="pct" aria-hidden="true">
-        <b>
-          <span ref={pctEl} />
-          <span className="u">%</span>
-        </b>
-        <small>사용</small>
-      </div>
-    </>
-  );
-  // 움직이는 숫자는 aria-hidden, 읽어 주는 글은 끝 값 그대로
-  const figure = (
-    <>
-      <p className="cap">
-        <span className="sr-only">{left < 0 ? "예산 초과" : "남은 돈"}</span>
-        <span ref={cap} aria-hidden="true" />
-      </p>
-      <p className="fig">
-        <span className="sr-only">{num(Math.abs(left))}원</span>
-        <span aria-hidden="true">
-          <span ref={fig} />
-          <span className="won">원</span>
-        </span>
-      </p>
-      <p className="used">
-        {num(budget)}원 중 {num(spent)}원 썼어요
-      </p>
-    </>
-  );
   const daily =
     budget > 0 && left <= 0 ? (
       <p className="daily">이번 달 예산을 다 썼어요</p>
@@ -115,39 +81,41 @@ export function BudgetCard({
       </p>
     ) : null;
 
-  if (compact) {
-    return (
-      <section ref={root} className={`card budget compact ${bucket} ${className}`} aria-labelledby={id}>
-        {head}
-        <div className="budget-body">
-          <div style={{ minWidth: 0 }}>{figure}</div>
-          <div className="mini">{gauge}</div>
-        </div>
+  return (
+    <section ref={root} className={`card budget ${kind} ${bucket} ${className}`} aria-labelledby={id}>
+      {head}
+      <div className="budget-body">
+        {/* 움직이는 숫자는 aria-hidden, 읽어 주는 글은 끝 값 그대로 */}
+        <p className="cap">
+          <span className="sr-only">{left < 0 ? "예산 초과" : "남은 돈"}</span>
+          <span ref={cap} aria-hidden="true" />
+        </p>
+        <p className="fig">
+          <span className="sr-only">{num(Math.abs(left))}원</span>
+          <span aria-hidden="true">
+            <span ref={fig} />
+            <span className="won">원</span>
+          </span>
+        </p>
+        <Meter fillRef={fill} mile={mile} mileText={compact ? undefined : "오늘"} label={label} />
+        <p className="used">
+          {num(budget)}원 중 {num(spent)}원 썼어요 · {pct}%
+        </p>
         <div className="budget-foot">
           <PacePill status={status} />
           {daily}
         </div>
-        {KINDS.some((k) => status.byKind[k] > 0) && (
-          <p className="kinds-line">
-            {KINDS.filter((k) => status.byKind[k] > 0)
-              .map((k) => `${PAY_KIND_LABEL[k]} ${num(status.byKind[k])}원`)
-              .join(" · ")}
-          </p>
+        {compact ? (
+          KINDS.some((k) => status.byKind[k] > 0) && (
+            <p className="kinds-line">
+              {KINDS.filter((k) => status.byKind[k] > 0)
+                .map((k) => `${PAY_KIND_LABEL[k]} ${num(status.byKind[k])}원`)
+                .join(" · ")}
+            </p>
+          )
+        ) : (
+          <Kinds byKind={status.byKind} />
         )}
-      </section>
-    );
-  }
-  return (
-    <section ref={root} className={`card budget lead ${bucket} ${className}`} aria-labelledby={id}>
-      <div className="sky">
-        {head}
-        <div className="arc">{gauge}</div>
-      </div>
-      <div className="panel">
-        {figure}
-        <PacePill status={status} />
-        {daily}
-        <Kinds byKind={status.byKind} />
       </div>
     </section>
   );
@@ -164,7 +132,7 @@ function shares(values: number[]): number[] {
 }
 
 /**
- * 결제수단 나눔 — 비율 막대 한 줄과 그 아래 목록(점·이름·%·금액). 토스 소비 분석처럼 한눈에 비중을 보고 줄에서 금액을 읽는다.
+ * 결제수단 나눔 — 목록(점·이름·%·금액)만. 바로 위 예산 막대와 같은 모양의 막대를 또 두면 뜻이 섞여서, 숫자로 충분한 이곳은 막대를 그리지 않는다.
  * 0원인 수단은 빼고, 순서와 색은 카드·현금·계좌이체로 고정한다(금액 순으로 다시 칠하지 않는다).
  */
 function Kinds({ byKind }: { byKind: LivingStatus["byKind"] }) {
@@ -173,11 +141,6 @@ function Kinds({ byKind }: { byKind: LivingStatus["byKind"] }) {
   const pct = shares(parts.map((k) => byKind[k]));
   return (
     <div className="kinds">
-      <div className="kinds-bar" aria-hidden="true">
-        {parts.map((k) => (
-          <i key={k} className={`k-${k}`} style={{ flexGrow: byKind[k] }} />
-        ))}
-      </div>
       <ul className="buckets" aria-label="결제수단별">
         {parts.map((k, i) => (
           <li key={k} className={`k-${k}`}>
@@ -213,25 +176,10 @@ function PacePill({ status }: { status: LivingStatus }) {
   );
 }
 
-/** 할 일 진행 — 작은 카드와 같은 270° 튜브, 가운데 % */
-export function TaskGauge({ done, total }: { done: number; total: number }) {
-  const fill = useRef<SVGGElement>(null);
-  const knob = useRef<SVGCircleElement>(null);
-  const pctEl = useRef<HTMLSpanElement>(null);
+/** 할 일 진행 — 예산 막대와 같은 가로 막대 (숫자 "9 / 20 완료"는 쓰는 쪽이 더 크게 둔다) */
+export function TaskMeter({ done, total }: { done: number; total: number }) {
+  const fill = useRef<HTMLElement>(null);
   const max = Math.max(1, total);
-  useTween("tasks", [done, max], [0, max], ([v, m]) => {
-    drawArc(fill.current, knob.current, "ring", v / m);
-    if (pctEl.current) pctEl.current.textContent = String(Math.round((v / m) * 100));
-  });
-  return (
-    <div className="task-gauge">
-      <TubeArc shape="ring" label={`${total}건 중 ${done}건 완료`} fillRef={fill} knobRef={knob} />
-      <div className="pct" aria-hidden="true">
-        <b>
-          <span ref={pctEl} />
-          <span className="u">%</span>
-        </b>
-      </div>
-    </div>
-  );
+  useTween("tasks", [done, max], [0, max], ([v, m]) => drawMeter(fill.current, v / m));
+  return <Meter fillRef={fill} thin label={`${total}건 중 ${done}건 완료`} />;
 }

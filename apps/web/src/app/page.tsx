@@ -10,7 +10,7 @@ import { FirstRun, MonthHeader } from "@/components/MonthHeader";
 import { CategoryIcon, Money } from "@/components/ui";
 import { spendingVisual } from "@/lib/categories";
 import { isFresh } from "@/lib/fresh";
-import { BudgetCard, TaskGauge } from "@/components/BudgetCard";
+import { BudgetCard, TaskMeter } from "@/components/BudgetCard";
 import { asking, byUrgency, dueState, useTasks, waiting } from "@/components/tasks";
 import { dDay, shortDate } from "@/lib/format";
 import { TaskRow } from "@/components/TaskRow";
@@ -187,17 +187,16 @@ export default function Home() {
               </Link>
             </div>
             <div className="card">
+              {/* 숫자가 먼저, 그 아래 진행 막대, 그다음 상태 */}
               <div className="todo-progress">
-                <TaskGauge done={doneCount} total={tasks.length} />
-                <div>
-                  <div className="big num">
-                    {doneCount}
-                    <span> / {tasks.length} 완료</span>
-                  </div>
-                  <div className="sub">
-                    {overdue.length > 0 ? <span className="neg">기한 지난 일 {overdue.length}건</span> : open.length > 0 ? `남은 일 ${open.length}건` : "모두 마쳤어요"}
-                    {overdue.length > 0 && open.length > overdue.length ? ` · 남은 일 ${open.length}건` : ""}
-                  </div>
+                <div className="big num">
+                  {doneCount}
+                  <span> / {tasks.length} 완료</span>
+                </div>
+                <TaskMeter done={doneCount} total={tasks.length} />
+                <div className="sub">
+                  {overdue.length > 0 ? <span className="neg">기한 지난 일 {overdue.length}건</span> : open.length > 0 ? `남은 일 ${open.length}건` : "모두 마쳤어요"}
+                  {overdue.length > 0 && open.length > overdue.length ? ` · 남은 일 ${open.length}건` : ""}
                 </div>
               </div>
               {open.length === 0 ? (

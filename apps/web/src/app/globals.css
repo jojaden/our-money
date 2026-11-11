@@ -98,7 +98,7 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
 
 /* ---------- 체크: 할 일 진행, 이체 화살표 줄, 나눠 내는 몫 ---------- */
 
-.todo-progress { display: flex; align-items: center; gap: 16px; margin: 0 0 12px; padding-bottom: 14px; border-bottom: 1px solid var(--rule); }
+.todo-progress { margin: 0 0 12px; padding-bottom: 14px; border-bottom: 1px solid var(--rule); }
 .todo-progress .big { font-family: var(--font-display); font-size: 26px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.1; }
 .todo-progress .big span { font-size: 16px; font-weight: 600; color: var(--faint); letter-spacing: -0.01em; }
 .todo-progress .sub { margin-top: 4px; color: var(--faint); font-size: 14px; font-weight: 500; }
