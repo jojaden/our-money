@@ -160,7 +160,8 @@
 .curve-plot .cross .then { fill: var(--control); }
 .curve-plot .cross .now { fill: var(--primary-line); }
 .curve-unit { position: absolute; top: -18px; left: 6px; color: var(--faint); font: 500 11px/14px var(--font-text); }
-.curve-tip { position: absolute; top: -6px; z-index: 1; display: grid; gap: 1px; padding: 8px 12px; border-radius: var(--radius-small); background: var(--surface); box-shadow: var(--shadow-float); color: var(--text); font: 500 12.5px/17px var(--font-text); white-space: nowrap; pointer-events: none; transform: translate(-50%, -100%); }
+.curve-tip { position: absolute; z-index: 1; display: grid; gap: 1px; padding: 8px 12px; border-radius: var(--radius-small); background: var(--surface); box-shadow: var(--shadow-float); color: var(--text); font: 500 12.5px/17px var(--font-text); white-space: nowrap; pointer-events: none; transform: translateX(10px); }
+.curve-tip.to-l { transform: translateX(calc(-100% - 10px)); }
 .curve-tip .then { color: var(--faint); }
 .curve-foot { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-top: 10px; color: var(--faint); font: 500 13px/18px var(--font-text); }
 .curve-foot .r { display: grid; justify-items: end; }
