@@ -1,6 +1,7 @@
 /* docs/design-system/tokens.json 에서 만든 파일. 손으로 고치지 말고 tokens.json 을 고친 뒤
    python3 scripts/design_preview.py 를 돌린다 (CI 가 --check 로 어긋남을 막는다). */
 :root {
+  color-scheme: light;
   --ground: #f3f3f1;
   --surface: #ffffff;
   --surface-card: linear-gradient(180deg, #ffffff 0%, #fbfbfa 60%, #f5f5f3 100%);
@@ -17,6 +18,7 @@
   --primary-line: #9a8000;
   --primary-press: #e9cd2c;
   --on-primary: var(--text);
+  --on-dark: #ffffff;
   --accent: var(--primary);
   --accent-soft: #fdf5c9;
   --accent-ink: #5c5000;
@@ -45,6 +47,9 @@
   --glow: #fffbe6;
   --tab-active-bg: #e7e7e4;
   --glass: #ffffffd1;
+  --scrim: #22232666;
+  --toast: #222326f0;
+  --cat-veil: transparent;
   --pass-dark: #1c1c22;
   --pass-black: #2a2a31;
   --pass-silver: #d5dae4;
@@ -110,4 +115,104 @@
   --dur-rays: 40s;
   --font-display: "Alan Sans", "Pretendard Variable", Pretendard, "Noto Sans KR", -apple-system, system-ui, sans-serif;
   --font-text: "Pretendard Variable", Pretendard, "Noto Sans KR", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", system-ui, sans-serif;
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --ground: #17171c;
+  --surface: #202027;
+  --surface-card: linear-gradient(180deg, #24242c 0%, #212128 60%, #1d1d24 100%);
+  --raised: #2a2a32;
+  --well: #2c2c35;
+  --border: #4d4d59;
+  --rule: #32323b;
+  --card-edge: #2c2c35;
+  --control: #7e7e87;
+  --text: #ececee;
+  --muted: #c3c3c6;
+  --faint: #9e9ea4;
+  --primary-line: #e6cf3f;
+  --on-primary: #222326;
+  --accent-soft: #3a3420;
+  --accent-ink: #f2dc6a;
+  --a-soft: #3d2a20;
+  --a-ink: #ffab80;
+  --b-soft: #3d2230;
+  --b-ink: #ff8fb1;
+  --g-left: #3c3c47;
+  --warm-100: #2a2618;
+  --warm-50: #201f1d;
+  --sky-100: #3a3420;
+  --sky-50: #28261d;
+  --lilac: #3c3c47;
+  --glow: #2e2a1c;
+  --tab-active-bg: #33333d;
+  --glass: #202027d1;
+  --scrim: #000000a3;
+  --toast: #3c3c47f2;
+  --cat-veil: #1d1d24c2;
+  --saturday: #6f9bff;
+  --positive: #5fc77a;
+  --negative: #ff5b63;
+  --warning: #f59e3b;
+  --pill-positive-bg: #16301f;
+  --pill-positive-ink: #7fdc98;
+  --pill-negative-bg: #3a1a1d;
+  --pill-negative-ink: #ff8a90;
+  --pill-warning-bg: #35260f;
+  --pill-warning-ink: #ffb860;
+  --shadow-raise: 0 1px 4px 0 #00000059;
+  --shadow-card: 0 1px 2px 0 #0000004d, 0 10px 28px -8px #00000080;
+  --shadow-nav: 0 0 0 1px #2c2c35, 0 6px 24px 0 #00000080;
+  --shadow-float: 0 1px 4px 0 #00000066, 0 4px 20px 0 #00000080;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-theme="system"] {
+    color-scheme: dark;
+    --ground: #17171c;
+    --surface: #202027;
+    --surface-card: linear-gradient(180deg, #24242c 0%, #212128 60%, #1d1d24 100%);
+    --raised: #2a2a32;
+    --well: #2c2c35;
+    --border: #4d4d59;
+    --rule: #32323b;
+    --card-edge: #2c2c35;
+    --control: #7e7e87;
+    --text: #ececee;
+    --muted: #c3c3c6;
+    --faint: #9e9ea4;
+    --primary-line: #e6cf3f;
+    --on-primary: #222326;
+    --accent-soft: #3a3420;
+    --accent-ink: #f2dc6a;
+    --a-soft: #3d2a20;
+    --a-ink: #ffab80;
+    --b-soft: #3d2230;
+    --b-ink: #ff8fb1;
+    --g-left: #3c3c47;
+    --warm-100: #2a2618;
+    --warm-50: #201f1d;
+    --sky-100: #3a3420;
+    --sky-50: #28261d;
+    --lilac: #3c3c47;
+    --glow: #2e2a1c;
+    --tab-active-bg: #33333d;
+    --glass: #202027d1;
+    --scrim: #000000a3;
+    --toast: #3c3c47f2;
+    --cat-veil: #1d1d24c2;
+    --saturday: #6f9bff;
+    --positive: #5fc77a;
+    --negative: #ff5b63;
+    --warning: #f59e3b;
+    --pill-positive-bg: #16301f;
+    --pill-positive-ink: #7fdc98;
+    --pill-negative-bg: #3a1a1d;
+    --pill-negative-ink: #ff8a90;
+    --pill-warning-bg: #35260f;
+    --pill-warning-ink: #ffb860;
+    --shadow-raise: 0 1px 4px 0 #00000059;
+    --shadow-card: 0 1px 2px 0 #0000004d, 0 10px 28px -8px #00000080;
+    --shadow-nav: 0 0 0 1px #2c2c35, 0 6px 24px 0 #00000080;
+    --shadow-float: 0 1px 4px 0 #00000066, 0 4px 20px 0 #00000080;
+  }
 }

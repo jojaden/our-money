@@ -93,8 +93,14 @@ const CAT_ICONS: Record<CatIcon, LucideIcon> = {
 
 export function CategoryIcon({ visual, size = "" }: { visual: CatVisual; size?: "" | "sm" }) {
   const Icon = CAT_ICONS[visual.icon];
+  // var(--…) 바탕은 이미 테마를 따르고, 분류 파스텔(#…)만 다크에서 눌러 쓴다
+  const tokenBg = visual.bg.startsWith("var(");
   return (
-    <span className={`cat ${size}`} style={{ background: visual.bg, color: visual.ink }} aria-hidden="true">
+    <span
+      className={`cat ${size}${tokenBg ? "" : " pastel"}`}
+      style={tokenBg ? { background: visual.bg, color: visual.ink } : ({ "--cat-bg": visual.bg, color: visual.ink } as React.CSSProperties)}
+      aria-hidden="true"
+    >
       <Icon />
     </span>
   );

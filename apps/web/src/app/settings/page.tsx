@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Plus, Download, BellRing, CalendarDays, CalendarRange, ChevronLeft, ChevronRight, FlaskConical, History, LogOut, RotateCcw, Scale, Tags, UserRound, Users, WalletCards } from "lucide-react";
+import { Plus, Download, BellRing, CalendarDays, CalendarRange, ChevronLeft, ChevronRight, FlaskConical, History, LogOut, RotateCcw, Scale, SunMoon, Tags, UserRound, Users, WalletCards } from "lucide-react";
 import type { Account, AccountKind, Category, Person, Settings } from "@/lib/types";
 import { PAY_KIND_LABEL } from "@/lib/types";
 import { useData } from "@/lib/store";
@@ -19,10 +19,17 @@ import { MiniCard } from "@/components/pass";
 import { HistorySheet } from "@/components/HistorySheet";
 import { IcsSheet } from "@/components/IcsSheet";
 import { leaveDetail } from "@/lib/navigationMotion";
+import { setTheme, useTheme, type ThemeChoice } from "@/lib/theme";
 
 /** 설정 묶음 — 폰은 목록(/settings/)에서 하나를 눌러 그 묶음만(/settings/?s=…) 보고, 데스크톱은 모두 한 화면에 둔다 */
-type SecId = "people" | "split" | "cycle" | "wallet" | "categories" | "account";
-const SEC_IDS: SecId[] = ["people", "split", "cycle", "wallet", "categories", "account"];
+type SecId = "people" | "split" | "cycle" | "wallet" | "categories" | "display" | "account";
+const SEC_IDS: SecId[] = ["people", "split", "cycle", "wallet", "categories", "display", "account"];
+
+const THEMES: { value: ThemeChoice; label: string }[] = [
+  { value: "light", label: "밝게" },
+  { value: "dark", label: "어둡게" },
+  { value: "system", label: "기기 설정" },
+];
 
 /** 스프레드시트가 수식으로 실행하지 않게 = + - @ 탭·줄바꿈으로 시작하는 글자 칸 앞에 ' 를 붙인다 */
 function cell(v: string | number) {
@@ -87,6 +94,7 @@ export default function SettingsPage() {
     setHistoryOpen(true);
   };
   const demo = auth.state === "demo";
+  const theme = useTheme().choice;
   const SECS: Record<SecId, { title: string; desc: string; summary: string; icon: typeof Users }> = {
     people: {
       title: "두 사람",
@@ -117,6 +125,12 @@ export default function SettingsPage() {
       desc: `분류 예산 합계 ${num(catTotal)}원. 플랜의 공동 생활비와 맞추면 어디서 넘치는지 보기 쉬워요.`,
       summary: `분류 ${cats.length}개 · 예산 ${num(catTotal)}원`,
       icon: Tags,
+    },
+    display: {
+      title: "화면",
+      desc: "밝은 화면과 어두운 화면 중에 골라요. 기기 설정을 고르면 폰의 다크 모드를 따라가요. 이 기기에만 저장돼요.",
+      summary: THEMES.find((t) => t.value === theme)!.label,
+      icon: SunMoon,
     },
     account: {
       title: demo ? "예시 데이터" : "계정",
@@ -416,6 +430,19 @@ export default function SettingsPage() {
               <button type="button" className="btn ghost" onClick={() => setCat({ open: true })}>
                 <Plus aria-hidden="true" /> 분류 추가
               </button>
+            </div>
+          </div>
+        </section>
+
+        <section className={on("display")} aria-labelledby="display-h">
+          <div className="head">
+            <h2 id="display-h">{SECS.display.title}</h2>
+            <p>{SECS.display.desc}</p>
+          </div>
+          <div className="card">
+            <div className="field" style={{ marginTop: 0 }}>
+              <span className="label">테마</span>
+              <Seg label="테마" value={theme} onChange={setTheme} options={THEMES} />
             </div>
           </div>
         </section>

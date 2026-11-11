@@ -29,6 +29,7 @@ export function inApp(): boolean {
  * - { type: "matches" }: 결제 알림으로 맞춘 것과 확인할 지출을 보내 달라고 (답장은 onApp 으로 온다)
  * - { type: "applied", ids }: 체크를 마쳤으니 지우라고
  * - { type: "calendar", ... }: 홈 화면 달력 위젯이 그릴 달력 요약 / { type: "calendar-clear" }: 로그아웃할 때 지우라고
+ * - { type: "theme", dark }: 화면 테마가 어두운지 — 시스템 막대 아이콘과 웹뷰 바탕을 맞추라고
  */
 export function toApp(
   message:
@@ -38,7 +39,8 @@ export function toApp(
     | { type: "matches" }
     | { type: "applied"; ids: string[] }
     | ({ type: "calendar" } & WidgetCalendar)
-    | { type: "calendar-clear" },
+    | { type: "calendar-clear" }
+    | { type: "theme"; dark: boolean },
 ) {
   bridge()?.postMessage(typeof message === "string" ? message : JSON.stringify(message));
 }
