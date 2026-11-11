@@ -58,11 +58,6 @@
 .budget-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; margin-top: 12px; }
 .budget-foot:empty { display: none; }
 
-/* 체크 화면 머리: 결론 한 줄 + 같은 진행 막대 */
-.progress-line { margin-top: 12px; }
-.progress-line .meter { max-width: 420px; margin: 10px 0 0; }
-.progress-line .finding { margin: 0; }
-
 /* ---------- 칸 나눈 진행 막대 (StepTrack) ---------- */
 
 /* 월급날 카드: 제목 → 메타 줄 → 진행 막대 → 기한 줄 → 할 일 줄 */

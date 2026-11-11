@@ -10,7 +10,6 @@ import { Money } from "@/components/ui";
 import { byUrgency, eventTasks, useTasks, type PaydayGroup, type Task } from "@/components/tasks";
 import { dDay, dateWithDay, monthLabel, shortDate } from "@/lib/format";
 import { TaskRow } from "@/components/TaskRow";
-import { TaskMeter } from "@/components/BudgetCard";
 import { MAX_STEPS, StepTrack } from "@/components/StepTrack";
 import { Celebrate } from "@/components/Celebrate";
 import { MonthClose } from "@/components/MonthClose";
@@ -157,26 +156,23 @@ export default function CheckPage() {
   return (
     <>
       <MonthHeader name="체크">
-        <div className="progress-line">
-          <p className="finding">
-            {left.length === 0 ? (
-              "이번 달 체크를 모두 마쳤어요."
-            ) : (
-              <>
-                <span className="nw">
-                  <strong className="num">
-                    {done} / {tasks.length}
-                  </strong>{" "}
-                  완료
-                </span>{" "}
-                <span className="nw clause">
-                  <span className="sep">· </span>남은 일 {left.length}건
-                </span>
-              </>
-            )}
-          </p>
-          <TaskMeter done={done} total={tasks.length} />
-        </div>
+        <p className="finding">
+          {left.length === 0 ? (
+            "이번 달 체크를 모두 마쳤어요."
+          ) : (
+            <>
+              <span className="nw">
+                <strong className="num">
+                  {done} / {tasks.length}
+                </strong>{" "}
+                완료
+              </span>{" "}
+              <span className="nw clause">
+                <span className="sep">· </span>남은 일 {left.length}건
+              </span>
+            </>
+          )}
+        </p>
       </MonthHeader>
 
       {issues.length > 0 && (
