@@ -62,6 +62,8 @@ export default function Home() {
   if (overdue.length > 0) {
     nudges.push({
       key: "overdue",
+      // 기한 넘긴 일은 끝낼 때까지 남는다. 나머지는 한 번 눌러 보면 사라진다(같은 일이 다시 생기면 키가 달라 다시 뜬다)
+      sticky: true,
       tone: "negative",
       icon: CircleAlert,
       href: "/check",
@@ -76,7 +78,7 @@ export default function Home() {
   if (asks.length > 0) {
     // 자동으로 나가는 돈은 다그치지 않고 확인만 부탁한다
     nudges.push({
-      key: "asks",
+      key: `asks:${asks.map((t) => t.key).join(",")}`,
       tone: "neutral",
       icon: CircleHelp,
       href: "/check",
@@ -91,7 +93,7 @@ export default function Home() {
   if (paydayToday) {
     const left = paydayToday.transfers.filter((t) => !t.done);
     nudges.push({
-      key: "payday",
+      key: `payday:${paydayToday.date}:${paydayToday.person}`,
       tone: "positive",
       icon: Banknote,
       href: "/check",
@@ -103,7 +105,7 @@ export default function Home() {
     });
   } else if (pendingTransfers.length > 0) {
     nudges.push({
-      key: "transfers",
+      key: `transfers:${month}:${pendingTransfers.map((t) => t.key).join(",")}`,
       tone: "neutral",
       icon: ArrowRightLeft,
       href: "/check",
@@ -114,10 +116,10 @@ export default function Home() {
       ),
     });
   }
-  if (open.length === 0 && tasks.length > 0) nudges.push({ key: "done", tone: "positive", icon: CircleCheck, href: "/check", text: <>이번 달 이체와 납부를 모두 마쳤어요</> });
+  if (open.length === 0 && tasks.length > 0) nudges.push({ key: `done:${month}`, tone: "positive", icon: CircleCheck, href: "/check", text: <>이번 달 이체와 납부를 모두 마쳤어요</> });
   if (living.pace !== null && living.spent > living.pace) {
     nudges.push({
-      key: "pace",
+      key: `pace:${month}`,
       tone: "warning",
       icon: TrendingUp,
       href: "/ledger",
@@ -131,7 +133,7 @@ export default function Home() {
   // 다음 월급날은 옮길 돈 알림이 없을 때만 (같은 이야기)
   if (!paydayToday && pendingTransfers.length === 0 && nextPayday && nextPayday.transfers.some((t) => !t.done)) {
     nudges.push({
-      key: "next-payday",
+      key: `next-payday:${nextPayday.date}:${nextPayday.person}`,
       tone: "neutral",
       icon: CalendarClock,
       href: "/check",
