@@ -2,41 +2,43 @@
 
 import type { Category, Data, Owner, PayKind, Spending } from "./types";
 
-export type CatIcon = "basket" | "utensils" | "package" | "car" | "pill" | "gift" | "ticket" | "more" | "tag" | "wallet" | "receipt" | "coffee" | "home" | "baby" | "heart";
+export type CatIcon = "basket" | "utensils" | "package" | "car" | "pill" | "gift" | "ticket" | "more" | "tag" | "wallet" | "receipt" | "coffee" | "home" | "baby" | "paw";
 
+/** 분류 아이콘: 그림과 색. 바탕은 그 색을 옅게 푼 원(다크는 well) — bg 를 주면 그 색으로 꽉 채운 원 */
 export interface CatVisual {
   icon: CatIcon;
-  bg: string;
   ink: string;
+  bg?: string;
 }
 
-const RULES: { re: RegExp; icon: CatIcon; bg: string; ink: string }[] = [
-  { re: /장보|마트|식료|식재/, icon: "basket", bg: "#e5f8ef", ink: "#0d9f61" },
-  { re: /외식|배달|식비|식사/, icon: "utensils", bg: "#ffeee6", ink: "#e5561f" },
-  { re: /카페|커피|간식/, icon: "coffee", bg: "#f6efe7", ink: "#8a5a2b" },
-  { re: /생활|용품|살림/, icon: "package", bg: "#fff8d6", ink: "#b98900" },
-  { re: /교통|차량|주유|자동차/, icon: "car", bg: "#e8f3ff", ink: "#3182f6" },
-  { re: /병원|약|의료|건강/, icon: "pill", bg: "#ffeaf1", ink: "#e0457b" },
-  { re: /경조|선물|축의/, icon: "gift", bg: "#e0f7f5", ink: "#0f9f8f" },
-  { re: /문화|여가|여행|취미/, icon: "ticket", bg: "#eef7e3", ink: "#4f9a1e" },
-  { re: /주거|집|관리/, icon: "home", bg: "#eef1f4", ink: "#4e5968" },
-  { re: /육아|아이|아기/, icon: "baby", bg: "#fff3e0", ink: "#d97a00" },
-  { re: /반려|펫|강아지|고양이/, icon: "heart", bg: "#ffeef0", ink: "#e5484d" },
-  { re: /기타/, icon: "more", bg: "#f2f4f6", ink: "#6b7684" },
+// 분류 색은 밝은·어두운 화면 모두에서 또렷한 중간 밝기로 (아이콘 옆에는 늘 분류 이름이 있다)
+const RULES: { re: RegExp; icon: CatIcon; ink: string }[] = [
+  { re: /장보|마트|식료|식재/, icon: "basket", ink: "#1db86b" },
+  { re: /외식|배달|식비|식사/, icon: "utensils", ink: "#ff7043" },
+  { re: /카페|커피|간식/, icon: "coffee", ink: "#c8822e" },
+  { re: /생활|용품|살림/, icon: "package", ink: "#e9a80a" },
+  { re: /교통|차량|주유|자동차/, icon: "car", ink: "#3d8bfd" },
+  { re: /병원|약|의료|건강/, icon: "pill", ink: "#f2558a" },
+  { re: /경조|선물|축의/, icon: "gift", ink: "#9a6cf0" },
+  { re: /문화|여가|여행|취미/, icon: "ticket", ink: "#25a8d6" },
+  { re: /주거|집|관리/, icon: "home", ink: "#7f8a99" },
+  { re: /육아|아이|아기/, icon: "baby", ink: "#ff9b3d" },
+  { re: /반려|펫|강아지|고양이/, icon: "paw", ink: "#b9845a" },
+  { re: /기타/, icon: "more", ink: "#9aa0a8" },
 ];
 
 export function categoryVisual(name: string | undefined | null): CatVisual {
-  if (!name) return { icon: "receipt", bg: "#f2f4f6", ink: "#6b7684" };
+  if (!name) return { icon: "receipt", ink: "#9aa0a8" };
   const hit = RULES.find((r) => r.re.test(name));
-  return hit ? { icon: hit.icon, bg: hit.bg, ink: hit.ink } : { icon: "tag", bg: "#f2f4f6", ink: "#4e5968" };
+  return hit ? { icon: hit.icon, ink: hit.ink } : { icon: "tag", ink: "#9aa0a8" };
 }
 
 /** 지출 한 건의 아이콘: 분류가 있으면 분류, 개인 용돈이면 지갑(사람 색), 아니면 영수증 */
 export function spendingVisual(data: Data, s: Pick<Spending, "category_id" | "owner">): CatVisual {
   const cat = data.categories.find((c) => c.id === s.category_id);
   if (cat) return categoryVisual(cat.name);
-  if (s.owner === "a") return { icon: "wallet", bg: "var(--a-soft)", ink: "var(--a-ink)" };
-  if (s.owner === "b") return { icon: "wallet", bg: "var(--b-soft)", ink: "var(--b-ink)" };
+  if (s.owner === "a") return { icon: "wallet", ink: "var(--a)" };
+  if (s.owner === "b") return { icon: "wallet", ink: "var(--b)" };
   return categoryVisual(null);
 }
 

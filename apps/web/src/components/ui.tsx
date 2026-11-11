@@ -1,25 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import {
-  Baby,
-  Car,
-  Coffee,
-  Ellipsis,
-  Gift,
-  Heart,
-  House as HomeIcon,
-  Package,
-  Pill,
-  Receipt,
-  ShoppingBasket,
-  Tag,
-  Ticket,
-  Utensils,
-  Wallet,
-  type LucideIcon,
-} from "lucide-react";
-import type { CatIcon, CatVisual } from "@/lib/categories";
+import type { CatVisual } from "@/lib/categories";
+import { CatGlyph } from "./CatGlyphs";
 import { Drawer } from "vaul";
 import type { Owner, Settings } from "@/lib/types";
 import { num } from "@/lib/format";
@@ -73,35 +56,11 @@ export function useRolling(target: number, enabled = true, duration = 720): numb
   return enabled ? shown : target;
 }
 
-const CAT_ICONS: Record<CatIcon, LucideIcon> = {
-  basket: ShoppingBasket,
-  utensils: Utensils,
-  package: Package,
-  car: Car,
-  pill: Pill,
-  gift: Gift,
-  ticket: Ticket,
-  more: Ellipsis,
-  tag: Tag,
-  wallet: Wallet,
-  receipt: Receipt,
-  coffee: Coffee,
-  home: HomeIcon,
-  baby: Baby,
-  heart: Heart,
-};
-
 export function CategoryIcon({ visual, size = "" }: { visual: CatVisual; size?: "" | "sm" }) {
-  const Icon = CAT_ICONS[visual.icon];
-  // var(--…) 바탕은 이미 테마를 따르고, 분류 파스텔(#…)만 다크에서 눌러 쓴다
-  const tokenBg = visual.bg.startsWith("var(");
+  // 바탕은 그 색을 옅게 푼 원(.cat, 다크는 well). bg 를 주면 그 색으로 꽉 채운 원
   return (
-    <span
-      className={`cat ${size}${tokenBg ? "" : " pastel"}`}
-      style={tokenBg ? { background: visual.bg, color: visual.ink } : ({ "--cat-bg": visual.bg, color: visual.ink } as React.CSSProperties)}
-      aria-hidden="true"
-    >
-      <Icon />
+    <span className={`cat ${size}`} style={{ color: visual.ink, ...(visual.bg ? { background: visual.bg } : {}) }} aria-hidden="true">
+      <CatGlyph icon={visual.icon} />
     </span>
   );
 }

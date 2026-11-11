@@ -139,13 +139,12 @@ button.row:active, a.row:active { background: var(--well); transform: scale(0.98
 @keyframes freshIn { from { opacity: 0; transform: translateY(-8px) scale(0.98); } to { opacity: 1; transform: none; } }
 @keyframes freshGlow { from { background: var(--accent-soft); } to { background: transparent; } }
 
-/* 앞 표시: 카테고리 동그라미 */
-.cat { display: grid; place-items: center; flex: none; width: 40px; height: 40px; border-radius: var(--radius-chip); }
-.cat svg { width: 20px; height: 20px; stroke-width: 2; }
+/* 앞 표시: 분류 동그라미 — 채운 두 톤 그림(CatGlyphs). 바탕은 그 색을 cat-tint 만큼 푼 원(다크는 well 에 조금만) */
+.cat { display: grid; place-items: center; flex: none; width: 40px; height: 40px; border-radius: 50%; background: color-mix(in srgb, currentColor var(--cat-tint), var(--cat-base)); }
+.cat svg { width: 24px; height: 24px; }
+.cat svg .d { fill: var(--on-dark); }
 .cat.sm { width: 32px; height: 32px; }
-/* 분류 색 파스텔(categories.ts)은 다크에서 cat-veil 로 눌러 쓴다. 토큰 바탕(사람 색 등)은 이미 테마를 따른다 */
-.cat.pastel { background: linear-gradient(var(--cat-veil), var(--cat-veil)), var(--cat-bg); }
-.cat.sm svg { width: 16px; height: 16px; }
+.cat.sm svg { width: 19px; height: 19px; }
 
 /* 앞 표시: 사람 (동전 반쪽, 이니셜 없음) */
 .who { display: inline-grid; place-items: center; flex: none; width: 40px; height: 40px; border-radius: var(--radius-chip); }
