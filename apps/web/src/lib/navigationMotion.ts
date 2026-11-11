@@ -12,6 +12,13 @@ export function completeNavigationMotion(href?: string) {
 /** 이 탭에서 앱 안으로 몇 번 들어왔는지 — 0 이면 주소로 바로 연 첫 화면이라 뒤로 갈 앱 화면이 없다 */
 export const historyDepth = (): number => window.history.state?.[POSITION] ?? 0;
 
+/** 상세 화면의 "‹ 이전" 단추 — 앱 안에서 들어왔으면 history 뒤로(기록이 쌓이지 않게), 주소로 바로 열었으면 fallback 으로 바꿔 놓는다 */
+export function leaveDetail(router: { back(): void; replace(href: string): void }, fallback: string, fromApp = true) {
+  document.documentElement.dataset.navigation = "back";
+  if (fromApp && historyDepth() > 0) router.back();
+  else router.replace(fallback);
+}
+
 const route = (href: string) => {
   const url = new URL(href, window.location.href);
   return `${url.pathname.replace(/\/$/, "") || "/"}${url.search}`;

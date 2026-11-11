@@ -7,7 +7,7 @@ import type { Owner, PayKind } from "@/lib/types";
 import { PAY_KIND_LABEL } from "@/lib/types";
 import { useData } from "@/lib/store";
 import { nameOf, spendingsIn, sum } from "@/lib/calc";
-import { historyDepth } from "@/lib/navigationMotion";
+import { leaveDetail } from "@/lib/navigationMotion";
 import { MonthHeader } from "@/components/MonthHeader";
 import { Money } from "@/components/ui";
 import { SpendingDays } from "@/components/SpendingDays";
@@ -41,18 +41,12 @@ export default function AllSpendingsPage() {
   );
   const count = (k: KindFilter, o: OwnerFilter) => all.filter((r) => (k === "all" || r.pay_kind === k) && (o === "all" || r.owner === o)).length;
 
-  const leave = () => {
-    document.documentElement.dataset.navigation = "back";
-    if (from && historyDepth() > 0) router.back();
-    else router.replace(origin.href);
-  };
-
   return (
     <>
       <MonthHeader
         name="모든 기록"
         back={
-          <button type="button" className="back-btn" onClick={leave}>
+          <button type="button" className="back-btn" onClick={() => leaveDetail(router, origin.href, from !== null)}>
             <ChevronLeft aria-hidden="true" />
             {origin.label}
           </button>
