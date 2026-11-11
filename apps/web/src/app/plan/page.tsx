@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Pencil, Download } from "lucide-react";
+import { ChevronDown, Plus, Pencil, Download } from "lucide-react";
 import { ImportSheet } from "@/components/ImportSheet";
 import type { Group, MonthItem, PlanItem } from "@/lib/types";
 import { GROUP_LABEL, GROUP_ORDER, METHOD_LABEL } from "@/lib/types";
@@ -23,6 +23,8 @@ export default function PlanPage() {
   const [sheet, setSheet] = useState<{ open: boolean; item?: MonthItem; group?: Group }>({ open: false });
   const [incomeOpen, setIncomeOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  // 폰에서 펼친 묶음 (처음엔 모두 접어 이름 몇 개만 보인다. 데스크톱은 CSS 가 늘 펼친다)
+  const [unfolded, setUnfolded] = useState<Group[]>([]);
 
   const items = itemsOf(data, month);
   const totals = groupTotals(items);
@@ -43,6 +45,9 @@ export default function PlanPage() {
 
   const renderGroup = (g: Group) => {
     const rows = items.filter((i) => i.group === g);
+    // 두 줄 이하는 접어도 줄어들지 않으니 그대로 둔다
+    const open = rows.length <= 2 || unfolded.includes(g);
+    const preview = rows.slice(0, 3).map((i) => i.name).join(" · ") + (rows.length > 3 ? ` 외 ${rows.length - 3}개` : "");
     return (
       <section className={`group o${GROUP_ORDER.indexOf(g) + 3}`} key={g} aria-labelledby={`g-${g}`}>
         <div className="group-head">
@@ -59,10 +64,25 @@ export default function PlanPage() {
             </button>
           </span>
         </div>
-        <div className="card">
+        <div className="card" data-folded={rows.length > 0 && !open ? "" : undefined}>
           {rows.length === 0 ? (
             <p className="empty">아직 항목이 없어요. 위 +로 더해요.</p>
           ) : (
+            <>
+            {rows.length > 2 && (
+            <button
+              type="button"
+              className="fold-row plan-fold"
+              aria-expanded={open}
+              onClick={() => setUnfolded((u) => (open ? u.filter((x) => x !== g) : [...u, g]))}
+            >
+              <span className="fold-t">{open ? `항목 ${rows.length}개` : preview}</span>
+              <span className="fold-a">
+                {open ? "접기" : "펼치기"}
+                <ChevronDown aria-hidden="true" />
+              </span>
+            </button>
+            )}
             <div className="rows">
               {rows.map((i) => {
                 const where = i.method === "card_auto" ? accName(i.card_id) : accName(i.account_id);
@@ -84,6 +104,7 @@ export default function PlanPage() {
                 );
               })}
             </div>
+            </>
           )}
         </div>
       </section>

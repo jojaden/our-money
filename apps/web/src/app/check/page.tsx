@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo } from "react";
-import { AlertTriangle, Clock, Target } from "lucide-react";
+import { useMemo, useState } from "react";
+import { AlertTriangle, Check, ChevronDown, Clock, Target } from "lucide-react";
 import { useData } from "@/lib/store";
 import { addMonths, currentMonth, monthRow, nameOf, periodOf } from "@/lib/calc";
 import { FirstRun, MonthHeader } from "@/components/MonthHeader";
@@ -16,13 +16,34 @@ import { Celebrate } from "@/components/Celebrate";
 import { MonthClose } from "@/components/MonthClose";
 import { Morph } from "@/components/Morph";
 
+/** 할 일 줄 — 끝낸 줄은 아래 "✓ 끝낸 N건 · 보기" 한 줄로 접어 남은 일만 보이게 한다 */
 function Rows({ tasks, expandable, fromShown }: { tasks: Task[]; expandable?: boolean; fromShown?: boolean }) {
+  const [open, setOpen] = useState(false);
+  const sorted = [...tasks].sort(byUrgency);
+  const done = sorted.filter((t) => t.done).length;
+  const shown = open ? sorted : sorted.filter((t) => !t.done);
   return (
-    <div className="rows" style={{ ["--inset" as string]: "40px" }}>
-      {[...tasks].sort(byUrgency).map((t) => (
-        <TaskRow key={t.key} task={t} expandable={expandable} fromShown={fromShown} />
-      ))}
-    </div>
+    <>
+      {shown.length > 0 && (
+        <div className="rows" style={{ ["--inset" as string]: "40px" }}>
+          {shown.map((t) => (
+            <TaskRow key={t.key} task={t} expandable={expandable} fromShown={fromShown} />
+          ))}
+        </div>
+      )}
+      {done > 0 && (
+        <button type="button" className={`fold-row${shown.length > 0 ? " ruled" : ""}`} aria-expanded={open} onClick={() => setOpen((v) => !v)}>
+          <span className="fold-t">
+            <Check aria-hidden="true" />
+            {done === sorted.length ? `모두 끝냈어요 · ${done}건` : `끝낸 ${done}건`}
+          </span>
+          <span className="fold-a">
+            {open ? "접기" : "보기"}
+            <ChevronDown aria-hidden="true" />
+          </span>
+        </button>
+      )}
+    </>
   );
 }
 
