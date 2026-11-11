@@ -58,6 +58,23 @@
 .budget-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; margin-top: 12px; }
 .budget-foot:empty { display: none; }
 
+/* ---------- 체크 요약 카드: 이름표 ─ 끝낸 수, 큰 숫자(남은 건수), 진행 막대, 남은 묶음 줄 ---------- */
+.check-sum .sum-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.check-sum .sum-head .num { color: var(--faint); font: 600 14px/20px var(--font-display); }
+.check-sum .hero-amt { margin: 2px 0 0; }
+.check-sum .meter { margin: 14px 0 0; }
+.sum-left { margin: 16px 0 -8px; padding: 6px 0 0; border-top: 0.6px solid var(--rule); list-style: none; }
+.sum-left button { display: grid; grid-template-columns: minmax(0, 1fr) auto 18px; align-items: center; gap: 8px; width: calc(100% + 24px); min-height: 48px; margin: 0 -12px; padding: 0 12px; border: 0; border-radius: var(--radius-small); background: transparent; color: var(--text); font: 500 15.5px/22px var(--font-text); text-align: left; transition: background-color var(--dur-press) ease; }
+.sum-left button:active { background: var(--well); }
+.sum-left .v { color: var(--muted); font: 500 14.5px/20px var(--font-text); font-variant-numeric: tabular-nums; }
+.sum-left .v .money { color: var(--text); font-weight: 600; }
+.sum-left svg { width: 18px; height: 18px; color: var(--faint); }
+/* 요약 줄을 눌러 내려가면 섹션 제목이 위 막대에 가리지 않게 */
+.group-head h2 { scroll-margin-top: calc(env(safe-area-inset-top, 0px) + 72px); }
+@media (prefers-reduced-motion: reduce) {
+  .sum-left button { transition: none; }
+}
+
 /* ---------- 칸 나눈 진행 막대 (StepTrack) ---------- */
 
 /* 월급날 카드: 제목 → 메타 줄 → 진행 막대 → 기한 줄 → 할 일 줄 */
@@ -203,8 +220,16 @@
   .goal-card { transition: none; }
 }
 
-/* 플랜 머리: 결론 아래 작은 버튼 */
-.page-head .import-btn { margin-top: 12px; }
+/* 플랜 맨 아래: 다른 달에서 항목 가져오기 — 자주 안 쓰는 일이라 끝에 한 줄 카드로(토스 하단 메뉴 줄처럼) */
+.import-row { display: grid; grid-template-columns: 22px minmax(0, 1fr) 18px; align-items: center; gap: 12px; width: 100%; border: 0; color: var(--text); font: inherit; text-align: left; transition: transform var(--dur-press) var(--ease-press); }
+.import-row:active { transform: scale(0.98); }
+.import-row > svg { width: 22px; height: 22px; color: var(--muted); }
+.import-row strong { display: block; font: 600 16px/22px var(--font-text); }
+.import-row small { display: block; margin-top: 2px; color: var(--faint); font: 500 13px/18px var(--font-text); }
+.import-row .chev { width: 18px; height: 18px; color: var(--faint); }
+@media (prefers-reduced-motion: reduce) {
+  .import-row { transition: none; }
+}
 
 /* ---------- 강조 카드 (HighlightCard): 화면에 하나. 옅은 빛 한 색(sky-50), 그림자 없음 ---------- */
 
@@ -227,7 +252,10 @@
    수입 큰 숫자 → 한 줄 쌓은 막대(버킷 색은 여기와 목록 점에만) → 목록. 줄을 누르면 그 조각만 남고 나머지는 옅어진다(opacity만) */
 .split { display: grid; gap: 8px; }
 .split-total { display: grid; gap: 2px; margin: 10px 0 0; }
-.split-bar { position: relative; margin: 6px 0 4px; }
+.split-sub { margin: 4px 0 0; color: var(--faint); font: 500 14.5px/20px var(--font-text); }
+.split-sub b { color: var(--text); font-weight: 600; }
+.split-sub b.neg { color: var(--negative); }
+.split-bar { position: relative; margin: 10px 0 4px; }
 .split-track { display: flex; gap: 2px; height: 12px; overflow: hidden; border-radius: var(--radius-chip); }
 .split-track i { flex: 1 1 0; min-width: 3px; transition: opacity var(--dur-swap) ease; }
 .split-track i.dim { opacity: 0.3; }

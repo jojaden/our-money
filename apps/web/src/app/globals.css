@@ -66,10 +66,10 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
   .span-12 { grid-column: 1 / -1; }
   .col { display: grid; gap: 16px; align-content: start; }
 }
-/* 폰에서는 열을 풀고 o1~o7 순서로 한 줄에 세운다 */
+/* 폰에서는 열을 풀고 o1~o8 순서로 한 줄에 세운다 */
 @media (max-width: 1023px) {
   .col { display: contents; }
-  .o1 { order: 1; } .o2 { order: 2; } .o3 { order: 3; } .o4 { order: 4; } .o5 { order: 5; } .o6 { order: 6; } .o7 { order: 7; }
+  .o1 { order: 1; } .o2 { order: 2; } .o3 { order: 3; } .o4 { order: 4; } .o5 { order: 5; } .o6 { order: 6; } .o7 { order: 7; } .o8 { order: 8; }
 }
 
 /* ---------- 찾은 문장·보조 줄 ---------- */

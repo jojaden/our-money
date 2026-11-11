@@ -12,7 +12,8 @@ type Bucket = Group | "left";
 type Scope = "both" | Person;
 
 /**
- * 월급이 나뉘는 곳 (docs/design-system/components/SplitBar) — 수입을 큰 숫자로, 그 아래 한 줄 쌓은 막대와 금액 목록.
+ * 월급이 나뉘는 곳 (docs/design-system/components/SplitBar) — 수입을 큰 숫자로, 남은 돈 한 줄, 그 아래 한 줄 쌓은 막대와 금액 목록.
+ * 플랜 화면의 첫 카드라 화면 머리 대신 여기서 결론(남은 돈·나눈 비율)을 말한다.
  * 버킷 색은 이 막대와 목록 점에만 쓴다. 목록 줄을 누르면 그 조각만 남기고 나머지가 옅어지며, 줄 아래에 버킷 항목이 펼쳐진다.
  * 위 세그먼트로 두 사람·현빈·예진을 바꿔 본다.
  */
@@ -64,6 +65,19 @@ export function SplitBar({
           {num(income)}
           <small>원</small>
         </span>
+      </p>
+      <p className="split-sub">
+        {income === 0 ? (
+          "아직 이번 달 수입을 적지 않았어요."
+        ) : left >= 0 ? (
+          <>
+            <b>{num(left)}원</b> 남았어요 · 수입의 {Math.round((allocated / income) * 100)}%를 나눴어요
+          </>
+        ) : (
+          <>
+            수입보다 <b className="neg">{num(-left)}원</b> 더 나눴어요
+          </>
+        )}
       </p>
       {/* 그림은 읽지 않는다 — 같은 내용을 아래 목록(이름·비율·금액)이 말한다 */}
       <div className="split-bar" aria-hidden="true">
