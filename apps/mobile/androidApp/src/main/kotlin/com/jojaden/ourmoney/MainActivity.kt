@@ -28,6 +28,7 @@ import com.jojaden.ourmoney.notice.Expects
 import com.jojaden.ourmoney.notice.MatchQueue
 import com.jojaden.ourmoney.notice.NoticeActivity
 import com.jojaden.ourmoney.notice.SpendQueue
+import com.jojaden.ourmoney.widget.CalendarStore
 import org.json.JSONObject
 import java.io.File
 
@@ -42,6 +43,8 @@ import java.io.File
  *   "card-notice" 는 카드 알림 화면, {"type":"ics","text":…} 는 일정 .ics 를 파일로 만들어 공유 창으로 넘긴다.
  *   결제 알림 맞추기: {"type":"expect"} 이번 달 남은 할 일 받기, {"type":"matches"} 맞춘 것과 확인할 지출을 답장으로 보내기,
  *   {"type":"applied"} 웹이 체크를 마친 것 지우기. 앱으로 돌아올 때마다 웹에 "ourmoney-resume" 를 알려 다시 가져가게 한다.
+ *   달력 위젯: {"type":"calendar",…} 달력 요약 저장(위젯이 그린다), {"type":"calendar-clear"} 로그아웃할 때 지우기.
+ * - 위젯을 누르면 EXTRA OPEN=calendar 로 열린다: 처음 열 때는 달력 주소로, 이미 열려 있으면 웹에 "ourmoney-open" 을 알려 달력으로 옮긴다.
  * - 뒤로 가기는 웹의 기록을 따른다 (웹은 시트·상세를 기록 한 칸으로 연다).
  */
 class MainActivity : ComponentActivity() {
@@ -67,7 +70,7 @@ class MainActivity : ComponentActivity() {
             settings.allowContentAccess = false
             settings.mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
             // 웹이 앱 안인지, 이 앱이 무엇을 할 수 있는지 알도록 (로그인 돌아올 주소, 카드 알림 메뉴, 일정 공유)
-            settings.userAgentString = "${settings.userAgentString} OurMoneyApp/${BuildConfig.VERSION_NAME} OurMoneyCan/ics,match"
+            settings.userAgentString = "${settings.userAgentString} OurMoneyApp/${BuildConfig.VERSION_NAME} OurMoneyCan/ics,match,widget"
             webViewClient = ShellClient()
         }
         if (WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)) {
@@ -76,7 +79,7 @@ class MainActivity : ComponentActivity() {
                 when {
                     !isMainFrame || data == null || data.length > MAX_ICS -> Unit
                     data == "card-notice" -> startActivity(Intent(this, NoticeActivity::class.java))
-                    data.startsWith("{") -> runCatching { JSONObject(data) }.getOrNull()?.let { onMessage(it, reply) }
+                    data.startsWith("{") -> runCatching { JSONObject(data) }.getOrNull()?.let { onMessage(it, data, reply) }
                 }
             }
         }
@@ -100,7 +103,7 @@ class MainActivity : ComponentActivity() {
         })
 
         if (savedInstanceState == null || web.restoreState(savedInstanceState) == null) {
-            web.loadUrl(callbackUrl(intent) ?: BuildConfig.WEB_URL)
+            web.loadUrl(callbackUrl(intent) ?: openUrl(intent) ?: BuildConfig.WEB_URL)
         }
     }
 
@@ -110,9 +113,11 @@ class MainActivity : ComponentActivity() {
         web.evaluateJavascript("window.dispatchEvent(new Event('ourmoney-resume'))", null)
     }
 
-    private fun onMessage(msg: JSONObject, reply: JavaScriptReplyProxy) {
+    private fun onMessage(msg: JSONObject, raw: String, reply: JavaScriptReplyProxy) {
         when (msg.optString("type")) {
             "ics" -> shareIcs(msg.optString("text"))
+            "calendar" -> CalendarStore.save(this, raw)
+            "calendar-clear" -> CalendarStore.clear(this)
             "expect" -> Expects.save(this, msg.optJSONArray("items"))
             "matches" -> reply.postMessage(
                 JSONObject().put("type", "matches").put("items", MatchQueue.forWeb(this)).put("spends", SpendQueue.forWeb(this)).toString(),
@@ -128,8 +133,16 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
-        callbackUrl(intent)?.let(web::loadUrl)
+        val callback = callbackUrl(intent)
+        when {
+            callback != null -> web.loadUrl(callback)
+            intent.getStringExtra(OPEN) == OPEN_CALENDAR -> web.evaluateJavascript("window.dispatchEvent(new CustomEvent('ourmoney-open',{detail:'calendar'}))", null)
+        }
     }
+
+    /** 위젯에서 열면 달력 주소. 정해 둔 값(calendar)만 쓴다 */
+    private fun openUrl(intent: Intent?): String? =
+        if (intent?.getStringExtra(OPEN) == OPEN_CALENDAR) home.buildUpon().path("/calendar/").clearQuery().build().toString() else null
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
@@ -188,13 +201,17 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private companion object {
+    companion object {
+        /** 위젯이 앱을 열 때 넘기는 값 — 어느 화면으로 */
+        const val OPEN = "open"
+        const val OPEN_CALENDAR = "calendar"
+
         /** 웹 배경 (tokens 의 page 색, manifest theme_color) */
-        val BG = "#F3F3F1".toColorInt()
+        private val BG = "#F3F3F1".toColorInt()
         /** OAuth code 는 URL 안전 문자만 */
-        val CODE = Regex("^[A-Za-z0-9._~-]{1,512}$")
-        const val ICS = "text/calendar"
+        private val CODE = Regex("^[A-Za-z0-9._~-]{1,512}$")
+        private const val ICS = "text/calendar"
         /** 일정 수천 개도 넉넉한 크기 — 넘으면 받지 않는다 */
-        const val MAX_ICS = 5_000_000
+        private const val MAX_ICS = 5_000_000
     }
 }

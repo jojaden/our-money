@@ -3,7 +3,7 @@
 
 import type { CalEvent, Check, Data, MonthItem, Owner, Person, Spending } from "./types";
 import { actualAmount, cardBills, checkId, dateInMonth, findCheck, itemsOf, monthOf, monthRow, nameOf, needsPayCheck, paydayDate, paydayOf } from "./calc";
-import { dateWithDay, parseYmd, ymd } from "./format";
+import { dateWithDay, parseYmd, short, ymd } from "./format";
 
 /** 일정 한 번 (기간이면 start~end, 끝 날 포함) */
 export interface Occurrence {
@@ -148,6 +148,60 @@ export function monthGrid(key: string): string[] {
   const cells = Math.ceil((first.getDay() + last.getDate()) / 7) * 7;
   return Array.from({ length: cells }, (_, i) => ymd(new Date(start.getFullYear(), start.getMonth(), start.getDate() + i)));
 }
+
+/* ---------- 홈 화면 달력 위젯 ---------- */
+
+/** 위젯 점 색: 일정은 입력한 사람, 월급날은 그 사람, 카드값·이체는 나갈 돈 (apps/mobile core calendar/WidgetCalendar.kt 의 Dot) */
+type WidgetDot = "a" | "b" | "joint" | "out";
+
+/** 위젯의 다가오는 것 하나 — s~e(포함), t 이름, c 색, n 시간·금액 글, in 들어올 돈 */
+interface WidgetUp {
+  s: string;
+  e: string;
+  t: string;
+  c: WidgetDot;
+  n: string;
+  in: boolean;
+}
+
+/** 위젯에 넘기는 달력 요약 — 이번 달 1일부터 다음 달 말일까지 (앱을 며칠 안 열어도 다가오는 것이 남게) */
+export interface WidgetCalendar {
+  from: string;
+  to: string;
+  days: Record<string, WidgetDot[]>;
+  up: WidgetUp[];
+}
+
+const dotOf = (m: Mark): WidgetDot => (m.kind === "event" ? (m.event?.created_by ?? "joint") : m.kind === "payday" ? (m.owner === "b" ? "b" : "a") : "out");
+
+/** 안드로이드 앱의 홈 화면 달력 위젯이 그릴 것 (위젯은 로그인이 없어 웹이 앱을 열어 둔 동안 넘긴다) */
+export function widgetCalendar(data: Data, today: string): WidgetCalendar {
+  const [y, m] = today.split("-").map(Number);
+  const from = ymd(new Date(y, m - 1, 1));
+  const to = ymd(new Date(y, m + 1, 0));
+  const marks = marksIn(data, from, to);
+  const days: Record<string, WidgetDot[]> = {};
+  const up = new Map<string, { u: WidgetUp; order: number }>();
+  for (const [date, ms] of [...marks.entries()].sort(([a], [b]) => a.localeCompare(b))) {
+    const sorted = [...ms].sort((a, b) => ORDER[a.kind] - ORDER[b.kind]);
+    days[date] = [...new Set(sorted.map(dotOf))].slice(0, 3);
+    for (const x of sorted) {
+      // 기간 일정은 걸친 날마다 들어 있어서 한 번만
+      const key = x.occ ? `${x.event!.id}:${x.occ.start}` : `${x.kind}:${date}:${x.title}`;
+      const end = x.occ?.end ?? date;
+      if (end < today || up.has(key)) continue;
+      // 들어올 돈은 +, 나갈 돈은 − (웹 금액 표기와 같다). 일정은 시간이 있으면 시간
+      const money = x.amount ? `${x.kind === "payday" ? "+" : "−"}${short(x.amount)}` : "";
+      const note = (x.kind === "event" && timeText(x.event!)) || money;
+      up.set(key, { u: { s: x.occ?.start ?? date, e: end, t: x.title, c: dotOf(x), n: note, in: x.kind === "payday" }, order: ORDER[x.kind] });
+    }
+  }
+  const list = [...up.values()].sort((a, b) => a.u.s.localeCompare(b.u.s) || a.order - b.order).slice(0, 12);
+  return { from, to, days, up: list.map((x) => x.u) };
+}
+
+/** 같은 날 안에서 일정 → 월급날 → 카드값 → 이체 순서 (달력 화면의 날짜 패널과 같다) */
+const ORDER: Record<MarkKind, number> = { event: 0, payday: 1, card: 2, item: 3 };
 
 /* ---------- 일정 할 일 ---------- */
 

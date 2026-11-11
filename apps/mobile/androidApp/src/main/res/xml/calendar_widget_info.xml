@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 달력 위젯: 2×2(이번 달)에서 4×2(오늘 + 다가오는 것 + 이번 달), 4×4(이번 달 + 다가오는 것)까지 늘린다.
+     주기 갱신은 쓰지 않는다 — 웹이 요약을 넘길 때와 자정에만 다시 그린다 (CalendarWidget.kt) -->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:description="@string/widget_calendar_desc"
+    android:initialLayout="@layout/glance_default_loading_layout"
+    android:minWidth="110dp"
+    android:minHeight="110dp"
+    android:minResizeWidth="110dp"
+    android:minResizeHeight="110dp"
+    android:resizeMode="horizontal|vertical"
+    android:targetCellWidth="2"
+    android:targetCellHeight="2"
+    android:updatePeriodMillis="0"
+    android:widgetCategory="home_screen" />

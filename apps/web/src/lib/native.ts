@@ -1,6 +1,7 @@
 // 폰 앱처럼 느끼게 하는 작은 도구들.
 
 import { useSyncExternalStore } from "react";
+import type { WidgetCalendar } from "./calendar";
 
 /** 짧은 진동 (안드로이드). 의미 있는 순간에만: 완료, 저장, 삭제. */
 export function haptic(pattern: number | number[] = 10) {
@@ -27,6 +28,7 @@ export function inApp(): boolean {
  * - { type: "expect", items }: 이번 달 남은 할 일 — 결제 알림과 맞춰 보라고 (폰에만 둔다)
  * - { type: "matches" }: 결제 알림으로 맞춘 것과 확인할 지출을 보내 달라고 (답장은 onApp 으로 온다)
  * - { type: "applied", ids }: 체크를 마쳤으니 지우라고
+ * - { type: "calendar", ... }: 홈 화면 달력 위젯이 그릴 달력 요약 / { type: "calendar-clear" }: 로그아웃할 때 지우라고
  */
 export function toApp(
   message:
@@ -34,7 +36,9 @@ export function toApp(
     | { type: "ics"; text: string }
     | { type: "expect"; items: AppExpect[] }
     | { type: "matches" }
-    | { type: "applied"; ids: string[] },
+    | { type: "applied"; ids: string[] }
+    | ({ type: "calendar" } & WidgetCalendar)
+    | { type: "calendar-clear" },
 ) {
   bridge()?.postMessage(typeof message === "string" ? message : JSON.stringify(message));
 }
@@ -96,7 +100,7 @@ export function onApp(fn: (msg: { type: "matches"; items: AppMatch[]; spends: Ap
 }
 
 /** 이 앱이 그 일을 할 수 있나 — 앱이 user agent 에 OurMoneyCan/… 로 알린다 (예전 앱에는 없다) */
-export function appCan(feature: "ics" | "match"): boolean {
+export function appCan(feature: "ics" | "match" | "widget"): boolean {
   return typeof navigator !== "undefined" && new RegExp(`\\bOurMoneyCan/\\S*\\b${feature}\\b`).test(navigator.userAgent);
 }
 

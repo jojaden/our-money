@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 달력 위젯의 오늘 (tokens primary — 웹 달력의 오늘과 같은 노랑) -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="oval">
+    <solid android:color="#F5DF4D" />
+</shape>

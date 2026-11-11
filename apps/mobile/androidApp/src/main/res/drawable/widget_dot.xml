@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 달력 위젯 날짜 아래 점 — 색은 코드에서 칠한다 (누구 · 나갈 돈) -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="oval">
+    <solid android:color="#FFFFFF" />
+    <size android:width="4dp" android:height="4dp" />
+</shape>
