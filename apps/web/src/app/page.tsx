@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { ArrowRightLeft, Banknote, CalendarClock, CircleAlert, CircleCheck, CircleHelp, TrendingUp } from "lucide-react";
 import { useData } from "@/lib/store";
 import type { Spending } from "@/lib/types";
 import { allowanceStatus, cardBills, livingStatus, nameOf, spendingsIn } from "@/lib/calc";
@@ -18,6 +19,7 @@ import { MiniCard } from "@/components/pass";
 import { usePrimaryAction, useSheets } from "@/components/Shell";
 import { ClosePrompt } from "@/components/ClosePrompt";
 import { Morph } from "@/components/Morph";
+import { Nudges, type Nudge } from "@/components/Nudges";
 
 /** 홈에 보이는 할 일 수 — 급한 순으로 이만큼만, 나머지는 체크 화면에서 */
 const HOME_TODOS = 3;
@@ -54,79 +56,98 @@ export default function Home() {
     data.categories.find((c) => c.id === id)?.name ?? (owner === "joint" ? "미분류" : `${nameOf(s, owner)} 용돈`);
   const accName = (id: string | null) => data.accounts.find((a) => a.id === id)?.name;
 
-  // 이번 달에 가장 먼저 알아야 할 것 한 줄
-  let finding: React.ReactNode;
+  // 지금 알아야 할 것들 — 화면 머리 문장 대신 맨 위 알림 카드(토스 알림처럼 하나씩 도착). 중요한 순, 최대 3개.
+  // 할 일 카드와 겹치는 "남은 할 일 N건"뿐이면 알림을 두지 않는다
+  const nudges: Nudge[] = [];
   if (overdue.length > 0) {
-    finding = (
-      <>
-        <strong>{overdue[0].kind === "transfer" ? `${ro(overdue[0].to ?? "")} 옮길 돈` : overdue[0].title}</strong>
-        {overdue.length > 1 ? ` 외 ${overdue.length - 1}건이` : iga(overdue[0].kind === "transfer" ? "돈" : overdue[0].title).slice(-1)} 기한을 넘겼어요.
-      </>
-    );
-  } else if (asks.length > 0) {
+    nudges.push({
+      key: "overdue",
+      // 기한 넘긴 일은 끝낼 때까지 남는다. 나머지는 한 번 눌러 보면 사라진다(같은 일이 다시 생기면 키가 달라 다시 뜬다)
+      sticky: true,
+      tone: "negative",
+      icon: CircleAlert,
+      href: "/check",
+      text: (
+        <>
+          <strong>{overdue[0].kind === "transfer" ? `${ro(overdue[0].to ?? "")} 옮길 돈` : overdue[0].title}</strong>
+          {overdue.length > 1 ? ` 외 ${overdue.length - 1}건이` : iga(overdue[0].kind === "transfer" ? "돈" : overdue[0].title).slice(-1)} 기한을 넘겼어요
+        </>
+      ),
+    });
+  }
+  if (asks.length > 0) {
     // 자동으로 나가는 돈은 다그치지 않고 확인만 부탁한다
-    finding = (
-      <>
-        <strong>{asks[0].title}</strong>
-        {asks.length > 1 ? ` 외 ${asks.length - 1}건이` : iga(asks[0].title).slice(-1)} 잘 나갔는지 확인해 주세요.
-      </>
-    );
-  } else if (paydayToday) {
+    nudges.push({
+      key: `asks:${asks.map((t) => t.key).join(",")}`,
+      tone: "neutral",
+      icon: CircleHelp,
+      href: "/check",
+      text: (
+        <>
+          <strong>{asks[0].title}</strong>
+          {asks.length > 1 ? ` 외 ${asks.length - 1}건이` : iga(asks[0].title).slice(-1)} 잘 나갔는지 확인해 주세요
+        </>
+      ),
+    });
+  }
+  if (paydayToday) {
     const left = paydayToday.transfers.filter((t) => !t.done);
-    finding = (
-      <>
-        <span className="nw">
-          오늘은 <strong>{nameOf(s, paydayToday.person)} 월급날</strong>이에요
-        </span>{" "}
-        <span className="nw clause">
-          <span className="sep">· </span>옮길 돈 {left.length}건 <Money value={left.reduce((a, t) => a + t.amount, 0)} />
-        </span>
-      </>
-    );
+    nudges.push({
+      key: `payday:${paydayToday.date}:${paydayToday.person}`,
+      tone: "positive",
+      icon: Banknote,
+      href: "/check",
+      text: (
+        <>
+          오늘은 <strong>{nameOf(s, paydayToday.person)} 월급날</strong>이에요 · 옮길 돈 {left.length}건 <Money value={left.reduce((a, t) => a + t.amount, 0)} />
+        </>
+      ),
+    });
   } else if (pendingTransfers.length > 0) {
-    finding = (
-      <>
-        <span className="nw">
-          옮길 돈 <strong>{pendingTransfers.length}건</strong>이 남았어요
-        </span>{" "}
-        <span className="nw clause">
-          <span className="sep">· </span><Money value={pendingTransfers.reduce((a, t) => a + t.amount, 0)} />
-        </span>
-      </>
-    );
-  } else if (open.length === 0 && tasks.length > 0) {
-    finding = <>이번 달 이체와 납부를 모두 마쳤어요.</>;
-  } else if (living.pace !== null && living.spent > living.pace) {
-    finding = (
-      <>
-        생활비가 예상보다 <strong>{num(living.spent - living.pace)}원</strong> 빨리 나가고 있어요.
-      </>
-    );
-  } else if (nextPayday && nextPayday.transfers.some((t) => !t.done)) {
-    finding = (
-      <>
-        <span className="nw">
-          다음은 <strong>{nameOf(s, nextPayday.person)} 월급날</strong> {shortDate(nextPayday.date)}
-        </span>{" "}
-        <span className="nw clause">
-          <span className="sep">· </span>
-          {dDay(nextPayday.date, today)}
-        </span>
-      </>
-    );
-  } else {
-    finding = (
-      <>
-        남은 할 일 <strong>{open.length}건</strong>
-      </>
-    );
+    nudges.push({
+      key: `transfers:${month}:${pendingTransfers.map((t) => t.key).join(",")}`,
+      tone: "neutral",
+      icon: ArrowRightLeft,
+      href: "/check",
+      text: (
+        <>
+          옮길 돈 <strong>{pendingTransfers.length}건</strong>이 남았어요 · <Money value={pendingTransfers.reduce((a, t) => a + t.amount, 0)} />
+        </>
+      ),
+    });
+  }
+  if (open.length === 0 && tasks.length > 0) nudges.push({ key: `done:${month}`, tone: "positive", icon: CircleCheck, href: "/check", text: <>이번 달 이체와 납부를 모두 마쳤어요</> });
+  if (living.pace !== null && living.spent > living.pace) {
+    nudges.push({
+      key: `pace:${month}`,
+      tone: "warning",
+      icon: TrendingUp,
+      href: "/ledger",
+      text: (
+        <>
+          생활비가 예상보다 <strong>{num(living.spent - living.pace)}원</strong> 빨리 나가고 있어요
+        </>
+      ),
+    });
+  }
+  // 다음 월급날은 옮길 돈 알림이 없을 때만 (같은 이야기)
+  if (!paydayToday && pendingTransfers.length === 0 && nextPayday && nextPayday.transfers.some((t) => !t.done)) {
+    nudges.push({
+      key: `next-payday:${nextPayday.date}:${nextPayday.person}`,
+      tone: "neutral",
+      icon: CalendarClock,
+      href: "/check",
+      text: (
+        <>
+          다음은 <strong>{nameOf(s, nextPayday.person)} 월급날</strong> {shortDate(nextPayday.date)} · {dDay(nextPayday.date, today)}
+        </>
+      ),
+    });
   }
 
   return (
     <>
-      <MonthHeader>
-        <p className="finding">{finding}</p>
-      </MonthHeader>
+      <MonthHeader />
 
       <div className="grid">
         <div className="col span-7">
@@ -134,6 +155,7 @@ export default function Home() {
           <Morph className="close-slot" track=":scope > *">
             <ClosePrompt />
           </Morph>
+          <Nudges items={nudges.slice(0, 3)} />
           <BudgetCard id="living-h" className="o1" bucket="living" title="남은 공동 생활비" status={living} link={{ href: "/ledger", label: "가계부" }} />
 
           <BudgetCard

@@ -79,8 +79,8 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
 .kpi-sub .money { color: var(--muted); }
 /* 좁은 폰에서는 쉼표 대신 마디마다 줄을 바꾼다 */
 @media (max-width: 639px) {
-  .finding .sep, .kpi-sub .sep { display: none; }
-  .finding .clause, .kpi-sub .clause { display: block; }
+  .kpi-sub .sep { display: none; }
+  .kpi-sub .clause { display: block; }
 }
 .split-note { display: none; }
 @media (min-width: 640px) { .split-note { display: block; } }
