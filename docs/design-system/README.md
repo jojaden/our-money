@@ -77,7 +77,7 @@
 - **다크에 맞추는 색:** 회색 단계(`text`·`muted`·`faint`·`well`·`rule`), 옅은 바탕(`*-soft`)과 그 위 글자(`*-ink`), 상태 글자(`positive`·`negative`·`warning`·`saturday`), 알약, 그림자, 시트 뒤 막 `scrim`.
 - 다크 값은 `tokens.json` 토큰의 `dark` 필드에만 적습니다. 없으면 라이트 값을 씁니다. CSS에 `[data-theme]` 분기를 직접 쓰지 않습니다.
 - 대비 기준은 라이트와 같습니다: `text` 13.7:1, `muted` 9.2:1, `faint` 6.1:1(`surface` 위), `*-ink`는 `*-soft` 위 6.7:1 이상.
-- 분류 아이콘의 파스텔 바탕은 다크에서 `cat-veil`로 눌러 씁니다.
+- 분류 아이콘 원은 라이트에서 분류 색을 15% 푼 흰 원, 다크에서 `well`에 8%만 푼 원입니다(`cat-base`·`cat-tint`).
 - 안드로이드 앱은 웹이 알려 주는 테마에 맞춰 시스템 막대 아이콘(어두우면 밝게)과 웹뷰 바탕을 바꿉니다. 홈 화면 달력 위젯도 같은 테마를 따르고, 기기 설정이면 낮·밤 색을 둘 다 넘겨 런처가 폰의 다크 모드에 맞춰 고릅니다.
 
 ## 글꼴
@@ -188,9 +188,10 @@
 - **탭:** 홈 `House`, 플랜 `Layers`, 체크 `ListChecks`, 가계부 `ReceiptText`이고, 기록은 `Plus`입니다.
 - **지갑:** 추가 `Plus`, 찾기 `Search`, 더 보기 `Ellipsis`, 닫기 `X`, 고치기 `Pencil`, 거르기 `SlidersHorizontal`, 옮긴 돈 `ArrowLeftRight`입니다.
 - **메타 줄:** 진행은 `Target`, 기한은 `Clock`, 이동은 `ChevronRight`입니다.
-- **기록 타일:** `TrendingUp`, `Flame`, `ReceiptText`, `PiggyBank`입니다.
+- **기록 타일:** 분류 아이콘과 같은 채운 두 톤 그림(오르는 막대 · 불꽃 · 영수증 · 돼지 저금통)입니다.
 - **속도 알약:** 덜 씀은 `TrendingDown`, 더 씀은 `TrendingUp`, 예산 초과는 `CircleAlert`입니다(16px).
 - **로그인 버튼:** `LogIn`(20px)입니다.
+- **분류 아이콘은 예외입니다.** 지출 줄·분류별 예산·분류 칩의 앞 동그라미는 외곽선이 아니라 직접 그린 **채운 두 톤 그림**(분류 색 실루엣 + 흰 디테일)입니다. 작은 원 안에서 얇은 선은 흐리고 찌그러져 보여서입니다. 규칙은 [CategoryIcon](components/CategoryIcon/README.md).
 
 ## 움직임
 

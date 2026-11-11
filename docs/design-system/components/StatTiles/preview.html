@@ -6,12 +6,9 @@
   .label { max-width: 390px; margin: 0 0 10px; color: var(--faint); font: 500 14.5px/20px var(--font-text); }
   .grid { max-width: 390px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .tile { display: flex; align-items: center; gap: 12px; min-width: 0; padding: 14px; border-radius: var(--radius-inner); background: var(--surface); box-shadow: var(--shadow-card); }
-  .ic { flex: none; display: grid; place-items: center; width: 36px; height: 36px; border-radius: var(--radius-chip); }
-  .ic svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-  .t1 { background: var(--pill-negative-bg); color: var(--pill-negative-ink); }
-  .t2 { background: var(--a-soft); color: var(--a-ink); }
-  .t3 { background: var(--accent-soft); color: var(--accent-ink); }
-  .t4 { background: var(--pill-positive-bg); color: var(--pill-positive-ink); }
+  .ic { flex: none; display: grid; place-items: center; width: 38px; height: 38px; border-radius: 50%; background: color-mix(in srgb, currentColor 15%, var(--surface)); }
+  .ic svg { width: 22px; height: 22px; } .ic .d { fill: var(--on-dark); }
+  .t1 { color: #f2554f; } .t2 { color: #ff8a3d; } .t3 { color: #e9a80a; } .t4 { color: #1db86b; }
   .tile div { min-width: 0; }
   .tile b { display: block; font: 700 18px/24px var(--font-display); letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
   .tile b span { margin-left: 1px; font-size: .72em; font-weight: 600; color: var(--faint); }
@@ -20,9 +17,18 @@
 <div class="stage">
   <p class="label">이번 달 기록</p>
   <div class="grid">
-    <div class="tile"><span class="ic t1"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 7h6v6"/><path d="m22 7-8.5 8.5-5-5L2 17"/></svg></span><div><b>182,000<span>원</span></b><small>가장 많이 쓴 날 · 11/2</small></div></div>
-    <div class="tile"><span class="ic t2"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3q1 4 4 6.5t3 5.5a1 1 0 0 1-14 0 5 5 0 0 1 1-3 1 1 0 0 0 5 0c0-2-1.5-3-1.5-5q0-2 2.5-4"/></svg></span><div><b>4<span>일</span></b><small>무지출 연속</small></div></div>
-    <div class="tile"><span class="ic t3"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 16H8"/><path d="M14 8H8"/><path d="M16 12H8"/><path d="M4 3a1 1 0 0 1 1-1 1.3 1.3 0 0 1 .7.2l.933.6a1.3 1.3 0 0 0 1.4 0l.934-.6a1.3 1.3 0 0 1 1.4 0l.933.6a1.3 1.3 0 0 0 1.4 0l.933-.6a1.3 1.3 0 0 1 1.4 0l.934.6a1.3 1.3 0 0 0 1.4 0l.933-.6A1.3 1.3 0 0 1 19 2a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1 1.3 1.3 0 0 1-.7-.2l-.933-.6a1.3 1.3 0 0 0-1.4 0l-.934.6a1.3 1.3 0 0 1-1.4 0l-.933-.6a1.3 1.3 0 0 0-1.4 0l-.933.6a1.3 1.3 0 0 1-1.4 0l-.934-.6a1.3 1.3 0 0 0-1.4 0l-.933.6a1.3 1.3 0 0 1-.7.2 1 1 0 0 1-1-1z"/></svg></span><div><b>86<span>건</span></b><small>이번 달 기록</small></div></div>
-    <div class="tile"><span class="ic t4"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 17h3v2a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1v-3a3.16 3.16 0 0 0 2-2h1a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1h-1a5 5 0 0 0-2-4V3a4 4 0 0 0-3.2 1.6l-.3.4H11a6 6 0 0 0-6 6v1a5 5 0 0 0 2 4v3a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1z"/><path d="M16 10h.01"/><path d="M2 8v1a2 2 0 0 0 2 2h1"/></svg></span><div><b>1,000,000<span>원</span></b><small>이번 달 저축</small></div></div>
+    <div class="tile"><span class="ic t1"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="3" y="13" width="4.6" height="8" rx="1.6" opacity=".45" />
+      <rect x="9.7" y="8.6" width="4.6" height="12.4" rx="1.6" opacity=".7" />
+      <rect x="16.4" y="3.6" width="4.6" height="17.4" rx="1.6" />
+      <rect class="d" x="17.5" y="6" width="2.4" height="1.4" rx=".7" opacity=".7" /></svg></span><div><b>182,000<span>원</span></b><small>가장 많이 쓴 날 · 11/2</small></div></div>
+    <div class="tile"><span class="ic t2"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.6 2.2c.4 3 3.1 4.6 4.9 7.1A7.6 7.6 0 0 1 19 13.8 7 7 0 0 1 5 13.8c0-2.4 1-4.3 2.6-5.8.3 1.6 1.1 2.7 2.3 3.2-.6-3.6.6-6.9 2.7-9z" />
+      <path class="d" d="M12 21a3.3 3.3 0 0 1-3.3-3.3c0-1.7 1.2-2.7 2.3-3.9.2 1 .8 1.6 1.5 1.8.1-1.3.6-2.3 1.4-3 .3 1.6 1.4 2.5 1.4 4.6A3.3 3.3 0 0 1 12 21z" /></svg></span><div><b>4<span>일</span></b><small>무지출 연속</small></div></div>
+    <div class="tile"><span class="ic t3"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 3h12a1.2 1.2 0 0 1 1.2 1.2v16.4l-2.4-1.3-2.4 1.3-2.4-1.3-2.4 1.3-2.4-1.3-2.4 1.3V4.2A1.2 1.2 0 0 1 6 3z" />
+      <rect class="d" x="8.3" y="7.4" width="7.4" height="1.7" rx=".85" />
+      <rect class="d" x="8.3" y="11" width="4.8" height="1.7" rx=".85" /></svg></span><div><b>86<span>건</span></b><small>이번 달 기록</small></div></div>
+    <div class="tile"><span class="ic t4"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M10.6 5.2h3.2a7.2 7.2 0 0 1 5.5 2.6l1.3-.4a.8.8 0 0 1 1 .9l-.3 2.3c.4.7.6 1.4.7 2.2h.3a.8.8 0 0 1 .8.8v1.8a.8.8 0 0 1-.8.8h-.9a7 7 0 0 1-2.4 2.6v1.8a1.4 1.4 0 0 1-1.4 1.4h-1.3a1.4 1.4 0 0 1-1.4-1.3l-.1-.6h-3.2l-.1.6a1.4 1.4 0 0 1-1.4 1.3H7.8a1.4 1.4 0 0 1-1.4-1.4v-2.2A7 7 0 0 1 3.4 12.3c0-3.9 3.2-7.1 7.2-7.1z" />
+      <rect class="d" x="9.4" y="7.4" width="4.6" height="1.6" rx=".8" />
+      <circle class="d" cx="17.6" cy="11" r=".95" />
+      <circle cx="11.7" cy="2.6" r="2" /></svg></span><div><b>1,000,000<span>원</span></b><small>이번 달 저축</small></div></div>
   </div>
 </div>

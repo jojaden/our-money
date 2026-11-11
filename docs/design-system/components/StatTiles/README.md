@@ -9,7 +9,7 @@
 ## 구성
 - **섹션 이름표:** 묶음 위에 `small`·`faint`로 "이번 달 기록"을 둡니다.
 - **타일:** `surface`, `radius-inner`, `shadow-card`, 안쪽 14px입니다.
-- **아이콘:** 36px 동그라미에 lucide 18px입니다. 바탕은 상태 알약 색(`pill-*-bg`/`-ink`)이나 사람·공동 색(`a-soft`, `accent-soft`)만 씁니다.
+- **아이콘:** 분류 아이콘과 같은 채운 두 톤 그림([CategoryIcon](../CategoryIcon/README.md))을 38px 원에 22px로 둡니다 — 가장 많이 쓴 날 오르는 막대(빨강), 무지출 연속 불꽃(주황), 기록 수 영수증(금색), 저축 돼지 저금통(초록). 원은 그 색을 옅게 푼 것입니다(`cat-base`·`cat-tint`).
 - **숫자:** `display` 18px/700, 단위는 0.72em `faint`입니다. 아래 설명은 `meta`·`faint`입니다. 폰에서 타일이 좁으니 금액은 백만 원부터 "200만원"처럼 줄입니다.
 
 ## 쓰는 쪽이 줄 것

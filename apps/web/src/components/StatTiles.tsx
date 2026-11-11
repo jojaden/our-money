@@ -1,6 +1,6 @@
 "use client";
 
-import { Flame, PiggyBank, ReceiptText, TrendingUp } from "lucide-react";
+import { CatGlyph, type GlyphName } from "./CatGlyphs";
 import { num, parseYmd, short, shortDate, ymd } from "@/lib/format";
 
 /**
@@ -23,17 +23,18 @@ export function StatTiles({ rows, period, today, saving }: { rows: { date: strin
   // 타일 폭(폰에서 약 110px)에 맞게 백만 원부터는 "200만"처럼 줄인다
   const won = (n: number) => (n >= 1_000_000 ? short(n) : num(n));
   const tiles = [
-    { icon: <TrendingUp />, tone: "t1", value: peak ? won(peak[1]) : "–", unit: peak ? "원" : "", text: peak ? `가장 많이 쓴 날 · ${shortDate(peak[0])}` : "가장 많이 쓴 날" },
-    { icon: <Flame />, tone: "t2", value: String(streak), unit: "일", text: "무지출 연속" },
-    { icon: <ReceiptText />, tone: "t3", value: num(rows.length), unit: "건", text: "이번 달 기록" },
-    { icon: <PiggyBank />, tone: "t4", value: won(saving), unit: "원", text: "이번 달 저축" },
+    { icon: "trend" as GlyphName, ink: "#f2554f", value: peak ? won(peak[1]) : "–", unit: peak ? "원" : "", text: peak ? `가장 많이 쓴 날 · ${shortDate(peak[0])}` : "가장 많이 쓴 날" },
+    { icon: "flame" as GlyphName, ink: "#ff8a3d", value: String(streak), unit: "일", text: "무지출 연속" },
+    { icon: "receipt" as GlyphName, ink: "#e9a80a", value: num(rows.length), unit: "건", text: "이번 달 기록" },
+    { icon: "piggy" as GlyphName, ink: "#1db86b", value: won(saving), unit: "원", text: "이번 달 저축" },
   ];
   return (
     <ul className="stat-tiles">
       {tiles.map((t) => (
         <li key={t.text} className="stat">
-          <span className={`ic ${t.tone}`} aria-hidden="true">
-            {t.icon}
+          {/* 분류 아이콘과 같은 채운 두 톤 그림, 그 색을 옅게 푼 원 (docs/design-system/components/CategoryIcon) */}
+          <span className="cat ic" style={{ color: t.ink }} aria-hidden="true">
+            <CatGlyph icon={t.icon} />
           </span>
           <div>
             <b>
