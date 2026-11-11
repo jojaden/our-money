@@ -1,11 +1,12 @@
 "use client";
 
 import { num } from "@/lib/format";
+import { Meter } from "./Meter";
 import { useRevealOnce } from "./reveal";
 
 /**
  * 모으는 돈의 목표 대비 진행 (docs/design-system/components/GoalBar).
- * 목표를 넘으면 막대는 100%에서 멈추고 "목표 달성" 알약을 붙인다. 누르면 그 항목 시트를 연다.
+ * 막대는 예산 막대와 같은 Meter(thin, accent 한 색). 목표를 넘으면 막대는 100%에서 멈추고 "목표 달성" 알약을 붙인다. 누르면 그 항목 시트를 연다.
  */
 export function GoalBar({ name, desc, saved, target, onOpen }: { name: string; desc: string; saved: number; target: number; onOpen: () => void }) {
   const grown = useRevealOnce("goals");
@@ -31,8 +32,8 @@ export function GoalBar({ name, desc, saved, target, onOpen }: { name: string; d
           </span>
           {done && <span className="pill positive">목표 달성</span>}
         </span>
-        <span className="goal-bar" role="progressbar" aria-label={`${name} 모은 돈`} aria-valuemin={0} aria-valuemax={target} aria-valuenow={Math.min(saved, target)} aria-valuetext={`${num(target)}원 중 ${num(saved)}원, ${pct}%`}>
-          <i style={{ width: grown ? `${ratio * 100}%` : 0 }} />
+        <span className={`goal-bar${grown ? "" : " flat"}`} role="progressbar" aria-label={`${name} 모은 돈`} aria-valuemin={0} aria-valuemax={target} aria-valuenow={Math.min(saved, target)} aria-valuetext={`${num(target)}원 중 ${num(saved)}원, ${pct}%`}>
+          <Meter thin value={ratio} />
         </span>
       </span>
     </button>

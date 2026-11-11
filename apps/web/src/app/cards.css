@@ -6,7 +6,7 @@
 
 /* 예산 대비 쓴 돈과 할 일 진행을 같은 모양으로. 채움은 accent 한 색(--c), 예산을 넘으면 negative.
    채움(.fill)은 트랙 폭만 한 둥근 띠라 translateX 로 밀어 넣으면 오른쪽 끝도 둥글게 남는다(합성만). */
-.meter { position: relative; height: 10px; margin: 12px 0 8px; }
+.meter { position: relative; display: block; height: 10px; margin: 12px 0 8px; }
 .meter.thin { height: 8px; }
 .meter .track { position: absolute; inset: 0; overflow: hidden; border-radius: var(--radius-chip); background: var(--well); }
 .meter .fill { position: absolute; inset: 0; border-radius: inherit; background: var(--c, var(--accent)); transform: translateX(-100%); will-change: transform; }
@@ -184,7 +184,7 @@
 
 /* ---------- 모으는 목표 (GoalBar) ---------- */
 
-/* 카드 전체가 그 항목 시트를 여는 버튼. 막대는 6px, 100%에서 멈춘다 */
+/* 카드 전체가 그 항목 시트를 여는 버튼. 막대는 Meter(thin 8px), 100%에서 멈춘다 */
 .goal-card { display: grid; gap: 14px; width: 100%; border: 0; color: inherit; font: inherit; text-align: left; transition: transform var(--dur-press) var(--ease-press); }
 .goal-card:active { transform: scale(0.98); }
 .goal-title { display: grid; gap: 2px; }
@@ -197,18 +197,18 @@
 .goal-now { display: flex; flex-wrap: wrap; align-items: center; gap: 0 4px; color: var(--accent-ink); font: 600 14.5px/20px var(--font-display); font-variant-numeric: tabular-nums; }
 .goal-now > span:not(.pill) { color: var(--faint); font-weight: 500; }
 .goal-now .pill { margin-left: auto; }
-.goal-bar { display: block; height: 6px; overflow: hidden; border-radius: var(--radius-chip); background: var(--well); }
-.goal-bar i { display: block; height: 100%; border-radius: inherit; background: var(--primary); transition: width var(--dur-ring) var(--ease-out); }
+.goal-bar { display: block; }
+.goal-bar .meter { margin: 0; }
 @media (prefers-reduced-motion: reduce) {
-  .goal-card, .goal-bar i { transition: none; }
+  .goal-card { transition: none; }
 }
 
 /* 플랜 머리: 결론 아래 작은 버튼 */
 .page-head .import-btn { margin-top: 12px; }
 
-/* ---------- 강조 카드 (HighlightCard): 화면에 하나. 옅은 하늘 그라데이션, 그림자 없음 ---------- */
+/* ---------- 강조 카드 (HighlightCard): 화면에 하나. 옅은 빛 한 색(sky-50), 그림자 없음 ---------- */
 
-.highlight { display: grid; gap: 8px; padding: var(--pad); border-radius: var(--radius-card); background: linear-gradient(115deg, var(--sky-100), var(--sky-50)); }
+.highlight { display: grid; gap: 8px; padding: var(--pad); border-radius: var(--radius-card); background: var(--sky-50); }
 .highlight h3 { font: 700 20px/28px var(--font-text); letter-spacing: -0.02em; }
 .highlight .reward { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; margin-top: 4px; }
 .highlight .reward b { font: 700 20px/28px var(--font-display); font-variant-numeric: tabular-nums; }
@@ -223,43 +223,22 @@
 .close-prompt .s { color: var(--muted); font: 500 14.5px/20px var(--font-text); }
 .close-prompt-actions { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: 8px; margin-top: 16px; }
 
-/* ---------- 월급이 나뉘는 곳: 원형 그래프 (SplitDonut) ----------
-   조각을 누르면 그 조각만 바깥으로 8px 튀어나오고 굵어지며(transform·stroke-width만) 말풍선이 뜬다.
-   아래 이름 줄을 누르면 그 버킷 항목이 줄 밑에 펼쳐진다. */
-.donut-wrap { display: grid; gap: 8px; }
-.donut-stage { position: relative; width: min(100%, 260px); margin: 4px auto 0; aspect-ratio: 1; }
-.donut { display: block; width: 100%; height: 100%; overflow: visible; }
-.donut circle { fill: none; transition: stroke-width var(--dur-swap) var(--ease-out); }
-.donut-seg { cursor: pointer; transition: transform var(--dur-swap) var(--ease-out), opacity var(--dur-swap) ease; }
-.donut-seg.dim { opacity: 0.45; }
-.donut .k-fixed { stroke: var(--g-fixed); }
-.donut .k-living { stroke: var(--g-living); }
-.donut .k-allowance { stroke: var(--g-allowance); }
-.donut .k-saving { stroke: var(--g-saving); }
-.donut .k-left, .donut .k-empty { stroke: var(--g-left); }
-.donut-center { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 2px; pointer-events: none; text-align: center; }
-.donut-center .l { color: var(--faint); font: 500 13px/18px var(--font-text); }
-.donut-center .money { font: 700 20px/26px var(--font-display); letter-spacing: -0.02em; }
-.donut-center .money.neg, .donut-row .money.neg { color: var(--negative); }
-/* 말풍선: 조각 바깥에 뜬다(떠 있는 것이라 그림자 허용) */
-.donut-tip {
-  position: absolute;
-  z-index: 1;
-  padding: 6px 10px;
-  border-radius: var(--radius-chip);
-  background: var(--surface);
-  box-shadow: var(--shadow-float);
-  color: var(--text);
-  font: 500 13px/18px var(--font-text);
-  white-space: nowrap;
-  pointer-events: none;
-  transform: translate(-50%, -50%);
-  animation: tip-in var(--dur-swap) var(--ease-out) both;
-}
-.donut-tip b { margin-left: 2px; font-weight: 700; }
-@keyframes tip-in { from { opacity: 0; transform: translate(-50%, -50%) scale(0.85); } }
-.donut-legend { display: grid; margin: 4px -12px 0; padding: 0; list-style: none; }
-.donut-row {
+/* ---------- 월급이 나뉘는 곳 (SplitBar) ----------
+   수입 큰 숫자 → 한 줄 쌓은 막대(버킷 색은 여기와 목록 점에만) → 목록. 줄을 누르면 그 조각만 남고 나머지는 옅어진다(opacity만) */
+.split { display: grid; gap: 8px; }
+.split-total { display: grid; gap: 2px; margin: 10px 0 0; }
+.split-bar { position: relative; margin: 6px 0 4px; }
+.split-track { display: flex; gap: 2px; height: 12px; overflow: hidden; border-radius: var(--radius-chip); }
+.split-track i { flex: 1 1 0; min-width: 3px; transition: opacity var(--dur-swap) ease; }
+.split-track i.dim { opacity: 0.3; }
+.split-tick { position: absolute; top: -4px; bottom: -4px; width: 2px; margin-left: -1px; border-radius: 1px; background: var(--text); }
+.split .k-fixed { background: var(--g-fixed); }
+.split .k-living { background: var(--g-living); }
+.split .k-allowance { background: var(--g-allowance); }
+.split .k-saving { background: var(--g-saving); }
+.split .k-left { background: var(--g-left); }
+.split-legend { display: grid; margin: 4px -12px 0; padding: 0; list-style: none; }
+.split-row {
   display: grid;
   grid-template-columns: 10px minmax(0, 1fr) auto 20px;
   align-items: center;
@@ -275,25 +254,21 @@
   text-align: left;
   transition: background-color var(--dur-press) ease;
 }
-.donut-row:active, .donut-row.on { background: var(--well); }
-.donut-row .dot { width: 10px; height: 10px; border-radius: 50%; }
-.donut-row .dot.k-fixed { background: var(--g-fixed); }
-.donut-row .dot.k-living { background: var(--g-living); }
-.donut-row .dot.k-allowance { background: var(--g-allowance); }
-.donut-row .dot.k-saving { background: var(--g-saving); }
-.donut-row .dot.k-left { background: var(--g-left); box-shadow: inset 0 0 0 1px var(--border); }
-.donut-row .p { margin-left: 4px; color: var(--faint); font-size: 13.5px; }
-.donut-row .money { font: 600 15.5px/22px var(--font-display); }
-.donut-row .chev { width: 18px; height: 18px; color: var(--faint); transition: transform var(--dur-swap) var(--ease-out); }
-.donut-row[aria-expanded="true"] .chev { transform: rotate(180deg); }
-.donut-detail { display: grid; margin: 2px 0 8px 32px; padding: 4px 0; list-style: none; }
-.donut-detail button { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 44px; padding: 0 12px 0 0; border: 0; background: none; color: var(--muted); font: 500 14.5px/20px var(--font-text); text-align: left; }
-.donut-detail .n { display: grid; min-width: 0; }
-.donut-detail .s { color: var(--faint); font-size: 12.5px; line-height: 16px; }
-.donut-detail .money { color: var(--text); font: 600 14.5px/20px var(--font-display); }
-.donut-detail .none { padding: 10px 4px; color: var(--faint); font-size: 14px; }
-.donut-note { margin: 4px 4px 0; color: var(--faint); font: 400 13px/18px var(--font-text); }
+.split-row:active, .split-row.on { background: var(--well); }
+.split-row .dot { width: 10px; height: 10px; border-radius: 50%; }
+.split-row .dot.k-left { box-shadow: inset 0 0 0 1px var(--border); }
+.split-row .p { margin-left: 4px; color: var(--faint); font-size: 13.5px; }
+.split-row .money { font: 600 15.5px/22px var(--font-display); }
+.split-row .money.neg { color: var(--negative); }
+.split-row .chev { width: 18px; height: 18px; color: var(--faint); transition: transform var(--dur-swap) var(--ease-out); }
+.split-row[aria-expanded="true"] .chev { transform: rotate(180deg); }
+.split-detail { display: grid; margin: 2px 0 8px 32px; padding: 4px 0; list-style: none; }
+.split-detail button { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 44px; padding: 0 12px 0 0; border: 0; background: none; color: var(--muted); font: 500 14.5px/20px var(--font-text); text-align: left; }
+.split-detail .n { display: grid; min-width: 0; }
+.split-detail .s { color: var(--faint); font-size: 12.5px; line-height: 16px; }
+.split-detail .money { color: var(--text); font: 600 14.5px/20px var(--font-display); }
+.split-detail .none { padding: 10px 4px; color: var(--faint); font-size: 14px; }
+.split-note { margin: 4px 4px 0; color: var(--faint); font: 400 13px/18px var(--font-text); }
 @media (prefers-reduced-motion: reduce) {
-  .donut circle, .donut-seg, .donut-row, .donut-row .chev { transition: none; }
-  .donut-tip { animation: none; }
+  .split-track i, .split-row, .split-row .chev { transition: none; }
 }

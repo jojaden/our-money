@@ -11,6 +11,7 @@ import { monthLabel, parseYmd, shortDate } from "@/lib/format";
 import { byUrgency, eventTasks, useTasks } from "./tasks";
 import { TaskRow } from "./TaskRow";
 import { Morph } from "./Morph";
+import { Meter } from "./Meter";
 
 /** 접었을 때 보이는 남은 할 일·다가오는 일정 수 */
 const BRIEF = 4;
@@ -67,7 +68,7 @@ export function MonthTodo({ month, onOpenEvent, className = "" }: { month: strin
                   <span className="num">{`${done} / ${all.length}`}</span>
                 </div>
                 <div className="mt-bar" role="progressbar" aria-label={`${label} 할 일`} aria-valuemin={0} aria-valuemax={all.length} aria-valuenow={done}>
-                  <i style={{ transform: `scaleX(${done / all.length})` }} />
+                  <Meter thin value={done / all.length} />
                 </div>
                 {shown.length === 0 ? (
                   <p className="empty">{label} 할 일을 모두 끝냈어요.</p>

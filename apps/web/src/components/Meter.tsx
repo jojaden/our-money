@@ -5,7 +5,8 @@ import { cssTimeMs } from "@/lib/motion";
 
 /**
  * 가로 막대 (docs/design-system README "숫자와 막대"). 같은 뜻은 이 모양 하나로 그린다:
- * 예산 대비 쓴 돈(눈금 = 오늘까지 써도 되는 선이나 분류 예산), 할 일 진행. 채움은 accent 한 색, 넘치면 negative.
+ * 예산 대비 쓴 돈(눈금 = 오늘까지 써도 되는 선이나 분류 예산), 할 일 진행, 모으는 목표.
+ * 버튼 안에도 들어가도록 span 으로 그린다. 채움은 accent 한 색, 넘치면 negative.
  * 채움은 막대 폭만 한 둥근 띠를 translateX 로 밀어 넣는다 — 레이아웃 없이 합성만 해서 움직임이 싸고, 오른쪽 끝도 둥글다.
  */
 export function Meter({
@@ -31,7 +32,7 @@ export function Meter({
   thin?: boolean;
 }) {
   return (
-    <div className={`meter${thin ? " thin" : ""}${over ? " over" : ""}`} role={label ? "img" : undefined} aria-label={label} aria-hidden={label ? undefined : true}>
+    <span className={`meter${thin ? " thin" : ""}${over ? " over" : ""}`} role={label ? "img" : undefined} aria-label={label} aria-hidden={label ? undefined : true}>
       <i className="track">
         {value === undefined ? <i className="fill" ref={fillRef} /> : <i className="fill css" style={{ transform: shift(value) }} />}
       </i>
@@ -40,7 +41,7 @@ export function Meter({
           {mileText && <span>{mileText}</span>}
         </i>
       )}
-    </div>
+    </span>
   );
 }
 

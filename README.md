@@ -11,7 +11,7 @@
 ![Supabase](https://img.shields.io/badge/Supabase-Postgres_·_RLS_·_Realtime-939597?style=flat-square&labelColor=222326)
 ![Kotlin](https://img.shields.io/badge/Kotlin_Multiplatform-Android-939597?style=flat-square&labelColor=222326)
 
-<img src="docs/screenshots/home.jpg" width="19%" alt="홈"> <img src="docs/screenshots/plan.jpg" width="19%" alt="플랜 원형 그래프"> <img src="docs/screenshots/check.jpg" width="19%" alt="체크"> <img src="docs/screenshots/ledger.jpg" width="19%" alt="가계부 누적 지출"> <img src="docs/screenshots/calendar.jpg" width="19%" alt="달력">
+<img src="docs/screenshots/home.jpg" width="19%" alt="홈"> <img src="docs/screenshots/plan.jpg" width="19%" alt="플랜 월급 나뉨 막대"> <img src="docs/screenshots/check.jpg" width="19%" alt="체크"> <img src="docs/screenshots/ledger.jpg" width="19%" alt="가계부 누적 지출"> <img src="docs/screenshots/calendar.jpg" width="19%" alt="달력">
 
 </div>
 
@@ -40,7 +40,7 @@ flowchart LR
 | 플랜 | 체크 | 가계부 | 달력 | 알림 |
 |:---:|:---:|:---:|:---:|:---:|
 | <img src="docs/screenshots/plan-pick.jpg" width="160"> | <img src="docs/screenshots/check.jpg" width="160"> | <img src="docs/screenshots/ledger.jpg" width="160"> | <img src="docs/screenshots/calendar-day.jpg" width="160"> | <img src="docs/screenshots/bell.jpg" width="160"> |
-| 조각을 누르면 튀어나오는 원형 그래프 | 월급날마다 옮길 돈 진행선 | 이번 달 vs 지난달 누적 지출 | 애플 캘린더식 날짜 패널 | 지난주 돌아보기 |
+| 수입 큰 숫자와 한 줄로 나뉜 월급 | 월급날마다 옮길 돈 칸 막대 | 이번 달 vs 지난달 누적 지출 | 애플 캘린더식 날짜 패널 | 지난주 돌아보기 |
 
 <img src="docs/screenshots/desktop-plan.jpg" width="100%" alt="데스크톱: 플랜">
 

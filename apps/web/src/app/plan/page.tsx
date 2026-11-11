@@ -10,7 +10,7 @@ import { goalProgress, groupTotals, incomeOf, itemsOf, lanes, monthRow, nameOf, 
 import { monthLabel, num } from "@/lib/format";
 import { FirstRun, MonthHeader } from "@/components/MonthHeader";
 import { Money, Who } from "@/components/ui";
-import { SplitDonut } from "@/components/SplitDonut";
+import { SplitBar } from "@/components/SplitBar";
 import { GoalBar } from "@/components/GoalBar";
 import { IncomeSheet, ItemSheet } from "@/components/ItemSheet";
 
@@ -158,7 +158,7 @@ export default function PlanPage() {
             </span>
           </div>
           <div className="card">
-            <SplitDonut s={s} lanes={ls} items={items} rA={rA} onOpenItem={(item) => setSheet({ open: true, item })} />
+            <SplitBar s={s} lanes={ls} items={items} rA={rA} onOpenItem={(item) => setSheet({ open: true, item })} />
           </div>
         </section>
         {renderGroup("fixed")}
