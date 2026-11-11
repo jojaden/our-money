@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus, Download, BellRing, CalendarDays, History, LogOut, RotateCcw } from "lucide-react";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Plus, Download, BellRing, CalendarDays, CalendarRange, ChevronLeft, ChevronRight, FlaskConical, History, LogOut, RotateCcw, Scale, Tags, UserRound, Users, WalletCards } from "lucide-react";
 import type { Account, AccountKind, Category, Person, Settings } from "@/lib/types";
 import { PAY_KIND_LABEL } from "@/lib/types";
 import { useData } from "@/lib/store";
@@ -16,6 +18,11 @@ import { Wallet } from "@/components/Wallet";
 import { MiniCard } from "@/components/pass";
 import { HistorySheet } from "@/components/HistorySheet";
 import { IcsSheet } from "@/components/IcsSheet";
+import { leaveDetail } from "@/lib/navigationMotion";
+
+/** 설정 묶음 — 폰은 목록(/settings/)에서 하나를 눌러 그 묶음만(/settings/?s=…) 보고, 데스크톱은 모두 한 화면에 둔다 */
+type SecId = "people" | "split" | "cycle" | "wallet" | "categories" | "account";
+const SEC_IDS: SecId[] = ["people", "split", "cycle", "wallet", "categories", "account"];
 
 /** 스프레드시트가 수식으로 실행하지 않게 = + - @ 탭·줄바꿈으로 시작하는 글자 칸 앞에 ' 를 붙인다 */
 function cell(v: string | number) {
@@ -30,6 +37,9 @@ function csv(rows: (string | number)[][]) {
 export default function SettingsPage() {
   const { data, upsert, toast, auth, me, setMe, reload, exportSpendings, setMyName, pending } = useData();
   const s = data.settings;
+  const router = useRouter();
+  const q = useSearchParams().get("s");
+  const sec = SEC_IDS.find((id) => id === q) ?? null;
   const [draft, setDraft] = useState<Settings>(s);
   const myName = nameOf(s, me);
   const [nameDraft, setNameDraft] = useState(myName);
@@ -72,6 +82,53 @@ export default function SettingsPage() {
   const cats = [...data.categories].sort((a, b) => a.sort - b.sort);
   const catTotal = cats.reduce((a, c) => a + c.budget, 0);
 
+  const openHistory = () => {
+    setHistoryKey((n) => n + 1);
+    setHistoryOpen(true);
+  };
+  const demo = auth.state === "demo";
+  const SECS: Record<SecId, { title: string; desc: string; summary: string; icon: typeof Users }> = {
+    people: {
+      title: "두 사람",
+      desc: "이름은 각자 자기 계정에서 바꿔요. 월급날에는 체크에서 각자 자기 월급통장에서 옮길 돈을 확인해요(그달에 없는 날이면 말일). 평소 월급(실수령)은 새 달을 만들 때 기본값으로 써요.",
+      summary: `${nameOf(s, "a")} 매달 ${paydayOf(s, "a")}일 · ${nameOf(s, "b")} 매달 ${paydayOf(s, "b")}일`,
+      icon: Users,
+    },
+    split: {
+      title: "공동비용 나누기",
+      desc: "‘공동’ 항목을 두 사람이 어떤 비율로 낼지 정해요. 이체 금액과 정산이 이 비율을 따라요.",
+      summary: s.split_mode === "income" ? "월급 비율" : `${nameOf(s, "a")} ${s.ratio_a}% · ${nameOf(s, "b")} ${100 - s.ratio_a}%`,
+      icon: Scale,
+    },
+    cycle: {
+      title: "한 달의 기준",
+      desc: "한 사람의 월급날부터 다음 월급 전날까지를 한 달로 보면 생활비 계산이 편해요. 두 사람 월급날이 다르면 보통 먼저 받는 사람의 월급날로 맞춰요.",
+      summary: s.cycle_start === 1 ? "1일부터 (달력 기준)" : `매달 ${s.cycle_start}일부터`,
+      icon: CalendarRange,
+    },
+    wallet: {
+      title: "지갑",
+      desc: "계좌와 카드예요. 이체 목록과 카드값 계산에 써요. 잔액은 따로 관리하지 않아요. 카드를 누르면 카드값·결제일·최근 사용이 나와요.",
+      summary: `카드 ${data.accounts.filter((a) => a.kind === "card" && !a.archived).length}장 · 통장 ${banks.length}개`,
+      icon: WalletCards,
+    },
+    categories: {
+      title: "생활비 분류와 예산",
+      desc: `분류 예산 합계 ${num(catTotal)}원. 플랜의 공동 생활비와 맞추면 어디서 넘치는지 보기 쉬워요.`,
+      summary: `분류 ${cats.length}개 · 예산 ${num(catTotal)}원`,
+      icon: Tags,
+    },
+    account: {
+      title: demo ? "예시 데이터" : "계정",
+      desc: demo ? "아직 두 사람 계정을 연결하지 않아서 예시 데이터로 보여주고 있어요. 이 브라우저에만 저장되고, 체크·기록은 아래에서 고른 사람 이름으로 남아요." : "체크와 기록은 로그인한 사람 이름으로 남아요.",
+      summary: demo ? `지금 사용하는 사람 · ${nameOf(s, me)}` : auth.state === "member" ? auth.email : "",
+      icon: demo ? FlaskConical : UserRound,
+    },
+  };
+  const open = sec ? SECS[sec] : null;
+  // 이 묶음을 그릴지 — 폰에서는 고른 묶음만, 데스크톱은 CSS 가 모두 보인다
+  const on = (id: SecId) => `set-sec${sec === id ? " on" : ""}`;
+
   const exportCsv = async () => {
     const all = await exportSpendings();
     const accName = (id: string | null) => data.accounts.find((a) => a.id === id)?.name ?? "";
@@ -101,16 +158,71 @@ export default function SettingsPage() {
     <>
       <header className="page-head">
         <div>
-          <h1>설정</h1>
-          <p className="sub">{auth.state === "demo" ? "예시 데이터 · 이 브라우저에만 저장돼요" : auth.state === "member" ? auth.email : ""}</p>
+          {open && (
+            <button type="button" className="back-btn set-back" onClick={() => leaveDetail(router, "/settings/")}>
+              <ChevronLeft aria-hidden="true" />
+              설정
+            </button>
+          )}
+          <h1>{open ? open.title : "설정"}</h1>
+          <p className="sub">{open ? open.desc : demo ? "예시 데이터 · 이 브라우저에만 저장돼요" : auth.state === "member" ? auth.email : ""}</p>
         </div>
       </header>
 
-      <div className="settings-wrap">
-        <section className="set-sec" aria-labelledby="people-h">
+      <div className="settings-wrap" data-sec={sec ?? undefined}>
+        {/* 폰 목록: 묶음마다 한 줄, 누르면 그 묶음만 보는 화면으로 */}
+        <nav className="set-list" aria-label="설정 묶음">
+          <div className="card">
+            <div className="rows" style={{ ["--inset" as string]: "48px" }}>
+              {SEC_IDS.map((id) => {
+                const { title, summary, icon: Icon } = SECS[id];
+                return (
+                  <Link key={id} className="row" href={`/settings/?s=${id}`}>
+                    <span className="alert-ic" aria-hidden="true">
+                      <Icon />
+                    </span>
+                    <div style={{ minWidth: 0 }}>
+                      <div className="t">{title}</div>
+                      <div className="s">{summary}</div>
+                    </div>
+                    <ChevronRight className="chev" aria-hidden="true" />
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+          <div className="card">
+            <div className="rows" style={{ ["--inset" as string]: "48px" }}>
+              <button type="button" className="row" onClick={openHistory}>
+                <span className="alert-ic" aria-hidden="true"><History /></span>
+                <div className="t">변경 이력</div>
+                <ChevronRight className="chev" aria-hidden="true" />
+              </button>
+              <button type="button" className="row" onClick={() => void exportCsv()}>
+                <span className="alert-ic" aria-hidden="true"><Download /></span>
+                <div className="t">지출 CSV 내보내기</div>
+                <span />
+              </button>
+              <button type="button" className="row" onClick={openIcs}>
+                <span className="alert-ic" aria-hidden="true"><CalendarDays /></span>
+                <div className="t">일정 내보내기</div>
+                <ChevronRight className="chev" aria-hidden="true" />
+              </button>
+              {app && (
+                <button type="button" className="row" onClick={() => toApp("card-notice")}>
+                  <span className="alert-ic" aria-hidden="true"><BellRing /></span>
+                  <div className="t">카드 알림</div>
+                  <ChevronRight className="chev" aria-hidden="true" />
+                </button>
+              )}
+            </div>
+          </div>
+        </nav>
+
+        <section className={on("people")} aria-labelledby="people-h">
           <div className="head">
-            <h2 id="people-h">두 사람</h2>
-            <p>이름은 각자 자기 계정에서 바꿔요. 월급날에는 체크에서 각자 자기 월급통장에서 옮길 돈을 확인해요(그달에 없는 날이면 말일). 평소 월급(실수령)은 새 달을 만들 때 기본값으로 써요.</p>
+            <h2 id="people-h">{SECS.people.title}</h2>
+            <p>{SECS.people.desc}</p>
           </div>
           <div className="card">
             {(["a", "b"] as Person[]).map((p, idx) => {
@@ -189,10 +301,10 @@ export default function SettingsPage() {
           </div>
         </section>
 
-        <section className="set-sec" aria-labelledby="split-h">
+        <section className={on("split")} aria-labelledby="split-h">
           <div className="head">
-            <h2 id="split-h">공동비용 나누기</h2>
-            <p>‘공동’ 항목을 두 사람이 어떤 비율로 낼지 정해요. 이체 금액과 정산이 이 비율을 따라요.</p>
+            <h2 id="split-h">{SECS.split.title}</h2>
+            <p>{SECS.split.desc}</p>
           </div>
           <div className="card">
             <Seg
@@ -231,10 +343,10 @@ export default function SettingsPage() {
           </div>
         </section>
 
-        <section className="set-sec" aria-labelledby="cycle-h">
+        <section className={on("cycle")} aria-labelledby="cycle-h">
           <div className="head">
-            <h2 id="cycle-h">한 달의 기준</h2>
-            <p>한 사람의 월급날부터 다음 월급 전날까지를 한 달로 보면 생활비 계산이 편해요. 두 사람 월급날이 다르면 보통 먼저 받는 사람의 월급날로 맞춰요.</p>
+            <h2 id="cycle-h">{SECS.cycle.title}</h2>
+            <p>{SECS.cycle.desc}</p>
           </div>
           <div className="card">
             <div className="field" style={{ marginTop: 0 }}>
@@ -253,10 +365,10 @@ export default function SettingsPage() {
           </div>
         </section>
 
-        <section className="set-sec" aria-labelledby="acc-h">
+        <section className={on("wallet")} aria-labelledby="acc-h">
           <div className="head">
-            <h2 id="acc-h">지갑</h2>
-            <p>계좌와 카드예요. 이체 목록과 카드값 계산에 써요. 잔액은 따로 관리하지 않아요. 카드를 누르면 카드값·결제일·최근 사용이 나와요.</p>
+            <h2 id="acc-h">{SECS.wallet.title}</h2>
+            <p>{SECS.wallet.desc}</p>
           </div>
           <div>
             <Wallet onAdd={() => setAcc({ open: true, kind: "card" })} onEdit={(a) => setAcc({ open: true, account: a })} />
@@ -286,12 +398,10 @@ export default function SettingsPage() {
           </div>
         </section>
 
-        <section className="set-sec" aria-labelledby="cat-h">
+        <section className={on("categories")} aria-labelledby="cat-h">
           <div className="head">
-            <h2 id="cat-h">생활비 분류와 예산</h2>
-            <p>
-              분류 예산 합계 <Money value={catTotal} />. 플랜의 공동 생활비와 맞추면 어디서 넘치는지 보기 쉬워요.
-            </p>
+            <h2 id="cat-h">{SECS.categories.title}</h2>
+            <p>{SECS.categories.desc}</p>
           </div>
           <div className="card">
             <div className="rows">
@@ -310,10 +420,10 @@ export default function SettingsPage() {
           </div>
         </section>
 
-        <section className="set-sec" aria-labelledby="me-h">
+        <section className={on("account")} aria-labelledby="me-h">
           <div className="head">
-            <h2 id="me-h">{auth.state === "demo" ? "예시 데이터" : "계정"}</h2>
-            <p>{auth.state === "demo" ? "아직 두 사람 계정을 연결하지 않아서 예시 데이터로 보여주고 있어요. 이 브라우저에만 저장되고, 체크·기록은 아래에서 고른 사람 이름으로 남아요." : "체크와 기록은 로그인한 사람 이름으로 남아요."}</p>
+            <h2 id="me-h">{SECS.account.title}</h2>
+            <p>{SECS.account.desc}</p>
           </div>
           <div className="card">
             {auth.state === "demo" ? (
@@ -334,20 +444,13 @@ export default function SettingsPage() {
                   >
                     <RotateCcw aria-hidden="true" /> 예시 데이터로 초기화
                   </button>
-                  <button type="button" className="btn secondary sm" onClick={() => void exportCsv()}>
+                  <button type="button" className="btn secondary sm desk-only" onClick={() => void exportCsv()}>
                     <Download aria-hidden="true" /> 지출 CSV 내보내기
                   </button>
-                  <button type="button" className="btn secondary sm" onClick={openIcs}>
+                  <button type="button" className="btn secondary sm desk-only" onClick={openIcs}>
                     <CalendarDays aria-hidden="true" /> 일정 내보내기
                   </button>
-                  <button
-                    type="button"
-                    className="btn secondary sm"
-                    onClick={() => {
-                      setHistoryKey((n) => n + 1);
-                      setHistoryOpen(true);
-                    }}
-                  >
+                  <button type="button" className="btn secondary sm desk-only" onClick={openHistory}>
                     <History aria-hidden="true" /> 변경 이력
                   </button>
                 </div>
@@ -363,24 +466,17 @@ export default function SettingsPage() {
                   <div className="r" />
                 </div>
                 <div className="card-foot" style={{ justifyContent: "flex-start", flexWrap: "wrap" }}>
-                  <button type="button" className="btn secondary sm" onClick={() => void exportCsv()}>
+                  <button type="button" className="btn secondary sm desk-only" onClick={() => void exportCsv()}>
                     <Download aria-hidden="true" /> 지출 CSV 내보내기
                   </button>
-                  <button type="button" className="btn secondary sm" onClick={openIcs}>
+                  <button type="button" className="btn secondary sm desk-only" onClick={openIcs}>
                     <CalendarDays aria-hidden="true" /> 일정 내보내기
                   </button>
-                  <button
-                    type="button"
-                    className="btn secondary sm"
-                    onClick={() => {
-                      setHistoryKey((n) => n + 1);
-                      setHistoryOpen(true);
-                    }}
-                  >
+                  <button type="button" className="btn secondary sm desk-only" onClick={openHistory}>
                     <History aria-hidden="true" /> 변경 이력
                   </button>
                   {app && (
-                    <button type="button" className="btn secondary sm" onClick={() => toApp("card-notice")}>
+                    <button type="button" className="btn secondary sm desk-only" onClick={() => toApp("card-notice")}>
                       <BellRing aria-hidden="true" /> 카드 알림
                     </button>
                   )}

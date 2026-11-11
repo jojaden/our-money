@@ -208,6 +208,21 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
   .set-sec + .set-sec { margin-top: 0; padding-top: 32px; border-top: 1px solid var(--border); }
   .settings-wrap { display: grid; gap: 32px; max-width: 1040px; }
 }
+/* 폰: 묶음 목록(주소에 ?s 없음) 또는 고른 묶음 하나만. 묶음 이름·설명은 페이지 머리로 올라간다.
+   데스크톱: 목록 없이 모든 묶음을 왼쪽 설명 + 오른쪽 내용으로 한 화면에 */
+.set-list { display: grid; gap: var(--gap); }
+.set-list .chev { width: 18px; height: 18px; color: var(--control); }
+@media (max-width: 1023px) {
+  .settings-wrap[data-sec] .set-list,
+  .settings-wrap:not([data-sec]) .set-sec,
+  .settings-wrap[data-sec] .set-sec:not(.on),
+  .settings-wrap[data-sec] .set-sec > .head,
+  .settings-wrap .desk-only { display: none; }
+  .settings-wrap[data-sec] .set-sec.on { margin-top: 0; }
+}
+@media (min-width: 1024px) {
+  .set-list, .set-back { display: none; }
+}
 
 /* ---------- 달력: 넓은 월 보기, 날짜 일정 패널, 메뉴의 월 전체 목록 ---------- */
 
