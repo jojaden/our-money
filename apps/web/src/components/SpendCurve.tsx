@@ -101,6 +101,32 @@ export function SpendCurve({
     setHover(Math.min(n - 1, Math.max(0, Math.round(((vx - PAD.l) / PW) * (n - 1)))));
   };
   const h = hover;
+  // 말풍선 자리: 고른 날 선의 왼쪽·오른쪽 × 그래프 안 위·아래 넷 중 두 선을 가장 덜 가리는 곳.
+  // 오늘 점(이번 달 끝)은 되도록 가리지 않는다. 같으면 위, 그다음 가운데 쪽
+  const tip = (() => {
+    if (h === null) return null;
+    const span = Math.round((n - 1) * 0.42); // 말풍선 너비만큼의 날짜
+    const H = 0.45; // 말풍선 높이 (그래프 높이에 대한 몫)
+    const last = now.length - 1;
+    let best: { left: boolean; top: boolean; score: number } | null = null;
+    for (const left of [x(h) > PAD.l + PW / 2, x(h) <= PAD.l + PW / 2]) {
+      const from = left ? h - span : h + 1;
+      const to = left ? h - 1 : h + span;
+      if (from < 0 || to > n - 1) continue; // 그래프 밖으로 나가는 쪽
+      for (const top of [true, false]) {
+        let score = 0;
+        for (let i = from; i <= to; i++) {
+          for (const v of [now[i], then[i]]) {
+            if (v === undefined) continue;
+            const f = v / yMax;
+            if (top ? f > 1 - H : f < H) score += i === last && v === now[i] ? 50 : 1;
+          }
+        }
+        if (!best || score < best.score) best = { left, top, score };
+      }
+    }
+    return best ?? { left: x(h) > PAD.l + PW / 2, top: true };
+  })();
   const pctOf = (v: number, b: number) => (b > 0 ? Math.round((v / b) * 100) : 0);
 
   return (
@@ -178,8 +204,12 @@ export function SpendCurve({
           )}
         </svg>
         <span className="curve-unit" aria-hidden="true">만원</span>
-        {h !== null && (
-          <div className="curve-tip" style={{ left: `${Math.min(78, Math.max(22, (x(h) / VW) * 100))}%` }} aria-hidden="true">
+        {h !== null && tip && (
+          <div
+            className={`curve-tip ${tip.left ? "to-l" : ""}`}
+            style={{ left: `${(x(h) / VW) * 100}%`, ...(tip.top ? { top: `${(PAD.t / VH) * 100}%` } : { bottom: `${(PAD.b / VH) * 100}%` }) }}
+            aria-hidden="true"
+          >
             <b>{Number(days[h].slice(5, 7))}월 {Number(days[h].slice(8))}일</b>
             {now[h] !== undefined && <span className="now">이번 달 {num(now[h])}원</span>}
             {then[h] !== undefined && <span className="then">지난달 {num(then[h])}원</span>}
