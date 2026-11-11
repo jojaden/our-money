@@ -70,7 +70,7 @@ div.bar-mini { display: flex; align-items: center; justify-content: center; gap:
 .mini-title:active, .mini-step:active { transform: scale(0.94); }
 /* 종: 새 알림 수는 오른쪽 위 빨간 알약 (나타날 때 한 번 튐) */
 .bell { position: relative; }
-.bell .badge { position: absolute; top: -3px; right: -3px; display: grid; place-items: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: var(--radius-chip); background: var(--negative); box-shadow: 0 0 0 2px var(--ground); color: var(--on-primary); font: 700 11px/1 var(--font-display); animation: badge-in var(--dur-pop) var(--ease-pop) both; }
+.bell .badge { position: absolute; top: -3px; right: -3px; display: grid; place-items: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: var(--radius-chip); background: var(--negative); box-shadow: 0 0 0 2px var(--ground); color: var(--on-dark); font: 700 11px/1 var(--font-display); animation: badge-in var(--dur-pop) var(--ease-pop) both; }
 @keyframes badge-in { from { opacity: 0; transform: scale(0.6); } }
 .sq {
   display: grid;
@@ -313,9 +313,9 @@ html[data-navigation="back"]::view-transition-new(app-page) { animation-name: pa
   min-height: 52px;
   padding: 0 8px 0 16px;
   border-radius: var(--radius-control);
-  background: color-mix(in srgb, var(--text) 94%, transparent);
+  background: var(--toast);
   box-shadow: var(--shadow-float);
-  color: var(--on-primary);
+  color: var(--on-dark);
   font-size: 14.5px;
   font-weight: 600;
   pointer-events: auto;

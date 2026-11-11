@@ -4,7 +4,8 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { createContext, Suspense, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { House, Layers, ListChecks, ReceiptText, CalendarDays, CalendarPlus, Settings, Plus, X, ChevronLeft, ChevronRight } from "lucide-react";
-import { appCan, isStandalone, useInApp } from "@/lib/native";
+import { appCan, isStandalone, toApp, useInApp } from "@/lib/native";
+import { useTheme } from "@/lib/theme";
 import { StoreProvider, useStore } from "@/lib/store";
 import { signInWithGoogle, signOut } from "@/lib/repo";
 import { addMonths, type MonthSpending } from "@/lib/calc";
@@ -392,13 +393,19 @@ function Frame({ children }: { children: React.ReactNode }) {
   const path = norm(usePathname() ?? "/");
   const { data } = useStore();
   const app = useInApp();
+  const { dark } = useTheme();
 
-  // 상태 막대 색을 화면 위쪽 색에 맞춘다 (홈은 따뜻한 띠, 나머지는 바탕)
+  // 상태 막대 색을 화면 위쪽 색에 맞춘다 (홈은 따뜻한 띠, 나머지는 바탕). 테마를 바꾸면 다시
   useEffect(() => {
     if (!data) return;
     const color = getComputedStyle(document.documentElement).getPropertyValue(path === "/" ? "--warm-100" : "--ground").trim();
     document.querySelector('meta[name="theme-color"]')?.setAttribute("content", color);
-  }, [path, data]);
+  }, [path, data, dark]);
+
+  // 안드로이드 앱: 시스템 막대 아이콘과 웹뷰 바탕을 테마에 맞추게 알린다
+  useEffect(() => {
+    if (app) toApp({ type: "theme", dark });
+  }, [app, dark]);
 
   return (
     <SheetContext.Provider value={{ openSpending, openMonths }}>

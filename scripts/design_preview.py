@@ -37,12 +37,27 @@ def css_vars(tokens: dict) -> str:
     return ":root{" + ";".join(token_decls(tokens)) + "}"
 
 
+def dark_decls(tokens: dict) -> list[str]:
+    """다크 테마에서 바뀌는 토큰만 (토큰의 dark 값). 없는 토큰은 라이트 값을 그대로 쓴다."""
+    out = []
+    for fam in FAMILIES:
+        for t in tokens[fam]["tokens"]:
+            if "dark" in t:
+                out.append(f"--{t['name']}: " + re.sub(r"\{([\w-]+)\}", r"var(--\1)", str(t["dark"])))
+    return out
+
+
 def tokens_css(tokens: dict) -> str:
-    """앱이 읽는 tokens.css 본문."""
+    """앱이 읽는 tokens.css 본문. 테마는 <html data-theme="light|dark|system"> 이 고른다 (apps/web/src/lib/theme.ts)."""
     body = "".join(f"  {d};\n" for d in token_decls(tokens))
+    dark = "".join(f"  {d};\n" for d in dark_decls(tokens))
+    dark_in_media = "".join(f"    {d};\n" for d in dark_decls(tokens))
     return ("/* docs/design-system/tokens.json 에서 만든 파일. 손으로 고치지 말고 tokens.json 을 고친 뒤\n"
             "   python3 scripts/design_preview.py 를 돌린다 (CI 가 --check 로 어긋남을 막는다). */\n"
-            f":root {{\n{body}}}\n")
+            f":root {{\n  color-scheme: light;\n{body}}}\n"
+            f":root[data-theme=\"dark\"] {{\n  color-scheme: dark;\n{dark}}}\n"
+            "@media (prefers-color-scheme: dark) {\n"
+            f"  :root[data-theme=\"system\"] {{\n    color-scheme: dark;\n{dark_in_media}  }}\n}}\n")
 
 
 def card(path: Path, root: str) -> tuple[str, str]:

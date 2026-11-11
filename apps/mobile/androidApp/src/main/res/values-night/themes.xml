@@ -1,0 +1,8 @@
+<resources>
+    <!-- 기기가 다크 모드일 때: 웹뷰의 prefers-color-scheme 이 dark 가 되어 웹의 "기기 설정" 테마가 따라간다.
+         알고리즘으로 웹을 어둡게 칠하지는 않는다 (targetSdk 33+ 웹뷰 기본값) — 다크 색은 웹의 tokens 가 정한다 -->
+    <style name="Theme.OurMoney" parent="@android:style/Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/page</item>
+        <item name="android:colorBackground">@color/page</item>
+    </style>
+</resources>

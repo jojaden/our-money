@@ -3,6 +3,7 @@ package com.jojaden.ourmoney
 import android.annotation.SuppressLint
 import android.content.ClipData
 import android.content.Intent
+import android.content.res.Configuration
 import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
@@ -49,21 +50,20 @@ import java.io.File
  */
 class MainActivity : ComponentActivity() {
     private lateinit var web: WebView
+    private lateinit var root: FrameLayout
     private val home: Uri by lazy { BuildConfig.WEB_URL.toUri() }
     private val origin: String by lazy { "${home.scheme}://${home.authority}" }
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // 웹 화면이 밝은 배경 하나라 시스템 막대 아이콘은 늘 어둡게
-        enableEdgeToEdge(
-            statusBarStyle = SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT),
-            navigationBarStyle = SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT),
-        )
+        // 웹이 마지막으로 알린 테마(없으면 기기 다크 모드)로 시작해 웹이 뜨기 전에도 막대·바탕이 맞게
+        val dark = getSharedPreferences(PREFS, MODE_PRIVATE).let { p ->
+            if (p.contains(DARK)) p.getBoolean(DARK, false) else (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+        }
         WebView.setWebContentsDebuggingEnabled(BuildConfig.DEBUG)
 
         web = WebView(this).apply {
-            setBackgroundColor(BG)
             settings.javaScriptEnabled = true
             settings.domStorageEnabled = true // 로그인 세션·예시 데이터·보내지 못한 저장 (localStorage)
             settings.allowFileAccess = false
@@ -85,10 +85,8 @@ class MainActivity : ComponentActivity() {
         }
 
         // 웹뷰는 시스템 막대·키보드 안쪽에 둔다 (웹은 env(safe-area-inset-*) 없이도 가려지지 않는다)
-        val root = FrameLayout(this).apply {
-            setBackgroundColor(BG)
-            addView(web)
-        }
+        root = FrameLayout(this).apply { addView(web) }
+        applyTheme(dark)
         ViewCompat.setOnApplyWindowInsetsListener(root) { v, insets ->
             val i = insets.getInsets(WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.ime() or WindowInsetsCompat.Type.displayCutout())
             v.setPadding(i.left, i.top, i.right, i.bottom)
@@ -115,6 +113,10 @@ class MainActivity : ComponentActivity() {
 
     private fun onMessage(msg: JSONObject, raw: String, reply: JavaScriptReplyProxy) {
         when (msg.optString("type")) {
+            "theme" -> msg.optBoolean("dark").let { dark ->
+                applyTheme(dark)
+                getSharedPreferences(PREFS, MODE_PRIVATE).edit().putBoolean(DARK, dark).apply()
+            }
             "ics" -> shareIcs(msg.optString("text"))
             "calendar" -> CalendarStore.save(this, raw)
             "calendar-clear" -> CalendarStore.clear(this)
@@ -128,6 +130,18 @@ class MainActivity : ComponentActivity() {
                 SpendQueue.remove(this, ids)
             }
         }
+    }
+
+    /**
+     * 화면 테마(웹 설정 > 화면)에 시스템 막대 아이콘과 바탕을 맞춘다 — 어두우면 밝은 아이콘(edge-to-edge 의 막대 대비).
+     * 기기 설정을 고르면 웹이 기기 다크 모드를 따라 알려 준다 (웹뷰의 prefers-color-scheme 은 values-night 테마를 따른다).
+     */
+    private fun applyTheme(dark: Boolean) {
+        val bar = if (dark) SystemBarStyle.dark(Color.TRANSPARENT) else SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT)
+        enableEdgeToEdge(statusBarStyle = bar, navigationBarStyle = bar)
+        val bg = if (dark) BG_DARK else BG
+        web.setBackgroundColor(bg)
+        root.setBackgroundColor(bg)
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -206,8 +220,12 @@ class MainActivity : ComponentActivity() {
         const val OPEN = "open"
         const val OPEN_CALENDAR = "calendar"
 
-        /** 웹 배경 (tokens 의 page 색, manifest theme_color) */
+        /** 웹 배경 (tokens 의 ground — 라이트, 다크) */
         private val BG = "#F3F3F1".toColorInt()
+        private val BG_DARK = "#17171C".toColorInt()
+        /** 웹이 마지막으로 알린 테마 (다음에 열 때 웹이 뜨기 전 바탕) */
+        private const val PREFS = "shell"
+        private const val DARK = "dark"
         /** OAuth code 는 URL 안전 문자만 */
         private val CODE = Regex("^[A-Za-z0-9._~-]{1,512}$")
         private const val ICS = "text/calendar"

@@ -21,8 +21,8 @@
     linear-gradient(135deg, var(--pt), color-mix(in srgb, var(--pt) 82%, var(--text)));
   color: var(--text);
 }
-.pass.tint.dark .face { color: var(--on-primary); }
-.pass.bank .face, .mini-pass.bank { background: var(--pass-dark); color: var(--on-primary); }
+.pass.tint.dark .face { color: var(--on-dark); }
+.pass.bank .face, .mini-pass.bank { background: var(--pass-dark); color: var(--on-dark); }
 .pass.bank .face::before {
   content: "";
   position: absolute;

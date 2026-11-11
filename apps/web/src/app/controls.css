@@ -143,6 +143,8 @@ button.row:active, a.row:active { background: var(--well); transform: scale(0.98
 .cat { display: grid; place-items: center; flex: none; width: 40px; height: 40px; border-radius: var(--radius-chip); }
 .cat svg { width: 20px; height: 20px; stroke-width: 2; }
 .cat.sm { width: 32px; height: 32px; }
+/* 분류 색 파스텔(categories.ts)은 다크에서 cat-veil 로 눌러 쓴다. 토큰 바탕(사람 색 등)은 이미 테마를 따른다 */
+.cat.pastel { background: linear-gradient(var(--cat-veil), var(--cat-veil)), var(--cat-bg); }
 .cat.sm svg { width: 16px; height: 16px; }
 
 /* 앞 표시: 사람 (동전 반쪽, 이니셜 없음) */
@@ -333,7 +335,7 @@ button.row:active, a.row:active { background: var(--well); transform: scale(0.98
 
 /* ---------- 시트 (vaul) ---------- */
 
-.sheet-overlay { position: fixed; inset: 0; z-index: 40; background: color-mix(in srgb, var(--text) 40%, transparent); }
+.sheet-overlay { position: fixed; inset: 0; z-index: 40; background: var(--scrim); }
 .sheet {
   position: fixed;
   inset: auto 0 0 0;
