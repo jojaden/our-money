@@ -94,6 +94,8 @@ div.bar-mini { display: flex; align-items: center; justify-content: center; gap:
 /* ---------- 페이지 머리 ---------- */
 
 .page-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin: 6px 0 20px; padding-inline: var(--text-inset); }
+/* 제목 쪽이 남는 폭을 다 가져서, 오른쪽 것(달력 "모아보기", 데스크톱 머리 버튼)이 끝에 나란히 붙는다 */
+.page-head > :first-child { flex: 1 1 auto; }
 .page-head .title-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
 .page-head h1 { font: 700 32px/36px var(--font-display); letter-spacing: -0.02em; }
 .page-head .sub { margin-top: 6px; color: var(--faint); font: 400 14.5px/20px var(--font-text); }
