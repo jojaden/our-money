@@ -24,7 +24,7 @@ description: 두 사람의 한 달 돈 흐름을 다정하고 차분하게 보�
 |---|---|
 | 셸 | [TopBar](docs/design-system/components/TopBar/README.md) · [TabBar](docs/design-system/components/TabBar/README.md) · [TextTabs](docs/design-system/components/TextTabs/README.md) |
 | 컨트롤 | [Button](docs/design-system/components/Button/README.md) · [Chip](docs/design-system/components/Chip/README.md) · [Segmented](docs/design-system/components/Segmented/README.md) · [ListRow](docs/design-system/components/ListRow/README.md) |
-| 홈 | [BudgetCard](docs/design-system/components/BudgetCard/README.md) · [HighlightCard](docs/design-system/components/HighlightCard/README.md) |
+| 홈 | [Nudges](docs/design-system/components/Nudges/README.md) · [BudgetCard](docs/design-system/components/BudgetCard/README.md) · [HighlightCard](docs/design-system/components/HighlightCard/README.md) |
 | 체크 | [StepTrack](docs/design-system/components/StepTrack/README.md) · [Celebrate](docs/design-system/components/Celebrate/README.md) |
 | 가계부 | [SpendCurve](docs/design-system/components/SpendCurve/README.md) · [StatTiles](docs/design-system/components/StatTiles/README.md) |
 | 플랜 | [SplitBar](docs/design-system/components/SplitBar/README.md) · [GoalBar](docs/design-system/components/GoalBar/README.md) |

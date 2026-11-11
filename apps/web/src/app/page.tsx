@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRightLeft, Banknote, CalendarClock, ChevronRight, CircleAlert, CircleCheck, CircleHelp, TrendingUp, type LucideIcon } from "lucide-react";
+import { ArrowRightLeft, Banknote, CalendarClock, CircleAlert, CircleCheck, CircleHelp, TrendingUp } from "lucide-react";
 import { useData } from "@/lib/store";
 import type { Spending } from "@/lib/types";
 import { allowanceStatus, cardBills, livingStatus, nameOf, spendingsIn } from "@/lib/calc";
@@ -19,17 +19,10 @@ import { MiniCard } from "@/components/pass";
 import { usePrimaryAction, useSheets } from "@/components/Shell";
 import { ClosePrompt } from "@/components/ClosePrompt";
 import { Morph } from "@/components/Morph";
+import { Nudges, type Nudge } from "@/components/Nudges";
 
 /** 홈에 보이는 할 일 수 — 급한 순으로 이만큼만, 나머지는 체크 화면에서 */
 const HOME_TODOS = 3;
-
-/** 홈 맨 위 알림 카드 하나 — 색은 상태 알약과 같은 네 가지 */
-interface Nudge {
-  tone: "negative" | "warning" | "positive" | "neutral";
-  icon: LucideIcon;
-  href: string;
-  text: React.ReactNode;
-}
 
 export default function Home() {
   const { data, month, today, me } = useData();
@@ -63,10 +56,12 @@ export default function Home() {
     data.categories.find((c) => c.id === id)?.name ?? (owner === "joint" ? "미분류" : `${nameOf(s, owner)} 용돈`);
   const accName = (id: string | null) => data.accounts.find((a) => a.id === id)?.name;
 
-  // 이번 달에 가장 먼저 알아야 할 것 하나 — 화면 머리 문장 대신 맨 위 알림 카드(토스 홈의 알림 줄처럼). 할 일 카드와 겹치는 "남은 할 일 N건"이면 두지 않는다
-  let nudge: Nudge | null = null;
+  // 지금 알아야 할 것들 — 화면 머리 문장 대신 맨 위 알림 카드(토스 알림처럼 하나씩 도착). 중요한 순, 최대 3개.
+  // 할 일 카드와 겹치는 "남은 할 일 N건"뿐이면 알림을 두지 않는다
+  const nudges: Nudge[] = [];
   if (overdue.length > 0) {
-    nudge = {
+    nudges.push({
+      key: "overdue",
       tone: "negative",
       icon: CircleAlert,
       href: "/check",
@@ -76,10 +71,12 @@ export default function Home() {
           {overdue.length > 1 ? ` 외 ${overdue.length - 1}건이` : iga(overdue[0].kind === "transfer" ? "돈" : overdue[0].title).slice(-1)} 기한을 넘겼어요
         </>
       ),
-    };
-  } else if (asks.length > 0) {
+    });
+  }
+  if (asks.length > 0) {
     // 자동으로 나가는 돈은 다그치지 않고 확인만 부탁한다
-    nudge = {
+    nudges.push({
+      key: "asks",
       tone: "neutral",
       icon: CircleHelp,
       href: "/check",
@@ -89,10 +86,12 @@ export default function Home() {
           {asks.length > 1 ? ` 외 ${asks.length - 1}건이` : iga(asks[0].title).slice(-1)} 잘 나갔는지 확인해 주세요
         </>
       ),
-    };
-  } else if (paydayToday) {
+    });
+  }
+  if (paydayToday) {
     const left = paydayToday.transfers.filter((t) => !t.done);
-    nudge = {
+    nudges.push({
+      key: "payday",
       tone: "positive",
       icon: Banknote,
       href: "/check",
@@ -101,9 +100,10 @@ export default function Home() {
           오늘은 <strong>{nameOf(s, paydayToday.person)} 월급날</strong>이에요 · 옮길 돈 {left.length}건 <Money value={left.reduce((a, t) => a + t.amount, 0)} />
         </>
       ),
-    };
+    });
   } else if (pendingTransfers.length > 0) {
-    nudge = {
+    nudges.push({
+      key: "transfers",
       tone: "neutral",
       icon: ArrowRightLeft,
       href: "/check",
@@ -112,11 +112,12 @@ export default function Home() {
           옮길 돈 <strong>{pendingTransfers.length}건</strong>이 남았어요 · <Money value={pendingTransfers.reduce((a, t) => a + t.amount, 0)} />
         </>
       ),
-    };
-  } else if (open.length === 0 && tasks.length > 0) {
-    nudge = { tone: "positive", icon: CircleCheck, href: "/check", text: <>이번 달 이체와 납부를 모두 마쳤어요</> };
-  } else if (living.pace !== null && living.spent > living.pace) {
-    nudge = {
+    });
+  }
+  if (open.length === 0 && tasks.length > 0) nudges.push({ key: "done", tone: "positive", icon: CircleCheck, href: "/check", text: <>이번 달 이체와 납부를 모두 마쳤어요</> });
+  if (living.pace !== null && living.spent > living.pace) {
+    nudges.push({
+      key: "pace",
       tone: "warning",
       icon: TrendingUp,
       href: "/ledger",
@@ -125,9 +126,12 @@ export default function Home() {
           생활비가 예상보다 <strong>{num(living.spent - living.pace)}원</strong> 빨리 나가고 있어요
         </>
       ),
-    };
-  } else if (nextPayday && nextPayday.transfers.some((t) => !t.done)) {
-    nudge = {
+    });
+  }
+  // 다음 월급날은 옮길 돈 알림이 없을 때만 (같은 이야기)
+  if (!paydayToday && pendingTransfers.length === 0 && nextPayday && nextPayday.transfers.some((t) => !t.done)) {
+    nudges.push({
+      key: "next-payday",
       tone: "neutral",
       icon: CalendarClock,
       href: "/check",
@@ -136,7 +140,7 @@ export default function Home() {
           다음은 <strong>{nameOf(s, nextPayday.person)} 월급날</strong> {shortDate(nextPayday.date)} · {dDay(nextPayday.date, today)}
         </>
       ),
-    };
+    });
   }
 
   return (
@@ -149,15 +153,7 @@ export default function Home() {
           <Morph className="close-slot" track=":scope > *">
             <ClosePrompt />
           </Morph>
-          {nudge && (
-            <Link href={nudge.href} className={`card nudge ${nudge.tone}`}>
-              <span className="ic" aria-hidden="true">
-                <nudge.icon />
-              </span>
-              <span className="t">{nudge.text}</span>
-              <ChevronRight className="chev" aria-hidden="true" />
-            </Link>
-          )}
+          <Nudges items={nudges.slice(0, 3)} />
           <BudgetCard id="living-h" className="o1" bucket="living" title="남은 공동 생활비" status={living} link={{ href: "/ledger", label: "가계부" }} />
 
           <BudgetCard

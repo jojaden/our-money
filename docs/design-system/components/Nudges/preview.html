@@ -1,0 +1,58 @@
+<!-- @dsCard group="Cards" height=300 subtitle="홈 알림 — 작은 점이 커져 카드가 되고, 새 알림이 오면 먼저 온 알림이 내려가요 (다시 보기를 누르세요)" -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alan+Sans:wght@300..900&family=Noto+Sans+KR:wght@400..800&display=swap">
+<style>
+  body { margin: 0; background: var(--ground); color: var(--text); font-family: var(--font-text); word-break: keep-all; -webkit-font-smoothing: antialiased; }
+  .stage { max-width: 390px; padding: 20px; }
+  .stack { display: grid; gap: 10px; }
+  .n { position: relative; display: grid; grid-template-columns: 36px 1fr 18px; align-items: center; gap: 12px; padding: 14px 20px; border-radius: var(--radius-card); background: var(--surface); box-shadow: var(--shadow-card); font: 500 15.5px/22px var(--font-text); }
+  .n b { font-weight: 700; }
+  .ic { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 999px; font-weight: 700; }
+  .neg .ic { background: var(--pill-negative-bg); color: var(--pill-negative-ink); }
+  .neu .ic { background: var(--pill-neutral-bg); color: var(--pill-neutral-ink); }
+  .pos .ic { background: var(--pill-positive-bg); color: var(--pill-positive-ink); }
+  .dot { position: absolute; inset: 0; border-radius: inherit; opacity: 0; }
+  .neg .dot { background: var(--negative); } .neu .dot { background: var(--pill-neutral-ink); } .pos .dot { background: var(--pill-positive-ink); }
+  .chev { color: var(--faint); }
+  button.again { margin-top: 14px; height: 36px; padding: 0 14px; border: 0; border-radius: 999px; background: var(--well); color: var(--muted); font: 600 13.5px var(--font-text); }
+</style>
+<div class="stage">
+  <div class="stack" id="s"></div>
+  <button class="again" type="button" id="a">다시 보기</button>
+</div>
+<script>
+  const N = [
+    ["neg", "!", "<b>현빈 ISA로 옮길 돈</b> 외 2건이 기한을 넘겼어요"],
+    ["neu", "?", "<b>관리비</b> 외 1건이 잘 나갔는지 확인해 주세요"],
+    ["pos", "₩", "오늘은 <b>예진 월급날</b>이에요 · 옮길 돈 1건"],
+  ];
+  const s = document.getElementById("s");
+  let timers = [];
+  function arrive(n) {
+    const el = document.createElement("div");
+    el.className = "n " + n[0];
+    el.innerHTML = `<span class="dot"></span><span class="ic">${n[1]}</span><span>${n[2]}</span><span class="chev">›</span>`;
+    const before = [...s.children].map((c) => c.getBoundingClientRect().top);
+    s.prepend(el);
+    [...s.children].slice(1).forEach((c, i) => {
+      const d = before[i] - c.getBoundingClientRect().top;
+      c.animate([{ transform: `translateY(${d}px)` }, { transform: "none" }], { duration: 420, easing: "cubic-bezier(0.32, 0.72, 0, 1)" });
+    });
+    const dot = "inset(calc(50% - 6px) calc(50% - 6px) round 999px)";
+    el.animate([
+      { clipPath: dot, transform: "scale(0.6)", opacity: 0 },
+      { clipPath: dot, transform: "scale(1)", opacity: 1, offset: 0.14 },
+      { clipPath: dot, offset: 0.26 },
+      { clipPath: "inset(calc(50% - 22px) 0 round 999px)", transform: "scale(0.985)", offset: 0.58 },
+      { clipPath: "inset(0 round 24px)", transform: "none" },
+    ], { duration: 820, easing: "cubic-bezier(0.32, 0.72, 0, 1)" });
+    el.querySelector(".dot").animate([{ opacity: 1 }, { opacity: 1, offset: 0.3 }, { opacity: 0, offset: 0.62 }, { opacity: 0 }], { duration: 820 });
+    [...el.children].slice(1).forEach((c) => c.animate([{ opacity: 0, transform: "translateY(4px)" }, { opacity: 1, transform: "none" }], { duration: 240, delay: 560, fill: "backwards" }));
+  }
+  function play() {
+    timers.forEach(clearTimeout);
+    s.innerHTML = "";
+    timers = [...N].reverse().map((n, i) => setTimeout(() => arrive(n), 250 + i * 700));
+  }
+  document.getElementById("a").onclick = play;
+  play();
+</script>
