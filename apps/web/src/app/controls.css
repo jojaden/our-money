@@ -454,8 +454,10 @@ button.row:active, a.row:active { background: var(--well); transform: scale(0.98
 /* 지난주 돌아보기 (WeekReport): 큰 한 줄 + 일~토 하루 지출 선. 누르면 그 주 모아 보기 */
 .week-report { display: grid; gap: 4px; width: 100%; padding: 16px; border: 0; border-radius: var(--radius-inner); background: var(--raised); color: var(--text); text-align: left; transition: transform var(--dur-press) var(--ease-press); }
 .week-report:active { transform: scale(0.98); }
-.wr-title { font: 700 19px/26px var(--font-text); letter-spacing: -0.02em; }
-.wr-title .hl { font-family: var(--font-display); text-decoration: underline; text-decoration-color: var(--primary); text-decoration-thickness: 0.42em; text-underline-offset: -0.24em; text-decoration-skip-ink: none; }
+.wr-title { display: grid; gap: 2px; }
+.wr-title .hero-label { font-size: 13.5px; line-height: 18px; }
+.wr-title .hero-amt { font-size: 28px; line-height: 34px; }
+.wr-title .hero-amt small { font-size: 19px; }
 .wr-sub { color: var(--faint); font: 500 13px/18px var(--font-text); }
 .wr-line { display: block; width: 100%; height: auto; margin-top: 8px; overflow: visible; }
 .wr-line path { fill: none; stroke: var(--primary-line); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }

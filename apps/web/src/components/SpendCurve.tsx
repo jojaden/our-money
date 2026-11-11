@@ -105,10 +105,13 @@ export function SpendCurve({
 
   return (
     <section className="card curve" aria-labelledby="curve-h">
+      {/* 이름표는 작고 흐리게, 금액만 크게 — 색 대신 크기로 강조한다 */}
       <h2 id="curve-h" className="curve-title">
-        이번 달 누적 지출은
-        <br />
-        <span className="hl">{num(spent)}원</span>이에요
+        <span className="hero-label">이번 달 누적 지출</span>
+        <span className="hero-amt">
+          {num(spent)}
+          <small>원</small>
+        </span>
       </h2>
       {upto >= 0 && then.length > 0 && (
         <p className="curve-sub">

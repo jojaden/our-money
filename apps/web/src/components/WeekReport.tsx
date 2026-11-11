@@ -53,7 +53,11 @@ export function WeekReport({ w, onOpen }: { w: WeekSummary; onOpen: () => void }
   return (
     <button type="button" className="week-report" onClick={onOpen}>
       <span className="wr-title">
-        지난주는 <span className="hl">{num(w.total)}원</span> 썼어요
+        <span className="hero-label">지난주 쓴 돈</span>
+        <span className="hero-amt">
+          {num(w.total)}
+          <small>원</small>
+        </span>
       </span>
       <span className="wr-sub">
         {weekLabel(w.week.from)} ({md(w.week.from)}~{md(w.week.to)})

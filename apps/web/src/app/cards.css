@@ -128,9 +128,11 @@
    축·눈금은 물러나게(rule·faint), 값은 글자색으로. 누르거나 끌면 그날 두 달 누적 말풍선 */
 .curve { padding-bottom: 8px; }
 .curve p { margin: 0; }
-.curve-title { font: 700 22px/30px var(--font-text); letter-spacing: -0.02em; }
-/* 금액에 형광펜처럼 Illuminating 을 긋는다(글자는 text 그대로라 읽힌다) */
-.curve-title .hl { font-family: var(--font-display); text-decoration: underline; text-decoration-color: var(--primary); text-decoration-thickness: 0.42em; text-underline-offset: -0.24em; text-decoration-skip-ink: none; }
+.curve-title { display: grid; gap: 2px; margin: 0; }
+/* 큰 금액 — 이름표는 작고 흐리게, 금액만 크게 (색 대신 크기로 강조, 두 테마 같은 모습) */
+.hero-label { color: var(--faint); font: 600 15px/20px var(--font-text); letter-spacing: -0.01em; }
+.hero-amt { color: var(--text); font: 700 34px/40px var(--font-display); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.hero-amt small { margin-left: 2px; font: 700 22px/1 var(--font-text); letter-spacing: 0; }
 .curve-sub { margin-top: 6px !important; color: var(--faint); font: 500 14.5px/20px var(--font-text); }
 .curve-sub b { color: var(--text); font-weight: 600; }
 .curve-legend { display: flex; justify-content: flex-end; gap: 14px; margin-top: 14px; color: var(--faint); font: 500 12.5px/16px var(--font-text); }
@@ -140,6 +142,8 @@
 /* "누적 / 하루별" 글자 탭 — 알약 안 글자가 카드 글자 선에 맞게 들이고, 범례는 탭 줄 오른쪽에 */
 .curve .text-tabs { margin: 12px 0 0 -12px; }
 .curve .text-tabs + .curve-legend { margin-top: -26px; }
+/* 탭 줄 아래로 그래프를 내려 위쪽 단위 글자("만원")가 탭을 덮지 않게 */
+.curve .text-tabs + .curve-legend + .curve-plot { margin-top: 30px; }
 .curve-daily { margin-top: 12px; }
 .curve-plot { position: relative; margin: 4px -6px 0; }
 .curve-plot svg { display: block; width: 100%; height: auto; overflow: visible; touch-action: pan-y; }
