@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { createContext, Suspense, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { House, Layers, ListChecks, ReceiptText, CalendarDays, CalendarPlus, Settings, Plus, X, ChevronLeft, ChevronRight } from "lucide-react";
-import { isStandalone, useInApp } from "@/lib/native";
+import { appCan, isStandalone, useInApp } from "@/lib/native";
 import { StoreProvider, useStore } from "@/lib/store";
 import { signInWithGoogle, signOut } from "@/lib/repo";
 import { addMonths, type MonthSpending } from "@/lib/calc";
@@ -16,6 +16,7 @@ import { SpendingSheet } from "./SpendingSheet";
 import { MonthSheet } from "./MonthSheet";
 import { BellButton } from "./Bell";
 import { NoticeSync } from "./NoticeSync";
+import { CalendarSync } from "./CalendarSync";
 import { PageTransition } from "./PageTransition";
 import { LoadingScreen, StageScreen } from "./Stage";
 
@@ -420,6 +421,8 @@ function Frame({ children }: { children: React.ReactNode }) {
               {data && <MonthSheet key={months.key} open={months.open} range={months.range} onOpenChange={(open) => setMonths((x) => ({ ...x, open }))} />}
               {/* 안드로이드 앱: 결제 알림으로 맞춘 고정비·이체를 체크 */}
               {data && app && <NoticeSync />}
+              {/* 안드로이드 앱: 홈 화면 달력 위젯에 달력 요약 넘기기, 위젯을 누르면 달력으로 */}
+              {data && app && appCan("widget") && <CalendarSync />}
             </Gate>
           </div>
           <Toasts />

@@ -54,6 +54,7 @@ dependencies {
     implementation(libs.androidx.core)
     implementation(libs.androidx.webkit)
     implementation(libs.androidx.browser)
+    implementation(libs.androidx.glance.appwidget)
     implementation(libs.compose.foundation)
     implementation(libs.compose.material3)
 }

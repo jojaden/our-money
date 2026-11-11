@@ -4,7 +4,7 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Data, HistoryRow, Member, Person, Row, Spending, TableName, User } from "./types";
 import { buildDemoData } from "./demo-data";
-import { inApp } from "./native";
+import { inApp, toApp } from "./native";
 
 export const LIST_TABLES = [
   "accounts",
@@ -509,6 +509,8 @@ export async function signOut() {
   try {
     localStorage.removeItem("our-money-outbox");
   } catch {}
+  // 안드로이드 앱이면 홈 화면 달력 위젯의 일정도 지운다
+  toApp({ type: "calendar-clear" });
   await supabase()?.auth.signOut();
   window.location.reload();
 }
