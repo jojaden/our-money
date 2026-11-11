@@ -16,6 +16,18 @@
 .card-head a.aside, .budget-head a.aside, .group-head a.aside { display: inline-flex; align-items: center; gap: 2px; font-weight: 500; }
 .card-head a.aside::after, .budget-head a.aside::after, .group-head a.aside::after { content: ""; width: 7px; height: 7px; margin-left: 2px; border-top: 1.6px solid currentColor; border-right: 1.6px solid currentColor; transform: rotate(45deg); }
 .card-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 14px; }
+/* 접는 줄 — 체크의 "✓ 끝낸 4건 · 보기"(끝낸 일을 접어 남은 일만), 플랜의 "월세 · 관리비 · 통신비 외 5개 · 펼치기"(폰에서 묶음 접기) */
+.fold-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 44px; padding: 6px 0; border: 0; background: none; color: var(--faint); font: 500 14.5px/20px var(--font-text); text-align: left; }
+.fold-row.ruled { margin-top: 4px; padding-top: 10px; border-top: 0.6px solid var(--rule); }
+.fold-t { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fold-t svg { width: 16px; height: 16px; margin-right: 6px; vertical-align: -3px; color: var(--positive); stroke-width: 2.4; }
+.fold-a { flex: none; display: inline-flex; align-items: center; gap: 2px; color: var(--muted); font-weight: 600; }
+.fold-a svg { width: 16px; height: 16px; transition: transform var(--dur-press) var(--ease-out); }
+.fold-row[aria-expanded="true"] .fold-a svg { transform: rotate(180deg); }
+.fold-row:active { opacity: 0.6; }
+@media (max-width: 1023px) { .card[data-folded] > .rows { display: none; } }
+@media (min-width: 1024px) { .plan-fold { display: none; } }
+@media (prefers-reduced-motion: reduce) { .fold-a svg { transition: none; } }
 /* 카드 맨 아래 "모든 기록 21건 보기 ›" — 목록 일부만 보여 준 카드에서 전체 화면으로 */
 .more-row { display: flex; align-items: center; justify-content: center; gap: 4px; min-height: 48px; margin-top: 8px; border-top: 0.6px solid var(--rule); color: var(--muted); font: 600 15px/20px var(--font-text); }
 .more-row b { color: var(--text); font-weight: 700; }
