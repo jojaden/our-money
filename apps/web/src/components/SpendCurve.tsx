@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import type { Spending } from "@/lib/types";
 import { periodOf } from "@/lib/calc";
 import { num, parseYmd, ymd } from "@/lib/format";
+import { TextTabs } from "./ui";
 
 export interface CurveBucket {
   key: "living" | "allowance";
@@ -48,6 +49,7 @@ const md = (d: string) => `${Number(d.slice(5, 7))}.${d.slice(8)}`;
  * 가계부 머리 — 이번 달 누적 지출 (토스 "이번 달 누적 지출금액" 참고).
  * 이번 달은 Illuminating 면 + 진한 노랑 선, 지난달은 회색 비교 선. 오늘 자리에 세로 점선.
  * 그래프를 누르거나 끌면 그날의 두 달 누적이 말풍선으로 뜬다. 아래에는 생활비·용돈 예산 줄을 둔다.
+ * daily 를 주면 "누적 / 하루별" 글자 탭이 생기고, 하루별에서는 그래프 자리에 daily 를 그린다.
  */
 export function SpendCurve({
   month,
@@ -57,6 +59,7 @@ export function SpendCurve({
   rows,
   prevRows,
   buckets,
+  daily,
 }: {
   month: string;
   prevMonth: string;
@@ -65,6 +68,8 @@ export function SpendCurve({
   rows: Pick<Spending, "date" | "amount">[];
   prevRows: Pick<Spending, "date" | "amount">[];
   buckets: CurveBucket[];
+  /** 하루별 지출 막대 (가계부) */
+  daily?: React.ReactNode;
 }) {
   const days = daysOf(month, cycleStart);
   const prevDays = daysOf(prevMonth, cycleStart);
@@ -86,6 +91,7 @@ export function SpendCurve({
   const prevAt = then[Math.min(at, then.length - 1)] ?? 0;
   const diff = spent - prevAt;
 
+  const [view, setView] = useState<"sum" | "daily">("sum");
   const [hover, setHover] = useState<number | null>(null);
   const svg = useRef<SVGSVGElement>(null);
   const pick = (e: React.PointerEvent) => {
@@ -115,6 +121,21 @@ export function SpendCurve({
         </p>
       )}
 
+      {daily && (
+        <TextTabs
+          label="그래프"
+          value={view}
+          onChange={setView}
+          options={[
+            { value: "sum", label: "누적" },
+            { value: "daily", label: "하루별" },
+          ]}
+        />
+      )}
+      {daily && view === "daily" ? (
+        <div className="curve-daily">{daily}</div>
+      ) : (
+      <>
       <div className="curve-legend" aria-hidden="true">
         <span className="then">지난달</span>
         <span className="now">이번 달</span>
@@ -184,6 +205,8 @@ export function SpendCurve({
           ))}
         </tbody>
       </table>
+      </>
+      )}
 
       <ul className="buckets">
         {buckets.map((b) => (

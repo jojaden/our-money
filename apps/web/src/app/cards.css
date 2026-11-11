@@ -137,6 +137,10 @@
 .curve-legend span { display: inline-flex; align-items: center; gap: 6px; }
 .curve-legend span::before { content: ""; width: 14px; height: 3px; border-radius: 2px; background: var(--control); }
 .curve-legend .now::before { background: var(--primary-line); }
+/* "누적 / 하루별" 글자 탭 — 알약 안 글자가 카드 글자 선에 맞게 들이고, 범례는 탭 줄 오른쪽에 */
+.curve .text-tabs { margin: 12px 0 0 -12px; }
+.curve .text-tabs + .curve-legend { margin-top: -26px; }
+.curve-daily { margin-top: 12px; }
 .curve-plot { position: relative; margin: 4px -6px 0; }
 .curve-plot svg { display: block; width: 100%; height: auto; overflow: visible; touch-action: pan-y; }
 .curve-plot .grid { stroke: var(--rule); stroke-width: 1; }

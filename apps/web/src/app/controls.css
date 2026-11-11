@@ -16,6 +16,11 @@
 .card-head a.aside, .budget-head a.aside, .group-head a.aside { display: inline-flex; align-items: center; gap: 2px; font-weight: 500; }
 .card-head a.aside::after, .budget-head a.aside::after, .group-head a.aside::after { content: ""; width: 7px; height: 7px; margin-left: 2px; border-top: 1.6px solid currentColor; border-right: 1.6px solid currentColor; transform: rotate(45deg); }
 .card-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 14px; }
+/* 카드 맨 아래 "모든 기록 21건 보기 ›" — 목록 일부만 보여 준 카드에서 전체 화면으로 */
+.more-row { display: flex; align-items: center; justify-content: center; gap: 4px; min-height: 48px; margin-top: 8px; border-top: 0.6px solid var(--rule); color: var(--muted); font: 600 15px/20px var(--font-text); }
+.more-row b { color: var(--text); font-weight: 700; }
+.more-row::after { content: ""; width: 7px; height: 7px; margin-left: 2px; border-top: 1.6px solid currentColor; border-right: 1.6px solid currentColor; transform: rotate(45deg); }
+.more-row:active { opacity: 0.6; }
 
 /* 섹션 이름표 (README "레이아웃"): 카드 하나인 섹션은 아래에서 카드 안 제목이 되고, 카드 여럿을 묶은 섹션만 위에 짧게 */
 .group { min-width: 0; }
