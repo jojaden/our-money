@@ -2,7 +2,7 @@
 
 import type { Category, Data, Owner, PayKind, Spending } from "./types";
 
-export type CatIcon = "basket" | "utensils" | "package" | "car" | "pill" | "gift" | "ticket" | "more" | "tag" | "wallet" | "receipt" | "coffee" | "home" | "baby" | "paw";
+export type CatIcon = "basket" | "utensils" | "package" | "car" | "pill" | "gift" | "ticket" | "more" | "tag" | "wallet" | "receipt" | "coffee" | "home" | "baby" | "paw" | "bag" | "plane" | "transfer";
 
 /** 분류 아이콘: 그림과 색. 바탕은 그 색을 옅게 푼 원(다크는 well) — bg 를 주면 그 색으로 꽉 채운 원 */
 export interface CatVisual {
@@ -18,9 +18,12 @@ const RULES: { re: RegExp; icon: CatIcon; ink: string }[] = [
   { re: /카페|커피|간식/, icon: "coffee", ink: "#c8822e" },
   { re: /생활|용품|살림/, icon: "package", ink: "#e9a80a" },
   { re: /교통|차량|주유|자동차/, icon: "car", ink: "#3d8bfd" },
-  { re: /병원|약|의료|건강/, icon: "pill", ink: "#f2558a" },
+  { re: /병원|약|의료|건강/, icon: "pill", ink: "#f04b52" },
+  { re: /쇼핑|의류|패션|옷|잡화/, icon: "bag", ink: "#e64fa8" },
   { re: /경조|선물|축의/, icon: "gift", ink: "#9a6cf0" },
-  { re: /문화|여가|여행|취미/, icon: "ticket", ink: "#25a8d6" },
+  { re: /여행|숙박|항공/, icon: "plane", ink: "#10ab9c" },
+  { re: /문화|여가|취미/, icon: "ticket", ink: "#25a8d6" },
+  { re: /이체|송금/, icon: "transfer", ink: "var(--kind-transfer)" },
   { re: /주거|집|관리/, icon: "home", ink: "#7f8a99" },
   { re: /육아|아이|아기/, icon: "baby", ink: "#ff9b3d" },
   { re: /반려|펫|강아지|고양이/, icon: "paw", ink: "#b9845a" },
@@ -46,13 +49,17 @@ export function spendingVisual(data: Data, s: Pick<Spending, "category_id" | "ow
 
 const MEMO_RULES: { re: RegExp; key: RegExp }[] = [
   { re: /이마트|홈플러스|롯데마트|코스트코|쿠팡|컬리|시장|마트|정육|과일|채소|장보|노브랜드|트레이더스|GS더프레시|하나로/i, key: /장보|마트|식료/ },
-  { re: /커피|카페|스타벅스|스벅|투썸|메가|빽다방|이디야|컴포즈|베이커리|빵/i, key: /카페|커피|외식|배달/ },
+  { re: /커피|카페|스타벅스|스벅|투썸|메가(?!박스)|빽다방|이디야|컴포즈|베이커리|빵/i, key: /카페|커피/ },
+  { re: /커피|카페|스타벅스|스벅|투썸|메가(?!박스)|빽다방|이디야|컴포즈|베이커리|빵/i, key: /외식|배달/ },
   { re: /배민|배달|요기요|쿠팡이츠|식당|외식|치킨|피자|저녁|점심|브런치|맛집|술|고기|회식|버거/i, key: /외식|배달|식비/ },
   { re: /다이소|세제|휴지|올리브영|생활|이케아|무인양품/i, key: /생활|용품/ },
+  { re: /무신사|지그재그|에이블리|29cm|W컨셉|쇼핑|옷|의류|신발|가방|백화점|아울렛|유니클로|자라/i, key: /쇼핑|의류|패션/ },
   { re: /주유|기름|택시|카카오\s?T|주차|톨게이트|하이패스|지하철|버스|기차|KTX|SRT|세차|타이어|정비/i, key: /교통|차량|주유/ },
   { re: /병원|약국|의원|치과|한의원|안과|피부과|검진/i, key: /병원|약|의료/ },
   { re: /축의|부의|조의|경조|돌잔치|선물|생일/i, key: /경조|선물/ },
-  { re: /영화|CGV|메가박스|롯데시네마|공연|전시|여행|숙소|호텔|에어비앤비|티켓|넷플릭스/i, key: /문화|여가|여행/ },
+  { re: /항공|비행기|공항|호텔|숙소|에어비앤비|야놀자|여기어때|트립|면세|여행/i, key: /여행|숙박/ },
+  { re: /영화|CGV|메가박스|롯데시네마|공연|전시|여행|숙소|호텔|에어비앤비|티켓|넷플릭스/i, key: /문화|여가|취미/ },
+  { re: /송금|이체|계좌로/i, key: /이체|송금/ },
 ];
 
 export interface Guess {
@@ -70,8 +77,8 @@ export function guessFromMemo(data: Data, memo: string): Guess {
     .sort((a, b) => b.created_at.localeCompare(a.created_at));
   const exact = past.find((s) => s.memo.trim() === m) ?? past[0] ?? null;
   if (exact?.category_id) return { category_id: exact.category_id, from: exact };
-  const rule = MEMO_RULES.find((r) => r.re.test(m));
-  if (rule) {
+  // 맞는 규칙을 차례로 보고, 그 분류가 있는 첫 규칙을 따른다 (여행 분류가 없으면 호텔·숙소는 문화·여가로)
+  for (const rule of MEMO_RULES.filter((r) => r.re.test(m))) {
     const cat = data.categories.find((c) => rule.key.test(c.name));
     if (cat) return { category_id: cat.id, from: exact };
   }

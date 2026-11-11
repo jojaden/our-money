@@ -137,6 +137,31 @@ const G: Record<GlyphName, Glyph> = {
       <rect className="d" x="8.3" y="11" width="4.8" height="1.7" rx=".85" />
     </>
   ),
+  // 쇼핑·의류 — 손잡이 달린 쇼핑백, 흰 손잡이 구멍
+  bag: () => (
+    <>
+      <path d="M8.4 9.2V7.4a3.6 3.6 0 0 1 7.2 0v1.8" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" />
+      <path d="M5.4 8.2h13.2a1 1 0 0 1 1 .92l.86 10.08A2 2 0 0 1 18.47 21.4H5.53a2 2 0 0 1-1.99-2.2l.86-10.08a1 1 0 0 1 1-.92z" />
+      <circle className="d" cx="8.4" cy="11.6" r="1.05" />
+      <circle className="d" cx="15.6" cy="11.6" r="1.05" />
+    </>
+  ),
+  // 여행·숙박 — 오른쪽 위로 나는 비행기
+  plane: () => (
+    <g transform="translate(12 12) rotate(45) scale(1.1) translate(-12 -12)">
+      <rect x="10.4" y="1.6" width="3.2" height="19.4" rx="1.6" />
+      <path d="M12 8.2 21.2 13.4v2.2L12 12.6l-9.2 3v-2.2z" />
+      <path d="M12 17.4l3.8 2.2v1.7L12 20.4l-3.8.9v-1.7z" />
+      <rect className="d" x="11.3" y="4.2" width="1.4" height="2.6" rx=".7" opacity=".85" />
+    </g>
+  ),
+  // 이체·송금 — 주고받는 두 화살표 (돌아오는 쪽은 옅게)
+  transfer: () => (
+    <>
+      <path d="M3 8.4A1.4 1.4 0 0 1 4.4 7H15V4.9a.8.8 0 0 1 1.31-.62l4.5 3.6a.8.8 0 0 1 0 1.24l-4.5 3.6A.8.8 0 0 1 15 12.1V9.8H4.4A1.4 1.4 0 0 1 3 8.4z" />
+      <path d="M21 15.6a1.4 1.4 0 0 1-1.4 1.4H9v2.1a.8.8 0 0 1-1.31.62l-4.5-3.6a.8.8 0 0 1 0-1.24l4.5-3.6A.8.8 0 0 1 9 11.9v2.3h10.6a1.4 1.4 0 0 1 1.4 1.4z" opacity=".55" />
+    </>
+  ),
   // 이번 달 기록 — 가장 많이 쓴 날: 오르는 막대 셋, 가장 높은 막대만 진하게
   trend: () => (
     <>
