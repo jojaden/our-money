@@ -24,7 +24,7 @@ const NEXT = 700;
 
 /**
  * 토스 알림처럼 하나씩 도착하는 알림 카드들.
- * items 는 중요한 순(맨 위가 가장 중요). 덜 중요한 것부터 차례로 도착해, 새 알림은 맨 위에 작은 점으로 떠서 카드로 커지고
+ * items 는 중요한 순(맨 위가 가장 중요). 덜 중요한 것부터 차례로 도착해, 새 알림은 맨 위에 작은 크기에서 커지며 나타나고
  * 먼저 와 있던 알림은 그만큼 아래로 내려간다(Morph 의 FLIP). 그래서 다 도착하면 가장 중요한 알림이 맨 위에 있다.
  * 움직임 줄이기면 모두 바로 보인다.
  */
@@ -58,7 +58,7 @@ export function Nudges({ items }: { items: Nudge[] }) {
   );
 }
 
-/** 점 → 알약 → 카드. 모양은 clip-path 로만 바꿔 안의 글자가 늘어나 보이지 않게 하고, 글자는 카드가 거의 다 펴졌을 때 떠오른다 */
+/** 작게 → 크게: 카드와 글이 한 덩어리로 작은 크기에서 커지며 나타난다(살짝 넘쳤다가 제자리). transform·opacity 만 움직여 합성만 한다 */
 function NudgeCard({ n, grow }: { n: Nudge; grow: boolean }) {
   const el = useRef<HTMLAnchorElement>(null);
   const once = useRef(grow);
@@ -66,30 +66,18 @@ function NudgeCard({ n, grow }: { n: Nudge; grow: boolean }) {
     const card = el.current;
     if (!once.current || !card || still()) return;
     once.current = false;
-    const cs = getComputedStyle(card);
-    const r = cs.borderTopLeftRadius || "24px";
-    const dot = "inset(calc(50% - 6px) calc(50% - 6px) round 999px)";
-    // 점이 톡 나타나 잠깐 머물고 → 옆으로 펴져 알약 → 아래위로 펴져 카드
     card.animate(
       [
-        { clipPath: dot, transform: "scale(0.6)", opacity: 0 },
-        { clipPath: dot, transform: "scale(1)", opacity: 1, offset: 0.14 },
-        { clipPath: dot, transform: "scale(1)", offset: 0.26 },
-        { clipPath: "inset(calc(50% - 22px) 0 round 999px)", transform: "scale(0.985)", offset: 0.58 },
-        { clipPath: `inset(0 round ${r})`, transform: "none" },
+        { transform: "scale(0.2)", opacity: 0 },
+        { transform: "scale(1.03)", opacity: 1, offset: 0.65 },
+        { transform: "none", opacity: 1 },
       ],
-      { duration: 820, easing: "cubic-bezier(0.32, 0.72, 0, 1)" },
+      { duration: 520, easing: "cubic-bezier(0.32, 0.72, 0, 1)" },
     );
-    // 점은 알림 색(빨강·주황·초록·회색)으로 보이다가 카드가 펴지며 카드 바탕으로 바뀐다
-    card.querySelector(".nudge-dot")?.animate([{ opacity: 1 }, { opacity: 1, offset: 0.3 }, { opacity: 0, offset: 0.62 }, { opacity: 0 }], { duration: 820, easing: "ease-out" });
-    for (const c of card.querySelectorAll(":scope > :not(.nudge-dot)")) {
-      (c as HTMLElement).animate([{ opacity: 0, transform: "translateY(4px)" }, { opacity: 1, transform: "none" }], { duration: 240, delay: 560, easing: "ease-out", fill: "backwards" });
-    }
   }, []);
   const Icon = n.icon;
   return (
     <Link ref={el} href={n.href} className={`card nudge ${n.tone}`}>
-      <span className="nudge-dot" aria-hidden="true" />
       <span className="ic" aria-hidden="true">
         <Icon />
       </span>

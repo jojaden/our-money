@@ -243,7 +243,7 @@
    빈 자리는 칸 간격까지 0 (close-slot 과 같은 방식): 알림이 오면 그만큼 아래 카드가 내려간다 */
 .nudges { display: flow-root; margin-bottom: calc(var(--gap) * -1); }
 .nudges > .nudge { margin-bottom: var(--gap); }
-.nudge { position: relative; display: grid; grid-template-columns: 36px minmax(0, 1fr) 18px; align-items: center; gap: 12px; padding-block: 14px; color: var(--text); transition: transform var(--dur-press) var(--ease-press); }
+.nudge { display: grid; grid-template-columns: 36px minmax(0, 1fr) 18px; align-items: center; gap: 12px; padding-block: 14px; color: var(--text); transition: transform var(--dur-press) var(--ease-press); }
 .nudge:active { transform: scale(0.98); }
 .nudge .ic { display: grid; place-items: center; width: 36px; height: 36px; border-radius: var(--radius-chip); background: var(--pill-neutral-bg); color: var(--pill-neutral-ink); }
 .nudge .ic svg { width: 20px; height: 20px; stroke-width: 2.2; }
@@ -253,11 +253,6 @@
 .nudge .t { font: 500 15.5px/22px var(--font-text); letter-spacing: -0.01em; }
 .nudge .t strong { font-weight: 700; }
 .nudge .chev { width: 18px; height: 18px; color: var(--faint); }
-/* 도착할 때 점의 색 (평소엔 보이지 않음) */
-.nudge-dot { position: absolute; inset: 0; border-radius: inherit; background: var(--pill-neutral-ink); opacity: 0; pointer-events: none; }
-.nudge.negative .nudge-dot { background: var(--negative); }
-.nudge.warning .nudge-dot { background: var(--pill-warning-ink); }
-.nudge.positive .nudge-dot { background: var(--pill-positive-ink); }
 @media (prefers-reduced-motion: reduce) {
   .nudge { transition: none; }
 }
