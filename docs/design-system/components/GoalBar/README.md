@@ -9,7 +9,7 @@
 
 ## 구성
 - **카드:** 제목(`headline`)과 한 줄 설명(`faint`)입니다.
-- **안쪽 목표 블록:** `radius-inner`, `shadow-card` 링입니다. 안에 세 줄을 둡니다.
+- **안쪽 목표 블록:** `radius-inner`, `shadow-card`입니다. 안에 세 줄을 둡니다.
   - "목표"와 목표 금액(`display` 18px/700)
   - `accent-ink` 모은 돈과 `faint` "/ 목표 · %"
   - 6px 막대: `well` 트랙에 `primary` 채움, 둥근 끝

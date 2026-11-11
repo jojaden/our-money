@@ -172,7 +172,7 @@
 /* ---------- 이번 달 기록 (StatTiles) ---------- */
 
 .stat-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 0; padding: 0; list-style: none; }
-.stat-tiles .stat { display: flex; align-items: center; gap: 12px; min-width: 0; padding: 14px; border-radius: var(--radius-inner); background: var(--surface); box-shadow: var(--shadow-card); }
+.stat-tiles .stat { display: flex; align-items: center; gap: 12px; min-width: 0; padding: 14px; border-radius: var(--radius-inner); background: var(--surface-card); box-shadow: var(--shadow-card); }
 .stat-tiles .ic { flex: none; display: grid; place-items: center; width: 36px; height: 36px; border-radius: var(--radius-chip); }
 .stat-tiles .ic svg { width: 18px; height: 18px; stroke-width: 2; }
 .stat-tiles .t1 { background: var(--pill-negative-bg); color: var(--pill-negative-ink); }

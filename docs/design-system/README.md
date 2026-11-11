@@ -85,7 +85,7 @@
 
 ## 모양과 깊이
 
-- **카드:** `radius-card`(24px)에 `shadow-card`를 줍니다. `border`는 쓰지 않습니다. 가장자리는 `shadow-card` 안의 1px `card-edge` 링이 냅니다.
+- **카드:** `radius-card`(24px), 바탕 `surface-card`, 그림자 `shadow-card`입니다. `border`도 링도 쓰지 않습니다. 위는 흰색, 아래로 갈수록 `ground` 쪽으로 옅어지는 그라데이션과 넓고 옅은 그림자로 가장자리가 바탕에 스며들게 합니다. 선으로 딱 끊지 않습니다.
 - **나머지 모서리:**
   - 시트 위 모서리와 로딩 배지는 `radius-sheet`
   - 버튼·입력·누른 줄·위쪽 막대의 둥근 사각 버튼은 `radius-control`
