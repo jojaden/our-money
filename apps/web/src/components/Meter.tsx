@@ -5,17 +5,24 @@ import { cssTimeMs } from "@/lib/motion";
 
 /**
  * 가로 막대 (docs/design-system README "숫자와 막대"). 같은 뜻은 이 모양 하나로 그린다:
- * 예산 대비 쓴 돈(눈금 = 오늘까지 써도 되는 선), 할 일 진행. 채움은 accent 한 색, 넘치면 negative.
+ * 예산 대비 쓴 돈(눈금 = 오늘까지 써도 되는 선이나 분류 예산), 할 일 진행. 채움은 accent 한 색, 넘치면 negative.
  * 채움은 막대 폭만 한 둥근 띠를 translateX 로 밀어 넣는다 — 레이아웃 없이 합성만 해서 움직임이 싸고, 오른쪽 끝도 둥글다.
  */
 export function Meter({
   fillRef,
+  value,
+  over = false,
   mile = null,
   mileText,
   label,
   thin = false,
 }: {
-  fillRef: React.Ref<HTMLElement>;
+  /** JS 로 움직일 때(useTween + drawMeter). 없으면 value 로 그린다 */
+  fillRef?: React.Ref<HTMLElement>;
+  /** 정해진 비율(0–1). CSS 전환으로 옮기고, 조상에 .flat 이 있으면 빈 막대에서 자란다 */
+  value?: number;
+  /** 넘침: 채움을 negative 로 */
+  over?: boolean;
   /** 이정표 자리(0–1): 오늘까지 써도 되는 선 */
   mile?: number | null;
   mileText?: string;
@@ -24,9 +31,9 @@ export function Meter({
   thin?: boolean;
 }) {
   return (
-    <div className={`meter${thin ? " thin" : ""}`} role={label ? "img" : undefined} aria-label={label} aria-hidden={label ? undefined : true}>
+    <div className={`meter${thin ? " thin" : ""}${over ? " over" : ""}`} role={label ? "img" : undefined} aria-label={label} aria-hidden={label ? undefined : true}>
       <i className="track">
-        <i className="fill" ref={fillRef} />
+        {value === undefined ? <i className="fill" ref={fillRef} /> : <i className="fill css" style={{ transform: shift(value) }} />}
       </i>
       {mile !== null && (
         <i className="mile" style={{ left: `${Math.min(1, Math.max(0, mile)) * 100}%` }}>
@@ -39,9 +46,10 @@ export function Meter({
 
 /** 막대를 비율 r(0–1)만큼 채운다 */
 export function drawMeter(fill: HTMLElement | null, r: number) {
-  const v = Math.min(1, Math.max(0, r));
-  if (fill) fill.style.transform = `translateX(${((v - 1) * 100).toFixed(2)}%)`;
+  if (fill) fill.style.transform = shift(r);
 }
+
+const shift = (r: number) => `translateX(${((Math.min(1, Math.max(0, r)) - 1) * 100).toFixed(2)}%)`;
 
 // ease-out, ease-value 토큰과 같은 모양의 곡선 (숫자와 끝 점을 호와 같은 박자로 움직이려고 JS 로 계산)
 const easeOut = (t: number) => 1 - Math.pow(1 - t, 4);

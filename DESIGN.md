@@ -40,7 +40,7 @@ description: 두 사람의 한 달 돈 흐름을 다정하고 차분하게 보�
 | `tokens.css` | `tokens.json`에서 만든 CSS 변수. 손으로 고치지 않습니다. |
 | `globals.css` | 바탕 규칙, 12열 그리드, 여러 화면이 나눠 쓰는 작은 조각 |
 | `controls.css` | 카드, 목록 줄, 버튼, 칩, 세그먼트, 입력, 토글, 체크 링, 알약, 시트 |
-| `cards.css` | 튜브 게이지, BudgetCard, StepTrack, SpendCurve, StatTiles, 막대, GoalBar |
+| `cards.css` | Meter, BudgetCard, StepTrack, SpendCurve, StatTiles, 막대, GoalBar |
 | `moments.css` | 100% 축하, 로그인·로딩의 따뜻한 무대 |
 | `wallet.css` | 지갑, 카드 상세, AddPass, 작은 카드 |
 | `shell.css` | 위쪽 막대, 하단 캡슐, 데스크톱 레일, 화면 전환, 토스트 |

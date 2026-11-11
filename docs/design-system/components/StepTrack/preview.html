@@ -1,4 +1,4 @@
-<!-- @dsCard group="Cards" height=210 subtitle="체크포인트 진행선: 끝낸 것은 체크 원, 남은 것은 빈 원" -->
+<!-- @dsCard group="Cards" height=210 subtitle="칸 나눈 진행 막대: 끝낸 칸은 accent, 남은 칸은 well" -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alan+Sans:wght@300..900&family=Noto+Sans+KR:wght@400..800&display=swap">
 <style>
   body { margin: 0; background: var(--ground); color: var(--text); font-family: var(--font-text); word-break: keep-all; -webkit-font-smoothing: antialiased; }
@@ -10,12 +10,9 @@
   .meta b { color: var(--muted); font-family: var(--font-display); font-weight: 600; }
   svg.i { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
   .chev { grid-row: 1 / span 4; grid-column: 2; width: 20px; height: 20px; color: var(--faint); }
-  .track { display: flex; align-items: center; margin: 4px 0 2px; }
-  .node { flex: none; display: grid; place-items: center; width: 20px; height: 20px; box-sizing: border-box; border-radius: var(--radius-chip); border: 2px solid var(--well); background: var(--surface); }
-  .node.done { border-color: var(--primary); background: var(--primary); color: var(--on-primary); }
-  .node.done svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
-  .bar { flex: 1; height: 4px; background: var(--well); }
-  .bar.done { background: var(--primary); }
+  .track { display: flex; gap: 4px; height: 8px; margin: 4px 0 2px; }
+  .track i { flex: 1; border-radius: var(--radius-chip); background: var(--well); }
+  .track i.done { background: var(--accent); }
 </style>
 <div class="stage">
   <p class="label">이번 달 할 일</p>
@@ -24,12 +21,7 @@
     <svg class="i chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
     <div class="meta"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg><b>3 / 6</b>건 옮김</div>
     <div class="track" role="img" aria-label="6건 중 3건 끝남">
-      <span class="node done"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span><span class="bar done"></span>
-      <span class="node done"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span><span class="bar done"></span>
-      <span class="node done"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span><span class="bar"></span>
-      <span class="node"></span><span class="bar"></span>
-      <span class="node"></span><span class="bar"></span>
-      <span class="node"></span>
+      <i class="done"></i><i class="done"></i><i class="done"></i><i></i><i></i><i></i>
     </div>
     <div class="meta"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>예진 월급날까지 6일 · 남은 3건 1,415,000원</div>
   </section>

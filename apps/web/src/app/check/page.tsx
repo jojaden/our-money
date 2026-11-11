@@ -64,7 +64,7 @@ function Section({ id, title, tasks, empty, foot }: { id: string; title: string;
   );
 }
 
-/** 한 사람의 월급날: 그날 자기 월급통장에서 옮길 돈. 머리는 진행선(StepTrack), 아래는 할 일 줄 */
+/** 한 사람의 월급날: 그날 자기 월급통장에서 옮길 돈. 머리는 칸 나눈 진행 막대(StepTrack), 아래는 할 일 줄 */
 function PaydaySection({ g, today, name }: { g: PaydayGroup; today: string; name: string }) {
   const id = `pay-${g.person}`;
   const left = g.transfers.filter((t) => !t.done);
