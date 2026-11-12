@@ -73,7 +73,7 @@ function HeadAction() {
   if (!p) return null;
   return (
     // 글에 "추가"가 이미 있으면(일정 추가) + 그림을 겹쳐 두지 않는다
-    <button type="button" className="btn head-action" onClick={p.run}>
+    <button type="button" className="btn head-action" onClick={() => p.run()}>
       {p.icon === "spending" && <PrimaryIcon icon={p.icon} />} {p.label}
     </button>
   );

@@ -46,7 +46,10 @@ export const useSheets = () => useContext(SheetContext);
 export interface Primary {
   label: string;
   icon: "spending" | "event";
-  run: () => void;
+  /** 주된 일 — 바로 쓰기 칸에 쓰던 글이 있으면 그 글로 시작한다 */
+  run: (draft?: string) => void;
+  /** 바로 쓰기: 달력 첫 화면(폰)에서 버튼이 긴 막대가 되고, 글을 쓰고 엔터를 누르면 시트 없이 바로 더한다 */
+  quick?: (text: string) => void;
 }
 const PrimarySet = createContext<(p: Primary | null) => void>(() => {});
 const PrimaryNow = createContext<Primary | null>(null);
@@ -57,17 +60,20 @@ export function PrimaryIcon({ icon }: { icon: Primary["icon"] }) {
   return <Icon aria-hidden="true" />;
 }
 
-/** 그 화면의 주된 버튼을 정한다. 화면이 사라지면 같이 없어진다 (run 은 늘 마지막 것을 부른다) */
-export function usePrimaryAction(label: string, icon: Primary["icon"], run: () => void) {
+/** 그 화면의 주된 버튼을 정한다. 화면이 사라지면 같이 없어진다 (run·quick 은 늘 마지막 것을 부른다) */
+export function usePrimaryAction(label: string, icon: Primary["icon"], run: (draft?: string) => void, quick?: (text: string) => void) {
   const set = useContext(PrimarySet);
   const ref = useRef(run);
+  const quickRef = useRef(quick);
   useEffect(() => {
     ref.current = run;
+    quickRef.current = quick;
   });
+  const hasQuick = Boolean(quick);
   useEffect(() => {
-    set({ label, icon, run: () => ref.current() });
+    set({ label, icon, run: (draft) => ref.current(draft), quick: hasQuick ? (text) => quickRef.current?.(text) : undefined });
     return () => set(null);
-  }, [set, label, icon]);
+  }, [set, label, icon, hasQuick]);
 }
 
 function norm(p: string) {
@@ -83,6 +89,22 @@ function Nav() {
   const [last, setLast] = useState<Primary | null>(null);
   if (primary && primary !== last) setLast(primary);
   const shown = primary ?? last;
+  // 바로 쓰기 칸의 글 — 엔터면 바로 더하고, + 를 누르면 이 글로 시트를 연다
+  const [draft, setDraft] = useState("");
+  const input = useRef<HTMLInputElement>(null);
+  const quick = primary?.quick;
+  const submit = () => {
+    const text = draft.trim();
+    if (!text || !quick) return;
+    quick(text);
+    setDraft("");
+    input.current?.blur();
+  };
+  const runPrimary = () => {
+    const text = quick ? draft.trim() : "";
+    setDraft("");
+    primary?.run(text || undefined);
+  };
   return (
     <>
       <nav className="rail" aria-label="주요 메뉴">
@@ -122,13 +144,38 @@ function Nav() {
             </Link>
           ))}
         </nav>
-        <button type="button" className="fab" aria-label={shown?.label} inert={!primary} onClick={() => primary?.run()}>
-          {shown && (
-            <span className="fab-icon" key={shown.icon}>
-              <PrimaryIcon icon={shown.icon} />
-            </span>
+        {/* 원형 버튼. 바로 쓰기가 있는 화면(달력 첫 화면, 폰)에서는 가운데 긴 막대가 되어 왼쪽은 쓰는 칸, 오른쪽은 + (shell.css) */}
+        <div className={`fab ${quick ? "typing" : ""}`} inert={!primary}>
+          {quick && (
+            <form
+              className="fab-quick"
+              onSubmit={(e) => {
+                e.preventDefault();
+                submit();
+              }}
+            >
+              <input
+                ref={input}
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                placeholder={primary?.label}
+                aria-label={`${primary?.label} — 쓰고 엔터를 누르면 바로 더해요`}
+                enterKeyHint="done"
+                autoComplete="off"
+                maxLength={40}
+              />
+            </form>
           )}
-        </button>
+          <button type="button" className="fab-btn" aria-label={shown?.label} onClick={runPrimary}>
+            {shown && (
+              <span className="fab-icon" key={shown.icon}>
+                <PrimaryIcon icon={shown.icon} />
+                {/* 긴 막대일 때는 + (shell.css 가 둘 중 하나만 보인다) */}
+                {quick && <Plus className="fab-plus" aria-hidden="true" />}
+              </span>
+            )}
+          </button>
+        </div>
       </div>
     </>
   );

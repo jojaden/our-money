@@ -12,7 +12,7 @@ import { leaveSummary, resetSummary } from "@/lib/summaryNav";
 import { dateWithDay, monthLabel, parseYmd, shortDate } from "@/lib/format";
 import { MonthHeader } from "@/components/MonthHeader";
 import { afterSheet, CategoryIcon, CheckButton, Money, Seg, Sheet } from "@/components/ui";
-import { EventSheet } from "@/components/EventSheet";
+import { EventSheet, quickEvent } from "@/components/EventSheet";
 import { MonthTodo } from "@/components/MonthTodo";
 import { CalendarCard } from "@/components/CalendarCard";
 import { useCalendarStage } from "@/components/calendarStage";
@@ -195,7 +195,7 @@ function carry(next: typeof carried) {
 
 /** 월 달력은 화면을 꽉 채우고, 날짜 내역은 누를 때 아래 패널로, 이번 달 할 일·일정·D-day 는 달력 아래(내려서 본다)에 둔다. */
 function CalendarMonth() {
-  const { data, month, today, setMonth } = useData();
+  const { data, month, today, setMonth, upsert, toast } = useData();
   const router = useRouter();
   const { openSpending } = useSheets();
   const cells = monthGrid(month);
@@ -209,7 +209,7 @@ function CalendarMonth() {
   const returnPanel = useRef(false);
   const [moreTab, setMoreTab] = useState<"month" | "dday">("month");
   const { more, page, hint, openMore } = useCalendarStage();
-  const [sheet, setSheet] = useState<{ open: boolean; key: number; event?: CalEvent; date: string }>({ open: false, key: 0, date: day });
+  const [sheet, setSheet] = useState<{ open: boolean; key: number; event?: CalEvent; date: string; draft?: string }>({ open: false, key: 0, date: day });
   useEffect(() => {
     carried = null;
     resetSummary();
@@ -226,7 +226,7 @@ function CalendarMonth() {
       setMonth(date.slice(0, 7));
     }
   };
-  const openEvent = (event?: CalEvent, date = day) => setSheet((x) => ({ open: true, key: x.key + 1, event, date }));
+  const openEvent = (event?: CalEvent, date = day, draft?: string) => setSheet((x) => ({ open: true, key: x.key + 1, event, date, draft }));
   // 패널이 쌓은 기록을 되돌린 뒤 편집·지출 시트를 연다. 뒤로가기가 페이지를 건너뛰지 않게 한다.
   const closeThen = (run: () => void) => {
     afterSheet(run);
@@ -243,7 +243,11 @@ function CalendarMonth() {
     }
     setSheet((x) => ({ ...x, open }));
   };
-  usePrimaryAction(`${Number(day.slice(5, 7))}월 ${Number(day.slice(8))}일에 일정 추가`, "event", () => openEvent());
+  // 폰 첫 화면의 아래 막대: 쓰고 엔터면 고른 날짜에 바로 일정, + 는 쓰던 글로 일정 시트
+  const addQuick = async (text: string) => {
+    if (await upsert("events", [quickEvent(text, day)])) toast("일정을 만들었어요");
+  };
+  usePrimaryAction(`${Number(day.slice(5, 7))}월 ${Number(day.slice(8))}일에 일정 추가`, "event", (draft) => openEvent(undefined, day, draft), addQuick);
   const monthSpent = [...spent.entries()].filter(([d]) => inMonth(d)).reduce((a, [, v]) => a + v, 0);
   const monthEvents = new Set([...marks.entries()].filter(([d]) => inMonth(d)).flatMap(([, ms]) => ms.filter((m) => m.event).map((m) => m.event!.id))).size;
 
@@ -295,7 +299,7 @@ function CalendarMonth() {
           <DayAgenda day={day} marks={marks.get(day) ?? []} onOpenEvent={editEvent} onOpenSpending={(x) => closeThen(() => openSpending(x))} />
         </div>
       </Sheet>
-      <EventSheet key={sheet.key} open={sheet.open} event={sheet.event} date={sheet.date} onOpenChange={closeEvent} />
+      <EventSheet key={sheet.key} open={sheet.open} event={sheet.event} date={sheet.date} draft={sheet.draft} onOpenChange={closeEvent} />
     </>
   );
 }

@@ -169,37 +169,71 @@ div.bar-mini { display: flex; align-items: center; justify-content: center; gap:
 .tab:active svg { transform: scale(0.88); }
 .tab[aria-current="page"], .tab[aria-current="page"] svg { color: var(--on-primary); }
 .fab {
-  display: grid;
+  display: flex;
   flex: none;
-  place-items: center;
+  align-items: center;
+  overflow: hidden;
   width: var(--nav-h);
   height: var(--nav-h);
-  padding: 0;
-  border: 0;
   border-radius: var(--radius-chip);
   background: var(--primary);
   box-shadow: var(--shadow-float);
   color: var(--on-primary);
   pointer-events: auto;
-  transition: transform var(--dur-press) var(--ease-press), translate var(--dur-tab) var(--ease-drawer), width var(--dur-tab) var(--ease-drawer), height var(--dur-tab) var(--ease-drawer), margin var(--dur-tab) var(--ease-drawer), opacity var(--dur-press) ease;
+  transition: transform var(--dur-press) var(--ease-press), translate var(--dur-tab) var(--ease-drawer), width var(--dur-tab) var(--ease-drawer), height var(--dur-tab) var(--ease-drawer), margin var(--dur-tab) var(--ease-drawer), background-color var(--dur-tab) ease, color var(--dur-tab) ease, opacity var(--dur-press) ease;
 }
+.fab-btn { display: grid; flex: none; place-items: center; width: var(--nav-h); height: 100%; margin-left: auto; padding: 0; border: 0; background: none; color: inherit; transition: width var(--dur-tab) var(--ease-drawer); }
 .fab svg { width: 26px; height: 26px; stroke-width: 2; }
-.fab:active { transform: scale(0.94); }
+.fab:has(> .fab-btn:active) { transform: scale(0.94); }
 /* 탭마다 주된 일이 다르면 아이콘이 살짝 커지며 바뀐다 (지출 기록 + / 일정 추가 달력+) */
 .fab-icon { display: grid; place-items: center; animation: fab-icon-in var(--dur-tab) var(--ease-pop) both; }
+.fab-icon > svg { grid-area: 1 / 1; transition: opacity var(--dur-tab) ease, scale var(--dur-tab) var(--ease-pop); }
+.fab-plus { opacity: 0; scale: 0.6; }
 @keyframes fab-icon-in { from { opacity: 0; transform: scale(0.6) rotate(-45deg); } }
+/* 바로 쓰기 칸: 동그라미일 때는 너비 0 으로 숨어 있다가 긴 막대가 되면 왼쪽을 채운다 */
+.fab-quick { flex: 1; min-width: 0; height: 100%; opacity: 0; visibility: hidden; transition: opacity var(--dur-press) ease, visibility 0s linear var(--dur-press); }
+.fab-quick input {
+  width: 100%;
+  height: 100%;
+  padding: 0 0 0 22px;
+  border: 0;
+  outline: none;
+  background: none;
+  color: var(--text);
+  font: 600 16px/1 var(--font-text); /* 16px 아래면 iOS 가 확대한다 */
+}
+.fab-quick input::placeholder { color: var(--muted); opacity: 1; }
 /* 주된 일이 없는 화면(플랜·체크·설정): 버튼이 줄어들며 빠지고 캡슐이 그 자리까지 넓어진다. 알약도 같은 박자로 따라간다 */
 .navbar.solo .fab { width: 0; margin-left: calc(var(--nav-gap) * -1); opacity: 0; transform: scale(0.6); pointer-events: none; }
 /* 달력 첫 화면(달력만 보일 때, <html data-cal="focus">): 캡슐은 아래로 내려가 숨고, 일정 추가 버튼이 가운데로 옮겨 가며
-   가로로 긴 타원(fab-wide-w × fab-wide-h)으로 커진다. 모아 보기로 내리면(data-cal="open") 같은 박자로 제자리 동그라미.
+   얇고 긴 막대(fab-wide-w × fab-wide-h, 하단 메뉴처럼 반투명 바탕)로 늘어난다. 왼쪽은 "11월 17일에 일정 추가" 쓰는 칸 — 쓰고 엔터면 바로 더하고,
+   오른쪽 + 는 쓰던 글로 일정 시트를 연다. 모아 보기로 내리면(data-cal="open") 같은 박자로 제자리 동그라미.
    누를 때 줄어드는 transform 과 겹치지 않게 자리는 translate 로 옮긴다 */
 @media (max-width: 1023px) {
   :root[data-cal="focus"] .tabbar { translate: 0 calc(100% + var(--nav-inset) + env(safe-area-inset-bottom, 0px)); opacity: 0; visibility: hidden; pointer-events: none; transition: translate var(--dur-tab) var(--ease-drawer), opacity var(--dur-tab) ease, visibility 0s linear var(--dur-tab); }
-  :root[data-cal="focus"] .fab { width: var(--fab-wide-w); height: var(--fab-wide-h); translate: calc(var(--fab-wide-w) / 2 - var(--nav-w) / 2) 0; }
-  :root[data-cal="focus"] .fab svg { width: 28px; height: 28px; }
+  :root[data-cal="focus"] .fab {
+    --w: min(var(--fab-wide-w), var(--nav-w));
+    width: var(--w);
+    height: var(--fab-wide-h);
+    margin-left: calc(var(--nav-h) - var(--w)); /* 왼쪽으로만 늘어나 줄에서 차지하는 자리는 동그라미 그대로 — 숨는 캡슐이 눌리지 않게 */
+    translate: calc(var(--w) / 2 - var(--nav-w) / 2) 0;
+    background: color-mix(in srgb, var(--surface) 86%, transparent);
+    -webkit-backdrop-filter: blur(22px) saturate(180%);
+    backdrop-filter: blur(22px) saturate(180%);
+    box-shadow: var(--shadow-nav);
+    color: var(--text);
+  }
+  :root[data-cal="focus"] .fab:has(> .fab-btn:active) { transform: none; }
+  /* 쓰는 중에는 테두리로 알린다 */
+  :root[data-cal="focus"] .fab:focus-within { box-shadow: var(--shadow-nav), inset 0 0 0 2px var(--primary); }
+  :root[data-cal="focus"] .fab-btn { width: calc(var(--fab-wide-h) + 8px); }
+  :root[data-cal="focus"] .fab-btn:active svg { scale: 0.86; }
+  :root[data-cal="focus"] .fab-quick { opacity: 1; visibility: visible; transition: opacity var(--dur-tab) ease var(--dur-press), visibility 0s; }
+  :root[data-cal="focus"] .fab.typing .fab-icon > svg:not(.fab-plus) { opacity: 0; scale: 0.6; }
+  :root[data-cal="focus"] .fab-plus { opacity: 1; scale: 1; }
 }
 @media (prefers-reduced-transparency: reduce) {
-  .tabbar, .topbar::before { background: var(--surface); -webkit-backdrop-filter: none; backdrop-filter: none; }
+  .tabbar, .topbar::before, :root[data-cal="focus"] .fab { background: var(--surface); -webkit-backdrop-filter: none; backdrop-filter: none; }
 }
 
 /* ---------- 데스크톱: 레일 ---------- */
@@ -350,5 +384,5 @@ html[data-navigation="back"]::view-transition-new(app-page) { animation-name: pa
   ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
   .route-page { animation: none !important; }
   .page-enter, .page-enter > *, .page-enter .page-head * { animation: none !important; }
-  .fab, .fab-icon, .bell .badge, .tabbar { animation: none !important; transition: none !important; }
+  .fab, .fab-btn, .fab-quick, .fab-icon, .fab-icon > svg, .bell .badge, .tabbar { animation: none !important; transition: none !important; }
 }
