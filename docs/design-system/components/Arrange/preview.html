@@ -7,14 +7,14 @@
   .bar span { color: var(--muted); font: 600 13.5px var(--font-text); }
   .bar button { height: 36px; padding: 0 16px; border: 0; border-radius: 999px; background: var(--primary); color: var(--on-primary); font: 600 14px var(--font-text); }
   .list { display: grid; gap: 12px; }
-  .c { padding: 18px 20px; border-radius: var(--radius-card); background: var(--surface-card); box-shadow: var(--shadow-card); font: 700 17px/24px var(--font-text); user-select: none; -webkit-user-select: none; touch-action: pan-y; transform-origin: 50% 10%; transition: translate var(--dur-tab) var(--ease-drawer); }
+  .c { padding: 18px 20px; border-radius: var(--radius-card); background: var(--surface-card); box-shadow: var(--shadow-card); font: 700 17px/24px var(--font-text); user-select: none; -webkit-user-select: none; touch-action: pan-y; transform-origin: 50% 50%; transition: translate var(--dur-tab) var(--ease-drawer); }
   .c small { display: block; margin-top: 4px; color: var(--muted); font: 500 13.5px/18px var(--font-text); }
   .on .c { animation: ja var(--jd) linear var(--jl) infinite; }
-  .on .c:nth-child(2n) { transform-origin: 30% 5%; animation-name: jb; animation-direction: alternate; }
+  .on .c:nth-child(2n) { animation-name: jb; animation-direction: alternate; }
   .c.lifted { position: relative; z-index: 2; scale: var(--lift, .6); filter: var(--shadow-lift); animation: none !important; transition: scale var(--dur-tab) var(--ease-drawer); }
   .c.landing { position: relative; z-index: 2; transition: translate var(--dur-tab) var(--ease-drawer), scale var(--dur-tab) var(--ease-drawer); }
-  @keyframes ja { 0% { rotate: -0.4deg; animation-timing-function: ease-in; } 50% { rotate: 0.55deg; animation-timing-function: ease-out; } }
-  @keyframes jb { 0% { rotate: 0.4deg; animation-timing-function: ease-in; } 50% { rotate: -0.55deg; animation-timing-function: ease-out; } }
+  @keyframes ja { 0% { rotate: -0.38deg; transform: translate(-0.5px, 0); animation-timing-function: ease-in; } 50% { rotate: 0.5deg; transform: translate(0.5px, 0.3px); animation-timing-function: ease-out; } }
+  @keyframes jb { 0% { rotate: 0.38deg; transform: translate(0.5px, 0.3px); animation-timing-function: ease-in; } 50% { rotate: -0.5deg; transform: translate(-0.5px, 0); animation-timing-function: ease-out; } }
 </style>
 <div class="stage">
   <div class="bar"><span id="t">꾹 눌러 보세요</span><button type="button" id="b">흔들기</button></div>

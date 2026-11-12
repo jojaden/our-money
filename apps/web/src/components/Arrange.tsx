@@ -19,6 +19,10 @@ const SLOP = 8;
 const EDGE = 96;
 /** 든 카드는 누른 곳으로 모이며 이 높이쯤으로 줄어든다 — 긴 카드(곡선·요약)도 끌기 쉽게. 줄이는 비율은 0.4~0.75 */
 const LIFT_H = 200;
+/** 든 카드가 들어갈 곳에 대면 그 사이만 이만큼 벌어진다 (원래 자리는 닫힌다) */
+const OPEN = 64;
+/** 흔들림: 카드 크기와 상관없이 가장 먼 모서리가 이만큼(px) 움직이게 각도를 맞춘다 */
+const JIGGLE_PX = 1.6;
 
 /** 저장된 순서에서 모르는 이름은 빼고, 빠진 카드는 기본 자리에 넣는다 */
 export function normalize(saved: string[] | undefined, defaults: string[]): string[] {
@@ -76,7 +80,10 @@ interface Drag {
   heights: number[];
   gap: number;
   from: number;
+  /** 든 카드를 뺀 나머지 중 몇 번째 앞에 들어가나 (-1 = 아직 안 정함) */
   to: number;
+  /** 든 카드를 뺀 나머지: 원래 자리를 닫은 뒤의 위치와 지금 비켜 있는 거리 */
+  others: { s: HTMLElement; top: number; h: number; close: number; shift: number }[];
   y0: number;
   scroll0: number;
   y: number;
@@ -90,7 +97,8 @@ interface Drag {
 /**
  * 꾹 눌러 카드를 옮기는 화면 틀(.grid 자리). 애플 홈 화면의 앱 옮기기처럼:
  * 1. 카드를 꾹 누르면(0.48초) 모든 카드가 제각각 흔들리고, 누른 카드는 누른 곳으로 모이며 작아져(높이 200px 쯤) 떠서 손가락을 따라온다.
- * 2. 끄는 동안 다른 카드는 비켜 미끄러지고(들어갈 자리는 손가락 위치), 화면 끝에 가면 저절로 굴러간다. 놓으면 새 자리로 내려앉으며 원래 크기로 커진다.
+ * 2. 든 카드의 원래 자리는 닫히고, 들어갈 곳(손가락 위치)에 대면 그 사이만 조금 벌어진다. 화면 끝에 가면 저절로 굴러간다.
+ *    놓으면 다른 카드는 새 제자리로 미끄러지고, 든 카드는 새 자리로 내려앉으며 원래 크기로 커진다.
  * 3. 흔들리는 동안 카드를 잠깐(0.14초) 누르면 다시 집는다. 위 "완료"·뒤로 가기로 끝낸다.
  * 순서는 사람마다 서버에 남는다(users.card_order). 움직임은 translate·rotate·scale 만.
  */
@@ -103,8 +111,8 @@ export function Arrange({ page, defaults, children }: { page: ArrangePage; defau
   const drag = useRef<Drag | null>(null);
   /** 들기 직후 클릭 한 번을 삼키는 리스너 — 놓고 나면 곧 뗀다 */
   const swallowing = useRef<((e: MouseEvent) => void) | null>(null);
-  /** 놓은 뒤 새 자리로 내려앉힐 카드와 놓기 직전 화면 위치 */
-  const landing = useRef<{ slot: HTMLElement; top0: number; dy: number; s: number; oy: number } | null>(null);
+  /** 놓은 뒤 새 자리로 내려앉힐 카드와 놓기 직전 화면 위치, 비켜 있던 카드들의 놓기 직전 위치(offsetTop + 비킨 거리) */
+  const landing = useRef<{ slot: HTMLElement; top0: number; dy: number; s: number; oy: number; others: { s: HTMLElement; at: number }[] } | null>(null);
   // 창 전체에서 듣는 손가락 처리는 한 번만 붙이므로, 그 안에서는 늘 마지막 값을 ref 로 읽는다
   const latest = useRef({ editing, order, save: setCardOrder });
   useEffect(() => {
@@ -138,7 +146,16 @@ export function Arrange({ page, defaults, children }: { page: ArrangePage; defau
     else s.addEventListener("transitionend", done, { once: true });
   };
 
-  // 새 순서가 그려진 뒤: 비켜 있던 카드는 그 자리 그대로(이제 진짜 자리), 든 카드는 놓은 곳에서 새 자리로 내려앉는다
+  // 흔들림 각도: 카드마다 가장 먼 모서리(가운데에서 긴 변의 반)가 JIGGLE_PX 만 움직이게 — 긴 카드 아래가 크게 흔들리지 않게
+  useLayoutEffect(() => {
+    if (!editing) return;
+    for (const s of grid.current?.querySelectorAll<HTMLElement>("[data-card]") ?? []) {
+      const r = Math.max(s.offsetWidth, s.offsetHeight) / 2 || 1;
+      s.style.setProperty("--ja", `${((JIGGLE_PX / r) * 180) / Math.PI}deg`);
+    }
+  }, [editing]);
+
+  // 새 순서가 그려진 뒤: 비켜 있던 카드는 놓기 직전 자리에서 새 제자리로 미끄러지고, 든 카드는 놓은 곳에서 새 자리로 내려앉는다
   const key = order.join("|");
   useLayoutEffect(() => {
     const l = landing.current;
@@ -146,35 +163,36 @@ export function Arrange({ page, defaults, children }: { page: ArrangePage; defau
     landing.current = null;
     const g = grid.current;
     if (!g) return;
-    for (const s of g.querySelectorAll<HTMLElement>("[data-card]")) {
-      if (s === l.slot) continue;
+    for (const { s } of l.others) {
       s.style.transition = "none";
       s.style.translate = "";
     }
+    // 새 자리를 재고, 놓기 직전 자리에서 시작하게 한 뒤 제자리로 (FLIP)
+    const moves = l.others.map(({ s, at }) => ({ s, off: at - s.offsetTop }));
+    for (const { s, off } of moves) if (off) s.style.translate = `0 ${off}px`;
     // 줄어든 채 옮겨 둔 카드의 새 제자리(문서 기준): 보이는 위 = 제자리 + dy + 누른 곳 × (1 − 비율)
     const now = l.slot.getBoundingClientRect().top + window.scrollY - l.dy - l.oy * (1 - l.s);
     settle(l.slot, l.top0 + l.dy - now);
     void g.offsetHeight;
-    for (const s of g.querySelectorAll<HTMLElement>("[data-card]")) if (s !== l.slot) s.style.transition = "";
+    for (const { s } of moves) {
+      s.style.transition = "";
+      s.style.translate = "";
+    }
   }, [key]);
 
   // 손가락 위치로 든 카드를 옮기고, 들어갈 자리를 정해 다른 카드를 비킨다
   const follow = (d: Drag) => {
     d.dy = d.y - d.y0 + (window.scrollY - d.scroll0);
     d.slot.style.translate = `0 ${d.dy}px`;
-    // 들어갈 자리는 손가락 위치로 (줄어든 카드는 손가락 둘레에 모여 있다)
+    // 들어갈 자리는 손가락 위치로 (줄어든 카드는 손가락 둘레에 모여 있다). 원래 자리를 닫은 뒤의 위치와 견준다
     const mid = d.y + window.scrollY;
-    let to = 0;
-    d.slots.forEach((_, j) => {
-      if (j !== d.from && d.tops[j] + d.heights[j] / 2 < mid) to++;
-    });
+    const to = d.others.filter((o) => o.top + o.close + o.h / 2 < mid).length;
     if (to === d.to) return;
     d.to = to;
-    const step = d.heights[d.from] + d.gap;
-    d.slots.forEach((s, j) => {
-      if (j === d.from) return;
-      const shift = d.from < to && j > d.from && j <= to ? -step : to < d.from && j >= to && j < d.from ? step : 0;
-      s.style.translate = shift ? `0 ${shift}px` : "";
+    // 원래 자리는 닫고, 들어갈 곳만 OPEN 만큼 벌린다 — 다른 곳으로 옮기면 그 사이는 다시 좁아진다
+    d.others.forEach((o, k) => {
+      o.shift = o.close + (k >= to ? OPEN : 0);
+      o.s.style.translate = o.shift ? `0 ${o.shift}px` : "";
     });
   };
 
@@ -201,15 +219,20 @@ export function Arrange({ page, defaults, children }: { page: ArrangePage; defau
     // 지금 화면에 보이는 순서대로 (폰에서는 order 로 섞여 있다)
     const slots = [...g.querySelectorAll<HTMLElement>("[data-card]")].sort((a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top);
     const from = slots.indexOf(p.slot);
+    const gap = parseFloat(getComputedStyle(g).rowGap) || 0;
+    const step = p.slot.offsetHeight + gap;
     const d: Drag = {
       id: p.id,
       slot: p.slot,
       slots,
       tops: slots.map((s) => s.getBoundingClientRect().top + window.scrollY),
       heights: slots.map((s) => s.offsetHeight),
-      gap: parseFloat(getComputedStyle(g).rowGap) || 0,
+      gap,
       from,
-      to: from,
+      to: -1,
+      others: slots
+        .map((s, j) => ({ s, top: s.getBoundingClientRect().top + window.scrollY, h: s.offsetHeight, close: j > from ? -step : 0, shift: 0 }))
+        .filter((o) => o.s !== p.slot),
       y0: p.y,
       scroll0: window.scrollY,
       y: p.y,
@@ -226,6 +249,7 @@ export function Arrange({ page, defaults, children }: { page: ArrangePage; defau
     p.slot.style.setProperty("--lift", String(d.s));
     drag.current = d;
     p.slot.classList.add("lifted");
+    follow(d);
     d.raf = requestAnimationFrame(tick);
     // 손을 떼면 그 아래 버튼·링크가 눌리지 않게 바로 뒤 클릭 한 번을 삼킨다 (놓은 뒤 곧 뗀다 — 위 "완료"를 먹지 않게)
     const swallow = (e: MouseEvent) => {
@@ -247,16 +271,18 @@ export function Arrange({ page, defaults, children }: { page: ArrangePage; defau
     swallowing.current = null;
     if (swallow) window.setTimeout(() => document.removeEventListener("click", swallow, { capture: true }), 60);
     if (d.to === d.from) {
+      // 제자리: 닫고 벌렸던 카드는 원래대로, 든 카드는 제자리로 내려앉는다
+      for (const o of d.others) o.s.style.translate = "";
       settle(d.slot, d.dy);
       return;
     }
     // 보이는 카드끼리의 새 순서를 전체 순서(지금 없는 카드 포함)에 끼워 넣는다
     const seen = d.slots.map((s) => s.dataset.card!);
-    const moved = [...seen];
-    moved.splice(d.to, 0, ...moved.splice(d.from, 1));
+    const moved = d.others.map((o) => o.s.dataset.card!);
+    moved.splice(d.to, 0, d.slot.dataset.card!);
     let n = 0;
     const next = latest.current.order.map((k) => (seen.includes(k) ? moved[n++] : k));
-    landing.current = { slot: d.slot, top0: d.tops[d.from], dy: d.dy, s: d.s, oy: d.oy };
+    landing.current = { slot: d.slot, top0: d.tops[d.from], dy: d.dy, s: d.s, oy: d.oy, others: d.others.map((o) => ({ s: o.s, at: o.s.offsetTop + o.shift })) };
     void latest.current.save(page, next);
   };
 
