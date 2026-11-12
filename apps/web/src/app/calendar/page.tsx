@@ -3,13 +3,13 @@
 import Link from "next/link";
 import { Suspense, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { CalendarPlus, ChevronDown, ChevronLeft, X } from "lucide-react";
+import { CalendarPlus, ChevronDown, ChevronLeft, ChevronRight, X } from "lucide-react";
 import type { CalEvent, Spending } from "@/lib/types";
 import { useData } from "@/lib/store";
 import { actualAmount, findCheck, nameOf } from "@/lib/calc";
 import { ddayText, eventTodo, marksIn, monthGrid, nextOccurrence, rangeDays, rangeOf, rangeText, spentByDay, type Mark, type Range } from "@/lib/calendar";
 import { leaveSummary, resetSummary } from "@/lib/summaryNav";
-import { dateWithDay, monthLabel, parseYmd, shortDate } from "@/lib/format";
+import { dateWithDay, dayLabel, monthLabel, parseYmd, shortDate } from "@/lib/format";
 import { MonthHeader } from "@/components/MonthHeader";
 import { afterSheet, CategoryIcon, CheckButton, Money, Seg, Sheet } from "@/components/ui";
 import { EventSheet, quickEvent } from "@/components/EventSheet";
@@ -19,6 +19,8 @@ import { CalendarCard } from "@/components/CalendarCard";
 import { useCalendarStage } from "@/components/calendarStage";
 import { Morph, slideIn } from "@/components/Morph";
 import { PeriodSummary } from "@/components/PeriodSummary";
+import { SpendingDays } from "@/components/SpendingDays";
+import { ZoomPop } from "@/components/ZoomPop";
 import { usePrimaryAction, useSheets } from "@/components/Shell";
 import { spendingVisual } from "@/lib/categories";
 
@@ -253,7 +255,26 @@ function CalendarMonth() {
     },
   });
   const monthSpent = [...spent.entries()].filter(([d]) => inMonth(d)).reduce((a, [, v]) => a + v, 0);
-  const monthEvents = new Set([...marks.entries()].filter(([d]) => inMonth(d)).flatMap(([, ms]) => ms.filter((m) => m.event).map((m) => m.event!.id))).size;
+  // 이번 달 일정: 기간·반복 일정은 이번 달 첫날 한 번만
+  const monthMarks: Mark[] = [];
+  const seenEvents = new Set<string>();
+  for (const d of cells.filter(inMonth))
+    for (const m of marks.get(d) ?? [])
+      if (m.event && !seenEvents.has(m.event.id)) {
+        seenEvents.add(m.event.id);
+        monthMarks.push(m);
+      }
+  const monthEvents = monthMarks.length;
+  const monthSpendings = data.spendings.filter((x) => inMonth(x.date)).sort((a, b) => b.date.localeCompare(a.date) || (b.created_at ?? "").localeCompare(a.created_at ?? ""));
+  // 요약 줄을 누르면 그 글자에서 가운데로 커지는 창 (닫히는 동안에도 내용은 그대로)
+  const [pop, setPop] = useState(false);
+  const [popKind, setPopKind] = useState<"events" | "spent">("events");
+  const [popFrom, setPopFrom] = useState<HTMLElement | null>(null);
+  const openPop = (kind: "events" | "spent", el: HTMLElement) => {
+    setPopKind(kind);
+    setPopFrom(el);
+    setPop(true);
+  };
 
   return (
     <>
@@ -261,7 +282,25 @@ function CalendarMonth() {
       <div className="cal-page" ref={page}>
         <div className="cal-stage">
           <MonthHeader name="달력" sub={`${Number(month.slice(5))}월 1일 – ${Number(cells.filter(inMonth).at(-1)!.slice(8))}일`}>
-            <p className="cal-summary">일정 {monthEvents}개 <span aria-hidden="true">·</span> 이번 달 쓴 돈 <Money value={monthSpent} /></p>
+            {/* 없는 것은 빼고, 있으면 눌러서 모아 본다 */}
+            {(monthEvents > 0 || monthSpent > 0) && (
+              <p className="cal-summary">
+                {monthEvents > 0 && (
+                  <button type="button" className="sum-link" aria-haspopup="dialog" onClick={(e) => openPop("events", e.currentTarget)}>
+                    일정 {monthEvents}개<ChevronRight aria-hidden="true" />
+                  </button>
+                )}
+                {monthEvents > 0 && monthSpent > 0 && <span aria-hidden="true">·</span>}
+                {monthSpent > 0 && (
+                  <button type="button" className="sum-link" aria-haspopup="dialog" onClick={(e) => openPop("spent", e.currentTarget)}>
+                    <span>
+                      이번 달 쓴 돈 <Money value={monthSpent} />
+                    </span>
+                    <ChevronRight aria-hidden="true" />
+                  </button>
+                )}
+              </p>
+            )}
           </MonthHeader>
           <section className="calendar-month" aria-label="월 달력">
             <CalendarCard month={month} cells={cells} marks={marks} spent={spent} day={day} today={today} onPick={pick} />
@@ -303,9 +342,44 @@ function CalendarMonth() {
           <DayAgenda day={day} marks={marks.get(day) ?? []} onOpenEvent={editEvent} onOpenSpending={(x) => closeThen(() => openSpending(x))} />
         </div>
       </Sheet>
+      <ZoomPop
+        open={pop}
+        onOpenChange={setPop}
+        from={popFrom}
+        title={
+          popKind === "events" ? (
+            `${monthLabel(month)} 일정 ${monthEvents}개`
+          ) : (
+            <>
+              {monthLabel(month)} 쓴 돈 <Money value={monthSpent} />
+            </>
+          )
+        }
+      >
+        {popKind === "events" ? <MonthEvents marks={monthMarks} onOpenEvent={(e) => openEvent(e)} /> : <SpendingDays rows={monthSpendings} />}
+      </ZoomPop>
       <EventSheet key={sheet.key} open={sheet.open} event={sheet.event} date={sheet.date} draft={sheet.draft} onOpenChange={closeEvent} />
     </>
   );
+}
+
+/** 요약 창의 이번 달 일정 — 날짜별로 묶고, 줄을 누르면 고친다 */
+function MonthEvents({ marks, onOpenEvent }: { marks: Mark[]; onOpenEvent: (event: CalEvent) => void }) {
+  const { today } = useData();
+  const days = new Map<string, Mark[]>();
+  for (const m of marks) days.set(m.date, [...(days.get(m.date) ?? []), m]);
+  return [...days.entries()].map(([date, ms]) => (
+    <div className="daygroup" key={date}>
+      <div className="dayhead">
+        <span>{dayLabel(date, today)}</span>
+      </div>
+      <div className="rows">
+        {ms.map((m) => (
+          <EventRow key={m.event!.id} m={m} onOpen={() => onOpenEvent(m.event!)} />
+        ))}
+      </div>
+    </div>
+  ));
 }
 
 /** 날짜 패널: 얼마나 떨어진 날인지, 그 아래 일정 → 들어올 돈 → 나갈 돈 → 쓴 돈을 묶어서 보여 준다. */
