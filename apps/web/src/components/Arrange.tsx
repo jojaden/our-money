@@ -55,7 +55,7 @@ export function Slot({ k, children }: { k: string; children: React.ReactNode }) 
     "--o": i + 1,
     // 애플 홈 화면처럼 카드마다 0.24~0.33초 박자, 시작점은 음수 지연으로 흩뜨린다
     "--jd": `${(0.24 + (h % 10) * 0.01).toFixed(2)}s`,
-    "--jl": `-${((h >> 4) % 8) * 0.09}s`,
+    "--jl": `-${(((h >>> 4) % 8) * 0.09).toFixed(2)}s`,
   } as React.CSSProperties;
   return (
     <div className="slot" data-card={k} data-j={i % 2} style={style}>
