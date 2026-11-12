@@ -5,6 +5,7 @@ import { useData } from "@/lib/store";
 import { currentMonth, monthRow, periodOf } from "@/lib/calc";
 import { addDays } from "@/lib/calendar";
 import { monthLabel, parseYmd } from "@/lib/format";
+import { Morph } from "./Morph";
 import { haptic } from "@/lib/native";
 
 /** DB 한도 (migrations/005 months_text_len) */
@@ -51,7 +52,8 @@ export function MonthClose({ month }: { month: string }) {
         <h2 id="close-h">{label} 마무리</h2>
         {closed && <span className="aside">마감</span>}
       </div>
-      <div className="card month-close">
+      {/* 메모를 고치면 "메모 저장" 줄이 떠오르고 아래 줄이 미끄러져 내려간다 (Morph) */}
+      <Morph className="card month-close" track=":scope > *">
         <div className="field">
           <label htmlFor="month-note">이번 달 메모</label>
           <textarea
@@ -94,7 +96,7 @@ export function MonthClose({ month }: { month: string }) {
             </span>
           )}
         </div>
-      </div>
+      </Morph>
     </section>
   );
 }

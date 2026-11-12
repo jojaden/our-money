@@ -8,6 +8,7 @@ import { CheckButton, Money } from "./ui";
 import { MiniCard } from "./pass";
 import { PaidAmountSheet } from "./PaidAmountSheet";
 import { asking, dueState, dueText, waiting, type Task } from "./tasks";
+import { useMorphFlip } from "./Morph";
 import { shortDate } from "@/lib/format";
 
 /** fromShown: 카드 머리가 이미 "OO 급여통장에서"를 말할 때 이체 줄은 도착 계좌만 쓴다 */
@@ -15,6 +16,8 @@ export function TaskRow({ task, expandable = false, fromShown = false }: { task:
   const { data, today } = useData();
   const s = data.settings;
   const [open, setOpen] = useState(false);
+  // 나눠 낸 몫 펼치기는 이 줄만 다시 그리므로 바깥 Morph(체크 카드·월급날)에 바뀐다고 알린다
+  const flip = useMorphFlip();
   const [editing, setEditing] = useState(false);
   const [session, setSession] = useState(0);
   // 완료한 납부는 금액을 눌러 실제로 낸 금액을 적는다
@@ -68,7 +71,7 @@ export function TaskRow({ task, expandable = false, fromShown = false }: { task:
               className="s"
               style={{ display: "inline-flex", alignItems: "center", gap: 4, border: 0, background: "none", padding: 0, color: "var(--muted)", maxWidth: "100%" }}
               aria-expanded={open}
-              onClick={() => setOpen((v) => !v)}
+              onClick={() => flip(() => setOpen((v) => !v))}
             >
               <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{task.sub}</span>
               <ChevronDown aria-hidden="true" width={14} height={14} style={{ flex: "none", transform: open ? "rotate(180deg)" : undefined, transition: "transform 200ms var(--ease-out)" }} />

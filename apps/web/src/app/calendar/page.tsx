@@ -3,20 +3,24 @@
 import Link from "next/link";
 import { Suspense, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { CalendarPlus, ChevronLeft, Menu, X } from "lucide-react";
+import { CalendarPlus, ChevronDown, ChevronLeft, ChevronRight, X } from "lucide-react";
 import type { CalEvent, Spending } from "@/lib/types";
 import { useData } from "@/lib/store";
 import { actualAmount, findCheck, nameOf } from "@/lib/calc";
 import { ddayText, eventTodo, marksIn, monthGrid, nextOccurrence, rangeDays, rangeOf, rangeText, spentByDay, type Mark, type Range } from "@/lib/calendar";
 import { leaveSummary, resetSummary } from "@/lib/summaryNav";
-import { dateWithDay, monthLabel, parseYmd, shortDate } from "@/lib/format";
+import { dateWithDay, dayLabel, monthLabel, parseYmd, shortDate } from "@/lib/format";
 import { MonthHeader } from "@/components/MonthHeader";
 import { afterSheet, CategoryIcon, CheckButton, Money, Seg, Sheet } from "@/components/ui";
-import { EventSheet } from "@/components/EventSheet";
+import { EventSheet, quickEvent } from "@/components/EventSheet";
+import type { QuickDraft } from "@/components/QuickAdd";
 import { MonthTodo } from "@/components/MonthTodo";
 import { CalendarCard } from "@/components/CalendarCard";
+import { useCalendarStage } from "@/components/calendarStage";
 import { Morph, slideIn } from "@/components/Morph";
 import { PeriodSummary } from "@/components/PeriodSummary";
+import { SpendingDays } from "@/components/SpendingDays";
+import { ZoomPop } from "@/components/ZoomPop";
 import { usePrimaryAction, useSheets } from "@/components/Shell";
 import { spendingVisual } from "@/lib/categories";
 
@@ -192,9 +196,9 @@ function carry(next: typeof carried) {
   carried = next;
 }
 
-/** 월 달력은 넓게, 날짜 내역과 월 전체 목록은 요청할 때만 아래 패널로 보여 준다. */
+/** 월 달력은 화면을 꽉 채우고, 날짜 내역은 누를 때 아래 패널로, 이번 달 할 일·일정·D-day 는 달력 아래(내려서 본다)에 둔다. */
 function CalendarMonth() {
-  const { data, month, today, setMonth } = useData();
+  const { data, month, today, setMonth, upsert, toast } = useData();
   const router = useRouter();
   const { openSpending } = useSheets();
   const cells = monthGrid(month);
@@ -203,11 +207,12 @@ function CalendarMonth() {
   const inMonth = (d: string) => d.slice(0, 7) === month;
   const [picked, setPicked] = useState<string | null>(() => carried && inMonth(carried.date) ? carried.date : null);
   const day = picked && inMonth(picked) ? picked : inMonth(today) ? today : `${month}-01`;
-  const [panel, setPanel] = useState<"day" | "month" | "dday">(() => carried?.openDay ? "day" : "month");
+  // 날짜 패널(그날 내역)만 시트로 연다. 모아 보기는 달력 아래에 있다
   const [panelOpen, setPanelOpen] = useState(Boolean(carried?.openDay));
-  const showPanel = (value: "day" | "month" | "dday") => { setPanel(value); setPanelOpen(true); };
-  const returnPanel = useRef<"day" | "month" | "dday" | null>(null);
-  const [sheet, setSheet] = useState<{ open: boolean; key: number; event?: CalEvent; date: string }>({ open: false, key: 0, date: day });
+  const returnPanel = useRef(false);
+  const [moreTab, setMoreTab] = useState<"month" | "dday">("month");
+  const { more, page, hint, openMore } = useCalendarStage();
+  const [sheet, setSheet] = useState<{ open: boolean; key: number; event?: CalEvent; date: string; draft?: QuickDraft }>({ open: false, key: 0, date: day });
   useEffect(() => {
     carried = null;
     resetSummary();
@@ -218,63 +223,116 @@ function CalendarMonth() {
     const open = openDay && hasDay(date);
     if (inMonth(date)) {
       setPicked(date);
-      if (open) showPanel("day");
+      if (open) setPanelOpen(true);
     } else {
       carry({ date, openDay: open });
       setMonth(date.slice(0, 7));
     }
   };
-  const openEvent = (event?: CalEvent, date = day) => setSheet((x) => ({ open: true, key: x.key + 1, event, date }));
+  const openEvent = (event?: CalEvent, date = day, draft?: QuickDraft) => setSheet((x) => ({ open: true, key: x.key + 1, event, date, draft }));
   // 패널이 쌓은 기록을 되돌린 뒤 편집·지출 시트를 연다. 뒤로가기가 페이지를 건너뛰지 않게 한다.
   const closeThen = (run: () => void) => {
     afterSheet(run);
     setPanelOpen(false);
   };
   const editEvent = (event?: CalEvent) => {
-    returnPanel.current = panel;
+    returnPanel.current = true;
     closeThen(() => openEvent(event));
   };
   const closeEvent = (open: boolean) => {
     if (!open && returnPanel.current) {
-      const back = returnPanel.current;
-      returnPanel.current = null;
-      afterSheet(() => showPanel(back));
+      returnPanel.current = false;
+      afterSheet(() => setPanelOpen(true));
     }
     setSheet((x) => ({ ...x, open }));
   };
-  usePrimaryAction(`${Number(day.slice(5, 7))}월 ${Number(day.slice(8))}일에 일정 추가`, "event", () => openEvent());
+  // 폰 첫 화면의 아래 막대: 펼쳐 쓰고 추가면 고른 날짜에 바로 일정, + ·자세히는 쓰던 것으로 일정 시트
+  const dayText = `${Number(day.slice(5, 7))}월 ${Number(day.slice(8))}일`;
+  usePrimaryAction(`${dayText}에 일정 추가`, "event", (draft) => openEvent(undefined, day, draft), {
+    hint: `${dayText}에 추가`,
+    add: async (draft) => {
+      if (await upsert("events", [quickEvent(draft, day)])) toast("일정을 만들었어요");
+    },
+  });
   const monthSpent = [...spent.entries()].filter(([d]) => inMonth(d)).reduce((a, [, v]) => a + v, 0);
-  const monthEvents = new Set([...marks.entries()].filter(([d]) => inMonth(d)).flatMap(([, ms]) => ms.filter((m) => m.event).map((m) => m.event!.id))).size;
+  // 이번 달 일정: 기간·반복 일정은 이번 달 첫날 한 번만
+  const monthMarks: Mark[] = [];
+  const seenEvents = new Set<string>();
+  for (const d of cells.filter(inMonth))
+    for (const m of marks.get(d) ?? [])
+      if (m.event && !seenEvents.has(m.event.id)) {
+        seenEvents.add(m.event.id);
+        monthMarks.push(m);
+      }
+  const monthEvents = monthMarks.length;
+  const monthSpendings = data.spendings.filter((x) => inMonth(x.date)).sort((a, b) => b.date.localeCompare(a.date) || (b.created_at ?? "").localeCompare(a.created_at ?? ""));
+  // 요약 줄을 누르면 그 글자에서 가운데로 커지는 창 (닫히는 동안에도 내용은 그대로)
+  const [pop, setPop] = useState(false);
+  const [popKind, setPopKind] = useState<"events" | "spent">("events");
+  const [popFrom, setPopFrom] = useState<HTMLElement | null>(null);
+  const openPop = (kind: "events" | "spent", el: HTMLElement) => {
+    setPopKind(kind);
+    setPopFrom(el);
+    setPop(true);
+  };
 
   return (
     <>
-      <MonthHeader
-        name="달력"
-        sub={`${Number(month.slice(5))}월 1일 – ${Number(cells.filter(inMonth).at(-1)!.slice(8))}일`}
-        trailing={
-          <button type="button" className="cal-menu" aria-label="모아 보기: 이번 달 할 일·일정과 D-day" aria-haspopup="dialog" onClick={() => showPanel("month")}>
-            <Menu aria-hidden="true" />
-            <span aria-hidden="true">모아보기</span>
-          </button>
-        }
-      >
-        <p className="cal-summary">일정 {monthEvents}개 <span aria-hidden="true">·</span> 이번 달 쓴 돈 <Money value={monthSpent} /></p>
-      </MonthHeader>
-      <section className="calendar-month" aria-label="월 달력">
-        <CalendarCard month={month} cells={cells} marks={marks} spent={spent} day={day} today={today} onPick={pick} />
-        <p className="cal-hint">일정이나 기록이 있는 날을 누르면 그날 내역이 열려요.</p>
-      </section>
+      {/* 폰: 처음엔 달력만 화면에 꽉 차고(하단 메뉴는 숨고 일정 추가 버튼이 가운데로), 아래로 내리면 모아 보기와 메뉴가 나온다 */}
+      <div className="cal-page" ref={page}>
+        <div className="cal-stage">
+          <MonthHeader name="달력" sub={`${Number(month.slice(5))}월 1일 – ${Number(cells.filter(inMonth).at(-1)!.slice(8))}일`}>
+            {/* 없는 것은 빼고, 있으면 눌러서 모아 본다 */}
+            {(monthEvents > 0 || monthSpent > 0) && (
+              <p className="cal-summary">
+                {monthEvents > 0 && (
+                  <button type="button" className="sum-link" aria-haspopup="dialog" onClick={(e) => openPop("events", e.currentTarget)}>
+                    일정 {monthEvents}개<ChevronRight aria-hidden="true" />
+                  </button>
+                )}
+                {monthEvents > 0 && monthSpent > 0 && <span aria-hidden="true">·</span>}
+                {monthSpent > 0 && (
+                  <button type="button" className="sum-link" aria-haspopup="dialog" onClick={(e) => openPop("spent", e.currentTarget)}>
+                    <span>
+                      이번 달 쓴 돈 <Money value={monthSpent} />
+                    </span>
+                    <ChevronRight aria-hidden="true" />
+                  </button>
+                )}
+              </p>
+            )}
+          </MonthHeader>
+          <section className="calendar-month" aria-label="월 달력">
+            <CalendarCard month={month} cells={cells} marks={marks} spent={spent} day={day} today={today} onPick={pick} />
+          </section>
+        </div>
+        <section className="cal-more" ref={more} aria-labelledby="cal-more-h">
+          <div className="group-head">
+            <h2 id="cal-more-h">{monthLabel(month)} 모아 보기</h2>
+          </div>
+          <Seg label="달력 모아 보기" value={moreTab} onChange={setMoreTab} options={[{ value: "month", label: "할 일·일정" }, { value: "dday", label: "D-day" }]} />
+          {/* 탭을 바꾸면 옛 목록은 흐려지며 빠지고 새 목록이 떠오르며 높이가 따라간다 (Morph) */}
+          <Morph className="cal-overview" track=":scope > *">
+            {moreTab === "dday" ? <DdayList onOpenEvent={openEvent} /> : <MonthTodo month={month} onOpenEvent={openEvent} />}
+          </Morph>
+        </section>
+      </div>
+      {hint && (
+        <button type="button" className="cal-down" aria-label="아래로 내려 모아 보기" onClick={openMore}>
+          <ChevronDown aria-hidden="true" />
+        </button>
+      )}
       <Sheet
         open={panelOpen}
         onOpenChange={(open) => { if (!open) setPanelOpen(false); }}
-        title={panel === "day" ? dayTitle(day) : `${monthLabel(month)} 모아 보기`}
+        title={dayTitle(day)}
         className="cal-panel"
         headerAction={<button type="button" className="cal-close" aria-label="달력 패널 닫기" onClick={() => setPanelOpen(false)}><X aria-hidden="true" /></button>}
-        footer={panel === "day" ? (
+        footer={
           <button type="button" className="btn block cal-add" onClick={() => editEvent()}>
             {`${Number(day.slice(5, 7))}월 ${Number(day.slice(8))}일에 일정 추가`}
           </button>
-        ) : undefined}
+        }
       >
         <div onClickCapture={(e) => {
           // 패널 안의 체크 링크도 먼저 패널 기록을 닫고 이동한다.
@@ -282,17 +340,47 @@ function CalendarMonth() {
           e.preventDefault();
           closeThen(() => router.push("/check"));
         }}>
-          {panel === "day" ? <DayAgenda day={day} marks={marks.get(day) ?? []} onOpenEvent={editEvent} onOpenSpending={(x) => closeThen(() => openSpending(x))} /> : <>
-            <Seg label="달력 모아 보기" value={panel === "dday" ? "dday" : "month"} onChange={(value) => setPanel(value)} options={[{ value: "month", label: "할 일·일정" }, { value: "dday", label: "D-day" }]} />
-            <div className="cal-overview">
-              {panel === "dday" ? <DdayList onOpenEvent={editEvent} /> : <MonthTodo month={month} onOpenEvent={editEvent} />}
-            </div>
-          </>}
+          <DayAgenda day={day} marks={marks.get(day) ?? []} onOpenEvent={editEvent} onOpenSpending={(x) => closeThen(() => openSpending(x))} />
         </div>
       </Sheet>
-      <EventSheet key={sheet.key} open={sheet.open} event={sheet.event} date={sheet.date} onOpenChange={closeEvent} />
+      <ZoomPop
+        open={pop}
+        onOpenChange={setPop}
+        from={popFrom}
+        title={
+          popKind === "events" ? (
+            `${monthLabel(month)} 일정 ${monthEvents}개`
+          ) : (
+            <>
+              {monthLabel(month)} 쓴 돈 <Money value={monthSpent} />
+            </>
+          )
+        }
+      >
+        {popKind === "events" ? <MonthEvents marks={monthMarks} onOpenEvent={(e) => openEvent(e)} /> : <SpendingDays rows={monthSpendings} />}
+      </ZoomPop>
+      <EventSheet key={sheet.key} open={sheet.open} event={sheet.event} date={sheet.date} draft={sheet.draft} onOpenChange={closeEvent} />
     </>
   );
+}
+
+/** 요약 창의 이번 달 일정 — 날짜별로 묶고, 줄을 누르면 고친다 */
+function MonthEvents({ marks, onOpenEvent }: { marks: Mark[]; onOpenEvent: (event: CalEvent) => void }) {
+  const { today } = useData();
+  const days = new Map<string, Mark[]>();
+  for (const m of marks) days.set(m.date, [...(days.get(m.date) ?? []), m]);
+  return [...days.entries()].map(([date, ms]) => (
+    <div className="daygroup" key={date}>
+      <div className="dayhead">
+        <span>{dayLabel(date, today)}</span>
+      </div>
+      <div className="rows">
+        {ms.map((m) => (
+          <EventRow key={m.event!.id} m={m} onOpen={() => onOpenEvent(m.event!)} />
+        ))}
+      </div>
+    </div>
+  ));
 }
 
 /** 날짜 패널: 얼마나 떨어진 날인지, 그 아래 일정 → 들어올 돈 → 나갈 돈 → 쓴 돈을 묶어서 보여 준다. */

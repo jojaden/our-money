@@ -20,6 +20,10 @@ import { usePrimaryAction, useSheets } from "@/components/Shell";
 import { ClosePrompt } from "@/components/ClosePrompt";
 import { Morph } from "@/components/Morph";
 import { Nudges, type Nudge } from "@/components/Nudges";
+import { Arrange, Slot } from "@/components/Arrange";
+
+/** 홈에서 옮길 수 있는 카드와 처음 순서 (폰) */
+const HOME_CARDS = ["living", "allowance", "todo", "cards", "recent"];
 
 /** 홈에 보이는 할 일 수 — 급한 순으로 이만큼만, 나머지는 체크 화면에서 */
 const HOME_TODOS = 3;
@@ -149,148 +153,169 @@ export default function Home() {
     <>
       <MonthHeader />
 
-      <div className="grid">
+      {/* 폰에서는 카드를 꾹 눌러 옮긴다 (마감 안내·알림은 늘 맨 위) */}
+      <Arrange page="home" defaults={HOME_CARDS}>
         <div className="col span-7">
           {/* 새 달이 시작됐는데 지난달을 마감하지 않았으면 맨 위에 — 마감하거나 미루면 스르륵 빠진다 */}
           <Morph className="close-slot" track=":scope > *">
             <ClosePrompt />
           </Morph>
           <Nudges items={nudges.slice(0, 3)} />
-          <BudgetCard id="living-h" className="o1" bucket="living" title="남은 공동 생활비" status={living} link={{ href: "/ledger", label: "가계부" }} />
+          <Slot k="living">
+            <BudgetCard id="living-h" bucket="living" title="남은 공동 생활비" status={living} link={{ href: "/ledger", label: "가계부" }} />
+          </Slot>
 
-          <BudgetCard
-            id="allow-h"
-            className="o2"
-            bucket="allowance"
-            compact
-            title={`${nameOf(s, me)} 용돈`}
-            status={allowance}
-            link={{ href: "/plan", label: "플랜" }}
-            empty={<>플랜에 {nameOf(s, me)} 용돈 항목이 없어요. 플랜 → 용돈 추가에서 금액을 정하면 내 지출이 여기서 빠져요.</>}
-          />
+          <Slot k="allowance">
+            <BudgetCard
+              id="allow-h"
+              bucket="allowance"
+              compact
+              title={`${nameOf(s, me)} 용돈`}
+              status={allowance}
+              link={{ href: "/plan", label: "플랜" }}
+              empty={<>플랜에 {nameOf(s, me)} 용돈 항목이 없어요. 플랜 → 용돈 추가에서 금액을 정하면 내 지출이 여기서 빠져요.</>}
+            />
+          </Slot>
 
-          <section className="group o4" aria-labelledby="cards-h">
-            <div className="group-head">
-              <h2 id="cards-h">카드값</h2>
-              <span className="aside">이번 달 결제 · 다음 달 예정</span>
-            </div>
-            <div className="card">
-              {bills.length === 0 ? (
-                <p className="empty">이번 달에 결제할 카드값이 없어요.</p>
-              ) : (
-                <div className="rows">
-                  {bills.map((b) => (
-                    <div className="row" key={b.card.id}>
-                      <MiniCard account={b.card} />
-                      <div style={{ minWidth: 0 }}>
-                        <div className="t">{b.card.name}</div>
-                        <div className="s">
-                          {b.dueDate ? `${Number(b.dueDate.slice(5, 7))}/${Number(b.dueDate.slice(8))} 결제` : "결제일 미지정"}
-                          {b.billing ? ` · ${b.billing.name}` : ""}
+          <Slot k="cards">
+            <section className="group" aria-labelledby="cards-h">
+              <div className="group-head">
+                <h2 id="cards-h">카드값</h2>
+                <span className="aside">이번 달 결제 · 다음 달 예정</span>
+              </div>
+              <div className="card">
+                {bills.length === 0 ? (
+                  <p className="empty">이번 달에 결제할 카드값이 없어요.</p>
+                ) : (
+                  <div className="rows">
+                    {bills.map((b) => (
+                      <div className="row" key={b.card.id}>
+                        <MiniCard account={b.card} />
+                        <div style={{ minWidth: 0 }}>
+                          <div className="t">{b.card.name}</div>
+                          <div className="s">
+                            {b.dueDate ? `${Number(b.dueDate.slice(5, 7))}/${Number(b.dueDate.slice(8))} 결제` : "결제일 미지정"}
+                            {b.billing ? ` · ${b.billing.name}` : ""}
+                          </div>
+                        </div>
+                        <div className="r">
+                          <Money value={b.dueAmount} />
+                          <div className="s">
+                            쓰는 중 <Money value={b.usingAmount} />
+                          </div>
                         </div>
                       </div>
-                      <div className="r">
-                        <Money value={b.dueAmount} />
-                        <div className="s">
-                          쓰는 중 <Money value={b.usingAmount} />
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </section>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </section>
+          </Slot>
         </div>
 
         <div className="col span-5">
-          <section className="group o3" aria-labelledby="todo-h">
-            <div className="group-head">
-              <h2 id="todo-h">이번 달 할 일</h2>
-            </div>
-            <div className="card">
-              {/* 체크 요약 카드와 같은 모양: 큰 숫자(남은 건수) ─ 끝낸 수, 막대, 기한 지난 일만 한 줄 */}
-              <div className="todo-progress">
-                <div className="todo-top">
-                  <p className="big num">
-                    {open.length === 0 ? (
-                      "모두 끝냈어요"
-                    ) : (
-                      <>
-                        {open.length}
-                        <span>건 남았어요</span>
-                      </>
-                    )}
-                  </p>
-                  <span className="done num">{`${doneCount} / ${tasks.length}`}</span>
-                </div>
-                <TaskMeter done={doneCount} total={tasks.length} />
-                {overdue.length > 0 && <p className="sub neg">기한 지난 일 {overdue.length}건</p>}
+          <Slot k="todo">
+            <section className="group" aria-labelledby="todo-h">
+              <div className="group-head">
+                <h2 id="todo-h">이번 달 할 일</h2>
               </div>
-              {open.length === 0 ? (
-                <p className="empty">남은 이체·납부가 없어요.</p>
-              ) : (
-                <div className="rows" style={{ ["--inset" as string]: "40px" }}>
-                  {open.slice(0, HOME_TODOS).map((t) => (
-                    <TaskRow key={t.key} task={t} />
-                  ))}
-                </div>
-              )}
-              {/* 급한 순 3건만 — 나머지는 체크에서 (가계부 "모든 기록 N건 보기"와 같은 줄) */}
-              <Link className="more-row" href="/check">
-                {open.length > HOME_TODOS ? (
-                  <>
-                    남은 일 <b>{open.length}건</b> 모두 보기
-                  </>
+              {/* 체크하면 그 줄은 흐려지며 빠지고 다음 일이 미끄러져 올라온다 (Morph) */}
+              <Morph className="card" track=":scope > *, .rows > *">
+                {/* 모두 끝내면 한 줄로 줄어든다 — 축하는 100% 화면이 맡는다 */}
+                {open.length === 0 && tasks.length > 0 ? (
+                  <p className="done-line">
+                    <CircleCheck aria-hidden="true" />
+                    <span>모두 끝냈어요</span>
+                    <span className="num">{`${doneCount} / ${tasks.length}`}</span>
+                  </p>
                 ) : (
-                  "체크에서 보기"
-                )}
-              </Link>
-            </div>
-          </section>
-
-          <section className="group o5" aria-labelledby="recent-h">
-            <div className="group-head">
-              <h2 id="recent-h">최근 기록</h2>
-              <Link className="aside" href="/ledger/all/?from=home">
-                전체 보기
-              </Link>
-            </div>
-            <div className="card">
-              {recent.length === 0 ? (
-                <p className="empty">이번 달 기록이 아직 없어요. 오른쪽 아래 + 버튼으로 첫 지출을 기록해 보세요.</p>
-              ) : (
-                <div className="rows">
-                  {recent.map((r) => (
-                    <button type="button" className={`row ${isFresh(r) ? "fresh" : ""}`} key={r.id} onClick={() => openSpending(r)}>
-                      <CategoryIcon visual={spendingVisual(data, r)} />
-                      <div style={{ minWidth: 0 }}>
-                        <div className="t">{r.memo || catName(r.category_id, r.owner)}</div>
-                        <div className="s">
-                          {catName(r.category_id, r.owner)} · {PAY_KIND_LABEL[r.pay_kind]}
-                          {accName(r.account_id) && r.pay_kind === "card" ? ` · ${accName(r.account_id)}` : ""}
-                          {r.inst ? ` · 할부 ${r.inst.no}/${r.inst.of}` : ""}
-                        </div>
-                      </div>
-                      <div className="r">
-                        <Money value={-r.amount} />
-                        {r.review?.length ? (
-                          <div style={{ marginTop: 2 }}>
-                            <span className="pill warning">확인 필요</span>
-                          </div>
-                        ) : (
-                          <div className="s">{Number(r.date.slice(5, 7))}/{Number(r.date.slice(8))}</div>
-                        )}
-                      </div>
-                    </button>
-                  ))}
+                <>
+                {/* 체크 요약 카드와 같은 모양: 큰 숫자(남은 건수) ─ 끝낸 수, 막대, 기한 지난 일만 한 줄 */}
+                <div className="todo-progress">
+                  <div className="todo-top">
+                    <p className="big num">
+                      {open.length === 0 ? (
+                        "모두 끝냈어요"
+                      ) : (
+                        <>
+                          {open.length}
+                          <span>건 남았어요</span>
+                        </>
+                      )}
+                    </p>
+                    <span className="done num">{`${doneCount} / ${tasks.length}`}</span>
+                  </div>
+                  <TaskMeter done={doneCount} total={tasks.length} />
+                  {overdue.length > 0 && <p className="sub neg">기한 지난 일 {overdue.length}건</p>}
                 </div>
-              )}
-            </div>
-          </section>
-        </div>
+                {open.length === 0 ? (
+                  <p className="empty">남은 이체·납부가 없어요.</p>
+                ) : (
+                  <div className="rows" style={{ ["--inset" as string]: "40px" }}>
+                    {open.slice(0, HOME_TODOS).map((t) => (
+                      <TaskRow key={t.key} task={t} />
+                    ))}
+                  </div>
+                )}
+                </>
+                )}
+                {/* 급한 순 3건만 — 나머지는 체크에서 (가계부 "모든 기록 N건 보기"와 같은 줄) */}
+                <Link className="more-row" href="/check">
+                  {open.length > HOME_TODOS ? (
+                    <>
+                      남은 일 <b>{open.length}건</b> 모두 보기
+                    </>
+                  ) : (
+                    "체크에서 보기"
+                  )}
+                </Link>
+              </Morph>
+            </section>
+          </Slot>
 
-      </div>
+          <Slot k="recent">
+            <section className="group" aria-labelledby="recent-h">
+              <div className="group-head">
+                <h2 id="recent-h">최근 기록</h2>
+                <Link className="aside" href="/ledger/all/?from=home">
+                  전체 보기
+                </Link>
+              </div>
+              <div className="card">
+                {recent.length === 0 ? (
+                  <p className="empty">이번 달 기록이 아직 없어요. 오른쪽 아래 + 버튼으로 첫 지출을 기록해 보세요.</p>
+                ) : (
+                  <div className="rows">
+                    {recent.map((r) => (
+                      <button type="button" className={`row ${isFresh(r) ? "fresh" : ""}`} key={r.id} onClick={() => openSpending(r)}>
+                        <CategoryIcon visual={spendingVisual(data, r)} />
+                        <div style={{ minWidth: 0 }}>
+                          <div className="t">{r.memo || catName(r.category_id, r.owner)}</div>
+                          <div className="s">
+                            {catName(r.category_id, r.owner)} · {PAY_KIND_LABEL[r.pay_kind]}
+                            {accName(r.account_id) && r.pay_kind === "card" ? ` · ${accName(r.account_id)}` : ""}
+                            {r.inst ? ` · 할부 ${r.inst.no}/${r.inst.of}` : ""}
+                          </div>
+                        </div>
+                        <div className="r">
+                          <Money value={-r.amount} />
+                          {r.review?.length ? (
+                            <div style={{ marginTop: 2 }}>
+                              <span className="pill warning">확인 필요</span>
+                            </div>
+                          ) : (
+                            <div className="s">{Number(r.date.slice(5, 7))}/{Number(r.date.slice(8))}</div>
+                          )}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </section>
+          </Slot>
+        </div>
+      </Arrange>
     </>
   );
 }

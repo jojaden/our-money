@@ -16,19 +16,24 @@ const BEADS = Array.from({ length: 16 }, (_, i) => {
 });
 
 /**
- * 100% 축하 — 그달 체크를 모두 끝낸 순간 한 번 (docs/design-system/components/Celebrate).
- * 본 달은 기기에 기억해 다시 띄우지 않는다. 아무 곳이나 누르거나 Esc 로 닫힌다.
+ * 100% 축하 — 그달 체크를 모두 끝낸 순간 (docs/design-system/components/Celebrate). 띄우는 때는 CelebrateWatch 가 정한다.
+ * - play: 직접 끝낸 순간마다 1씩 늘린다 → 그때마다 띄운다(본 적 있어도)
+ * - done: 앱을 열었을 때 이미 다 끝나 있으면(상대가 끝냈을 때 등) 이 기기에서 그달 한 번만
+ * 아무 곳이나 누르거나 Esc 로 닫힌다.
  * 페이지 틀(main)은 넘기기 움직임 때문에 transform 을 가져서, 위쪽 막대·캡슐보다 위에 덮으려면 body 에 그린다.
  */
 export function Celebrate({
   done,
+  play = 0,
   month,
   label,
   chips,
   next,
 }: {
-  /** 그달 할 일을 모두 끝냈고 지금 보는 달이 이번 달인가 */
+  /** 앱을 열었을 때 이미 이번 달을 모두 끝냈나 (이 기기에서 그달 한 번만 띄운다) */
   done: boolean;
+  /** 직접 끝낸 순간마다 늘어나는 수 — 늘면 띄운다 */
+  play?: number;
   month: string;
   label: string;
   chips: { name: string; count: number }[];
@@ -56,6 +61,20 @@ export function Celebrate({
     }, 450);
     return () => clearTimeout(t);
   }, [done, month]);
+
+  // 직접 끝낸 순간: 본 적 있어도 띄운다 (마지막 체크 원이 튀는 것을 본 다음에)
+  useEffect(() => {
+    if (!play) return;
+    const t = setTimeout(() => {
+      try {
+        localStorage.setItem(SEEN, month);
+      } catch {}
+      setLeaving(false);
+      setOpen(true);
+    }, 450);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- 끝낸 순간(play)에만
+  }, [play]);
 
   useEffect(() => {
     if (!open) return;

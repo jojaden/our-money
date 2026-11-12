@@ -6,6 +6,7 @@ import type { Group, MonthItem, Person, Settings } from "@/lib/types";
 import { GROUP_LABEL, GROUP_ORDER } from "@/lib/types";
 import { nameOf, shareOf, type Lane } from "@/lib/calc";
 import { num } from "@/lib/format";
+import { Morph } from "./Morph";
 import { Money, Seg } from "./ui";
 
 type Bucket = Group | "left";
@@ -91,6 +92,8 @@ export function SplitBar({
         {allocated > income && income > 0 && <i className="split-tick" style={{ left: `${(income / allocated) * 100}%` }} />}
       </div>
 
+      {/* 이름을 누르면 항목이 차례로 떠오르고 아래 이름은 미끄러져 내려간다 (Morph). 누구 월급을 바꿔도 같은 박자 */}
+      <Morph track=".split-legend > li, .split-detail, .split-detail > li" follow>
       <ul className="split-legend">
         {rows.map((r) => {
           const expandable = r.key !== "left" && r.amount > 0;
@@ -136,6 +139,7 @@ export function SplitBar({
           );
         })}
       </ul>
+      </Morph>
       <p className="split-note">
         {lane ? `${nameOf(s, lane.person)} 공동 부담 ${num(lane.jointShare)}원` : `공동비용은 ${Math.round(rA * 100)} : ${100 - Math.round(rA * 100)}로 나눠요`}
       </p>

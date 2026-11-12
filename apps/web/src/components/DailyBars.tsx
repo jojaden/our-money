@@ -61,7 +61,8 @@ export function DailyBars({ rows, month, cycleStart, today }: { rows: { date: st
           </>
         )}
       </div>
-      <div className="daily-plot" onMouseLeave={() => setSel(null)}>
+      {/* 막대를 눌러 금액을 본다 — 카드 옮기기(꾹 누르기)는 여기서 시작하지 않는다 */}
+      <div className="daily-plot" data-no-arrange="" onMouseLeave={() => setSel(null)}>
         <div className="daily-grid" aria-hidden="true">
           <span style={{ bottom: "100%" }}>
             <i>{short(top)}</i>

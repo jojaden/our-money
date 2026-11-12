@@ -11,6 +11,7 @@ import { leaveDetail } from "@/lib/navigationMotion";
 import { MonthHeader } from "@/components/MonthHeader";
 import { Money } from "@/components/ui";
 import { SpendingDays } from "@/components/SpendingDays";
+import { Morph } from "@/components/Morph";
 import { usePrimaryAction, useSheets } from "@/components/Shell";
 
 type KindFilter = "all" | PayKind;
@@ -81,13 +82,16 @@ export default function AllSpendingsPage() {
               </button>
             ))}
           </div>
-          {rows.length === 0 ? (
-            <p className="empty" style={{ marginTop: 12 }}>
-              {all.length === 0 ? "이번 달 기록이 아직 없어요." : "이 조건에 맞는 기록이 없어요."}
-            </p>
-          ) : (
-            <SpendingDays rows={rows} />
-          )}
+          {/* 거르기를 바꾸면 빠지는 기록은 흐려지고, 남는 기록은 새 자리로 미끄러지고, 들어오는 기록은 떠오른다 (Morph) */}
+          <Morph track=":scope > *, .rows > *">
+            {rows.length === 0 ? (
+              <p className="empty" style={{ marginTop: 12 }}>
+                {all.length === 0 ? "이번 달 기록이 아직 없어요." : "이 조건에 맞는 기록이 없어요."}
+              </p>
+            ) : (
+              <SpendingDays rows={rows} />
+            )}
+          </Morph>
         </div>
       </section>
     </>

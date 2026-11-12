@@ -87,7 +87,7 @@ export function PeriodSummary({ range, className = "" }: { range: Range; classNa
       </div>
 
       {/* 기간·모을 것·모두 보기를 바꾸면 카드와 줄이 겹쳐 바뀐다 */}
-      <Morph className="sum-stack" track=":scope > *, :scope > * > *, .rows > *">
+      <Morph className="sum-stack" track=":scope > *, :scope > * > *, .rows > *" follow>
         <div className="sum-col">
           {parts.has("spent") && (
             <>

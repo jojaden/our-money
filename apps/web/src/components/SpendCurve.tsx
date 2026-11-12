@@ -6,6 +6,7 @@ import { periodOf } from "@/lib/calc";
 import { num, parseYmd, ymd } from "@/lib/format";
 import { TextTabs } from "./ui";
 import { Meter } from "./Meter";
+import { Morph } from "./Morph";
 import { useRevealOnce } from "./reveal";
 
 export interface CurveBucket {
@@ -103,7 +104,11 @@ export function SpendCurve({
     const vx = ((e.clientX - r.left) / r.width) * VW;
     setHover(Math.min(n - 1, Math.max(0, Math.round(((vx - PAD.l) / PW) * (n - 1)))));
   };
-  const h = hover;
+  // 손을 떼면 말풍선·기준선이 그 자리에서 흐려지며 사라진다 — 사라지는 동안 마지막 날을 붙들어 둔다
+  const [held, setHeld] = useState<number | null>(null);
+  if (hover !== null && hover !== held) setHeld(hover);
+  const h = hover ?? held;
+  const leaving = hover === null && held !== null;
   // 말풍선 자리: 고른 날 선의 왼쪽·오른쪽 × 그래프 안 위·아래 넷 중 두 선을 가장 덜 가리는 곳.
   // 오늘 점(이번 달 끝)은 되도록 가리지 않는다. 같으면 위, 그다음 가운데 쪽
   const tip = (() => {
@@ -164,20 +169,26 @@ export function SpendCurve({
           ]}
         />
       )}
+      {/* 범례는 탭 줄 오른쪽에 걸쳐 있어 움직이는 상자 밖에 둔다 — 하루별이면 흐려지며 숨는다 */}
+      <div className={`curve-legend${daily && view === "daily" ? " off" : ""}`} aria-hidden="true">
+        <span className="then">지난달</span>
+        <span className="now">이번 달</span>
+      </div>
+      {/* 누적 ↔ 하루별: 옛 그래프는 흐려지며 빠지고 새 그래프가 떠오르며, 카드 높이가 따라간다 (Morph) */}
+      <Morph track=":scope > *">
       {daily && view === "daily" ? (
         <div className="curve-daily">{daily}</div>
       ) : (
       <>
-      <div className="curve-legend" aria-hidden="true">
-        <span className="then">지난달</span>
-        <span className="now">이번 달</span>
-      </div>
       <div className="curve-plot">
         <svg
           ref={svg}
           viewBox={`0 0 ${VW} ${VH}`}
           role="img"
           aria-label={`이번 달 누적 ${num(spent)}원, 지난달 같은 날 ${num(prevAt)}원`}
+          // 누르고 있으면 날짜를 보고, 옆으로 끌면 날짜가 이어서 바뀐다 — 카드 옮기기(꾹 누르기)·달 넘기기(쓸기)는 여기서 시작하지 않는다
+          data-no-arrange=""
+          data-no-swipe=""
           onPointerDown={pick}
           onPointerMove={(e) => (e.pointerType === "mouse" || e.buttons ? pick(e) : undefined)}
           onPointerLeave={() => setHover(null)}
@@ -199,7 +210,7 @@ export function SpendCurve({
           {now.length > 1 && <path className="now" d={line(now)} />}
           {now.length > 0 && <circle className="end" cx={x(now.length - 1)} cy={y(spent)} r={4.5} />}
           {h !== null && (
-            <g className="cross">
+            <g className={`cross${leaving ? " off" : ""}`}>
               <line x1={x(h)} x2={x(h)} y1={PAD.t} y2={PAD.t + PH} />
               {then[h] !== undefined && <circle className="then" cx={x(h)} cy={y(then[h])} r={4} />}
               {now[h] !== undefined && <circle className="now" cx={x(h)} cy={y(now[h])} r={4} />}
@@ -209,7 +220,10 @@ export function SpendCurve({
         <span className="curve-unit" aria-hidden="true">만원</span>
         {h !== null && tip && (
           <div
-            className={`curve-tip ${tip.left ? "to-l" : ""}`}
+            className={`curve-tip ${tip.left ? "to-l" : ""}${leaving ? " off" : ""}`}
+            onTransitionEnd={() => {
+              if (leaving) setHeld(null);
+            }}
             style={{ left: `${(x(h) / VW) * 100}%`, ...(tip.top ? { top: `${(PAD.t / VH) * 100}%` } : { bottom: `${(PAD.b / VH) * 100}%` }) }}
             aria-hidden="true"
           >
@@ -243,6 +257,7 @@ export function SpendCurve({
       </table>
       </>
       )}
+      </Morph>
 
       <ul className={`buckets${bucketsGrown ? "" : " flat"}`}>
         {buckets.map((b) => (
