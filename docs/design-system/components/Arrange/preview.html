@@ -11,7 +11,8 @@
   .c small { display: block; margin-top: 4px; color: var(--muted); font: 500 13.5px/18px var(--font-text); }
   .on .c { animation: ja var(--jd) linear var(--jl) infinite; }
   .on .c:nth-child(2n) { transform-origin: 30% 5%; animation-name: jb; animation-direction: alternate; }
-  .c.lifted { position: relative; z-index: 2; scale: 1.035; filter: var(--shadow-lift); animation: none !important; transition: scale var(--dur-press) var(--ease-press); }
+  .c.lifted { position: relative; z-index: 2; scale: var(--lift, .6); filter: var(--shadow-lift); animation: none !important; transition: scale var(--dur-tab) var(--ease-drawer); }
+  .c.landing { position: relative; z-index: 2; transition: translate var(--dur-tab) var(--ease-drawer), scale var(--dur-tab) var(--ease-drawer); }
   @keyframes ja { 0% { rotate: -0.4deg; animation-timing-function: ease-in; } 50% { rotate: 0.55deg; animation-timing-function: ease-out; } }
   @keyframes jb { 0% { rotate: 0.4deg; animation-timing-function: ease-in; } 50% { rotate: -0.55deg; animation-timing-function: ease-out; } }
 </style>
@@ -31,10 +32,12 @@
   let press = null, drag = null;
   l.addEventListener("pointerdown", (e) => {
     const c = e.target.closest(".c"); if (!c) return;
-    press = { c, y: e.clientY, timer: setTimeout(() => {
+    press = { c, x: e.clientX, y: e.clientY, timer: setTimeout(() => {
       set(true);
       const cs = [...l.children], gap = 12;
-      drag = { c, cs, from: cs.indexOf(c), to: cs.indexOf(c), y0: press.y, tops: cs.map((x) => x.offsetTop), hs: cs.map((x) => x.offsetHeight), gap };
+      const r = c.getBoundingClientRect(), oy = press.y - r.top, s = Math.min(0.75, Math.max(0.4, 60 / c.offsetHeight));
+      drag = { c, cs, from: cs.indexOf(c), to: cs.indexOf(c), y0: press.y, tops: cs.map((x) => x.offsetTop), hs: cs.map((x) => x.offsetHeight), gap, oy, s, top0: l.getBoundingClientRect().top };
+      c.style.transformOrigin = `${press.x - r.left}px ${oy}px`; c.style.setProperty("--lift", s);
       c.classList.add("lifted"); press = null;
     }, l.classList.contains("on") ? 140 : 480) };
   });
@@ -42,7 +45,7 @@
     if (press && Math.abs(e.clientY - press.y) > 8) { clearTimeout(press.timer); press = null; }
     if (!drag) return;
     const d = drag, dy = e.clientY - d.y0; d.c.style.translate = `0 ${dy}px`;
-    const mid = d.tops[d.from] + d.hs[d.from] / 2 + dy;
+    const mid = e.clientY - l.getBoundingClientRect().top; // 들어갈 자리는 손가락 위치로
     let to = 0; d.cs.forEach((_, j) => { if (j !== d.from && d.tops[j] + d.hs[j] / 2 < mid) to++; }); d.to = to;
     const step = d.hs[d.from] + d.gap;
     d.cs.forEach((x, j) => { if (j === d.from) return; x.style.translate = d.from < to && j > d.from && j <= to ? `0 ${-step}px` : to < d.from && j >= to && j < d.from ? `0 ${step}px` : ""; });
@@ -51,12 +54,13 @@
     if (press) { clearTimeout(press.timer); press = null; }
     if (!drag) return;
     const d = drag; drag = null;
-    const before = d.c.getBoundingClientRect().top;
-    d.cs.forEach((x) => { x.style.transition = "none"; x.style.translate = ""; });
+    const dy = parseFloat(d.c.style.translate.split(" ")[1] || "0");
+    d.cs.forEach((x) => { x.style.transition = "none"; if (x !== d.c) x.style.translate = ""; });
     const order = [...d.cs]; order.splice(d.to, 0, ...order.splice(d.from, 1)); order.forEach((x) => l.appendChild(x));
-    const off = before - d.c.getBoundingClientRect().top;
-    d.c.style.translate = `0 ${off}px`; void l.offsetHeight;
+    // 줄어든 채 옮긴 카드의 새 제자리에서 놓은 곳까지 — 거기서 내려앉으며 원래 크기로
+    d.c.style.translate = `0 ${d.tops[d.from] - d.c.offsetTop + dy}px`; void l.offsetHeight;
     d.cs.forEach((x) => { x.style.transition = ""; });
-    d.c.classList.remove("lifted"); d.c.style.translate = "";
+    d.c.classList.remove("lifted"); d.c.classList.add("landing"); d.c.style.translate = "";
+    d.c.addEventListener("transitionend", () => { d.c.classList.remove("landing"); d.c.style.transformOrigin = ""; }, { once: true });
   });
 </script>

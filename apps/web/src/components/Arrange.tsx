@@ -17,6 +17,8 @@ const HOLD_AGAIN = 140;
 const SLOP = 8;
 /** 화면 위·아래 끝에서 이만큼 안이면 저절로 굴린다 (px) */
 const EDGE = 96;
+/** 든 카드는 누른 곳으로 모이며 이 높이쯤으로 줄어든다 — 긴 카드(곡선·요약)도 끌기 쉽게. 줄이는 비율은 0.4~0.75 */
+const LIFT_H = 200;
 
 /** 저장된 순서에서 모르는 이름은 빼고, 빠진 카드는 기본 자리에 넣는다 */
 export function normalize(saved: string[] | undefined, defaults: string[]): string[] {
@@ -80,12 +82,15 @@ interface Drag {
   y: number;
   dy: number;
   raf: number;
+  /** 줄인 비율과 그 중심(누른 곳)의 카드 안 세로 위치 */
+  s: number;
+  oy: number;
 }
 
 /**
  * 꾹 눌러 카드를 옮기는 화면 틀(.grid 자리). 애플 홈 화면의 앱 옮기기처럼:
- * 1. 카드를 꾹 누르면(0.48초) 모든 카드가 제각각 흔들리고, 누른 카드는 살짝 커지며 떠서 손가락을 따라온다.
- * 2. 끄는 동안 다른 카드는 비켜 미끄러지고, 화면 끝에 가면 저절로 굴러간다. 놓으면 새 자리로 내려앉는다.
+ * 1. 카드를 꾹 누르면(0.48초) 모든 카드가 제각각 흔들리고, 누른 카드는 누른 곳으로 모이며 작아져(높이 200px 쯤) 떠서 손가락을 따라온다.
+ * 2. 끄는 동안 다른 카드는 비켜 미끄러지고(들어갈 자리는 손가락 위치), 화면 끝에 가면 저절로 굴러간다. 놓으면 새 자리로 내려앉으며 원래 크기로 커진다.
  * 3. 흔들리는 동안 카드를 잠깐(0.14초) 누르면 다시 집는다. 위 "완료"·뒤로 가기로 끝낸다.
  * 순서는 사람마다 서버에 남는다(users.card_order). 움직임은 translate·rotate·scale 만.
  */
@@ -99,7 +104,7 @@ export function Arrange({ page, defaults, children }: { page: ArrangePage; defau
   /** 들기 직후 클릭 한 번을 삼키는 리스너 — 놓고 나면 곧 뗀다 */
   const swallowing = useRef<((e: MouseEvent) => void) | null>(null);
   /** 놓은 뒤 새 자리로 내려앉힐 카드와 놓기 직전 화면 위치 */
-  const landing = useRef<{ slot: HTMLElement; top: number; dy: number } | null>(null);
+  const landing = useRef<{ slot: HTMLElement; top0: number; dy: number; s: number; oy: number } | null>(null);
   // 창 전체에서 듣는 손가락 처리는 한 번만 붙이므로, 그 안에서는 늘 마지막 값을 ref 로 읽는다
   const latest = useRef({ editing, order, save: setCardOrder });
   useEffect(() => {
@@ -115,7 +120,7 @@ export function Arrange({ page, defaults, children }: { page: ArrangePage; defau
     return () => void delete root.dataset.arranging;
   }, [editing]);
 
-  /** 든 카드를 off(px) 떨어진 곳에서 제자리로 내려앉힌다 */
+  /** 든 카드를 off(px) 떨어진 곳에서 제자리로 내려앉히며 누른 곳을 중심으로 원래 크기로 키운다 */
   const settle = (s: HTMLElement, off: number) => {
     s.style.transition = "none";
     s.style.translate = `0 ${off}px`;
@@ -124,7 +129,11 @@ export function Arrange({ page, defaults, children }: { page: ArrangePage; defau
     s.classList.remove("lifted");
     s.classList.add("landing");
     s.style.translate = "";
-    const done = () => s.classList.remove("landing");
+    const done = () => {
+      s.classList.remove("landing");
+      s.style.transformOrigin = "";
+      s.style.removeProperty("--lift");
+    };
     if (still()) done();
     else s.addEventListener("transitionend", done, { once: true });
   };
@@ -142,8 +151,9 @@ export function Arrange({ page, defaults, children }: { page: ArrangePage; defau
       s.style.transition = "none";
       s.style.translate = "";
     }
-    const now = l.slot.getBoundingClientRect().top - l.dy;
-    settle(l.slot, l.top - now);
+    // 줄어든 채 옮겨 둔 카드의 새 제자리(문서 기준): 보이는 위 = 제자리 + dy + 누른 곳 × (1 − 비율)
+    const now = l.slot.getBoundingClientRect().top + window.scrollY - l.dy - l.oy * (1 - l.s);
+    settle(l.slot, l.top0 + l.dy - now);
     void g.offsetHeight;
     for (const s of g.querySelectorAll<HTMLElement>("[data-card]")) if (s !== l.slot) s.style.transition = "";
   }, [key]);
@@ -152,7 +162,8 @@ export function Arrange({ page, defaults, children }: { page: ArrangePage; defau
   const follow = (d: Drag) => {
     d.dy = d.y - d.y0 + (window.scrollY - d.scroll0);
     d.slot.style.translate = `0 ${d.dy}px`;
-    const mid = d.tops[d.from] + d.heights[d.from] / 2 + d.dy;
+    // 들어갈 자리는 손가락 위치로 (줄어든 카드는 손가락 둘레에 모여 있다)
+    const mid = d.y + window.scrollY;
     let to = 0;
     d.slots.forEach((_, j) => {
       if (j !== d.from && d.tops[j] + d.heights[j] / 2 < mid) to++;
@@ -204,7 +215,15 @@ export function Arrange({ page, defaults, children }: { page: ArrangePage; defau
       y: p.y,
       dy: 0,
       raf: 0,
+      s: 1,
+      oy: 0,
     };
+    // 누른 곳으로 모이며 작아진다: 그 점을 중심으로 줄여 손가락 밑에 그대로 둔다
+    const r = p.slot.getBoundingClientRect();
+    d.oy = p.y - r.top;
+    d.s = Math.min(0.75, Math.max(0.4, LIFT_H / p.slot.offsetHeight));
+    p.slot.style.transformOrigin = `${p.x - r.left}px ${d.oy}px`;
+    p.slot.style.setProperty("--lift", String(d.s));
     drag.current = d;
     p.slot.classList.add("lifted");
     d.raf = requestAnimationFrame(tick);
@@ -237,7 +256,7 @@ export function Arrange({ page, defaults, children }: { page: ArrangePage; defau
     moved.splice(d.to, 0, ...moved.splice(d.from, 1));
     let n = 0;
     const next = latest.current.order.map((k) => (seen.includes(k) ? moved[n++] : k));
-    landing.current = { slot: d.slot, top: d.slot.getBoundingClientRect().top, dy: d.dy };
+    landing.current = { slot: d.slot, top0: d.tops[d.from], dy: d.dy, s: d.s, oy: d.oy };
     void latest.current.save(page, next);
   };
 

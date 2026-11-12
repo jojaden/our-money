@@ -74,7 +74,7 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
 
 /* ---------- 카드 옮기기 (Arrange · Slot) — 애플 홈 화면의 앱 옮기기처럼 ----------
    흔들림: 카드마다 0.24~0.33초 박자·음수 지연·두 가지 회전 중심으로 제각각(애플 아이콘 ±1~1.5°를 넓은 카드에 맞춰 ±0.4~0.55°).
-   든 카드는 살짝 커지고 그림자가 짙어져 손가락을 따라오고, 다른 카드는 비켜 미끄러진다. 놓으면 새 자리로 내려앉는다 */
+   든 카드는 누른 곳으로 모이며 작아지고 그림자가 짙어져 손가락을 따라오고, 다른 카드는 비켜 미끄러진다. 놓으면 새 자리로 내려앉으며 커진다 */
 @media (max-width: 1023px) {
   .arranging .slot {
     -webkit-user-select: none;
@@ -85,7 +85,8 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
   }
   .arranging .slot[data-j="1"] { transform-origin: 30% 5%; animation-name: jiggle-b; animation-direction: alternate; }
   .arranging .slot > * { pointer-events: none; }
-  .slot.lifted { position: relative; z-index: 6; scale: 1.035; filter: var(--shadow-lift); animation: none; transition: scale var(--dur-press) var(--ease-press); }
+  /* 든 카드: 누른 곳(transform-origin)으로 모이며 --lift 비율로 작아진다. 놓으면 .landing 이 원래 크기로 키운다 */
+  .slot.lifted { position: relative; z-index: 6; scale: var(--lift, 0.6); filter: var(--shadow-lift); animation: none; transition: scale var(--dur-tab) var(--ease-drawer); }
   .slot.landing { position: relative; z-index: 6; animation: none; transition: translate var(--dur-tab) var(--ease-drawer), scale var(--dur-tab) var(--ease-drawer); }
 }
 @keyframes jiggle-a { 0% { rotate: -0.4deg; animation-timing-function: ease-in; } 50% { rotate: 0.55deg; animation-timing-function: ease-out; } }
