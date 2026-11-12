@@ -13,7 +13,8 @@ import { addMonths, type MonthSpending } from "@/lib/calc";
 import { monthLabel } from "@/lib/format";
 import type { Spending } from "@/lib/types";
 import type { Range } from "@/lib/calendar";
-import { Mark, Toasts } from "./ui";
+import { afterSheet, Mark, Toasts } from "./ui";
+import { QuickAdd, type QuickDraft } from "./QuickAdd";
 import { SpendingSheet } from "./SpendingSheet";
 import { MonthSheet } from "./MonthSheet";
 import { BellButton } from "./Bell";
@@ -46,7 +47,15 @@ export const useSheets = () => useContext(SheetContext);
 export interface Primary {
   label: string;
   icon: "spending" | "event";
-  run: () => void;
+  /** 주된 일 — 바로 쓰기에 쓰던 것이 있으면 그것으로 시작한다 */
+  run: (draft?: QuickDraft) => void;
+  /** 바로 쓰기: 달력 첫 화면(폰)에서 버튼이 긴 막대가 되고, 펼쳐 쓰고 추가하면 시트 없이 바로 더한다(QuickAdd) */
+  quick?: Quick;
+}
+export interface Quick {
+  /** 접힌 막대 글자이자 입력칸 안내 — "11월 17일에 추가" */
+  hint: string;
+  add: (draft: QuickDraft) => void;
 }
 const PrimarySet = createContext<(p: Primary | null) => void>(() => {});
 const PrimaryNow = createContext<Primary | null>(null);
@@ -57,17 +66,20 @@ export function PrimaryIcon({ icon }: { icon: Primary["icon"] }) {
   return <Icon aria-hidden="true" />;
 }
 
-/** 그 화면의 주된 버튼을 정한다. 화면이 사라지면 같이 없어진다 (run 은 늘 마지막 것을 부른다) */
-export function usePrimaryAction(label: string, icon: Primary["icon"], run: () => void) {
+/** 그 화면의 주된 버튼을 정한다. 화면이 사라지면 같이 없어진다 (run·quick 은 늘 마지막 것을 부른다) */
+export function usePrimaryAction(label: string, icon: Primary["icon"], run: (draft?: QuickDraft) => void, quick?: Quick) {
   const set = useContext(PrimarySet);
   const ref = useRef(run);
+  const quickRef = useRef(quick);
   useEffect(() => {
     ref.current = run;
+    quickRef.current = quick;
   });
+  const hint = quick?.hint;
   useEffect(() => {
-    set({ label, icon, run: () => ref.current() });
+    set({ label, icon, run: (draft) => ref.current(draft), quick: hint ? { hint, add: (d) => quickRef.current?.add(d) } : undefined });
     return () => set(null);
-  }, [set, label, icon]);
+  }, [set, label, icon, hint]);
 }
 
 function norm(p: string) {
@@ -83,6 +95,21 @@ function Nav() {
   const [last, setLast] = useState<Primary | null>(null);
   if (primary && primary !== last) setLast(primary);
   const shown = primary ?? last;
+  // 바로 쓰기 — 펼침 여부와 쓰던 것. 추가는 바로 더하고, + ·자세히는 쓰던 것으로 시트를 연다
+  const quick = primary?.quick;
+  const [composing, setComposing] = useState(false);
+  const [draft, setDraft] = useState<QuickDraft>({ title: "", time: "" });
+  const clear = () => setDraft({ title: "", time: "" });
+  const runPrimary = () => {
+    const d = quick && draft.title.trim() ? draft : undefined;
+    clear();
+    primary?.run(d);
+  };
+  // 펼친 채 시트로 가면 펼침이 쌓은 뒤로 가기 기록이 빠진 뒤에 연다
+  const more = () => {
+    afterSheet(runPrimary);
+    setComposing(false);
+  };
   return (
     <>
       <nav className="rail" aria-label="주요 메뉴">
@@ -122,13 +149,33 @@ function Nav() {
             </Link>
           ))}
         </nav>
-        <button type="button" className="fab" aria-label={shown?.label} inert={!primary} onClick={() => primary?.run()}>
-          {shown && (
-            <span className="fab-icon" key={shown.icon}>
-              <PrimaryIcon icon={shown.icon} />
-            </span>
+        {/* 원형 버튼. 바로 쓰기가 있는 화면(달력 첫 화면, 폰)에서는 가운데 짧은 막대가 되어 왼쪽은 "…에 추가"(누르면 펼침), 오른쪽은 + (shell.css) */}
+        <div className={`fab ${quick ? "typing" : ""} ${quick && composing ? "composing" : ""}`} inert={!primary}>
+          {quick && (
+            <QuickAdd
+              hint={quick.hint}
+              draft={draft}
+              onDraft={setDraft}
+              open={composing}
+              onOpenChange={setComposing}
+              onAdd={(d) => {
+                quick.add(d);
+                clear();
+                setComposing(false);
+              }}
+              onMore={more}
+            />
           )}
-        </button>
+          <button type="button" className="fab-btn" aria-label={shown?.label} onClick={runPrimary}>
+            {shown && (
+              <span className="fab-icon" key={shown.icon}>
+                <PrimaryIcon icon={shown.icon} />
+                {/* 긴 막대일 때는 + (shell.css 가 둘 중 하나만 보인다) */}
+                {quick && <Plus className="fab-plus" aria-hidden="true" />}
+              </span>
+            )}
+          </button>
+        </div>
       </div>
     </>
   );

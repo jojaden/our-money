@@ -21,7 +21,7 @@ function rangeText(month: string, cycle: number) {
  * 화살표는 달만 감싸서 늘 같은 자리에 있다. "11월"을 누르면 달 고르기 (따로 ▾ 표시는 두지 않는다 — 제목을 누르면 열리는 것은 다들 안다).
  * 달을 넘겨도 이 줄은 제자리에 있고 달 이름만 그 방향에서 밀려 들어온다. 다른 달을 보면 "이번 달로"가 붙는다.
  */
-export function MonthHeader({ name, sub, back, trailing, children }: { /** 탭 이름 (홈은 없음) */ name?: string; /** 기간 줄 대신 (달력은 1일~말일) */ sub?: string; /** 상세 화면의 "‹ 가계부" 돌아가기 (제목 줄 위) */ back?: React.ReactNode; /** 제목 줄 오른쪽 끝 (달력 "모아보기") */ trailing?: React.ReactNode; children?: React.ReactNode }) {
+export function MonthHeader({ name, sub, back, children }: { /** 탭 이름 (홈은 없음) */ name?: string; /** 기간 줄 대신 (달력은 1일~말일) */ sub?: string; /** 상세 화면의 "‹ 가계부" 돌아가기 (제목 줄 위) */ back?: React.ReactNode; children?: React.ReactNode }) {
   const { data, month, today, setMonth } = useData();
   const { openMonths } = useSheets();
   const prog = periodProgress(month, data.settings.cycle_start, today);
@@ -62,7 +62,6 @@ export function MonthHeader({ name, sub, back, trailing, children }: { /** 탭 �
         </p>
         {children}
       </div>
-      {trailing}
       <HeadAction />
     </header>
   );
@@ -74,7 +73,7 @@ function HeadAction() {
   if (!p) return null;
   return (
     // 글에 "추가"가 이미 있으면(일정 추가) + 그림을 겹쳐 두지 않는다
-    <button type="button" className="btn head-action" onClick={p.run}>
+    <button type="button" className="btn head-action" onClick={() => p.run()}>
       {p.icon === "spending" && <PrimaryIcon icon={p.icon} />} {p.label}
     </button>
   );
