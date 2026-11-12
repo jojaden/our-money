@@ -19,8 +19,8 @@ android {
         applicationId = "com.jojaden.ourmoney"
         minSdk = 26
         targetSdk = 36
-        versionCode = 6
-        versionName = "0.5.0"
+        versionCode = 7
+        versionName = "0.6.0"
         // 웹앱 주소 — 디버그로 개발 서버를 열 때만 -PwebUrl=http://<맥 IP>:3000 (저장소에 IP 를 적지 않는다)
         val webUrl = providers.gradleProperty("webUrl").getOrElse("https://our-money-sage.vercel.app")
         buildConfigField("String", "WEB_URL", "\"$webUrl\"")

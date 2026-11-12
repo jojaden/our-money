@@ -74,7 +74,7 @@ On the web, apply the principles (window size classes, `env(safe-area-inset-*)`,
 - Never commit secrets or connection info: `.env*`, keystores, `local.properties`, `google-services.json`, `.vercel/`, Supabase keys/URL, real emails. Only the anon key goes in the app; never the service_role key.
 
 ## Status
-- Done: web app, Supabase + Google login, Vercel deploy, monorepo, mobile scaffold + calc port (tests pass, debug and signed release APK build), public repo with secret checks and versioning (v0.5.0), new design system applied to the web app, migrations 002-014 run in production.
+- Done: web app, Supabase + Google login, Vercel deploy, monorepo, mobile scaffold + calc port (tests pass, debug and signed release APK build), public repo with secret checks and versioning (v0.6.0), new design system applied to the web app, migrations 002-014 run in production.
 - Paydays differ per person (`payday_a`/`payday_b`, read via `paydayOf`; the old shared `payday` is only a fallback). `paydayDate` moves a weekend payday to the Friday before (`weekdayOnOrBefore`, same in `Calc.kt`); public holidays are not handled. Transfers are grouped by the payer's payday on the check page.
 - Home-screen calendar widget (Glance, `androidApp/.../widget/`): the web posts a calendar summary (`widgetCalendar` in `lib/calendar.ts` → `{"type":"calendar"}`), parsed in `core` `calendar/WidgetCalendar.kt`; tapping opens `/calendar/`.
 - Local phone reminders (`androidApp/.../remind/`): the web posts the next 35 days (`lib/reminders.ts` → `{"type":"reminders"}`); one inexact alarm at a time, rescheduled on boot/update/time change. Theme choice (`lib/theme.ts`, tokens `dark` values) also drives the system bars and the widget.
