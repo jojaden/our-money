@@ -223,6 +223,7 @@ button.row:active, a.row:active { background: var(--well); transform: scale(0.98
   box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--accent-ink) 30%, transparent);
 }
 .chip .count { opacity: 0.7; font-variant-numeric: tabular-nums; }
+.chip .chip-logo { flex: none; width: 18px; height: 18px; margin-left: -4px; border-radius: var(--radius-logo); }
 .chip-sep { flex: none; align-self: center; width: 1px; height: 20px; background: var(--border); }
 
 /* ---------- 세그먼트 (Segmented) ---------- */
