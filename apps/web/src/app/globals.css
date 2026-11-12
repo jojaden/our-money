@@ -453,7 +453,7 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
 .cal-down svg { width: 28px; height: 28px; stroke-width: 2.2; }
 @keyframes cal-down { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(5px); } }
 @media (max-width: 1023px) {
-  /* 두 칸 사이는 스냅: 조금 끌면 되돌아오고(저항감) 더 끌면 모아 보기로 넘어간다. 모아 보기가 길면 그 안은 자유롭게 굴린다 */
+  /* 두 칸 사이는 스냅: 모아 보기에서 올라오다 놓으면 가까운 칸으로. 달력에서 내려가는 저항은 calendarStage 가 맡는다. 모아 보기가 길면 그 안은 자유롭게 굴린다 */
   :root[data-cal] { scroll-snap-type: y mandatory; scroll-padding-top: calc(var(--topbar-btn) + 12px + env(safe-area-inset-top, 0px)); }
   /* 첫 화면은 달력만: 위 막대 아래를 꽉 채우고, 날짜 줄이 남는 높이를 나눠 가진다. 아래는 가운데 일정 추가 버튼 자리 */
   .cal-stage {
@@ -469,7 +469,10 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
   .cal-stage .calendar-month, .cal-stage .cal { display: flex; flex: 1; flex-direction: column; min-height: 0; }
   .cal-stage .cal-grid { flex: 1; min-height: 0; grid-auto-rows: minmax(0, 1fr); }
   .cal-stage .cal-day { min-height: 0; overflow: hidden; }
-  .cal-more { margin-top: 0; padding-top: 8px; scroll-snap-align: start; }
+  /* 모아 보기가 짧아도(다 끝낸 달·D-day 몇 개) 위쪽이 위 막대 밑까지 올라올 수 있게 한 화면 높이는 둔다 — 그래야 메뉴가 돌아온다 */
+  .cal-more { min-height: calc(100svh - var(--topbar-btn) - 12px - env(safe-area-inset-top, 0px)); margin-top: 0; padding-top: 8px; scroll-snap-align: start; }
+  /* 달력만 보일 때 세로 끌기는 브라우저 대신 calendarStage 가 받는다(고무줄 저항). 옆으로 넘기기는 그대로 */
+  :root[data-cal="focus"] .cal-page { touch-action: pan-x pinch-zoom; }
 }
 @media (min-width: 1024px) {
   .cal-down { display: none; }
