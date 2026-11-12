@@ -221,6 +221,15 @@ export default function Home() {
               </div>
               {/* 체크하면 그 줄은 흐려지며 빠지고 다음 일이 미끄러져 올라온다 (Morph) */}
               <Morph className="card" track=":scope > *, .rows > *">
+                {/* 모두 끝내면 한 줄로 줄어든다 — 축하는 100% 화면이 맡는다 */}
+                {open.length === 0 && tasks.length > 0 ? (
+                  <p className="done-line">
+                    <CircleCheck aria-hidden="true" />
+                    <span>모두 끝냈어요</span>
+                    <span className="num">{`${doneCount} / ${tasks.length}`}</span>
+                  </p>
+                ) : (
+                <>
                 {/* 체크 요약 카드와 같은 모양: 큰 숫자(남은 건수) ─ 끝낸 수, 막대, 기한 지난 일만 한 줄 */}
                 <div className="todo-progress">
                   <div className="todo-top">
@@ -247,6 +256,8 @@ export default function Home() {
                       <TaskRow key={t.key} task={t} />
                     ))}
                   </div>
+                )}
+                </>
                 )}
                 {/* 급한 순 3건만 — 나머지는 체크에서 (가계부 "모든 기록 N건 보기"와 같은 줄) */}
                 <Link className="more-row" href="/check">

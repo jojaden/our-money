@@ -17,6 +17,7 @@ import { afterSheet, Mark, Toasts } from "./ui";
 import { QuickAdd, type QuickDraft } from "./QuickAdd";
 import { SpendingSheet } from "./SpendingSheet";
 import { MonthSheet } from "./MonthSheet";
+import { CelebrateWatch } from "./CelebrateWatch";
 import { BellButton } from "./Bell";
 import { NoticeSync } from "./NoticeSync";
 import { CalendarSync } from "./CalendarSync";
@@ -496,6 +497,8 @@ function Frame({ children }: { children: React.ReactNode }) {
                 </Suspense>
               </main>
               {data && <SpendingSheet open={sheet.open} editing={sheet.editing} onOpenChange={(open) => setSheet((s) => ({ ...s, open }))} />}
+              {/* 그달 체크를 모두 끝낸 순간 100% 축하 — 어느 화면에서 끝내든 */}
+              {data && <CelebrateWatch />}
               {data && <MonthSheet key={months.key} open={months.open} range={months.range} onOpenChange={(open) => setMonths((x) => ({ ...x, open }))} />}
               {/* 안드로이드 앱: 결제 알림으로 맞춘 고정비·이체를 체크 */}
               {data && app && <NoticeSync />}
