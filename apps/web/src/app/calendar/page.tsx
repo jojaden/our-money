@@ -311,9 +311,10 @@ function CalendarMonth() {
             <h2 id="cal-more-h">{monthLabel(month)} 모아 보기</h2>
           </div>
           <Seg label="달력 모아 보기" value={moreTab} onChange={setMoreTab} options={[{ value: "month", label: "할 일·일정" }, { value: "dday", label: "D-day" }]} />
-          <div className="cal-overview">
+          {/* 탭을 바꾸면 옛 목록은 흐려지며 빠지고 새 목록이 떠오르며 높이가 따라간다 (Morph) */}
+          <Morph className="cal-overview" track=":scope > *">
             {moreTab === "dday" ? <DdayList onOpenEvent={openEvent} /> : <MonthTodo month={month} onOpenEvent={openEvent} />}
-          </div>
+          </Morph>
         </section>
       </div>
       {hint && (

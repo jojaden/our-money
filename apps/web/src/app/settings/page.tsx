@@ -19,6 +19,7 @@ import { MiniCard } from "@/components/pass";
 import { HistorySheet } from "@/components/HistorySheet";
 import { IcsSheet } from "@/components/IcsSheet";
 import { leaveDetail } from "@/lib/navigationMotion";
+import { Morph } from "@/components/Morph";
 import { setTheme, useTheme, type ThemeChoice } from "@/lib/theme";
 
 /** 설정 묶음 — 폰은 목록(/settings/)에서 하나를 눌러 그 묶음만(/settings/?s=…) 보고, 데스크톱은 모두 한 화면에 둔다 */
@@ -343,7 +344,8 @@ export default function SettingsPage() {
             <h2 id="split-h">{SECS.split.title}</h2>
             <p>{SECS.split.desc}</p>
           </div>
-          <div className="card">
+          {/* 정한 비율 ↔ 월급 비율: 바뀌는 칸이 겹쳐 바뀌고 높이가 따라간다 (Morph) */}
+          <Morph className="card" track=":scope > *">
             <Seg
               label="분담 방식"
               value={draft.split_mode}
@@ -377,7 +379,7 @@ export default function SettingsPage() {
                 {100 - Math.round((draft.salary_a / Math.max(1, draft.salary_a + draft.salary_b)) * 100)}%.
               </p>
             )}
-          </div>
+          </Morph>
         </section>
 
         <section className={on("cycle")} aria-labelledby="cycle-h">
