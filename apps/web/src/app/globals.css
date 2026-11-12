@@ -280,7 +280,8 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
 /* 카드 없이 화면 너비를 다 쓴다: 바깥 여백(--edge)을 거슬러 가장자리 4px까지, 가로 안전 영역(노치)은 피한다 */
 .cal { margin-inline: calc(max(4px, env(safe-area-inset-left, 0px)) - var(--edge)) calc(max(4px, env(safe-area-inset-right, 0px)) - var(--edge)); }
 .cal-week, .cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
-.cal-grid { gap: 4px 2px; }
+/* 칸 안쪽 여백과 일정 한 줄 높이 — 기간 띠(.cal-span)가 칸의 일정 줄과 같은 자리에 오도록 함께 쓴다 */
+.cal-grid { --cal-pad-t: 6px; --cal-pad-x: 2px; --ev-h: 18px; gap: 4px 2px; }
 .cal-week span { padding: 2px 0 8px; color: var(--faint); font: 600 12px/16px var(--font-text); text-align: center; }
 .cal-week .sun, .cal-day.sun .n { color: var(--negative); }
 .cal-week .sat, .cal-day.sat .n { color: var(--saturday); }
@@ -309,6 +310,15 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
 .cal-event { --who: var(--joint); display: -webkit-box; overflow: hidden; padding: 0 3px; border: 2px solid transparent; border-left-color: var(--who); border-radius: 4px; background: color-mix(in srgb, var(--who) 24%, var(--surface)); color: var(--text); font: 600 11px/14px var(--font-text); text-align: left; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 .cal-event.a { --who: var(--a); background: color-mix(in srgb, var(--who) 32%, var(--surface)); }
 .cal-event.b { --who: var(--b); background: color-mix(in srgb, var(--who) 32%, var(--surface)); }
+/* 기간 일정: 주마다 걸친 칸을 잇는 띠 하나. 칸에는 같은 높이의 빈자리(.cal-lane)를 둬 하루 일정이 아래로 비킨다.
+   시작한 날만 왼쪽 막대·둥근 끝, 끝나는 날만 오른쪽 둥근 끝 — 주를 넘어가는 쪽은 각지게 칸 끝까지 */
+.cal-lane { flex: none; height: var(--ev-h); }
+.cal-span { --who: var(--joint); position: relative; z-index: 1; align-self: start; min-width: 0; height: var(--ev-h); margin-top: calc(var(--cal-pad-t) + 26px + 4px + var(--lane) * (var(--ev-h) + 3px)); overflow: hidden; padding: 0 3px; border: 2px solid transparent; background: color-mix(in srgb, var(--who) 24%, var(--surface)); color: var(--text); font: 600 11px/14px var(--font-text); white-space: nowrap; text-overflow: ellipsis; pointer-events: none; }
+.cal-span.a { --who: var(--a); background: color-mix(in srgb, var(--who) 32%, var(--surface)); }
+.cal-span.b { --who: var(--b); background: color-mix(in srgb, var(--who) 32%, var(--surface)); }
+.cal-span.head { margin-left: var(--cal-pad-x); border-left-color: var(--who); border-radius: 4px 0 0 4px; }
+.cal-span.tail { margin-right: var(--cal-pad-x); border-radius: 0 4px 4px 0; }
+.cal-span.head.tail { border-radius: 4px; }
 .cal-more { color: var(--muted); font: 500 10px/14px var(--font-text); text-align: left; }
 .cal-day .amt { margin-top: auto; }
 .cal-day .amt.in + .amt { margin-top: 0; }
@@ -404,9 +414,9 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
 .cal-empty .btn svg { width: 18px; height: 18px; }
 .cal-overview { margin-top: 16px; }
 @media (min-width: 720px) {
-  .cal-grid { gap: 6px; }
+  .cal-grid { --cal-pad-t: 8px; --cal-pad-x: 6px; --ev-h: 22px; gap: 6px; }
   .cal-day { padding: 8px 6px; }
-  .cal-event { font-size: 12px; line-height: 18px; }
+  .cal-event, .cal-span { font-size: 12px; line-height: 18px; }
 }
 @media (min-width: 1024px) {
   .cal { margin-inline: 0; }
