@@ -131,8 +131,8 @@ div.bar-mini { display: flex; align-items: center; justify-content: center; gap:
   z-index: 30;
   display: flex;
   gap: var(--nav-gap);
-  --nav-w: min(480px, 100vw - var(--nav-inset) * 2 - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
-  width: var(--nav-w);
+  width: min(480px, 100% - var(--nav-inset) * 2 - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
+  container-type: inline-size; /* 가운데로 옮겨 가는 일정 추가 막대가 이 폭(cqw)으로 가운데를 잡는다 */
   margin: 0 auto;
   pointer-events: none;
 }
@@ -180,7 +180,7 @@ div.bar-mini { display: flex; align-items: center; justify-content: center; gap:
   box-shadow: var(--shadow-float);
   color: var(--on-primary);
   pointer-events: auto;
-  transition: transform var(--dur-press) var(--ease-press), translate var(--dur-tab) var(--ease-drawer), width var(--dur-tab) var(--ease-drawer), height var(--dur-tab) var(--ease-drawer), margin var(--dur-tab) var(--ease-drawer), background-color var(--dur-tab) ease, color var(--dur-tab) ease, opacity var(--dur-press) ease;
+  transition: transform var(--dur-press) var(--ease-press), translate var(--dur-tab) var(--ease-drawer), width var(--dur-tab) var(--ease-drawer), height var(--dur-tab) var(--ease-drawer), margin var(--dur-tab) var(--ease-drawer), border-radius var(--dur-tab) var(--ease-drawer), background-color var(--dur-tab) ease, color var(--dur-tab) ease, opacity var(--dur-press) ease;
 }
 .fab-btn { display: grid; flex: none; place-items: center; width: var(--nav-h); height: 100%; margin-left: auto; padding: 0; border: 0; background: none; color: inherit; transition: width var(--dur-tab) var(--ease-drawer); }
 .fab svg { width: 26px; height: 26px; stroke-width: 2; }
@@ -190,19 +190,8 @@ div.bar-mini { display: flex; align-items: center; justify-content: center; gap:
 .fab-icon > svg { grid-area: 1 / 1; transition: opacity var(--dur-tab) ease, scale var(--dur-tab) var(--ease-pop); }
 .fab-plus { opacity: 0; scale: 0.6; }
 @keyframes fab-icon-in { from { opacity: 0; transform: scale(0.6) rotate(-45deg); } }
-/* 바로 쓰기 칸: 동그라미일 때는 너비 0 으로 숨어 있다가 긴 막대가 되면 왼쪽을 채운다 */
-.fab-quick { flex: 1; min-width: 0; height: 100%; opacity: 0; visibility: hidden; transition: opacity var(--dur-press) ease, visibility 0s linear var(--dur-press); }
-.fab-quick input {
-  width: 100%;
-  height: 100%;
-  padding: 0 0 0 22px;
-  border: 0;
-  outline: none;
-  background: none;
-  color: var(--text);
-  font: 600 16px/1 var(--font-text); /* 16px 아래면 iOS 가 확대한다 */
-}
-.fab-quick input::placeholder { color: var(--muted); opacity: 1; }
+/* 바로 쓰기(QuickAdd)는 달력 첫 화면에서만 보인다 — 동그라미일 때는 접힌 글자도 펼친 칸도 숨어 있다 */
+.fab-prompt, .fab-compose { display: none; }
 /* 주된 일이 없는 화면(플랜·체크·설정): 버튼이 줄어들며 빠지고 캡슐이 그 자리까지 넓어진다. 알약도 같은 박자로 따라간다 */
 .navbar.solo .fab { width: 0; margin-left: calc(var(--nav-gap) * -1); opacity: 0; transform: scale(0.6); pointer-events: none; }
 /* 달력 첫 화면(달력만 보일 때, <html data-cal="focus">): 캡슐은 아래로 내려가 숨고, 일정 추가 버튼이 가운데로 옮겨 가며
@@ -211,12 +200,16 @@ div.bar-mini { display: flex; align-items: center; justify-content: center; gap:
    누를 때 줄어드는 transform 과 겹치지 않게 자리는 translate 로 옮긴다 */
 @media (max-width: 1023px) {
   :root[data-cal="focus"] .tabbar { translate: 0 calc(100% + var(--nav-inset) + env(safe-area-inset-bottom, 0px)); opacity: 0; visibility: hidden; pointer-events: none; transition: translate var(--dur-tab) var(--ease-drawer), opacity var(--dur-tab) ease, visibility 0s linear var(--dur-tab); }
+  /* 가운데는 하단 메뉴 실제 폭(cqw)으로 잡는다 — 100vw 로 셈하면 스크롤 막대가 있는 창에서 어긋난다 */
   :root[data-cal="focus"] .fab {
-    --w: min(var(--fab-wide-w), var(--nav-w));
+    --w: min(var(--fab-wide-w), 100cqw);
+    position: relative;
+    align-self: flex-end; /* 펼칠 때 위로 커진다 */
     width: var(--w);
     height: var(--fab-wide-h);
     margin-left: calc(var(--nav-h) - var(--w)); /* 왼쪽으로만 늘어나 줄에서 차지하는 자리는 동그라미 그대로 — 숨는 캡슐이 눌리지 않게 */
-    translate: calc(var(--w) / 2 - var(--nav-w) / 2) 0;
+    translate: calc(var(--w) / 2 - 50cqw) 0;
+    border-radius: calc(var(--fab-wide-h) / 2);
     background: color-mix(in srgb, var(--surface) 86%, transparent);
     -webkit-backdrop-filter: blur(22px) saturate(180%);
     backdrop-filter: blur(22px) saturate(180%);
@@ -224,13 +217,64 @@ div.bar-mini { display: flex; align-items: center; justify-content: center; gap:
     color: var(--text);
   }
   :root[data-cal="focus"] .fab:has(> .fab-btn:active) { transform: none; }
-  /* 쓰는 중에는 테두리로 알린다 */
-  :root[data-cal="focus"] .fab:focus-within { box-shadow: var(--shadow-nav), inset 0 0 0 2px var(--primary); }
-  :root[data-cal="focus"] .fab-btn { width: calc(var(--fab-wide-h) + 8px); }
+  :root[data-cal="focus"] .fab-btn { width: var(--fab-wide-h); }
   :root[data-cal="focus"] .fab-btn:active svg { scale: 0.86; }
-  :root[data-cal="focus"] .fab-quick { opacity: 1; visibility: visible; transition: opacity var(--dur-tab) ease var(--dur-press), visibility 0s; }
   :root[data-cal="focus"] .fab.typing .fab-icon > svg:not(.fab-plus) { opacity: 0; scale: 0.6; }
   :root[data-cal="focus"] .fab-plus { opacity: 1; scale: 1; }
+  /* 접힌 막대 왼쪽: "11월 17일에 추가" — 누르면 펼친다. 쓰던 글이 있으면 그 글 */
+  :root[data-cal="focus"] .fab-prompt {
+    display: block;
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    padding: 0 0 0 20px;
+    overflow: hidden;
+    border: 0;
+    background: none;
+    color: var(--muted);
+    font: 600 16px/1 var(--font-text);
+    text-align: left;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    transition: opacity var(--dur-press) ease;
+  }
+  :root[data-cal="focus"] .fab-prompt.has { color: var(--text); }
+  /* 펼친 막대: 하단 메뉴 폭까지 서서히 커지고(dur-tab · ease-drawer), 입력칸이 작게 생겨 커진다. 아래 줄은 시간 · 자세히 · 추가 */
+  :root[data-cal="focus"] .fab-compose {
+    position: absolute;
+    inset: 0 0 auto;
+    display: grid;
+    gap: 10px;
+    padding: 12px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--dur-press) ease;
+  }
+  :root[data-cal="focus"] .fab.composing {
+    --w: 100cqw;
+    height: var(--fab-compose-h);
+    border-radius: var(--radius-card);
+    background: var(--surface);
+  }
+  :root[data-cal="focus"] .fab.composing :is(.fab-prompt, .fab-btn) { opacity: 0; pointer-events: none; }
+  :root[data-cal="focus"] .fab.composing .fab-compose { opacity: 1; pointer-events: auto; transition-delay: 60ms; }
+  .fab-compose .input { scale: 0.55; opacity: 0; transition: scale var(--dur-tab) var(--ease-pop), opacity var(--dur-press) ease, background-color var(--dur-press) ease, box-shadow var(--dur-press) ease; }
+  .fab.composing .fab-compose .input { scale: 1; opacity: 1; transition-delay: 90ms, 90ms, 0s, 0s; }
+  .fab-compose-row { display: flex; align-items: center; gap: 4px; opacity: 0; translate: 0 6px; transition: opacity var(--dur-press) ease, translate var(--dur-tab) var(--ease-drawer); }
+  .fab.composing .fab-compose-row { opacity: 1; translate: 0 0; transition-delay: 160ms; }
+  .fab-time { position: relative; display: flex; align-items: center; height: 40px; margin-right: auto; border-radius: var(--radius-chip); background: var(--well); color: var(--muted); }
+  .fab-time.has { background: var(--accent-soft); color: var(--accent-ink); }
+  .fab-time-pick { display: flex; align-items: center; gap: 6px; height: 100%; padding: 0 14px; border: 0; border-radius: inherit; background: none; color: inherit; font: 600 15px/1 var(--font-text); }
+  .fab-time.has .fab-time-pick { padding-right: 4px; }
+  .fab-time-clear { display: grid; place-items: center; width: 32px; height: 100%; padding: 0 4px 0 0; border: 0; background: none; color: inherit; }
+  .fab-time svg { flex: none; width: 18px; height: 18px; stroke-width: 2; }
+  .fab-time-clear svg { width: 16px; height: 16px; }
+  /* 진짜 시간 칸은 알약 뒤에 숨겨 두고 시간 고르기 창만 빌린다(그 창이 알약 자리에서 뜬다) */
+  .fab-time input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; pointer-events: none; }
+  .fab-time-pick:focus-visible, .fab-time-clear:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: -2px; }
+  .fab-compose-row .btn.sm { height: 40px; padding: 0 18px; }
+  /* 펼친 동안 아래 화살표는 비킨다 */
+  :root:has(.fab.composing) .cal-down { opacity: 0; pointer-events: none; }
 }
 @media (prefers-reduced-transparency: reduce) {
   .tabbar, .topbar::before, :root[data-cal="focus"] .fab { background: var(--surface); -webkit-backdrop-filter: none; backdrop-filter: none; }
@@ -384,5 +428,5 @@ html[data-navigation="back"]::view-transition-new(app-page) { animation-name: pa
   ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
   .route-page { animation: none !important; }
   .page-enter, .page-enter > *, .page-enter .page-head * { animation: none !important; }
-  .fab, .fab-btn, .fab-quick, .fab-icon, .fab-icon > svg, .bell .badge, .tabbar { animation: none !important; transition: none !important; }
+  .fab, .fab-btn, .fab-prompt, .fab-compose, .fab-compose *, .fab-icon, .fab-icon > svg, .bell .badge, .tabbar { animation: none !important; transition: none !important; }
 }

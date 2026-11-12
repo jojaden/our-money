@@ -13,6 +13,7 @@ import { dateWithDay, monthLabel, parseYmd, shortDate } from "@/lib/format";
 import { MonthHeader } from "@/components/MonthHeader";
 import { afterSheet, CategoryIcon, CheckButton, Money, Seg, Sheet } from "@/components/ui";
 import { EventSheet, quickEvent } from "@/components/EventSheet";
+import type { QuickDraft } from "@/components/QuickAdd";
 import { MonthTodo } from "@/components/MonthTodo";
 import { CalendarCard } from "@/components/CalendarCard";
 import { useCalendarStage } from "@/components/calendarStage";
@@ -209,7 +210,7 @@ function CalendarMonth() {
   const returnPanel = useRef(false);
   const [moreTab, setMoreTab] = useState<"month" | "dday">("month");
   const { more, page, hint, openMore } = useCalendarStage();
-  const [sheet, setSheet] = useState<{ open: boolean; key: number; event?: CalEvent; date: string; draft?: string }>({ open: false, key: 0, date: day });
+  const [sheet, setSheet] = useState<{ open: boolean; key: number; event?: CalEvent; date: string; draft?: QuickDraft }>({ open: false, key: 0, date: day });
   useEffect(() => {
     carried = null;
     resetSummary();
@@ -226,7 +227,7 @@ function CalendarMonth() {
       setMonth(date.slice(0, 7));
     }
   };
-  const openEvent = (event?: CalEvent, date = day, draft?: string) => setSheet((x) => ({ open: true, key: x.key + 1, event, date, draft }));
+  const openEvent = (event?: CalEvent, date = day, draft?: QuickDraft) => setSheet((x) => ({ open: true, key: x.key + 1, event, date, draft }));
   // 패널이 쌓은 기록을 되돌린 뒤 편집·지출 시트를 연다. 뒤로가기가 페이지를 건너뛰지 않게 한다.
   const closeThen = (run: () => void) => {
     afterSheet(run);
@@ -243,11 +244,14 @@ function CalendarMonth() {
     }
     setSheet((x) => ({ ...x, open }));
   };
-  // 폰 첫 화면의 아래 막대: 쓰고 엔터면 고른 날짜에 바로 일정, + 는 쓰던 글로 일정 시트
-  const addQuick = async (text: string) => {
-    if (await upsert("events", [quickEvent(text, day)])) toast("일정을 만들었어요");
-  };
-  usePrimaryAction(`${Number(day.slice(5, 7))}월 ${Number(day.slice(8))}일에 일정 추가`, "event", (draft) => openEvent(undefined, day, draft), addQuick);
+  // 폰 첫 화면의 아래 막대: 펼쳐 쓰고 추가면 고른 날짜에 바로 일정, + ·자세히는 쓰던 것으로 일정 시트
+  const dayText = `${Number(day.slice(5, 7))}월 ${Number(day.slice(8))}일`;
+  usePrimaryAction(`${dayText}에 일정 추가`, "event", (draft) => openEvent(undefined, day, draft), {
+    hint: `${dayText}에 추가`,
+    add: async (draft) => {
+      if (await upsert("events", [quickEvent(draft, day)])) toast("일정을 만들었어요");
+    },
+  });
   const monthSpent = [...spent.entries()].filter(([d]) => inMonth(d)).reduce((a, [, v]) => a + v, 0);
   const monthEvents = new Set([...marks.entries()].filter(([d]) => inMonth(d)).flatMap(([, ms]) => ms.filter((m) => m.event).map((m) => m.event!.id))).size;
 

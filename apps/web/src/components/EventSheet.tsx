@@ -9,6 +9,7 @@ import { nameOf } from "@/lib/calc";
 import { eul, ro } from "@/lib/format";
 import { findTime, timeText, type TimeHit } from "@/lib/calendar";
 import { AmountInput, MAX_GOAL, Seg, Sheet, Toggle } from "./ui";
+import type { QuickDraft } from "./QuickAdd";
 
 /** 무엇을 만드나 — 맨 위에서 고르면 그에 맞는 칸만 나온다 */
 type Kind = "todo" | "event" | "dday";
@@ -34,11 +35,11 @@ function newId() {
 
 /**
  * 바로 쓰기(달력 첫 화면 아래 막대)로 더하는 일정 하나 — 시트 없이 그 날짜에 "일정"으로 넣는다.
- * 제목 속 시간은 시트와 같은 규칙으로 떼어 시간 칸에 넣는다("치과 3시 반" → 치과, 15:30). 떼면 제목이 비면 그대로 둔다.
+ * 시간을 골랐으면 그 시간, 아니면 제목 속 시간을 시트와 같은 규칙으로 떼어 넣는다("치과 3시 반" → 치과, 15:30). 떼면 제목이 비면 그대로 둔다.
  */
-export function quickEvent(text: string, date: string, now = new Date()): CalEvent {
-  const t = text.trim();
-  const hit = findTime(t, now);
+export function quickEvent(draft: QuickDraft, date: string, now = new Date()): CalEvent {
+  const t = draft.title.trim();
+  const hit = draft.time ? null : findTime(t, now);
   const rest = hit ? `${t.slice(0, hit.index)} ${t.slice(hit.end)}`.replace(/\s+/g, " ").trim() : "";
   const h = hit && rest ? hit : null;
   return {
@@ -54,8 +55,8 @@ export function quickEvent(text: string, date: string, now = new Date()): CalEve
     pin: false,
     remind_days: null,
     amount: null,
-    start_time: h?.start ?? null,
-    end_time: h?.until ?? null,
+    start_time: draft.time || (h?.start ?? null),
+    end_time: draft.time ? null : (h?.until ?? null),
   };
 }
 
@@ -74,11 +75,11 @@ function kindOf(e?: CalEvent): Kind {
  * 다시 쓰면 바꾼다("9시까지"는 끝 시간만). 오전·오후를 안 쓰면 시트를 연 지금에 맞춘다(지난 시각이면 오후).
  * 열 때마다 새 key 로 그려서 입력이 그 일정(또는 고른 날짜)에서 시작한다.
  */
-export function EventSheet({ open, onOpenChange, event, date, draft }: { open: boolean; onOpenChange: (v: boolean) => void; event?: CalEvent; date: string; /** 바로 쓰기 칸에 쓰던 제목 (새로 만들 때) */ draft?: string }) {
+export function EventSheet({ open, onOpenChange, event, date, draft }: { open: boolean; onOpenChange: (v: boolean) => void; event?: CalEvent; date: string; /** 바로 쓰기에 쓰던 제목·시간 (새로 만들 때) */ draft?: QuickDraft }) {
   const { data, upsert, remove, toast } = useData();
   const s = data.settings;
   const [kind, setKind] = useState<Kind>(kindOf(event));
-  const [title, setTitle] = useState(event?.title ?? draft ?? "");
+  const [title, setTitle] = useState(event?.title ?? draft?.title ?? "");
   const [ranged, setRanged] = useState(Boolean(event?.end_date));
   const [start, setStart] = useState(event?.start_date ?? date);
   const [end, setEnd] = useState(event?.end_date ?? "");
@@ -89,7 +90,7 @@ export function EventSheet({ open, onOpenChange, event, date, draft }: { open: b
   const [remind, setRemind] = useState(event?.remind_days == null ? "" : String(event.remind_days));
   const [amount, setAmount] = useState(event?.amount ?? 0);
   const [note, setNote] = useState(event?.note ?? "");
-  const [startTime, setStartTime] = useState(event?.start_time ?? "");
+  const [startTime, setStartTime] = useState(event?.start_time ?? draft?.time ?? "");
   const [endTime, setEndTime] = useState(event?.end_time ?? "");
   /** 오전·오후를 안 쓴 시간을 정할 기준 (시트를 연 때) */
   const [now] = useState(() => new Date());
