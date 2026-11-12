@@ -2,16 +2,15 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { AlertTriangle, Check, ChevronDown, ChevronRight, Clock, Target } from "lucide-react";
+import { AlertTriangle, Check, ChevronDown, ChevronRight, CircleCheck, Clock, Target } from "lucide-react";
 import { useData } from "@/lib/store";
-import { addMonths, currentMonth, monthRow, nameOf, periodOf } from "@/lib/calc";
+import { nameOf, periodOf } from "@/lib/calc";
 import { FirstRun, MonthHeader } from "@/components/MonthHeader";
 import { Money } from "@/components/ui";
 import { byUrgency, eventTasks, useTasks, type PaydayGroup, type Task } from "@/components/tasks";
 import { dDay, dateWithDay, monthLabel, shortDate } from "@/lib/format";
 import { TaskRow } from "@/components/TaskRow";
 import { MAX_STEPS, StepTrack } from "@/components/StepTrack";
-import { Celebrate } from "@/components/Celebrate";
 import { MonthClose } from "@/components/MonthClose";
 import { Morph, useMorphFlip } from "@/components/Morph";
 import { Arrange, Slot } from "@/components/Arrange";
@@ -88,6 +87,16 @@ function CheckSummary({ label, done, total, parts }: { label: string; done: numb
   };
   return (
     <section className="card check-sum" aria-labelledby="sum-h">
+      {/* 모두 끝내면 큰 숫자·막대·남은 줄 대신 한 줄로 줄어든다(Morph) — 축하는 100% 화면이 맡는다 */}
+      <Morph track=":scope > *">
+      {left === 0 && total > 0 ? (
+        <p className="done-line">
+          <CircleCheck aria-hidden="true" />
+          <span id="sum-h">{label}를 모두 끝냈어요</span>
+          <span className="num">{`${done} / ${total}`}</span>
+        </p>
+      ) : (
+      <>
       <div className="sum-head">
         <h2 id="sum-h" className="hero-label">{label}</h2>
         <span className="num">{`${done} / ${total}`}</span>
@@ -118,6 +127,9 @@ function CheckSummary({ label, done, total, parts }: { label: string; done: numb
           ))}
         </ul>
       )}
+      </>
+      )}
+      </Morph>
     </section>
   );
 }
@@ -192,7 +204,7 @@ function PaydaySection({ g, today, name }: { g: PaydayGroup; today: string; name
 }
 
 export default function CheckPage() {
-  const { data, month, today, setMonth, toggleCheck } = useData();
+  const { data, month, today, toggleCheck } = useData();
   const s = data.settings;
   const { tasks, transfers, pays, bills, settle, issues, paydays, started } = useTasks(month);
   // 달력에서 만든 할 일(재산세 내기 등) — 같은 가계부 달(예: 10/25~11/24). 이체·납부 진행률과 축하에는 넣지 않는다
@@ -209,11 +221,8 @@ export default function CheckPage() {
   }
 
   const done = tasks.filter((t) => t.done).length;
-  const left = tasks.filter((t) => !t.done);
   const fixed = pays.filter((t) => t.item?.group === "fixed");
   const saving = pays.filter((t) => t.item?.group === "saving");
-  const next = addMonths(month, 1);
-  const nextReady = monthRow(data, next) !== null;
 
   return (
     <>
@@ -296,26 +305,6 @@ export default function CheckPage() {
         </div>
       </Arrange>
 
-      <Celebrate
-        done={tasks.length > 0 && left.length === 0 && month === currentMonth(s.cycle_start, today)}
-        month={month}
-        label={monthLabel(month)}
-        chips={[
-          { name: "옮길 돈", count: transfers.length },
-          { name: "고정비", count: fixed.length },
-          { name: "저축", count: saving.length },
-          { name: "카드값", count: bills.length },
-        ].filter((c) => c.count > 0)}
-        next={
-          // 이번 달은 끝난 뒤에 마감한다(새 달이 되면 홈·종이 묻는다) → 다음 달 플랜으로
-          {
-            title: `${monthLabel(next)} 플랜 ${nextReady ? "미리 보기" : "미리 만들기"}`,
-            sub: nextReady ? "다음 달 배분을 미리 살펴봐요" : "이번 달 배분을 그대로 이어받아요",
-            href: "/plan",
-            onGo: () => setMonth(next),
-          }
-        }
-      />
     </>
   );
 }
