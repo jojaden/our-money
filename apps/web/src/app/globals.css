@@ -388,7 +388,7 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
 /* ---------- 달력 화면의 두 칸: 달력(첫 화면) ↔ 아래 모아 보기 (components/calendarStage.ts) ---------- */
 .cal-more { margin-top: 28px; }
 /* 아래가 더 있다는 반투명 화살표: 가운데로 커진 일정 추가 버튼 바로 위. 모아 보기를 한 번 내려 보면 다시 두지 않는다 */
-.cal-down { position: fixed; left: 50%; bottom: calc(var(--nav-inset) + env(safe-area-inset-bottom, 0px) + var(--nav-h) * 1.2 + 12px); z-index: 29; display: grid; place-items: center; width: 44px; height: 32px; margin-left: -22px; padding: 0; border: 0; background: transparent; color: var(--text); opacity: 0.38; animation: cal-down 1.8s var(--ease-out) infinite; }
+.cal-down { position: fixed; left: 50%; bottom: calc(var(--nav-inset) + env(safe-area-inset-bottom, 0px) + var(--fab-wide-h) + 12px); z-index: 29; display: grid; place-items: center; width: 44px; height: 32px; margin-left: -22px; padding: 0; border: 0; background: transparent; color: var(--text); opacity: 0.38; animation: cal-down 1.8s var(--ease-out) infinite; }
 .cal-down svg { width: 28px; height: 28px; stroke-width: 2.2; }
 @keyframes cal-down { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(5px); } }
 @media (max-width: 1023px) {
@@ -399,7 +399,7 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
     display: flex;
     flex-direction: column;
     min-height: calc(100svh - var(--topbar-btn) - 12px - env(safe-area-inset-top, 0px));
-    padding-bottom: calc(var(--nav-h) * 1.2 + var(--nav-inset) * 2 + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(var(--fab-wide-h) + var(--nav-inset) * 2 + env(safe-area-inset-bottom, 0px));
     scroll-snap-align: start;
   }
   .cal-stage .page-head { margin-bottom: 14px; }

@@ -181,7 +181,7 @@ div.bar-mini { display: flex; align-items: center; justify-content: center; gap:
   box-shadow: var(--shadow-float);
   color: var(--on-primary);
   pointer-events: auto;
-  transition: transform var(--dur-press) var(--ease-press), translate var(--dur-tab) var(--ease-drawer), scale var(--dur-tab) var(--ease-drawer), width var(--dur-tab) var(--ease-drawer), margin var(--dur-tab) var(--ease-drawer), opacity var(--dur-press) ease;
+  transition: transform var(--dur-press) var(--ease-press), translate var(--dur-tab) var(--ease-drawer), width var(--dur-tab) var(--ease-drawer), height var(--dur-tab) var(--ease-drawer), margin var(--dur-tab) var(--ease-drawer), opacity var(--dur-press) ease;
 }
 .fab svg { width: 26px; height: 26px; stroke-width: 2; }
 .fab:active { transform: scale(0.94); }
@@ -190,11 +190,13 @@ div.bar-mini { display: flex; align-items: center; justify-content: center; gap:
 @keyframes fab-icon-in { from { opacity: 0; transform: scale(0.6) rotate(-45deg); } }
 /* 주된 일이 없는 화면(플랜·체크·설정): 버튼이 줄어들며 빠지고 캡슐이 그 자리까지 넓어진다. 알약도 같은 박자로 따라간다 */
 .navbar.solo .fab { width: 0; margin-left: calc(var(--nav-gap) * -1); opacity: 0; transform: scale(0.6); pointer-events: none; }
-/* 달력 첫 화면(달력만 보일 때, <html data-cal="focus">): 캡슐은 아래로 내려가 숨고, 일정 추가 버튼이 가운데로 옮겨 가며 커진다.
-   모아 보기로 내리면(data-cal="open") 같은 박자로 제자리. 누를 때 줄어드는 transform 과 겹치지 않게 translate·scale 따로 쓴다 */
+/* 달력 첫 화면(달력만 보일 때, <html data-cal="focus">): 캡슐은 아래로 내려가 숨고, 일정 추가 버튼이 가운데로 옮겨 가며
+   가로로 긴 타원(fab-wide-w × fab-wide-h)으로 커진다. 모아 보기로 내리면(data-cal="open") 같은 박자로 제자리 동그라미.
+   누를 때 줄어드는 transform 과 겹치지 않게 자리는 translate 로 옮긴다 */
 @media (max-width: 1023px) {
   :root[data-cal="focus"] .tabbar { translate: 0 calc(100% + var(--nav-inset) + env(safe-area-inset-bottom, 0px)); opacity: 0; visibility: hidden; pointer-events: none; transition: translate var(--dur-tab) var(--ease-drawer), opacity var(--dur-tab) ease, visibility 0s linear var(--dur-tab); }
-  :root[data-cal="focus"] .fab { translate: calc(var(--nav-h) / 2 - var(--nav-w) / 2) -4px; scale: 1.2; }
+  :root[data-cal="focus"] .fab { width: var(--fab-wide-w); height: var(--fab-wide-h); translate: calc(var(--fab-wide-w) / 2 - var(--nav-w) / 2) 0; }
+  :root[data-cal="focus"] .fab svg { width: 28px; height: 28px; }
 }
 @media (prefers-reduced-transparency: reduce) {
   .tabbar, .topbar::before { background: var(--surface); -webkit-backdrop-filter: none; backdrop-filter: none; }
