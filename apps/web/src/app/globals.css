@@ -280,7 +280,8 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
 /* 카드 없이 화면 너비를 다 쓴다: 바깥 여백(--edge)을 거슬러 가장자리 4px까지, 가로 안전 영역(노치)은 피한다 */
 .cal { margin-inline: calc(max(4px, env(safe-area-inset-left, 0px)) - var(--edge)) calc(max(4px, env(safe-area-inset-right, 0px)) - var(--edge)); }
 .cal-week, .cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
-.cal-grid { gap: 4px 2px; }
+/* 칸 안쪽 여백과 기간 줄 굵기·사이 — 기간 줄(.cal-line)이 칸의 빈자리(.cal-lanes)와 같은 자리에 오도록 함께 쓴다 */
+.cal-grid { --cal-pad-t: 6px; --cal-pad-x: 2px; --ln-h: 4px; --ln-gap: 3px; gap: 4px 2px; }
 .cal-week span { padding: 2px 0 8px; color: var(--faint); font: 600 12px/16px var(--font-text); text-align: center; }
 .cal-week .sun, .cal-day.sun .n { color: var(--negative); }
 .cal-week .sat, .cal-day.sat .n { color: var(--saturday); }
@@ -309,6 +310,14 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
 .cal-event { --who: var(--joint); display: -webkit-box; overflow: hidden; padding: 0 3px; border: 2px solid transparent; border-left-color: var(--who); border-radius: 4px; background: color-mix(in srgb, var(--who) 24%, var(--surface)); color: var(--text); font: 600 11px/14px var(--font-text); text-align: left; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 .cal-event.a { --who: var(--a); background: color-mix(in srgb, var(--who) 32%, var(--surface)); }
 .cal-event.b { --who: var(--b); background: color-mix(in srgb, var(--who) 32%, var(--surface)); }
+/* 기간 일정: 이름 없이 날짜 바로 아래 맨 위에 걸친 칸을 잇는 얇은 줄(입력한 사람 색). 시작·끝나는 날은 칸 안쪽에서 둥글게 끝나고,
+   주를 넘어가는 쪽은 칸 끝까지 이어진다. 칸에는 줄 수만큼 빈자리(.cal-lanes)를 둬 하루 일정이 그 아래로 비킨다 */
+.cal-lanes { flex: none; height: calc(var(--n) * (var(--ln-h) + var(--ln-gap)) - var(--ln-gap)); }
+.cal-line { --who: var(--joint); position: relative; z-index: 1; align-self: start; min-width: 0; height: var(--ln-h); margin-top: calc(var(--cal-pad-t) + 30px + var(--lane) * (var(--ln-h) + var(--ln-gap))); background: var(--who); pointer-events: none; }
+.cal-line.a { --who: var(--a); }
+.cal-line.b { --who: var(--b); }
+.cal-line.head { margin-left: var(--cal-pad-x); border-top-left-radius: var(--ln-h); border-bottom-left-radius: var(--ln-h); }
+.cal-line.tail { margin-right: var(--cal-pad-x); border-top-right-radius: var(--ln-h); border-bottom-right-radius: var(--ln-h); }
 .cal-more { color: var(--muted); font: 500 10px/14px var(--font-text); text-align: left; }
 .cal-day .amt { margin-top: auto; }
 .cal-day .amt.in + .amt { margin-top: 0; }
@@ -404,7 +413,7 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
 .cal-empty .btn svg { width: 18px; height: 18px; }
 .cal-overview { margin-top: 16px; }
 @media (min-width: 720px) {
-  .cal-grid { gap: 6px; }
+  .cal-grid { --cal-pad-t: 8px; --cal-pad-x: 6px; gap: 6px; }
   .cal-day { padding: 8px 6px; }
   .cal-event { font-size: 12px; line-height: 18px; }
 }
@@ -453,7 +462,7 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
 .cal-down svg { width: 28px; height: 28px; stroke-width: 2.2; }
 @keyframes cal-down { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(5px); } }
 @media (max-width: 1023px) {
-  /* 두 칸 사이는 스냅: 조금 끌면 되돌아오고(저항감) 더 끌면 모아 보기로 넘어간다. 모아 보기가 길면 그 안은 자유롭게 굴린다 */
+  /* 두 칸 사이는 스냅: 모아 보기에서 올라오다 놓으면 가까운 칸으로. 달력에서 내려가는 저항은 calendarStage 가 맡는다. 모아 보기가 길면 그 안은 자유롭게 굴린다 */
   :root[data-cal] { scroll-snap-type: y mandatory; scroll-padding-top: calc(var(--topbar-btn) + 12px + env(safe-area-inset-top, 0px)); }
   /* 첫 화면은 달력만: 위 막대 아래를 꽉 채우고, 날짜 줄이 남는 높이를 나눠 가진다. 아래는 가운데 일정 추가 버튼 자리 */
   .cal-stage {
@@ -469,7 +478,10 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
   .cal-stage .calendar-month, .cal-stage .cal { display: flex; flex: 1; flex-direction: column; min-height: 0; }
   .cal-stage .cal-grid { flex: 1; min-height: 0; grid-auto-rows: minmax(0, 1fr); }
   .cal-stage .cal-day { min-height: 0; overflow: hidden; }
-  .cal-more { margin-top: 0; padding-top: 8px; scroll-snap-align: start; }
+  /* 모아 보기가 짧아도(다 끝낸 달·D-day 몇 개) 위쪽이 위 막대 밑까지 올라올 수 있게 한 화면 높이는 둔다 — 그래야 메뉴가 돌아온다 */
+  .cal-more { min-height: calc(100svh - var(--topbar-btn) - 12px - env(safe-area-inset-top, 0px)); margin-top: 0; padding-top: 8px; scroll-snap-align: start; }
+  /* 달력만 보일 때 세로 끌기는 브라우저 대신 calendarStage 가 받는다(고무줄 저항). 옆으로 넘기기는 그대로 */
+  :root[data-cal="focus"] .cal-page { touch-action: pan-x pinch-zoom; }
 }
 @media (min-width: 1024px) {
   .cal-down { display: none; }
