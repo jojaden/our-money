@@ -13,17 +13,19 @@ function short(n: number): string {
   return `${man >= 100 || Number.isInteger(man) ? Math.round(man) : man.toFixed(1)}만`;
 }
 
-/** 한 칸에 보이는 일정 줄 수 (기간 띠 + 하루 일정) */
+/** 한 칸에 보이는 하루 일정 수 */
 const ROWS = 3;
+/** 한 칸에 긋는 기간 줄 수 (넘치면 "+N개") */
+const LINES = 4;
 
-/** 한 주 안의 기간 일정 띠: c0~c1 칸(0=일요일)에 걸치고 lane 번째 줄에 놓인다 */
+/** 한 주 안의 기간 일정: c0~c1 칸(0=일요일)에 걸치고 lane 번째 줄에 놓인다 */
 interface Span {
   key: string;
   mark: Mark;
   lane: number;
   c0: number;
   c1: number;
-  /** 이 주에서 시작·끝나면 그쪽 끝을 둥글게 */
+  /** 이 주에 첫날·마지막 날이 있으면 그쪽 끝을 둥글게 칸 안쪽에서 끝낸다 */
   head: boolean;
   tail: boolean;
 }
@@ -48,7 +50,8 @@ function weekSpans(week: string[], marks: Map<string, Mark[]>): Span[] {
 
 /**
  * 달력 — 카드로 감싸지 않고 화면 너비를 다 쓴다. 날짜마다 일정 이름(입력한 사람 색)·쓴 돈·돈 일의 점.
- * 기간 일정은 주마다 걸친 칸을 잇는 띠 하나로 그린다(칸 위에 겹친 그리드 아이템). 칸에는 그 줄만큼 빈자리를 둬 하루 일정이 아래로 비킨다.
+ * 기간 일정은 이름 없이 날짜 바로 아래 맨 위에 걸친 칸을 잇는 얇은 줄로만 긋는다(칸 위에 겹친 그리드 아이템).
+ * 칸에는 그 줄만큼 빈자리를 둬 하루 일정이 아래로 비킨다. 이름은 날짜를 누르면 나오는 목록에 있다.
  * 폰에서는 줄이 남는 높이를 나눠 가져 화면을 꽉 채운다(달력 화면의 첫 칸). 좌우로 밀면 달이 넘어간다.
  */
 export function CalendarCard({
@@ -84,10 +87,11 @@ export function CalendarCard({
         {cells.map((d, i) => {
           const ms = marks.get(d) ?? [];
           // 이 칸을 지나는 기간 띠가 쓰는 줄 수만큼 빈자리, 남은 줄에 하루 일정
+          // 이 칸을 지나는 기간 줄만큼 빈자리(맨 위), 그 아래 하루 일정
           const spans = weeks[Math.floor(i / 7)].filter((s) => s.c0 <= i % 7 && i % 7 <= s.c1);
-          const used = Math.min(ROWS, spans.reduce((n, s) => Math.max(n, s.lane + 1), 0));
+          const used = Math.min(LINES, spans.reduce((n, s) => Math.max(n, s.lane + 1), 0));
           const singles = ms.filter((m) => m.event && !(m.occ && m.occ.start !== m.occ.end));
-          const hidden = spans.filter((s) => s.lane >= ROWS).length + Math.max(0, singles.length - (ROWS - used));
+          const hidden = spans.filter((s) => s.lane >= LINES).length + Math.max(0, singles.length - ROWS);
           const kinds = [...new Set(ms.filter((m) => !m.event).map((m) => (m.kind === "payday" ? `k-payday ${m.owner}` : `k-${m.kind}`)))].slice(0, 3);
           const amount = spent.get(d) ?? 0;
           const income = ms.reduce((a, m) => a + (m.kind === "payday" ? (m.amount ?? 0) : 0), 0);
@@ -104,8 +108,8 @@ export function CalendarCard({
             >
               <span className="n">{Number(d.slice(8))}</span>
               <span className="cal-events" aria-hidden="true">
-                {Array.from({ length: used }, (_, k) => <span className="cal-lane" key={`lane${k}`} />)}
-                {singles.slice(0, ROWS - used).map((m) => <span className={`cal-event ${m.event!.created_by ?? ""}`} key={m.event!.id}>{m.title}</span>)}
+                {used > 0 && <span className="cal-lanes" style={{ "--n": used } as CSSProperties} />}
+                {singles.slice(0, ROWS).map((m) => <span className={`cal-event ${m.event!.created_by ?? ""}`} key={m.event!.id}>{m.title}</span>)}
                 {hidden > 0 && <span className="cal-more">+{hidden}개</span>}
               </span>
               {income > 0 && <span className="amt in">+{short(income)}</span>}
@@ -120,19 +124,17 @@ export function CalendarCard({
             </button>
           );
         })}
-        {/* 기간 띠: 칸 위에 겹쳐 그 주에서 걸친 칸을 잇는다. 누르기는 아래 칸이 받는다. 이름은 시작한 날(또는 주 첫 칸)에만 */}
+        {/* 기간 일정: 걸친 칸을 잇는 얇은 줄. 칸 위에 겹치고 누르기는 아래 칸이 받는다 */}
         {weeks.flatMap((spans, w) =>
           spans
-            .filter((s) => s.lane < ROWS)
+            .filter((s) => s.lane < LINES)
             .map((s) => (
               <span
                 key={`${s.key}:${w}`}
-                className={`cal-span ${s.mark.event!.created_by ?? ""} ${s.head ? "head" : ""} ${s.tail ? "tail" : ""}`}
+                className={`cal-line ${s.mark.event!.created_by ?? ""} ${s.head ? "head" : ""} ${s.tail ? "tail" : ""}`}
                 style={{ gridRow: w + 1, gridColumn: `${s.c0 + 1} / ${s.c1 + 2}`, "--lane": s.lane } as CSSProperties}
                 aria-hidden="true"
-              >
-                {s.mark.title}
-              </span>
+              />
             )),
         )}
       </div>
