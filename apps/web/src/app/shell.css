@@ -208,7 +208,7 @@ div.bar-mini { display: flex; align-items: center; justify-content: center; gap:
     width: var(--w);
     height: var(--fab-wide-h);
     margin-left: calc(var(--nav-h) - var(--w)); /* 왼쪽으로만 늘어나 줄에서 차지하는 자리는 동그라미 그대로 — 숨는 캡슐이 눌리지 않게 */
-    translate: calc(var(--w) / 2 - 50cqw) 0;
+    translate: calc(var(--w) / 2 - 50cqw) calc(var(--nav-inset) - var(--fab-clear)); /* 위(달력 마지막 줄)·아래(화면 끝) 여백을 fab-clear 로 같게 */
     border-radius: calc(var(--fab-wide-h) / 2);
     background: color-mix(in srgb, var(--surface) 86%, transparent);
     -webkit-backdrop-filter: blur(22px) saturate(180%);
