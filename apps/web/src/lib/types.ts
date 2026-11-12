@@ -230,13 +230,20 @@ export interface Member {
   person: Person;
 }
 
-/** 로그인한 계정 (supabase/migrations/003_users.sql). 이름은 그 계정 본인만 바꾼다. */
+/** 꾹 눌러 카드를 옮길 수 있는 화면 */
+export type ArrangePage = "home" | "plan" | "check" | "ledger";
+/** 화면별 카드 이름 순서 (supabase/migrations/015) — 모르는 이름은 무시하고 빠진 카드는 기본 자리에 */
+export type CardOrder = Partial<Record<ArrangePage, string[]>>;
+
+/** 로그인한 계정 (supabase/migrations/003_users.sql). 이름·카드 순서는 그 계정 본인만 바꾼다. */
 export interface User {
   /** auth.users.id (데모는 `demo-a`) */
   id: string;
   email: string;
   person: Person;
   name: string;
+  /** 015 전 DB 에는 없다 */
+  card_order?: CardOrder;
 }
 
 export interface Data {

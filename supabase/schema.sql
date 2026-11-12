@@ -152,9 +152,16 @@ create table if not exists public.users (
   email text not null unique check (email = lower(email)),
   person text not null unique check (person in ('a', 'b')),
   name text not null default '' check (char_length(name) <= 20),
+  -- 폰·태블릿에서 꾹 눌러 옮긴 화면별 카드 순서 (migrations/015)
+  card_order jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+alter table public.users add column if not exists card_order jsonb not null default '{}'::jsonb;
+alter table public.users drop constraint if exists users_card_order_shape;
+alter table public.users add constraint users_card_order_shape
+  check (jsonb_typeof(card_order) = 'object' and pg_column_size(card_order) <= 4096);
+comment on column public.users.card_order is '폰·태블릿에서 꾹 눌러 옮긴 화면별 카드 순서 (home·plan·check·ledger → 카드 이름 배열)';
 
 create or replace function public.touch_updated_at() returns trigger
 language plpgsql set search_path = public as $$
@@ -167,7 +174,7 @@ drop trigger if exists users_touch on public.users;
 create trigger users_touch before update on public.users
   for each row execute function public.touch_updated_at();
 
--- 접근: 두 사람 모두 서로의 이름을 읽고, 바꾸는 건 자기 줄의 name 만
+-- 접근: 두 사람 모두 서로의 이름을 읽고, 바꾸는 건 자기 줄의 name·card_order 만
 alter table public.users enable row level security;
 drop policy if exists "members read users" on public.users;
 create policy "members read users" on public.users for select to authenticated
@@ -179,7 +186,7 @@ create policy "update own name" on public.users for update to authenticated
 
 revoke all on public.users from anon, authenticated;
 grant select on public.users to authenticated;
-grant update (name) on public.users to authenticated;
+grant update (name, card_order) on public.users to authenticated;
 
 -- 로그인한 계정의 users 줄을 만들거나 맞춘다. members 에 없는 이메일이면 아무것도 하지 않는다.
 -- 처음 만들 때 이름은 (같은 사람의 예전 계정 이름) > settings 의 이름 > 이메일 앞부분.
@@ -383,7 +390,8 @@ begin
   if tg_op = 'UPDATE' then
     select jsonb_object_agg(key, o -> key), jsonb_object_agg(key, value) into b, a
     from jsonb_each(n)
-    where key <> all (array['rev', 'updated_at', 'updated_by']) and o -> key is distinct from value;
+    -- card_order(카드 순서)만 바뀌면 남기지 않는다 (migrations/015)
+    where key <> all (array['rev', 'updated_at', 'updated_by', 'card_order']) and o -> key is distinct from value;
     if a is null then
       return null;
     end if;

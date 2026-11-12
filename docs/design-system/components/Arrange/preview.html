@@ -1,0 +1,66 @@
+<!-- @dsCard group="Cards" height=420 subtitle="카드를 꾹 눌러 흔들고 끌어 옮기기 — 애플 홈 화면처럼 (카드를 누르고 있거나 흔들기를 누르세요)" -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alan+Sans:wght@300..900&family=Noto+Sans+KR:wght@400..800&display=swap">
+<style>
+  body { margin: 0; background: var(--ground); color: var(--text); font-family: var(--font-text); word-break: keep-all; -webkit-font-smoothing: antialiased; }
+  .stage { max-width: 390px; padding: 16px 20px 20px; }
+  .bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .bar span { color: var(--muted); font: 600 13.5px var(--font-text); }
+  .bar button { height: 36px; padding: 0 16px; border: 0; border-radius: 999px; background: var(--primary); color: var(--on-primary); font: 600 14px var(--font-text); }
+  .list { display: grid; gap: 12px; }
+  .c { padding: 18px 20px; border-radius: var(--radius-card); background: var(--surface-card); box-shadow: var(--shadow-card); font: 700 17px/24px var(--font-text); user-select: none; -webkit-user-select: none; touch-action: pan-y; transform-origin: 50% 50%; transition: translate var(--dur-tab) var(--ease-drawer); }
+  .c small { display: block; margin-top: 4px; color: var(--muted); font: 500 13.5px/18px var(--font-text); }
+  .on .c { animation: ja var(--jd) linear var(--jl) infinite; }
+  .on .c:nth-child(2n) { animation-name: jb; animation-direction: alternate; }
+  .c.lifted { position: relative; z-index: 2; scale: var(--lift, .6); filter: var(--shadow-lift); animation: none !important; transition: scale var(--dur-tab) var(--ease-drawer); }
+  .c.landing { position: relative; z-index: 2; transition: translate var(--dur-tab) var(--ease-drawer), scale var(--dur-tab) var(--ease-drawer); }
+  @keyframes ja { 0% { rotate: -0.38deg; transform: translate(-0.5px, 0); animation-timing-function: ease-in; } 50% { rotate: 0.5deg; transform: translate(0.5px, 0.3px); animation-timing-function: ease-out; } }
+  @keyframes jb { 0% { rotate: 0.38deg; transform: translate(0.5px, 0.3px); animation-timing-function: ease-in; } 50% { rotate: -0.5deg; transform: translate(-0.5px, 0); animation-timing-function: ease-out; } }
+</style>
+<div class="stage">
+  <div class="bar"><span id="t">꾹 눌러 보세요</span><button type="button" id="b">흔들기</button></div>
+  <div class="list" id="l">
+    <div class="c" style="--jd:.27s;--jl:-.31s">남은 공동 생활비<small>804,900원 · 예상보다 덜 썼어요</small></div>
+    <div class="c" style="--jd:.31s;--jl:-.05s">현빈 용돈<small>246,200원 남았어요</small></div>
+    <div class="c" style="--jd:.25s;--jl:-.62s">이번 달 할 일<small>11건 남았어요 · 9 / 20</small></div>
+    <div class="c" style="--jd:.29s;--jl:-.18s">카드값<small>공동 신용카드 1,331,600원</small></div>
+  </div>
+</div>
+<script>
+  const l = document.getElementById("l"), b = document.getElementById("b"), t = document.getElementById("t");
+  const set = (on) => { l.classList.toggle("on", on); b.textContent = on ? "완료" : "흔들기"; t.textContent = on ? "카드를 끌어 옮겨요" : "꾹 눌러 보세요"; };
+  b.onclick = () => set(!l.classList.contains("on"));
+  let press = null, drag = null;
+  l.addEventListener("pointerdown", (e) => {
+    const c = e.target.closest(".c"); if (!c) return;
+    press = { c, x: e.clientX, y: e.clientY, timer: setTimeout(() => {
+      set(true);
+      const cs = [...l.children], gap = 12;
+      const r = c.getBoundingClientRect(), oy = press.y - r.top, s = Math.min(0.75, Math.max(0.4, 60 / c.offsetHeight));
+      drag = { c, cs, from: cs.indexOf(c), to: cs.indexOf(c), y0: press.y, tops: cs.map((x) => x.offsetTop), hs: cs.map((x) => x.offsetHeight), gap, oy, s, top0: l.getBoundingClientRect().top };
+      c.style.transformOrigin = `${press.x - r.left}px ${oy}px`; c.style.setProperty("--lift", s);
+      c.classList.add("lifted"); press = null;
+    }, l.classList.contains("on") ? 140 : 480) };
+  });
+  addEventListener("pointermove", (e) => {
+    if (press && Math.abs(e.clientY - press.y) > 8) { clearTimeout(press.timer); press = null; }
+    if (!drag) return;
+    const d = drag, dy = e.clientY - d.y0; d.c.style.translate = `0 ${dy}px`;
+    const mid = e.clientY - l.getBoundingClientRect().top; // 들어갈 자리는 손가락 위치로
+    let to = 0; d.cs.forEach((_, j) => { if (j !== d.from && d.tops[j] + d.hs[j] / 2 < mid) to++; }); d.to = to;
+    const step = d.hs[d.from] + d.gap;
+    d.cs.forEach((x, j) => { if (j === d.from) return; x.style.translate = d.from < to && j > d.from && j <= to ? `0 ${-step}px` : to < d.from && j >= to && j < d.from ? `0 ${step}px` : ""; });
+  });
+  addEventListener("pointerup", () => {
+    if (press) { clearTimeout(press.timer); press = null; }
+    if (!drag) return;
+    const d = drag; drag = null;
+    const dy = parseFloat(d.c.style.translate.split(" ")[1] || "0");
+    d.cs.forEach((x) => { x.style.transition = "none"; if (x !== d.c) x.style.translate = ""; });
+    const order = [...d.cs]; order.splice(d.to, 0, ...order.splice(d.from, 1)); order.forEach((x) => l.appendChild(x));
+    // 줄어든 채 옮긴 카드의 새 제자리에서 놓은 곳까지 — 거기서 내려앉으며 원래 크기로
+    d.c.style.translate = `0 ${d.tops[d.from] - d.c.offsetTop + dy}px`; void l.offsetHeight;
+    d.cs.forEach((x) => { x.style.transition = ""; });
+    d.c.classList.remove("lifted"); d.c.classList.add("landing"); d.c.style.translate = "";
+    d.c.addEventListener("transitionend", () => { d.c.classList.remove("landing"); d.c.style.transformOrigin = ""; }, { once: true });
+  });
+</script>

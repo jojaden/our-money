@@ -14,6 +14,10 @@ import { MAX_STEPS, StepTrack } from "@/components/StepTrack";
 import { Celebrate } from "@/components/Celebrate";
 import { MonthClose } from "@/components/MonthClose";
 import { Morph } from "@/components/Morph";
+import { Arrange, Slot } from "@/components/Arrange";
+
+/** 체크에서 옮길 수 있는 카드와 처음 순서 (폰) */
+const CHECK_CARDS = ["summary", "payday", "fixed", "saving", "cards", "settle", "todos", "close"];
 import { TaskMeter } from "@/components/BudgetCard";
 
 /** 할 일 줄 — 끝낸 줄은 아래 "✓ 끝낸 N건 · 보기" 한 줄로 접어 남은 일만 보이게 한다 */
@@ -220,53 +224,72 @@ export default function CheckPage() {
         </div>
       )}
 
-      <div className="grid">
+      {/* 폰에서는 카드를 꾹 눌러 옮긴다 */}
+      <Arrange page="check" defaults={CHECK_CARDS}>
         <div className="col span-7">
-          <CheckSummary
-            label={`${monthLabel(month)} 체크`}
-            done={done}
-            total={tasks.length}
-            parts={[
-              { id: "payday-h", name: "옮길 돈", tasks: transfers },
-              { id: "fixed", name: "고정비", tasks: fixed },
-              { id: "saving", name: "저축·투자", tasks: saving },
-              { id: "cards", name: "카드값", tasks: bills },
-              { id: "settle", name: "두 사람 정산", tasks: settle ? [settle] : [] },
-            ]}
-          />
-          <section className="group" aria-labelledby="payday-h">
-            <div className="group-head">
-              <h2 id="payday-h">월급날에 옮길 돈</h2>
-            </div>
-            <div className="stack">
-              {paydays.map((g) => (
-                <PaydaySection key={g.person} g={g} today={today} name={nameOf(s, g.person)} />
-              ))}
-            </div>
-          </section>
+          <Slot k="summary">
+            <CheckSummary
+              label={`${monthLabel(month)} 체크`}
+              done={done}
+              total={tasks.length}
+              parts={[
+                { id: "payday-h", name: "옮길 돈", tasks: transfers },
+                { id: "fixed", name: "고정비", tasks: fixed },
+                { id: "saving", name: "저축·투자", tasks: saving },
+                { id: "cards", name: "카드값", tasks: bills },
+                { id: "settle", name: "두 사람 정산", tasks: settle ? [settle] : [] },
+              ]}
+            />
+          </Slot>
+          <Slot k="payday">
+            <section className="group" aria-labelledby="payday-h">
+              <div className="group-head">
+                <h2 id="payday-h">월급날에 옮길 돈</h2>
+              </div>
+              <div className="stack">
+                {paydays.map((g) => (
+                  <PaydaySection key={g.person} g={g} today={today} name={nameOf(s, g.person)} />
+                ))}
+              </div>
+            </section>
+          </Slot>
         </div>
         <div className="col span-5">
-          <Section id="fixed" title="고정비 납부 확인" tasks={fixed} empty="이번 달 고정비가 없어요." />
-          <Section id="saving" title="저축·투자 납입" tasks={saving} empty="이번 달 저축 항목이 없어요." />
-          <Section id="cards" title="카드값 준비" tasks={bills} empty="이번 달에 결제되는 카드값이 없어요." />
-          {settle && <Section id="settle" title="두 사람 정산" tasks={[settle]} empty="" />}
-          <Section
-            id="todos"
-            title="할 일"
-            tasks={todos}
-            empty="이번 달 할 일이 없어요. 달력의 일정 추가에서 ‘할 일’을 고르면 여기에도 모여요."
-            foot={
-              <div className="card-foot">
-                <span />
-                <Link href="/calendar" className="aside s">
-                  달력에서 보기
-                </Link>
-              </div>
-            }
-          />
-          <MonthClose key={month} month={month} />
+          <Slot k="fixed">
+            <Section id="fixed" title="고정비 납부 확인" tasks={fixed} empty="이번 달 고정비가 없어요." />
+          </Slot>
+          <Slot k="saving">
+            <Section id="saving" title="저축·투자 납입" tasks={saving} empty="이번 달 저축 항목이 없어요." />
+          </Slot>
+          <Slot k="cards">
+            <Section id="cards" title="카드값 준비" tasks={bills} empty="이번 달에 결제되는 카드값이 없어요." />
+          </Slot>
+          {settle && (
+            <Slot k="settle">
+              <Section id="settle" title="두 사람 정산" tasks={[settle]} empty="" />
+            </Slot>
+          )}
+          <Slot k="todos">
+            <Section
+              id="todos"
+              title="할 일"
+              tasks={todos}
+              empty="이번 달 할 일이 없어요. 달력의 일정 추가에서 ‘할 일’을 고르면 여기에도 모여요."
+              foot={
+                <div className="card-foot">
+                  <span />
+                  <Link href="/calendar" className="aside s">
+                    달력에서 보기
+                  </Link>
+                </div>
+              }
+            />
+          </Slot>
+          <Slot k="close">
+            <MonthClose key={month} month={month} />
+          </Slot>
         </div>
-      </div>
+      </Arrange>
 
       <Celebrate
         done={tasks.length > 0 && left.length === 0 && month === currentMonth(s.cycle_start, today)}

@@ -2,7 +2,7 @@
 // 두 구현 모두 같은 테이블 단위 연산만 제공한다.
 
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import type { Data, HistoryRow, Member, Person, Row, Spending, TableName, User } from "./types";
+import type { CardOrder, Data, HistoryRow, Member, Person, Row, Spending, TableName, User } from "./types";
 import { buildDemoData } from "./demo-data";
 import { inApp, toApp } from "./native";
 
@@ -63,6 +63,8 @@ export interface Repo {
   apply(ops: Op[]): Promise<OpResult[]>;
   /** 로그인한 사람(me)의 이름 — 본인 줄만 바꿀 수 있다 */
   updateMyName(me: Person, name: string): Promise<void>;
+  /** 로그인한 사람(me)의 카드 순서. 015 전 DB 라 칸이 없으면 "local"(이 기기에만 남길 것) */
+  updateMyCardOrder(me: Person, order: CardOrder): Promise<"saved" | "local">;
   /** 다른 기기·탭에서 바뀌면 호출 */
   subscribe(onChange: (change: Change) => void): () => void;
 }
@@ -252,6 +254,18 @@ class SupabaseRepo implements Repo {
     if (!res.data?.length) throw new Error("내 계정 정보를 찾지 못했어요. 다시 로그인해 주세요.");
   }
 
+  async updateMyCardOrder(_me: Person, order: CardOrder) {
+    const { data } = await this.db.auth.getSession();
+    const uid = data.session?.user.id;
+    if (!uid) throw new Error("로그인이 필요해요");
+    const res = await this.db.from("users").update({ card_order: order }).eq("id", uid).select("id");
+    if (res.error && (isMissingColumn(res.error) || isMissingTable(res.error))) return "local" as const;
+    if (res.error) throw toError(res.error, res.status);
+    if (!res.data?.length) throw new Error("내 계정 정보를 찾지 못했어요. 다시 로그인해 주세요.");
+    return "saved" as const;
+  }
+
+
   subscribe(onChange: (change: Change) => void) {
     const channel = this.db.channel("household");
     for (const t of [...LIST_TABLES, "settings"] as TableName[]) {
@@ -275,6 +289,11 @@ class SupabaseRepo implements Repo {
       void this.db.removeChannel(channel);
     };
   }
+}
+
+/** 015 전: users.card_order 칸이 없다 */
+function isMissingColumn(e: { code?: string; message: string }) {
+  return e.code === "42703" || e.code === "PGRST204" || /column .* does not exist|Could not find the '.*' column/i.test(e.message);
 }
 
 function isMissingTable(e: { code?: string; message: string }) {
@@ -348,6 +367,8 @@ class LocalRepo implements Repo {
         if (!this.data.users) this.data.users = demoUsers(this.data.settings);
         // 일정이 생기기 전에 저장된 데모 데이터
         if (!this.data.events) this.data.events = buildDemoData().events;
+        // 카드 순서 칸(015)이 생기기 전에 저장된 데모 데이터 — 서버처럼 빈 순서로 시작
+        for (const u of this.data.users) u.card_order ??= {};
         return this.data;
       }
     } catch {
@@ -432,6 +453,14 @@ class LocalRepo implements Repo {
       : [...d.users, ...demoUsers(d.settings).filter((u) => u.person === me).map((u) => ({ ...u, name }))];
     this.write();
   }
+
+  async updateMyCardOrder(me: Person, order: CardOrder) {
+    const d = this.read();
+    d.users = d.users.map((u) => (u.person === me ? { ...u, card_order: order } : u));
+    this.write();
+    return "saved" as const;
+  }
+
 
   subscribe(onChange: (change: Change) => void) {
     const handler = (e: StorageEvent) => {

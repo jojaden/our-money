@@ -135,7 +135,10 @@ div.bar-mini { display: flex; align-items: center; justify-content: center; gap:
   container-type: inline-size; /* 가운데로 옮겨 가는 일정 추가 막대가 이 폭(cqw)으로 가운데를 잡는다 */
   margin: 0 auto;
   pointer-events: none;
+  transition: translate var(--dur-tab) var(--ease-drawer), opacity var(--dur-tab) ease;
 }
+/* 카드를 옮기는 동안(<html data-arranging>) 하단 메뉴는 아래로 비켜 준다 — 끝내기는 위 "완료" */
+:root[data-arranging] .navbar { translate: 0 calc(100% + var(--nav-inset) + env(safe-area-inset-bottom, 0px)); opacity: 0; pointer-events: none; }
 .tabbar {
   position: relative;
   display: grid;

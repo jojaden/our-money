@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
-import type { Check, Data, HistoryRow, Month, MonthItem, Person, Row, Spending, TableName } from "./types";
+import type { ArrangePage, CardOrder, Check, Data, HistoryRow, Month, MonthItem, Person, Row, Spending, TableName } from "./types";
 import { getRepo, hasSupabase, currentMember, supabase, LIST_TABLES, ConflictError, RetryableError, upsertOp, deleteOp, type Change, type Op } from "./repo";
 import { addMonths, currentMonth, itemsFromMonth, latestMonthBefore, monthRow, periodOf, snapshotItems, withUserNames } from "./calc";
 import { createMonthMotion } from "./monthMotion";
@@ -50,6 +50,10 @@ interface Store {
   togglePaid: (item: MonthItem) => Promise<void>;
   /** 로그인한 사람(me)의 이름 바꾸기 — 다른 사람 이름은 그 사람만 바꾼다 */
   setMyName: (name: string) => Promise<void>;
+  /** 로그인한 사람(me)의 화면별 카드 순서 (서버 줄, 015 전이면 이 기기) */
+  cardOrder: CardOrder;
+  /** 한 화면의 카드 순서를 바꾼다. null 이면 처음 순서로 */
+  setCardOrder: (page: ArrangePage, keys: string[] | null) => Promise<void>;
   toasts: Toast[];
   toast: (text: string, undo?: () => void) => void;
   dismissToast: (id: number) => void;
@@ -170,11 +174,39 @@ function applyChange(d: Data, c: Exclude<Change, { type: "RELOAD" }>): Data {
   return mergeServer(d, c.table, [c.row as unknown as Revved]);
 }
 
+/**
+ * 서버에 아직 못 보낸 카드 순서 — 015 전 DB(칸 없음)이거나 보내다 실패했을 때만 이 기기에 남긴다.
+ * 남아 있으면 화면은 이것을 쓰고, 다음에 불러올 때 서버로 다시 보낸다. 보내지면 지운다. 누구의 순서인지도 남긴다(같은 기기 두 사람)
+ */
+const ORDER_KEY = "our-money-card-order";
+interface LocalOrder {
+  p: Person;
+  o: CardOrder;
+}
+function readLocalOrder(): LocalOrder | null {
+  try {
+    const v = JSON.parse(localStorage.getItem(ORDER_KEY) ?? "null") as Partial<LocalOrder> | null;
+    return v && (v.p === "a" || v.p === "b") && v.o && typeof v.o === "object" && !Array.isArray(v.o) ? { p: v.p, o: v.o } : null;
+  } catch {
+    return null;
+  }
+}
+function writeLocalOrder(v: LocalOrder | null) {
+  try {
+    if (v) localStorage.setItem(ORDER_KEY, JSON.stringify(v));
+    else localStorage.removeItem(ORDER_KEY);
+  } catch {
+    // 저장소가 막혀도 이번 실행 동안은 화면에 남는다
+  }
+}
+
 export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [auth, setAuth] = useState<Auth>({ state: "loading" });
   const [data, setData] = useState<Data | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [me, setMeState] = useState<Person>("a");
+  // 서버에 아직 없는 카드 순서 (보내는 중이거나 못 보낸 것). 있으면 서버 순서보다 앞선다
+  const [localOrder, setLocalOrder] = useState<LocalOrder | null>(readLocalOrder);
   const [month, setMonthState] = useState<string>("");
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [today] = useState(todayStr);
@@ -547,6 +579,56 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     [repo, me, reload, toast],
   );
 
+  const serverOrder = data?.users.find((u) => u.person === me)?.card_order;
+  const cardOrder = (localOrder?.p === me ? localOrder.o : null) ?? serverOrder ?? {};
+  const putOrder = useCallback((o: CardOrder) => setData((d) => (d ? { ...d, users: d.users.map((u) => (u.person === me ? { ...u, card_order: o } : u)) } : d)), [me]);
+  const setCardOrder = useCallback(
+    async (page: ArrangePage, keys: string[] | null) => {
+      if (!repo) return;
+      const next: CardOrder = { ...cardOrder };
+      if (keys) next[page] = keys;
+      else delete next[page];
+      // 보내는 동안에도 화면은 새 순서 (서버 줄도 같이 바꿔 둔다)
+      const mine = { p: me, o: next };
+      setLocalOrder(mine);
+      putOrder(next);
+      try {
+        if ((await repo.updateMyCardOrder(me, next)) === "local") {
+          writeLocalOrder(mine);
+          return;
+        }
+        writeLocalOrder(null);
+        setLocalOrder((cur) => (cur === mine ? null : cur));
+      } catch (e) {
+        // 순서는 돈이 아니다 — 이 기기에 남겨 화면은 그대로 두고, 다음에 불러올 때 다시 보낸다
+        writeLocalOrder(mine);
+        toast(`카드 순서를 이 기기에 남겨 두고 다음에 다시 보낼게요 (${e instanceof Error ? e.message : e})`);
+      }
+    },
+    [repo, me, cardOrder, putOrder, toast],
+  );
+  // 못 보내고 이 기기에 남은 순서(015 전에 옮긴 것 포함)는 서버에 칸이 있으면 다시 보낸다
+  const resending = useRef(false);
+  useEffect(() => {
+    const left = readLocalOrder();
+    if (!repo || !left || left.p !== me || serverOrder === undefined || resending.current) return;
+    resending.current = true;
+    void repo
+      .updateMyCardOrder(me, left.o)
+      .then((r) => {
+        if (r !== "saved") return;
+        writeLocalOrder(null);
+        setLocalOrder((cur) => (cur?.o === left.o || JSON.stringify(cur) === JSON.stringify(left) ? null : cur));
+        putOrder(left.o);
+      })
+      .catch(() => {
+        // 다음에 불러올 때 다시
+      })
+      .finally(() => {
+        resending.current = false;
+      });
+  }, [repo, me, serverOrder, putOrder]);
+
   /**
    * 달 플랜 만들기. from 을 주면 그 달 플랜을 그대로 이어받고(수입 포함), 없으면 반복 항목으로 새로 만든다.
    */
@@ -620,6 +702,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     toggleCheck,
     togglePaid,
     setMyName,
+    cardOrder,
+    setCardOrder,
     toasts,
     toast,
     dismissToast,
