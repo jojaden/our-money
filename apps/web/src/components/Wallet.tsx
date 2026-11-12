@@ -4,14 +4,14 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ArrowLeftRight, Check, ChevronRight, Pencil, Plus, X } from "lucide-react";
 import type { Account, Data, Group, Spending } from "@/lib/types";
-import { BUCKET, PERSON, cardMix, passArt } from "./pass";
+import { BUCKET, InstMark, PERSON, cardMix, passArt } from "./pass";
 import { useData } from "@/lib/store";
 import { cardBills, checkId, findCheck, monthRow, nameOf, paydayDate, salaryAccount, spendingsIn } from "@/lib/calc";
 import { dDay, monthLabel, num, parseYmd, shortDate, ymd } from "@/lib/format";
 import { haptic } from "@/lib/native";
 import { cssTimeMs } from "@/lib/motion";
 import { spendingVisual } from "@/lib/categories";
-import { CategoryIcon, PersonGlyph, useBackToClose } from "./ui";
+import { CategoryIcon, useBackToClose } from "./ui";
 import { useSheets } from "./Shell";
 import { useTasks } from "./tasks";
 
@@ -54,9 +54,7 @@ function Face({ p }: { p: PassInfo }) {
     <span className="face">
       <span className="sheen" />
       <span className="top">
-        <span className="who-dot">
-          <PersonGlyph owner={a.owner} />
-        </span>
+        <InstMark institution={a.institution} owner={a.owner} />
         <span className="nm">{a.name}</span>
         <span className={p.amount ? "amt" : "amt soft"}>{p.right}</span>
       </span>

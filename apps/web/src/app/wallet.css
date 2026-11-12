@@ -50,6 +50,12 @@ button.pass:focus-visible .face { outline: 2px solid var(--accent-ink); outline-
 .pass .top { position: absolute; top: 0; right: 16px; left: 16px; display: flex; align-items: center; gap: 10px; height: var(--pass-peek); }
 .pass .who-dot { display: grid; flex: none; place-items: center; width: 28px; height: 28px; border-radius: var(--radius-chip); background: color-mix(in srgb, var(--surface) 78%, transparent); }
 .pass .who-dot svg { width: 19px; height: 19px; }
+/* 은행·카드사·증권사 로고(없으면 이름 첫 글자), 오른쪽 아래 귀퉁이에 주인 반쪽 동전 (components/pass.tsx InstMark) */
+.pass .who-dot.inst { position: relative; border-radius: var(--radius-logo); background: var(--surface); box-shadow: 0 0 0 1px color-mix(in srgb, var(--text) 8%, transparent); }
+.pass .who-dot.inst img { display: block; width: 28px; height: 28px; border-radius: inherit; }
+.pass .inst-initial { color: var(--text); font: 700 14px/1 var(--font-text); }
+.pass .inst-owner { position: absolute; right: -6px; bottom: -6px; display: grid; place-items: center; width: 17px; height: 17px; border-radius: var(--radius-chip); background: var(--surface); box-shadow: 0 0 0 1.5px var(--surface); }
+.pass .inst-owner svg { width: 13px; height: 13px; }
 .pass .nm { min-width: 0; overflow: hidden; font: 600 16px/22px var(--font-text); white-space: nowrap; text-overflow: ellipsis; }
 .pass .amt { margin-left: auto; font: 600 16px/22px var(--font-display); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .pass .amt.soft { font: 500 13px/18px var(--font-text); opacity: 0.72; }

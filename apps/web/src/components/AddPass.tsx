@@ -8,8 +8,8 @@ import { useData } from "@/lib/store";
 import { nameOf } from "@/lib/calc";
 import { eul } from "@/lib/format";
 import { haptic } from "@/lib/native";
-import { canonicalInstitution, suggestInstitutions } from "@/lib/institutions";
-import { passArt } from "./pass";
+import { canonicalInstitution, logoOf, suggestInstitutions } from "@/lib/institutions";
+import { InstMark, passArt } from "./pass";
 import { PersonGlyph, Seg, Sheet } from "./ui";
 
 function newId(prefix: string) {
@@ -127,9 +127,7 @@ export function AddPass({ open, onOpenChange, account, kind: initialKind }: { op
               <span className="face">
                 <span className="sheen" />
                 <span className="top">
-                  <span className="who-dot">
-                    <PersonGlyph owner={owner} />
-                  </span>
+                  <InstMark institution={institution} owner={owner} />
                   <span className={`nm ${name ? "" : "ph"}`}>{name || (side === "card" ? "카드 이름" : "통장 이름")}</span>
                 </span>
                 <span className="bot">
@@ -184,6 +182,8 @@ export function AddPass({ open, onOpenChange, account, kind: initialKind }: { op
                   setInstFocus(false);
                 }}
               >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                {logoOf(n) && <img className="chip-logo" src={logoOf(n)!} alt="" width={18} height={18} />}
                 {n}
               </button>
             ))}
