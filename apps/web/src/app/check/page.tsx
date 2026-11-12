@@ -13,7 +13,7 @@ import { TaskRow } from "@/components/TaskRow";
 import { MAX_STEPS, StepTrack } from "@/components/StepTrack";
 import { Celebrate } from "@/components/Celebrate";
 import { MonthClose } from "@/components/MonthClose";
-import { Morph } from "@/components/Morph";
+import { Morph, useMorphFlip } from "@/components/Morph";
 import { Arrange, Slot } from "@/components/Arrange";
 
 /** 체크에서 옮길 수 있는 카드와 처음 순서 (폰) */
@@ -23,6 +23,8 @@ import { TaskMeter } from "@/components/BudgetCard";
 /** 할 일 줄 — 끝낸 줄은 아래 "✓ 끝낸 N건 · 보기" 한 줄로 접어 남은 일만 보이게 한다 */
 function Rows({ tasks, expandable, fromShown }: { tasks: Task[]; expandable?: boolean; fromShown?: boolean }) {
   const [open, setOpen] = useState(false);
+  // 보기·접기는 이 컴포넌트만 다시 그리므로 바깥 Morph 에 바뀐다고 알린다
+  const flip = useMorphFlip();
   const sorted = [...tasks].sort(byUrgency);
   const done = sorted.filter((t) => t.done).length;
   const shown = open ? sorted : sorted.filter((t) => !t.done);
@@ -36,7 +38,7 @@ function Rows({ tasks, expandable, fromShown }: { tasks: Task[]; expandable?: bo
         </div>
       )}
       {done > 0 && (
-        <button type="button" className={`fold-row${shown.length > 0 ? " ruled" : ""}`} aria-expanded={open} onClick={() => setOpen((v) => !v)}>
+        <button type="button" className={`fold-row${shown.length > 0 ? " ruled" : ""}`} aria-expanded={open} onClick={() => flip(() => setOpen((v) => !v))}>
           <span className="fold-t">
             <Check aria-hidden="true" />
             {done === sorted.length ? `모두 끝냈어요 · ${done}건` : `끝낸 ${done}건`}
@@ -60,7 +62,7 @@ function Section({ id, title, tasks, empty, foot }: { id: string; title: string;
         <h2 id={id}>{title}</h2>
         {tasks.length > 0 && <span className="aside num">{`${done} / ${tasks.length}`}</span>}
       </div>
-      <Morph className="card" track=":scope > *, .rows > *">
+      <Morph className="card" track=":scope > *, .rows > *" follow quick>
         {tasks.length === 0 ? <p className="empty">{empty}</p> : <Rows tasks={tasks} />}
         {foot}
       </Morph>
@@ -180,7 +182,7 @@ function PaydaySection({ g, today, name }: { g: PaydayGroup; today: string; name
             <span>{status}</span>
           </p>
           {/* 끝낸 건 보기·접기, 나눠 낸 몫 펼치기: 줄이 차례로 떠오르고 상자 높이가 따라간다 */}
-          <Morph track=":scope > *, .rows > *">
+          <Morph track=":scope > *, .rows > *" follow quick>
             <Rows tasks={g.transfers} expandable fromShown />
           </Morph>
         </>

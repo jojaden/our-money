@@ -1,6 +1,6 @@
 "use client";
 
-import { Component, createRef, type ReactNode } from "react";
+import { Component, createContext, createRef, useContext, useLayoutEffect, type ReactNode } from "react";
 import { cssTimeMs } from "@/lib/motion";
 
 /**
@@ -35,8 +35,15 @@ export function tokens() {
 export const still = () => typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
 const rel = (r: DOMRect, b: DOMRect): Rect => ({ x: r.left - b.left, y: r.top - b.top, w: r.width, h: r.height });
 
-export class Morph extends Component<{ children: ReactNode; className?: string; track?: string; enter?: boolean }, object, Snap | null> {
+/**
+ * follow: 펼치기·접기 상자 — 펼쳐 늘어난 끝이 화면 밑이면 거기까지 화면을 내리고, 접어서 누른 줄이 화면 위로 올라가면 따라 올라간다.
+ *   누른 줄(펼치기·접기 버튼)이 화면 위로 넘어가도록 내리지는 않는다. 화면 안쪽은 위쪽 막대 아래 ~ 하단 메뉴 위.
+ * quick: 자리 옮기기·상자 높이를 dur-tab 대신 dur-swap 으로 (짧은 목록을 빨리 펼치기)
+ */
+export class Morph extends Component<{ children: ReactNode; className?: string; track?: string; enter?: boolean; follow?: boolean; quick?: boolean }, object, Snap | null> {
   private box = createRef<HTMLDivElement>();
+  /** 마지막으로 누른 곳 (follow) — 펼치기·접기 버튼 */
+  private anchor: Element | null = null;
   /** 자리 옮기기·높이 — 다음에 바뀌면 지금 보이는 자리에서 다시 시작한다 */
   private moves: Animation[] = [];
 
@@ -44,6 +51,22 @@ export class Morph extends Component<{ children: ReactNode; className?: string; 
     // 사라지는 중인 칸(inert)과 그 안쪽은 빼고
     return [...this.box.current!.querySelectorAll(this.props.track ?? TRACK)].filter((el) => !el.closest("[inert]"));
   }
+
+  /**
+   * 안쪽 컴포넌트가 제 상태만 바꿔(보기·접기 등) Morph 가 다시 그려지지 않을 때: 바꾸기 직전에 before() 로 자리를 재 두고,
+   * 그 컴포넌트가 그려진 뒤(useLayoutEffect) flush() 로 움직인다 — useMorphFlip
+   */
+  private pending: Snap | null = null;
+  private api = {
+    before: () => {
+      this.pending = this.getSnapshotBeforeUpdate();
+    },
+    flush: () => {
+      const snap = this.pending;
+      this.pending = null;
+      if (snap) this.componentDidUpdate(null, null, snap);
+    },
+  };
 
   getSnapshotBeforeUpdate(): Snap | null {
     const box = this.box.current;
@@ -58,6 +81,7 @@ export class Morph extends Component<{ children: ReactNode; className?: string; 
   }
 
   componentDidUpdate(_p: unknown, _s: unknown, snap: Snap | null) {
+    this.pending = null;
     const box = this.box.current;
     if (!snap || !box) return;
     const t = tokens();
@@ -67,6 +91,8 @@ export class Morph extends Component<{ children: ReactNode; className?: string; 
 
     // 자리는 모두 먼저 잰다 (바깥 칸 움직임을 걸면 안쪽 칸 자리가 같이 바뀌어 보인다)
     const b = box.getBoundingClientRect();
+    const move = this.props.quick ? t.swap : t.move;
+    if (this.props.follow && Math.abs(b.height - snap.h) > 1) this.follow(b, b.height > snap.h);
     const now = this.items().map((el) => [el, el.getBoundingClientRect()] as const);
     const moved = new Map<Element, [number, number]>();
     const fresh: Element[] = [];
@@ -93,7 +119,7 @@ export class Morph extends Component<{ children: ReactNode; className?: string; 
       const x = d[0] - up[0];
       const y = d[1] - up[1];
       if (Math.abs(x) > 0.5 || Math.abs(y) > 0.5) {
-        this.moves.push(el.animate([{ transform: `translate(${x}px, ${y}px)` }, { transform: "none" }], { duration: t.move, easing: t.drawer }));
+        this.moves.push(el.animate([{ transform: `translate(${x}px, ${y}px)` }, { transform: "none" }], { duration: move, easing: t.drawer }));
       }
     }
 
@@ -132,10 +158,31 @@ export class Morph extends Component<{ children: ReactNode; className?: string; 
 
     if (Math.abs(b.height - snap.h) > 1) {
       box.classList.add("morphing");
-      const a = box.animate([{ height: `${snap.h}px` }, { height: `${b.height}px` }], { duration: t.move, easing: t.drawer });
+      const a = box.animate([{ height: `${snap.h}px` }, { height: `${b.height}px` }], { duration: move, easing: t.drawer });
       a.onfinish = () => box.classList.remove("morphing");
       this.moves.push(a);
     }
+  }
+
+  /** 펼치거나 접은 뒤(b = 새 자리) 화면을 따라 옮긴다 — 움직임을 걸기 전에 불러 누른 줄의 새 자리를 잰다 */
+  private follow(b: DOMRect, grew: boolean) {
+    const bar = document.querySelector(".topbar")?.getBoundingClientRect().bottom ?? 0;
+    const nav = document.querySelector<HTMLElement>(".navbar");
+    // 하단 메뉴는 position: fixed 라 offsetParent 가 늘 비어 있다 — 실제로 그려지는지(display)로 본다. 숨어 비켜 있으면(달력·카드 옮기기) 화면 끝까지
+    const navTop = nav && getComputedStyle(nav).display !== "none" && getComputedStyle(nav).visibility !== "hidden" && getComputedStyle(nav).opacity !== "0" ? nav.getBoundingClientRect().top : innerHeight;
+    const top = Math.max(0, bar) + 8;
+    const bottom = Math.min(innerHeight, navTop) - 12;
+    const a = this.anchor?.isConnected && this.box.current?.contains(this.anchor) ? this.anchor.getBoundingClientRect() : null;
+    let dy = 0;
+    if (grew) {
+      // 늘어난 끝까지 내리되, 누른 줄(없으면 상자 위)이 화면 위로 넘어가지 않게
+      if (b.bottom > bottom) dy = Math.max(0, Math.min(b.bottom - bottom, (a ?? b).top - top));
+    } else {
+      // 누른 줄(없으면 상자 끝)이 화면 위로 올라가면 그 줄이 위쪽 막대 바로 아래에 오도록 따라 올라간다
+      const end = a ? a.top : b.bottom - 48;
+      if (end < top) dy = end - top - 16;
+    }
+    if (Math.abs(dy) > 1) window.scrollBy({ top: dy, behavior: still() ? "auto" : "smooth" });
   }
 
   componentWillUnmount() {
@@ -144,11 +191,38 @@ export class Morph extends Component<{ children: ReactNode; className?: string; 
 
   render() {
     return (
-      <div ref={this.box} className={`morph ${this.props.className ?? ""}`}>
-        {this.props.children}
+      <div
+        ref={this.box}
+        className={`morph ${this.props.className ?? ""}`}
+        onPointerDownCapture={
+          this.props.follow
+            ? (e) => {
+                this.anchor = e.target as Element;
+              }
+            : undefined
+        }
+      >
+        <MorphCtx.Provider value={this.api}>{this.props.children}</MorphCtx.Provider>
       </div>
     );
   }
+}
+
+const MorphCtx = createContext<{ before: () => void; flush: () => void } | null>(null);
+
+/**
+ * Morph 안쪽에서 제 상태만 바꾸는 곳(끝낸 건 보기, 나눠 낸 몫 펼치기 등)에 쓴다. 바꾸는 함수를 flip(() => setOpen(...)) 로 감싸면
+ * 바뀌기 직전 자리를 재고, 이 컴포넌트가 다시 그려진 뒤 가장 가까운 Morph 가 칸 바뀌기 움직임을 건다.
+ */
+export function useMorphFlip() {
+  const m = useContext(MorphCtx);
+  useLayoutEffect(() => {
+    m?.flush();
+  });
+  return (change: () => void) => {
+    m?.before();
+    change();
+  };
 }
 
 /** 화면이 통째로 바뀔 때(달력 ↔ 모아 보기) 새 화면이 그 방향에서 밀려 들어온다 — 달 넘기기와 같은 28px·dur-tab·ease-drawer */

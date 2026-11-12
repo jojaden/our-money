@@ -186,6 +186,9 @@ export function SpendCurve({
           viewBox={`0 0 ${VW} ${VH}`}
           role="img"
           aria-label={`이번 달 누적 ${num(spent)}원, 지난달 같은 날 ${num(prevAt)}원`}
+          // 누르고 있으면 날짜를 보고, 옆으로 끌면 날짜가 이어서 바뀐다 — 카드 옮기기(꾹 누르기)·달 넘기기(쓸기)는 여기서 시작하지 않는다
+          data-no-arrange=""
+          data-no-swipe=""
           onPointerDown={pick}
           onPointerMove={(e) => (e.pointerType === "mouse" || e.buttons ? pick(e) : undefined)}
           onPointerLeave={() => setHover(null)}

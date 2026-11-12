@@ -71,7 +71,7 @@ export default function PlanPage() {
           </span>
         </div>
         {/* 펼치기·접기: 줄이 차례로 떠오르고 상자 높이가 따라간다 (Morph). 접는 것은 폰만 — 데스크톱은 늘 펼침 */}
-        <Morph className="card" track=":scope > *, .rows > *">
+        <Morph className="card" track=":scope > *, .rows > *" follow>
           {rows.length === 0 ? (
             <p className="empty">아직 항목이 없어요. 위 +로 더해요.</p>
           ) : (

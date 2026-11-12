@@ -93,7 +93,7 @@ export function SplitBar({
       </div>
 
       {/* 이름을 누르면 항목이 차례로 떠오르고 아래 이름은 미끄러져 내려간다 (Morph). 누구 월급을 바꿔도 같은 박자 */}
-      <Morph track=".split-legend > li, .split-detail, .split-detail > li">
+      <Morph track=".split-legend > li, .split-detail, .split-detail > li" follow>
       <ul className="split-legend">
         {rows.map((r) => {
           const expandable = r.key !== "left" && r.amount > 0;

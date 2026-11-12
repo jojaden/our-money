@@ -328,6 +328,8 @@ export function Arrange({ page, defaults, children }: { page: ArrangePage; defau
 
   const onPointerDown = (e: React.PointerEvent) => {
     if (e.button !== 0 || drag.current || !matchMedia(PHONE).matches) return;
+    // 그래프처럼 누르고 끌어서 보는 곳(data-no-arrange)에서는 카드를 집지 않는다
+    if ((e.target as Element).closest("[data-no-arrange]")) return;
     const slot = (e.target as Element).closest<HTMLElement>("[data-card]");
     if (!slot || !grid.current?.contains(slot)) return;
     if (press.current) window.clearTimeout(press.current.timer);
