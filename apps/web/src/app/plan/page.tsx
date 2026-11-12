@@ -16,6 +16,8 @@ import { Arrange, Slot } from "@/components/Arrange";
 
 /** 플랜에서 옮길 수 있는 카드와 처음 순서 (폰) */
 const PLAN_CARDS = ["flow", "income", "fixed", "living", "allowance", "saving", "goals", "import"];
+import { Morph } from "@/components/Morph";
+import { useMatch } from "@/lib/media";
 import { IncomeSheet, ItemSheet } from "@/components/ItemSheet";
 
 export default function PlanPage() {
@@ -29,6 +31,8 @@ export default function PlanPage() {
   const [importOpen, setImportOpen] = useState(false);
   // 폰에서 펼친 묶음 (처음엔 모두 접어 이름 몇 개만 보인다. 데스크톱은 CSS 가 늘 펼친다)
   const [unfolded, setUnfolded] = useState<Group[]>([]);
+  // 폰(한 줄 화면)에서만 세 줄 넘는 묶음을 접는다
+  const narrow = useMatch("(max-width: 1023px)");
 
   const items = itemsOf(data, month);
   const totals = groupTotals(items);
@@ -48,7 +52,7 @@ export default function PlanPage() {
   const renderGroup = (g: Group) => {
     const rows = items.filter((i) => i.group === g);
     // 두 줄 이하는 접어도 줄어들지 않으니 그대로 둔다
-    const open = rows.length <= 2 || unfolded.includes(g);
+    const open = rows.length <= 2 || unfolded.includes(g) || !narrow;
     const preview = rows.slice(0, 3).map((i) => i.name).join(" · ") + (rows.length > 3 ? ` 외 ${rows.length - 3}개` : "");
     return (
       <section className="group" aria-labelledby={`g-${g}`}>
@@ -66,7 +70,8 @@ export default function PlanPage() {
             </button>
           </span>
         </div>
-        <div className="card" data-folded={rows.length > 0 && !open ? "" : undefined}>
+        {/* 펼치기·접기: 줄이 차례로 떠오르고 상자 높이가 따라간다 (Morph). 접는 것은 폰만 — 데스크톱은 늘 펼침 */}
+        <Morph className="card" track=":scope > *, .rows > *">
           {rows.length === 0 ? (
             <p className="empty">아직 항목이 없어요. 위 +로 더해요.</p>
           ) : (
@@ -85,6 +90,7 @@ export default function PlanPage() {
               </span>
             </button>
             )}
+            {open && (
             <div className="rows">
               {rows.map((i) => {
                 const where = i.method === "card_auto" ? accName(i.card_id) : accName(i.account_id);
@@ -106,9 +112,10 @@ export default function PlanPage() {
                 );
               })}
             </div>
+            )}
             </>
           )}
-        </div>
+        </Morph>
       </section>
     );
   };

@@ -219,7 +219,8 @@ export default function Home() {
               <div className="group-head">
                 <h2 id="todo-h">이번 달 할 일</h2>
               </div>
-              <div className="card">
+              {/* 체크하면 그 줄은 흐려지며 빠지고 다음 일이 미끄러져 올라온다 (Morph) */}
+              <Morph className="card" track=":scope > *, .rows > *">
                 {/* 체크 요약 카드와 같은 모양: 큰 숫자(남은 건수) ─ 끝낸 수, 막대, 기한 지난 일만 한 줄 */}
                 <div className="todo-progress">
                   <div className="todo-top">
@@ -257,7 +258,7 @@ export default function Home() {
                     "체크에서 보기"
                   )}
                 </Link>
-              </div>
+              </Morph>
             </section>
           </Slot>
 

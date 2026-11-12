@@ -114,9 +114,13 @@
 /* "누적 / 하루별" 글자 탭 — 알약 안 글자가 카드 글자 선에 맞게 들이고, 범례는 탭 줄 오른쪽에 */
 .curve .text-tabs { margin: 12px 0 0 -12px; }
 .curve .text-tabs + .curve-legend { margin-top: -26px; }
-/* 탭 줄 아래로 그래프를 내려 위쪽 단위 글자("만원")가 탭을 덮지 않게 */
-.curve .text-tabs + .curve-legend + .curve-plot { margin-top: 30px; }
+/* 탭 줄 아래로 그래프를 내려 위쪽 단위 글자("만원")가 탭을 덮지 않게 (그래프는 누적 ↔ 하루별이 움직이는 Morph 안) */
+.curve .text-tabs + .curve-legend + .morph > .curve-plot { margin-top: 30px; }
 .curve-daily { margin-top: 12px; }
+/* 범례(높이 16 · 위 -26)만큼 당겨진 자리를 되돌려 탭 줄 아래 12px 를 지킨다 */
+.curve .text-tabs + .curve-legend + .morph > .curve-daily { margin-top: 22px; }
+.curve-legend { transition: opacity calc(var(--dur-swap) / 2) var(--ease-out), visibility 0s; }
+.curve-legend.off { opacity: 0; visibility: hidden; transition: opacity calc(var(--dur-swap) / 2) var(--ease-out), visibility 0s linear calc(var(--dur-swap) / 2); }
 .curve-plot { position: relative; margin: 4px -6px 0; }
 .curve-plot svg { display: block; width: 100%; height: auto; overflow: visible; touch-action: pan-y; }
 .curve-plot .grid { stroke: var(--rule); stroke-width: 1; }
@@ -133,7 +137,15 @@
 .curve-plot .cross .now { fill: var(--primary-line); }
 .curve-unit { position: absolute; top: -18px; left: 6px; color: var(--faint); font: 500 11px/14px var(--font-text); }
 .curve-tip { position: absolute; z-index: 1; display: grid; gap: 1px; padding: 8px 12px; border-radius: var(--radius-small); background: var(--surface); box-shadow: var(--shadow-float); color: var(--text); font: 500 12.5px/17px var(--font-text); white-space: nowrap; pointer-events: none; transform: translateX(10px); }
-.curve-tip.to-l { transform: translateX(calc(-100% - 10px)); }
+.curve-tip.to-l { transform: translateX(calc(-100% - 10px)); transform-origin: right center; }
+/* 누르면 말풍선이 살짝 작은 데서 커지며 나타나고(기준선·점은 흐린 데서), 손을 떼면 그 자리에서 흐려지며 사라진다.
+   크기는 scale 로 — 자리(translateX)는 transform 이 맡는다. 사라짐은 transition 이라 나타남 애니메이션은 backwards 만 */
+.curve-tip { transform-origin: left center; transition: opacity calc(var(--dur-swap) / 2) var(--ease-out); animation: tip-in var(--dur-swap) var(--ease-out) backwards; }
+.curve-plot .cross { transition: opacity calc(var(--dur-swap) / 2) var(--ease-out); animation: cross-in var(--dur-swap) var(--ease-out) backwards; }
+.curve-tip.off, .curve-plot .cross.off { opacity: 0; }
+@keyframes tip-in { from { opacity: 0; scale: 0.94; } }
+@keyframes cross-in { from { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .curve-tip, .curve-plot .cross { animation: none; transition: none; } .curve-tip.off, .curve-plot .cross.off { display: none; } }
 .curve-tip .then { color: var(--faint); }
 .curve-foot { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-top: 10px; color: var(--faint); font: 500 13px/18px var(--font-text); }
 .curve-foot .r { display: grid; justify-items: end; }

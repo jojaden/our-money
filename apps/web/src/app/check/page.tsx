@@ -179,7 +179,10 @@ function PaydaySection({ g, today, name }: { g: PaydayGroup; today: string; name
             <Clock aria-hidden="true" />
             <span>{status}</span>
           </p>
-          <Rows tasks={g.transfers} expandable fromShown />
+          {/* 끝낸 건 보기·접기, 나눠 낸 몫 펼치기: 줄이 차례로 떠오르고 상자 높이가 따라간다 */}
+          <Morph track=":scope > *, .rows > *">
+            <Rows tasks={g.transfers} expandable fromShown />
+          </Morph>
         </>
       )}
     </section>

@@ -25,7 +25,6 @@
 .fold-a svg { width: 16px; height: 16px; transition: transform var(--dur-press) var(--ease-out); }
 .fold-row[aria-expanded="true"] .fold-a svg { transform: rotate(180deg); }
 .fold-row:active { opacity: 0.6; }
-@media (max-width: 1023px) { .card[data-folded] > .rows { display: none; } }
 @media (min-width: 1024px) { .plan-fold { display: none; } }
 @media (prefers-reduced-motion: reduce) { .fold-a svg { transition: none; } }
 /* 카드 맨 아래 "모든 기록 21건 보기 ›" — 목록 일부만 보여 준 카드에서 전체 화면으로 */
@@ -42,10 +41,10 @@
 .canvas .group-head { margin-inline: calc(var(--text-inset) + 4px); }
 /* 이름표 + 카드 하나인 섹션은 섹션이 곧 카드 (토스처럼 제목이 카드 안 맨 위에).
    꾸밈 없는 보통 카드(Morph 로 감싼 것, 달 마무리 포함)만 — 그라데이션 머리 같은 특별한 카드와 카드 여럿을 묶은 섹션은 그대로 둔다 */
-.canvas .group:has(> .group-head + :is([class="card"], [class="morph card"], [class="card month-close"]):last-child) { padding: 20px var(--pad) var(--pad); border-radius: var(--radius-card); background: var(--surface-card); box-shadow: var(--shadow-card); }
-.canvas .group:has(> .group-head + :is([class="card"], [class="morph card"], [class="card month-close"]):last-child) > .group-head { margin: 0 0 6px; }
-.canvas .group:has(> .group-head + :is([class="card"], [class="morph card"], [class="card month-close"]):last-child) > .group-head h2 { color: var(--text); font: 700 19px/26px var(--font-text); letter-spacing: -0.02em; }
-.canvas .group:has(> .group-head + :is([class="card"], [class="morph card"], [class="card month-close"]):last-child) > :is([class="card"], [class="morph card"], [class="card month-close"]) { padding: 0; border-radius: 0; background: none; box-shadow: none; }
+.canvas .group:has(> .group-head + :is([class="card"], [class="morph card"], [class="morph card morphing"], [class="card month-close"], [class="morph card month-close"], [class="morph card month-close morphing"]):last-child) { padding: 20px var(--pad) var(--pad); border-radius: var(--radius-card); background: var(--surface-card); box-shadow: var(--shadow-card); }
+.canvas .group:has(> .group-head + :is([class="card"], [class="morph card"], [class="morph card morphing"], [class="card month-close"], [class="morph card month-close"], [class="morph card month-close morphing"]):last-child) > .group-head { margin: 0 0 6px; }
+.canvas .group:has(> .group-head + :is([class="card"], [class="morph card"], [class="morph card morphing"], [class="card month-close"], [class="morph card month-close"], [class="morph card month-close morphing"]):last-child) > .group-head h2 { color: var(--text); font: 700 19px/26px var(--font-text); letter-spacing: -0.02em; }
+.canvas .group:has(> .group-head + :is([class="card"], [class="morph card"], [class="morph card morphing"], [class="card month-close"], [class="morph card month-close"], [class="morph card month-close morphing"]):last-child) > :is([class="card"], [class="morph card"], [class="morph card morphing"], [class="card month-close"], [class="morph card month-close"], [class="morph card month-close morphing"]) { padding: 0; border-radius: 0; background: none; box-shadow: none; }
 .group-head .aside { color: var(--faint); font: 500 14.5px/20px var(--font-text); white-space: nowrap; }
 /* 이름표 앞 버킷 색 점, 이름표 오른쪽의 작은 글자 버튼(수정 등) */
 .group-head h2 .dot { display: inline-block; width: 8px; height: 8px; margin-right: 8px; vertical-align: 1px; }
