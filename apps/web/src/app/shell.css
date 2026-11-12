@@ -275,6 +275,10 @@ div.bar-mini { display: flex; align-items: center; justify-content: center; gap:
   .fab-compose-row .btn.sm { height: 40px; padding: 0 18px; }
   /* 펼친 동안 아래 화살표는 비킨다 */
   :root:has(.fab.composing) .cal-down { opacity: 0; pointer-events: none; }
+  /* 펼친 카드는 달력 위에 뜨므로 시트처럼 뒤를 덮어 날짜와 떼어 보인다. 누름은 그대로 통과해 바깥 누르기로 접는다 */
+  :root[data-cal="focus"] body::after { content: ""; position: fixed; inset: 0; z-index: 30; background: var(--scrim); opacity: 0; pointer-events: none; transition: opacity var(--dur-tab) ease; }
+  :root[data-cal="focus"]:has(.fab.composing) body::after { opacity: 1; }
+  :root:has(.fab.composing) .navbar { z-index: 31; }
 }
 @media (prefers-reduced-transparency: reduce) {
   .tabbar, .topbar::before, :root[data-cal="focus"] .fab { background: var(--surface); -webkit-backdrop-filter: none; backdrop-filter: none; }
@@ -428,5 +432,5 @@ html[data-navigation="back"]::view-transition-new(app-page) { animation-name: pa
   ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
   .route-page { animation: none !important; }
   .page-enter, .page-enter > *, .page-enter .page-head * { animation: none !important; }
-  .fab, .fab-btn, .fab-prompt, .fab-compose, .fab-compose *, .fab-icon, .fab-icon > svg, .bell .badge, .tabbar { animation: none !important; transition: none !important; }
+  .fab, .fab-btn, .fab-prompt, .fab-compose, .fab-compose *, .fab-icon, .fab-icon > svg, body::after, .bell .badge, .tabbar { animation: none !important; transition: none !important; }
 }

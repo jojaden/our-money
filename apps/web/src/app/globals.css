@@ -399,7 +399,7 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
     display: flex;
     flex-direction: column;
     min-height: calc(100svh - var(--topbar-btn) - 12px - env(safe-area-inset-top, 0px));
-    padding-bottom: calc(var(--fab-wide-h) + var(--nav-inset) * 2 + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(var(--fab-wide-h) + var(--nav-inset) + var(--fab-clear) + env(safe-area-inset-bottom, 0px));
     scroll-snap-align: start;
   }
   .cal-stage .page-head { margin-bottom: 14px; }
