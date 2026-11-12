@@ -253,6 +253,8 @@ function PageMotion({ path, children }: { path: string; children: React.ReactNod
   const onDown = (e: React.PointerEvent) => {
     // 달 넘기기가 있는 화면에서만 (모아 보기·설정은 아님)
     if (!swipeable || e.pointerType === "mouse" || !box.current?.querySelector(".page-head .month-step")) return;
+    // 카드를 옮기는 동안은 달을 넘기지 않는다
+    if (document.documentElement.hasAttribute("data-arranging")) return;
     const t = e.target as HTMLElement;
     // 가로로 스크롤되는 줄, 차트, 입력, 시트 위에서는 넘기지 않는다
     if (t.closest(".chips.scroll, .presets, .daily-plot, input, textarea, select, .sheet, [data-no-swipe]")) return;
@@ -261,6 +263,11 @@ function PageMotion({ path, children }: { path: string; children: React.ReactNod
   const onMove = (e: React.PointerEvent) => {
     const s0 = g.current;
     if (!s0 || s0.id !== e.pointerId) return;
+    // 꾹 눌러 카드를 들었으면 그 손가락은 카드 옮기기 몫
+    if (document.documentElement.hasAttribute("data-arranging") && !s0.lock) {
+      g.current = null;
+      return;
+    }
     const dx = e.clientX - s0.x;
     const dy = e.clientY - s0.y;
     if (!s0.lock) {

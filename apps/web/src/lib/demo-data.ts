@@ -22,8 +22,8 @@ const settings: Settings = {
 
 // 로그인한 두 계정 (가상). 이름은 각자 설정에서 바꾼다.
 const users: User[] = [
-  { id: "demo-a", email: "hyunbin@example.com", person: "a", name: "현빈" },
-  { id: "demo-b", email: "yejin@example.com", person: "b", name: "예진" },
+  { id: "demo-a", email: "hyunbin@example.com", person: "a", name: "현빈", card_order: {} },
+  { id: "demo-b", email: "yejin@example.com", person: "b", name: "예진", card_order: {} },
 ];
 
 const bank = (id: string, name: string, owner: Account["owner"], institution: string, sort: number): Account => ({
