@@ -10,6 +10,7 @@ import { ddayText, occurrences, timeText } from "@/lib/calendar";
 import { monthLabel, parseYmd, shortDate } from "@/lib/format";
 import { byUrgency, eventTasks, useTasks } from "./tasks";
 import { TaskRow } from "./TaskRow";
+import { EmptyState } from "./ui";
 import { Morph } from "./Morph";
 import { Meter } from "./Meter";
 
@@ -58,7 +59,7 @@ export function MonthTodo({ month, onOpenEvent, className = "" }: { month: strin
       {/* 모두 보기·접기, 체크한 줄이 빠지고 다음 줄이 올라오는 것이 스르륵 */}
       <Morph className="card month-todo" track=":scope > *, .rows > *" follow>
         {all.length === 0 && plans.length === 0 ? (
-          <p className="empty">할 일과 일정이 없어요. 날짜를 고르고 일정 추가(+)로 만들거나 플랜을 시작하면 여기에 모여요.</p>
+          <EmptyState title="할 일과 일정이 없어요" body="날짜를 고르고 일정 추가로 만들거나 플랜을 시작하면 여기에 모여요." />
         ) : (
           <>
             {all.length > 0 && (
