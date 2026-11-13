@@ -331,6 +331,22 @@ button.row:active, a.row:active { background: var(--well); transform: scale(0.98
 .notice { display: flex; gap: 10px; padding: 12px 14px; border-radius: var(--radius-inner); background: var(--pill-warning-bg); color: var(--pill-warning-ink); font-size: 14.5px; }
 .notice svg { flex: none; width: 18px; height: 18px; margin-top: 1px; }
 .empty { padding: 14px 16px; border-radius: var(--radius-inner); background: var(--raised); color: var(--muted); font-size: 14.5px; }
+/* 빈 화면(EmptyState): 무엇이 비었는지 + 설명 + 다음 행동 하나. 불러오기 실패는 옅은 빨강 바탕 */
+.empty-state .es-title { color: var(--text); font: 600 15px/21px var(--font-text); }
+.empty-state .es-body { margin-top: 2px; font: 400 14px/20px var(--font-text); }
+.empty-state .btn { margin-top: 12px; }
+.empty-state.error { background: var(--pill-negative-bg); color: var(--pill-negative-ink); }
+.empty-state.error .es-title { color: var(--pill-negative-ink); }
+/* 불러오는 동안 줄 모양 자리: 실제 줄(36px 동그라미 + 두 줄 글)과 같은 높이로, 숨 쉬듯 옅어졌다 짙어짐(opacity 만) */
+.skeleton-rows { display: grid; gap: 4px; }
+.skeleton-row { display: flex; align-items: center; gap: 14px; padding: 12px 0; animation: sk-breathe var(--dur-breathe) var(--ease-breathe) calc(var(--i) * 160ms) infinite; }
+.skeleton-row .sk { display: block; border-radius: var(--radius-chip); background: var(--well); }
+.skeleton-row .sk-dot { flex: none; width: 36px; height: 36px; }
+.skeleton-row .sk-lines { display: grid; flex: 1; gap: 8px; }
+.skeleton-row .sk-t { width: 58%; height: 14px; }
+.skeleton-row .sk-s { width: 36%; height: 11px; }
+@keyframes sk-breathe { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+@media (prefers-reduced-motion: reduce) { .skeleton-row { animation: none; } }
 
 /* ---------- 시트 (vaul) ---------- */
 

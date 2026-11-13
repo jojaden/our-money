@@ -411,7 +411,7 @@ html[data-navigation="back"]::view-transition-new(app-page) { animation-name: pa
 }
 @starting-style { .toast { opacity: 0; transform: translateY(16px) scale(0.96); } }
 .toast-stack { display: grid; gap: 8px; }
-.toast button { height: 36px; padding: 0 12px; border: 0; border-radius: var(--radius-small); background: transparent; color: var(--lilac); font-weight: 700; }
+.toast button { flex: none; height: 36px; padding: 0 12px; white-space: nowrap; border: 0; border-radius: var(--radius-small); background: transparent; color: var(--toast-action); font-weight: 700; }
 @media (min-width: 1024px) { .toasts { bottom: 32px; } }
 
 /* ---------- 설치 안내 ---------- */
