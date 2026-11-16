@@ -8,7 +8,8 @@ import type { Owner, Settings } from "@/lib/types";
 import { num } from "@/lib/format";
 import { nameOf } from "@/lib/calc";
 import { useStore } from "@/lib/store";
-import { Morph } from "./Morph";
+import { Morph, still } from "./Morph";
+import { X } from "lucide-react";
 
 export function Money({ value, className = "", sign = false, animate = false }: { value: number | null | undefined; className?: string; sign?: boolean; animate?: boolean }) {
   const shown = useRolling(value ?? 0, animate);
@@ -247,6 +248,7 @@ export function Sheet({
   footer,
   headerAction,
   className = "",
+  keep = false,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
@@ -255,17 +257,28 @@ export function Sheet({
   footer?: React.ReactNode;
   headerAction?: React.ReactNode;
   className?: string;
+  /**
+   * 적던 내용이 있으면 true — 바깥 누르기·끌어내리기로는 닫히지 않는다(실수로 잃지 않게).
+   * 일부러 닫는 길은 남긴다: 뒤로 가기·Esc·머리의 닫기(×). 바깥을 누르면 시트가 살짝 튀어 안 닫힌다는 것을 보여 준다.
+   */
+  keep?: boolean;
 }) {
   useBackToClose(open, onOpenChange);
   const content = useRef<HTMLDivElement>(null);
+  const nudge = () => {
+    if (still()) return;
+    content.current?.animate([{ translate: "0 0" }, { translate: "0 -10px" }, { translate: "0 0" }], { duration: 320, easing: "cubic-bezier(0.3, 0, 0.2, 1)" });
+  };
   return (
-    <Drawer.Root open={open} onOpenChange={onOpenChange}>
+    <Drawer.Root open={open} onOpenChange={onOpenChange} dismissible={!keep}>
       <Drawer.Portal>
-        <Drawer.Overlay className="sheet-overlay" />
+        <Drawer.Overlay className="sheet-overlay" onClick={keep ? nudge : undefined} />
         <Drawer.Content
           ref={content}
           className={`sheet ${className}`}
           aria-describedby={undefined}
+          // 닫기를 막아 둔 동안에도 Esc 는 일부러 닫는 길이라 직접 닫는다
+          onEscapeKeyDown={keep ? () => onOpenChange(false) : undefined}
           onOpenAutoFocus={(event) => {
             event.preventDefault();
             content.current?.focus({ preventScroll: true });
@@ -278,6 +291,11 @@ export function Sheet({
               <h2>{title}</h2>
             </Drawer.Title>
             {headerAction}
+            {keep && (
+              <button type="button" className="cal-close sheet-close" aria-label="닫기 (적던 내용은 지워져요)" onClick={() => onOpenChange(false)}>
+                <X aria-hidden="true" />
+              </button>
+            )}
           </Morph>
           <div className="sheet-body">
             <Morph>{children}</Morph>
