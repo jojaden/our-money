@@ -59,6 +59,14 @@ Before designing or changing UI layout, animation, transitions, effects, or comp
 
 On the web, apply the principles (window size classes, `env(safe-area-inset-*)`, history-based back, cheap compositor-only animation) rather than the Compose APIs. In each stage write-up, say which skill shaped which change.
 
+## Astryx (UI reference, not a dependency)
+The `astryx` CLI (design-system catalog on this machine) is a **reference** for UI work; `docs/design-system/` tokens and component rules always win. Details: `docs/design-system/README.md` › "Astryx 참고".
+1. **State the screen's purpose and constraints first:** who uses it, the main task, what to show, mobile (390px first), and what design to keep — not "make a dashboard".
+2. **Start from a template:** `astryx build "<screen in English>"` names a template plus the blocks/components to combine; it does not build the screen. Keyword search — write the query in **English** (Korean finds almost nothing). Read templates with `astryx template <name>` (no path).
+3. **Check the real API while building:** `astryx search`, `astryx component <Name> --dense` for anatomy, props and Do/Don't, so no component or prop is invented. Take the structure and guidance; implement with this repo's components and `tokens.css` variables.
+4. **Align with theme and tokens:** no per-screen colors or spacing; new values go only in `tokens.json`.
+Without the user's approval: no `@astryxdesign/*` or StyleX in `apps/web`, no `astryx init`, no `astryx template … <path>` scaffolding into the repo, no swapping an existing component for an Astryx one — explain scope, benefit and cost first.
+
 ## Rules
 - UI work follows `docs/design-system/`: its token names (CSS variables from the generated `tokens.css`; change values only in `tokens.json`) and component rules. Mark people with the half-coin `PersonGlyph`, never initials (both names can start with the same syllable).
 - Keep calc logic identical in `apps/web/src/lib/calc.ts` and `apps/mobile/core/.../calc/Calc.kt`; add a `core` test for any change.

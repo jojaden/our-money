@@ -5,7 +5,7 @@ import { useData } from "@/lib/store";
 import { addMonths, allowanceStatus, categoryUse, groupTotals, itemsOf, livingStatus, nameOf, periodOf, spendingsIn } from "@/lib/calc";
 import { num } from "@/lib/format";
 import { MonthHeader } from "@/components/MonthHeader";
-import { CategoryIcon, Money } from "@/components/ui";
+import { CategoryIcon, EmptyState, Money } from "@/components/ui";
 import { DailyBars } from "@/components/DailyBars";
 import { Meter } from "@/components/Meter";
 import { SpendCurve } from "@/components/SpendCurve";
@@ -74,7 +74,7 @@ export default function LedgerPage() {
             </div>
             <div className="card">
               {all.length === 0 ? (
-                <p className="empty">이번 달 기록이 아직 없어요. 오른쪽 아래 + 버튼으로 첫 지출을 기록해 보세요.</p>
+                <EmptyState title="이번 달 기록이 아직 없어요" body="쓴 돈을 적으면 누적 그래프와 분류별 예산이 함께 채워져요." action="지출 기록하기" onAction={() => openSpending()} />
               ) : (
                 <>
                   <SpendingDays rows={all} limit={5} />

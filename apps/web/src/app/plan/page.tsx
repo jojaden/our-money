@@ -9,7 +9,7 @@ import { blankMonth, useData } from "@/lib/store";
 import { goalProgress, groupTotals, incomeOf, itemsOf, lanes, monthRow, nameOf, ratioA } from "@/lib/calc";
 import { monthLabel, num } from "@/lib/format";
 import { FirstRun, MonthHeader } from "@/components/MonthHeader";
-import { Money, Who } from "@/components/ui";
+import { EmptyState, Money, Who } from "@/components/ui";
 import { SplitBar } from "@/components/SplitBar";
 import { GoalBar } from "@/components/GoalBar";
 import { Arrange, Slot } from "@/components/Arrange";
@@ -73,7 +73,7 @@ export default function PlanPage() {
         {/* 펼치기·접기: 줄이 차례로 떠오르고 상자 높이가 따라간다 (Morph). 접는 것은 폰만 — 데스크톱은 늘 펼침 */}
         <Morph className="card" track=":scope > *, .rows > *" follow>
           {rows.length === 0 ? (
-            <p className="empty">아직 항목이 없어요. 위 +로 더해요.</p>
+            <EmptyState title="아직 항목이 없어요" action={`${GROUP_LABEL[g]} 더하기`} onAction={() => setSheet({ open: true, group: g })} />
           ) : (
             <>
             {rows.length > 2 && (

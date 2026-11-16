@@ -76,6 +76,42 @@ export function Mark({ size = 28 }: { size?: number }) {
 }
 
 /**
+ * 빈 화면·불러오기 실패 (docs/design-system/components/EmptyState).
+ * 무엇이 비었는지(제목) + 왜·무엇이 모이는지(설명) + 다음 행동 하나(버튼). 할 일이 없는 "끝났어요"류는 쓰지 않고 한 줄 .empty 그대로.
+ * 불러오기 실패는 error — 남아 있는 알림이라 role="alert" 이고 버튼은 "다시 시도".
+ */
+export function EmptyState({ title, body, action, onAction, error = false }: { title: string; body?: string; action?: string; onAction?: () => void; error?: boolean }) {
+  return (
+    <div className={`empty empty-state ${error ? "error" : ""}`} role={error ? "alert" : undefined}>
+      <p className="es-title">{title}</p>
+      {body && <p className="es-body">{body}</p>}
+      {action && onAction && (
+        <button type="button" className="btn secondary sm" onClick={onAction}>
+          {action}
+        </button>
+      )}
+    </div>
+  );
+}
+
+/** 불러오는 동안 줄 모양 자리 (실제 줄과 같은 높이, 숨 쉬듯 옅어졌다 짙어짐 — opacity 만) */
+export function SkeletonRows({ count = 3, label }: { count?: number; label: string }) {
+  return (
+    <div className="skeleton-rows" role="status" aria-label={label}>
+      {Array.from({ length: count }, (_, i) => (
+        <span className="skeleton-row" key={i} style={{ ["--i" as string]: i }} aria-hidden="true">
+          <span className="sk sk-dot" />
+          <span className="sk-lines">
+            <span className="sk sk-t" />
+            <span className="sk sk-s" />
+          </span>
+        </span>
+      ))}
+    </div>
+  );
+}
+
+/**
  * 사람 아이콘 — 동전 하나를 반으로 나눴다. 현빈는 왼쪽 반, 예진는 오른쪽 반, 공동은 전체.
  * 두 이름이 모두 '현'으로 시작해서 글자 이니셜 대신 그림으로 구분한다.
  */
@@ -254,11 +290,19 @@ export function Sheet({
 }
 
 export function Toasts() {
-  const { toasts, dismissToast, pending } = useStore();
+  const { toasts, dismissToast, pending, error, data, reload } = useStore();
   return (
     <div className="toasts" aria-live="polite">
       {/* 사라진 토스트는 흐려지고 나머지는 제자리로 내려온다 (들어오기는 .toast 의 @starting-style) */}
       <Morph className="toast-stack" track=":scope > *" enter={false}>
+        {error && data && (
+          <div className="toast stale" role="status">
+            <span>최신 내용을 불러오지 못했어요</span>
+            <button type="button" onClick={() => void reload()}>
+              다시 시도
+            </button>
+          </div>
+        )}
         {pending > 0 && (
           <div className="toast" role="status">
             <span>보내지 못한 저장 {pending}건 · 연결되면 자동으로 보내요</span>

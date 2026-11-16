@@ -11,7 +11,7 @@ import { ddayText, nextOccurrence, summaryHref, timeText } from "@/lib/calendar"
 import { dateWithDay, num, parseYmd, shortDate } from "@/lib/format";
 import { asking, byUrgency, dueState, eventTasks, useTasks, waiting, type Task } from "./tasks";
 import { TaskRow } from "./TaskRow";
-import { afterSheet, Sheet } from "./ui";
+import { afterSheet, EmptyState, Sheet } from "./ui";
 import { usePendingClose } from "./ClosePrompt";
 import { WeekReport, weekSummary } from "./WeekReport";
 
@@ -163,9 +163,11 @@ export function BellButton({ rail = false }: { rail?: boolean }) {
       </button>
       <Sheet open={open} onOpenChange={setOpen} title="알림">
         {empty ? (
-          <p className="empty" key="empty">
-            지금 챙길 것이 없어요. 마감하지 않은 지난달, 기한이 3일 안으로 다가온 이체·납부·할 일, 다가오는 월급날, 미리 알림을 켠 일정, 그리고 일요일마다 지난주 돌아보기가 여기에 모여요.
-          </p>
+          <EmptyState
+            key="empty"
+            title="지금 챙길 것이 없어요"
+            body="마감하지 않은 지난달, 기한이 3일 안으로 다가온 이체·납부·할 일, 다가오는 월급날, 미리 알림을 켠 일정, 그리고 일요일마다 지난주 돌아보기가 여기에 모여요."
+          />
         ) : (
           <>
             {a.week && (

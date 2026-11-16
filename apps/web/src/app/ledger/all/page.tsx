@@ -9,7 +9,7 @@ import { useData } from "@/lib/store";
 import { nameOf, spendingsIn, sum } from "@/lib/calc";
 import { leaveDetail } from "@/lib/navigationMotion";
 import { MonthHeader } from "@/components/MonthHeader";
-import { Money } from "@/components/ui";
+import { EmptyState, Money } from "@/components/ui";
 import { SpendingDays } from "@/components/SpendingDays";
 import { Morph } from "@/components/Morph";
 import { usePrimaryAction, useSheets } from "@/components/Shell";
@@ -85,9 +85,22 @@ export default function AllSpendingsPage() {
           {/* 거르기를 바꾸면 빠지는 기록은 흐려지고, 남는 기록은 새 자리로 미끄러지고, 들어오는 기록은 떠오른다 (Morph) */}
           <Morph track=":scope > *, .rows > *">
             {rows.length === 0 ? (
-              <p className="empty" style={{ marginTop: 12 }}>
-                {all.length === 0 ? "이번 달 기록이 아직 없어요." : "이 조건에 맞는 기록이 없어요."}
-              </p>
+              <div style={{ marginTop: 12 }}>
+                {all.length === 0 ? (
+                  <EmptyState title="이번 달 기록이 아직 없어요" action="지출 기록하기" onAction={() => openSpending()} />
+                ) : (
+                  <EmptyState
+                    title="이 조건에 맞는 기록이 없어요"
+                    body={`이번 달 기록 ${all.length}건 중에는 없어요.`}
+                    action="거르기 지우기"
+                    onAction={() => {
+                      setKind("all");
+                      setOwner("all");
+                      setNeedsReview(false);
+                    }}
+                  />
+                )}
+              </div>
             ) : (
               <SpendingDays rows={rows} />
             )}

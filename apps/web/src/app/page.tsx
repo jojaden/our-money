@@ -8,7 +8,7 @@ import { allowanceStatus, cardBills, livingStatus, nameOf, spendingsIn } from "@
 import { PAY_KIND_LABEL } from "@/lib/types";
 import { iga, num, ro } from "@/lib/format";
 import { FirstRun, MonthHeader } from "@/components/MonthHeader";
-import { CategoryIcon, Money } from "@/components/ui";
+import { CategoryIcon, EmptyState, Money } from "@/components/ui";
 import { spendingVisual } from "@/lib/categories";
 import { isFresh } from "@/lib/fresh";
 import { BudgetCard, TaskMeter } from "@/components/BudgetCard";
@@ -283,7 +283,7 @@ export default function Home() {
               </div>
               <div className="card">
                 {recent.length === 0 ? (
-                  <p className="empty">이번 달 기록이 아직 없어요. 오른쪽 아래 + 버튼으로 첫 지출을 기록해 보세요.</p>
+                  <EmptyState title="이번 달 기록이 아직 없어요" body="쓴 돈을 적으면 여기에 최근 것부터 보여요." action="지출 기록하기" onAction={() => openSpending()} />
                 ) : (
                   <div className="rows">
                     {recent.map((r) => (

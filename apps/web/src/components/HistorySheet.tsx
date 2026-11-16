@@ -7,7 +7,7 @@ import { useData } from "@/lib/store";
 import { nameOf } from "@/lib/calc";
 import { dayLabel, monthLabel, num, shortDate, ymd } from "@/lib/format";
 import { HISTORY_PAGE } from "@/lib/repo";
-import { PersonGlyph, Sheet } from "./ui";
+import { EmptyState, PersonGlyph, SkeletonRows, Sheet } from "./ui";
 
 const TABLE: Record<string, string> = {
   spendings: "지출",
@@ -175,10 +175,19 @@ export function HistorySheet({ open, onOpenChange }: { open: boolean; onOpenChan
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange} title="변경 이력">
-      {state === "error" ? (
-        <p className="empty">이력을 불러오지 못했어요. 연결을 확인하고 다시 열어 주세요.</p>
+      {state === "error" && rows.length === 0 ? (
+        <EmptyState
+          error
+          title="이력을 불러오지 못했어요"
+          body="인터넷 연결을 확인해 주세요."
+          action="다시 시도"
+          onAction={() => {
+            setState("loading");
+            void page(null);
+          }}
+        />
       ) : rows.length === 0 ? (
-        <p className="empty">{state === "loading" ? "불러오는 중…" : "아직 바뀐 기록이 없어요."}</p>
+        state === "loading" ? <SkeletonRows label="변경 이력을 불러오는 중" /> : <EmptyState title="아직 바뀐 기록이 없어요" body="누가 언제 무엇을 바꿨는지 여기에 쌓여요." />
       ) : (
         days.map(([d, list]) => (
           <div className="daygroup" key={d}>
@@ -212,6 +221,10 @@ export function HistorySheet({ open, onOpenChange }: { open: boolean; onOpenChan
             </div>
           </div>
         ))
+      )}
+      {/* 더 보기를 받다 실패하면 받은 것은 두고 그 아래에서 다시 시도 */}
+      {state === "error" && rows.length > 0 && (
+        <EmptyState error title="더 불러오지 못했어요" action="다시 시도" onAction={() => void page(rows[rows.length - 1]?.id ?? null)} />
       )}
       {state === "more" && (
         <div className="card-foot" style={{ justifyContent: "center" }}>

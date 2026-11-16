@@ -48,6 +48,7 @@
   --glass: #ffffffd1;
   --scrim: #22232666;
   --toast: #222326f0;
+  --toast-action: #e2e2de;
   --cat-base: var(--surface);
   --cat-tint: 15%;
   --pass-dark: #1c1c22;
@@ -154,6 +155,7 @@
   --glass: #202027d1;
   --scrim: #000000a3;
   --toast: #3c3c47f2;
+  --toast-action: #e2e2de;
   --cat-base: var(--well);
   --cat-tint: 8%;
   --saturday: #6f9bff;
@@ -205,6 +207,7 @@
     --glass: #202027d1;
     --scrim: #000000a3;
     --toast: #3c3c47f2;
+    --toast-action: #e2e2de;
     --cat-base: var(--well);
     --cat-tint: 8%;
     --saturday: #6f9bff;
