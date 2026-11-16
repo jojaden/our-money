@@ -174,9 +174,35 @@ button.pass:focus-visible .face { outline: 2px solid var(--accent-ink); outline-
 .owner-pills { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; padding: 8px 0; }
 .owner-pills .chip svg { width: 16px; height: 16px; margin-left: -2px; }
 .add-pass .help { margin-top: 10px; }
-/* 무엇을 넣는지(맨 위 종류)와 그 종류가 앱에서 하는 일 한 줄 */
-.add-pass .ap-kind { margin: 0; }
-.add-pass .ap-lead { margin: 8px 2px 14px; color: var(--muted); font: 400 13.5px/19px var(--font-text); }
+/* 처음 넣을 때 1단계: 무엇을 넣을까요 — 큰 선택지 둘(아이콘 · 이름 · 하는 일 한 줄 · ›) */
+.ap-choices { display: grid; gap: 10px; }
+.ap-choice { display: flex; align-items: center; gap: 14px; width: 100%; padding: 16px; border: 0; border-radius: var(--radius-control); background: var(--surface); box-shadow: var(--shadow-raise); color: var(--text); text-align: left; transition: transform var(--dur-press) var(--ease-press); }
+.ap-choice:active { transform: scale(0.98); }
+.ap-choice-icon { display: grid; flex: none; place-items: center; width: 44px; height: 44px; border-radius: var(--radius-small); background: var(--accent-soft); color: var(--accent-ink); }
+.ap-choice-icon svg { width: 24px; height: 24px; }
+.ap-choice-text { display: grid; flex: 1; gap: 3px; min-width: 0; }
+.ap-choice-text .t { font: 700 17px/23px var(--font-text); }
+.ap-choice-text .s { color: var(--muted); font: 400 13.5px/19px var(--font-text); }
+.ap-chev { flex: none; width: 20px; height: 20px; color: var(--faint); }
+/* 2단계: 어느 은행·카드사 — 찾기 + 로고 격자(묶음별) */
+.ap-search { display: flex; align-items: center; gap: 8px; height: 48px; padding: 0 14px; border-radius: var(--radius-control); background: var(--well); color: var(--faint); }
+.ap-search svg { flex: none; width: 18px; height: 18px; }
+.ap-search input { flex: 1; min-width: 0; height: 100%; border: 0; background: none; color: var(--text); font: 500 16px/20px var(--font-text); outline: none; }
+.ap-group { margin: 18px 2px 8px; color: var(--muted); font: 600 13px/18px var(--font-text); }
+.ap-inst > .ap-search + div .ap-grid { margin-top: 14px; }
+.ap-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.ap-tile { display: grid; justify-items: center; gap: 6px; min-width: 0; padding: 10px 2px; border: 0; border-radius: var(--radius-small); background: none; color: var(--text); font: 500 12px/16px var(--font-text); text-align: center; word-break: keep-all; transition: background-color var(--dur-press) ease, transform var(--dur-press) var(--ease-press); }
+.ap-tile:active { background: var(--well); transform: scale(0.96); }
+.ap-own, .ap-skip { display: block; width: 100%; margin-top: 12px; padding: 14px; border: 0; border-radius: var(--radius-control); background: var(--well); color: var(--text); font: 600 15px/20px var(--font-text); }
+.ap-skip { background: none; color: var(--muted); font-weight: 500; }
+/* 기관 로고 하나(격자·요약 줄): 앱 아이콘처럼 모서리 radius-logo, 없으면 이름 첫 글자 */
+.inst-logo { display: grid; flex: none; place-items: center; width: 36px; height: 36px; overflow: hidden; border-radius: var(--radius-logo); background: var(--well); box-shadow: 0 0 0 1px color-mix(in srgb, var(--text) 8%, transparent); color: var(--text); font: 700 15px/1 var(--font-text); }
+.inst-logo img { display: block; width: 100%; height: 100%; }
+/* 3단계 맨 위: 고른 것 한 줄 + 바꾸기 (누르면 2단계로) */
+.ap-summary { display: flex; align-items: center; gap: 12px; width: 100%; margin-bottom: 12px; padding: 10px 12px; border: 0; border-radius: var(--radius-control); background: var(--well); color: var(--text); text-align: left; }
+.ap-summary .t { flex: 1; min-width: 0; font: 600 15px/20px var(--font-text); }
+.ap-summary .r { flex: none; color: var(--accent-ink); font: 600 14px/20px var(--font-text); }
+.add-pass .ap-group + .ap-tight { margin-top: 0; }
 /* 이름 칸 바로 아래: 이 이름이 어디에 나오는지 */
 .add-pass .form-help { margin: -6px 0 0; padding: 0 16px 10px; color: var(--faint); font: 400 12.5px/18px var(--font-text); }
 

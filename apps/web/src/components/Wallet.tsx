@@ -60,7 +60,7 @@ function Face({ p }: { p: PassInfo }) {
       </span>
       <span className="bot">
         <span>{a.institution}</span>
-        <span className="num">{a.kind === "card" ? (a.last4 ? `•••• ${a.last4}` : "카드") : a.last4 ? `통장 •••• ${a.last4}` : "통장"}</span>
+        <span className="num">{a.kind === "card" ? (a.last4 ? `•••• ${a.last4}` : "카드") : "통장"}</span>
       </span>
     </span>
   );

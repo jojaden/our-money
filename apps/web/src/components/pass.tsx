@@ -34,6 +34,17 @@ export function MiniCard({ account }: { account: Account }) {
 }
 
 
+/** 기관 로고 하나(고르기 격자·요약 줄): 로고가 있으면 그림, 없으면 이름 첫 글자 */
+export function InstLogo({ name }: { name: string }) {
+  const logo = logoOf(name);
+  return (
+    <span className="inst-logo" aria-hidden="true">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      {logo ? <img src={logo} alt="" width={36} height={36} decoding="async" /> : <span>{name.replace(/^[A-Za-z]+/, "").slice(0, 1) || name.slice(0, 1)}</span>}
+    </span>
+  );
+}
+
 /**
  * 통장·카드 왼쪽 위 표시: 은행·카드사·증권사 로고(없으면 이름 첫 글자), 귀퉁이에 주인 반쪽 동전.
  * 기관을 아직 안 적었으면 지금처럼 주인 반쪽 동전만.
