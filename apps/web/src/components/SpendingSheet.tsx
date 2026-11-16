@@ -234,10 +234,23 @@ export function SpendingSheet({ open, onOpenChange, editing }: { open: boolean; 
   const dateChoice = date === today ? "today" : date === shiftDay(today, -1) ? "yesterday" : date === shiftDay(today, -2) ? "2days" : "other";
   const ownerAcc = account && account !== MINE ? data.accounts.find((a) => a.id === account) : null;
 
+  // 적던 내용이 있으면 바깥 누르기·끌어내리기로 닫히지 않게 (새 기록은 금액·메모를 적었을 때, 수정은 원래 값에서 바뀌었을 때)
+  const dirty = editing
+    ? amount !== editing.amount ||
+      category !== editing.category_id ||
+      payKind !== editing.pay_kind ||
+      account !== (editing.account_id ?? (editing.pay_kind === "cash" ? MINE : null)) ||
+      owner !== editing.owner ||
+      date !== editing.date ||
+      memo !== editing.memo ||
+      months !== (editing.installment_months ?? 1)
+    : amount > 0 || memo.trim() !== "";
+
   return (
     <Sheet
       open={open}
       onOpenChange={onOpenChange}
+      keep={dirty}
       title={editing ? "기록 수정" : "얼마 썼나요?"}
       headerAction={
         editing && (
