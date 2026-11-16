@@ -410,7 +410,7 @@ export default function SettingsPage() {
             <p>{SECS.wallet.desc}</p>
           </div>
           <div>
-            <Wallet onAdd={() => setAcc({ open: true, kind: "card" })} onEdit={(a) => setAcc({ open: true, account: a })} />
+            <Wallet onAdd={() => setAcc({ open: true })} onEdit={(a) => setAcc({ open: true, account: a })} />
             {hidden.length > 0 && (
               <section className="group hidden-passes" aria-labelledby="hidden-h">
                 <div className="group-head">

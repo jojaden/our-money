@@ -34,14 +34,14 @@ export function canonicalInstitution(typed: string): string {
   return [...CARD_ISSUERS, ...BANKS].find((n) => norm(n) === q) ?? typed.trim();
 }
 
-/** 목록 이름 → 로고 파일(public/inst/<이름>.png). 깔끔한 로고를 못 구한 곳(우체국·삼성카드)은 없음 → 첫 글자 배지 */
+/** 목록 이름 → 로고 파일(public/inst/<이름>.png). 깔끔한 로고를 못 구한 곳(우체국)은 없음 → 첫 글자 배지 */
 const LOGO: Record<string, string> = {
   KB국민은행: "kb", 신한은행: "shinhan", 우리은행: "woori", 하나은행: "hana", NH농협은행: "nh", IBK기업은행: "ibk", 카카오뱅크: "kakaobank",
   케이뱅크: "kbank", 토스뱅크: "tossbank", SC제일은행: "sc", 한국씨티은행: "citi", KDB산업은행: "kdb", 수협은행: "suhyup", iM뱅크: "im",
   부산은행: "busan", 경남은행: "kyongnam", 광주은행: "kjbank", 전북은행: "jbbank", 제주은행: "jeju", 새마을금고: "kfcc", 신협: "cu", 지역농협: "nh",
   미래에셋증권: "miraeasset", 삼성증권: "samsungpop", 한국투자증권: "koreainvest", NH투자증권: "nhqv", KB증권: "kbsec", 키움증권: "kiwoom",
   신한투자증권: "shinhansec", 토스증권: "tossinvest",
-  신한카드: "shinhancard", 현대카드: "hyundaicard", KB국민카드: "kbcard", 롯데카드: "lottecard", 하나카드: "hana", 우리카드: "wooricard",
+  신한카드: "shinhancard", 삼성카드: "samsungcard", 현대카드: "hyundaicard", KB국민카드: "kbcard", 롯데카드: "lottecard", 하나카드: "hana", 우리카드: "wooricard",
   BC카드: "bccard", NH농협카드: "nhcard",
 };
 

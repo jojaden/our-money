@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { Trash2 } from "lucide-react";
 import type { Group, Method, MonthItem, Owner, PlanItem } from "@/lib/types";
@@ -235,7 +236,14 @@ export function ItemSheet({
               </option>
             ))}
           </select>
-          <p className="help">카드값이 빠져나가는 결제계좌로 돈을 옮기도록 이체 목록에 넣어요.</p>
+          <p className="help">
+            카드값이 빠져나가는 결제계좌로 돈을 옮기도록 이체 목록에 넣어요.
+            {cards.length === 0 && (
+              <>
+                {" "}아직 넣은 카드가 없어요 — <Link href="/settings/?s=wallet">설정 › 지갑</Link>에서 넣어요.
+              </>
+            )}
+          </p>
         </div>
       ) : (
         <div className="field">
@@ -248,7 +256,14 @@ export function ItemSheet({
               </option>
             ))}
           </select>
-          <p className="help">월급통장이 아닌 계좌면 이번 달 ‘옮길 돈’ 목록에 올라가요.</p>
+          <p className="help">
+            월급통장이 아닌 계좌면 이번 달 ‘옮길 돈’ 목록에 올라가요.
+            {banks.length === 0 && (
+              <>
+                {" "}아직 넣은 통장이 없어요 — <Link href="/settings/?s=wallet">설정 › 지갑</Link>에서 넣어요.
+              </>
+            )}
+          </p>
         </div>
       )}
       {group === "saving" && (
