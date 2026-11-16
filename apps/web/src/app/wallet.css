@@ -174,6 +174,11 @@ button.pass:focus-visible .face { outline: 2px solid var(--accent-ink); outline-
 .owner-pills { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; padding: 8px 0; }
 .owner-pills .chip svg { width: 16px; height: 16px; margin-left: -2px; }
 .add-pass .help { margin-top: 10px; }
+/* 무엇을 넣는지(맨 위 종류)와 그 종류가 앱에서 하는 일 한 줄 */
+.add-pass .ap-kind { margin: 0; }
+.add-pass .ap-lead { margin: 8px 2px 14px; color: var(--muted); font: 400 13.5px/19px var(--font-text); }
+/* 이름 칸 바로 아래: 이 이름이 어디에 나오는지 */
+.add-pass .form-help { margin: -6px 0 0; padding: 0 16px 10px; color: var(--faint); font: 400 12.5px/18px var(--font-text); }
 
 @media (prefers-reduced-motion: reduce) {
   .pass .face, .glass-btn, .pass-preview, .flipper, .ptile .tonal, .swatch { transition: none; }

@@ -64,7 +64,7 @@ export function AddPass({ open, onOpenChange, account, kind: initialKind }: { op
       institution: canonicalInstitution(institution),
       billing_account_id: card ? billing : null,
       pay_day: card ? payDay : null,
-      last4: card && last4.length === 4 ? last4 : null,
+      last4: last4.length === 4 ? last4 : null,
       note: note.trim(),
       // 색은 고르거나 지울 때만 보낸다: 한 건 저장은 PostgREST upsert 라, 008 전에는 없는 칸이면 저장이 실패한다
       ...(card && color ? { color } : account?.color ? { color: null } : {}),
@@ -94,6 +94,18 @@ export function AddPass({ open, onOpenChange, account, kind: initialKind }: { op
   };
 
   const owners: Owner[] = ["joint", "a", "b"];
+  // 이름 추천: 누구 것·종류에 맞춰 흔한 이름, 이미 지갑에 있는 이름은 뺀다
+  const who = owner === "joint" ? "공동" : nameOf(s, owner);
+  const used = new Set(data.accounts.filter((a) => !a.archived).map((a) => a.name));
+  const nameIdeas = (
+    card
+      ? owner === "joint"
+        ? ["공동 신용카드", "공동 체크카드", "생활비 카드"]
+        : [`${who} 카드`, `${who} 체크카드`]
+      : owner === "joint"
+        ? ["공동 생활비통장", "고정비 통장", "비상금 통장", "공동 적금"]
+        : [`${who} 급여통장`, `${who} 용돈통장`, `${who} 적금`]
+  ).filter((n) => !used.has(n));
   const suggestions = instFocus ? suggestInstitutions(kind, institution) : [];
   const front = passArt({ kind: "card", owner, color }, []);
   return (
@@ -115,6 +127,17 @@ export function AddPass({ open, onOpenChange, account, kind: initialKind }: { op
         </button>
       }
     >
+      {/* 무엇을 넣는지부터: 종류(맨 위, 처음 넣을 때만)와 그 종류가 앱에서 하는 일 한 줄 */}
+      {!account && (
+        <div className="field ap-kind">
+          <Seg label="무엇을 넣을까요" value={kind} onChange={setKind} options={[{ value: "card", label: "신용·체크카드" }, { value: "bank", label: "통장·증권 계좌" }]} />
+        </div>
+      )}
+      <p className="help ap-lead">
+        {card
+          ? "지출을 적을 때 어느 카드로 냈는지 고르고, 결제일이 되면 카드값을 챙겨 줘요."
+          : "월급이 들어오고 이체·카드값이 빠져나가는 계좌예요. 플랜에서 어디서 어디로 옮길지 고를 때 써요. 잔액은 관리하지 않아요."}
+      </p>
       {/* 미리보기: 앞면 신용카드, 뒷면 통장. 비어 있는 칸은 자리 글자를 옅게 */}
       <div className={`pass-preview ${dropping ? "dropping" : ""}`} aria-hidden="true">
         <div className={`flipper ${card ? "" : "flipped"}`}>
@@ -132,7 +155,7 @@ export function AddPass({ open, onOpenChange, account, kind: initialKind }: { op
                 </span>
                 <span className="bot">
                   <span className={institution ? "" : "ph"}>{institution || (side === "card" ? "카드사" : "은행")}</span>
-                  <span className={`num ${side === "card" && last4.length !== 4 ? "ph" : ""}`}>{side === "card" ? `•••• ${last4.padEnd(4, "·")}` : "통장"}</span>
+                  <span className={`num ${last4.length !== 4 ? "ph" : ""}`}>{side === "card" ? `•••• ${last4.padEnd(4, "·")}` : last4.length === 4 ? `통장 •••• ${last4}` : "통장"}</span>
                 </span>
               </span>
             </span>
@@ -140,17 +163,23 @@ export function AddPass({ open, onOpenChange, account, kind: initialKind }: { op
         </div>
       </div>
 
-      {!account && (
-        <div className="field">
-          <Seg label="종류" value={kind} onChange={setKind} options={[{ value: "card", label: "신용카드" }, { value: "bank", label: "통장" }]} />
-        </div>
-      )}
-
       <div className="form-group">
         <label className="form-row">
           <span>이름</span>
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder={card ? "공동 신용카드" : "공동 생활비통장"} maxLength={30} />
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder={card ? "공동 신용카드" : "공동 생활비통장"} maxLength={30} aria-describedby="ap-name-help" />
         </label>
+        <p className="help form-help" id="ap-name-help">
+          {card ? "지출을 적을 때·카드값 목록에 이 이름으로 나와요. 두 사람이 바로 알아볼 이름이면 돼요." : "이체 목록에 \u201c어디 → 어디\u201d로 이 이름이 나와요. 하는 일을 이름에 넣으면 알아보기 쉬워요."}
+        </p>
+        {!name.trim() && nameIdeas.length > 0 && (
+          <div className="form-suggest" role="listbox" aria-label="이름 고르기">
+            {nameIdeas.map((n) => (
+              <button key={n} type="button" role="option" aria-selected={false} className="chip" onClick={() => setName(n)}>
+                {n}
+              </button>
+            ))}
+          </div>
+        )}
         <label className="form-row">
           <span>{card ? "카드사" : "은행"}</span>
           <input
@@ -189,12 +218,10 @@ export function AddPass({ open, onOpenChange, account, kind: initialKind }: { op
             ))}
           </div>
         )}
-        {card && (
-          <label className="form-row">
-            <span>끝 4자리</span>
-            <input value={last4} onChange={(e) => setLast4(e.target.value.replace(/\D/g, "").slice(0, 4))} inputMode="numeric" autoComplete="off" placeholder="선택" />
-          </label>
-        )}
+        <label className="form-row">
+          <span>끝 4자리</span>
+          <input value={last4} onChange={(e) => setLast4(e.target.value.replace(/\D/g, "").slice(0, 4))} inputMode="numeric" autoComplete="off" placeholder={card ? "카드번호 끝 4자리 (선택)" : "계좌번호 끝 4자리 (선택)"} />
+        </label>
       </div>
 
       <div className="form-group">
@@ -260,7 +287,10 @@ export function AddPass({ open, onOpenChange, account, kind: initialKind }: { op
         </label>
       </div>
       <p className="help">
-        공동 지출을 개인 카드·통장으로 내면 정산 대상이 돼요.{card ? " 끝 4자리는 카드 알림에서 카드를 찾는 데만 써요. 색은 내 카드와 비슷하게 고르면 돼요(자동은 이번 달 쓴 버킷 색)." : ""}
+        공동 지출을 개인 카드·통장으로 내면 정산 대상이 돼요.
+        {card
+          ? " 끝 4자리는 카드 알림에서 카드를 찾는 데만 써요. 색은 내 카드와 비슷하게 고르면 돼요(자동은 이번 달 쓴 버킷 색)."
+          : " 계좌번호 전체는 받지 않아요. 이 앱은 돈을 직접 옮기지 않아서, 같은 은행 통장이 여럿일 때 끝 4자리면 어느 통장인지 알아보기에 충분해요."}
       </p>
       {account && usedBy > 0 && <p className="help">반복 항목 {usedBy}개가 이 {card ? "카드" : "통장"}를 쓰고 있어요.</p>}
     </Sheet>
