@@ -126,6 +126,28 @@ export function salaryAccount(s: Settings, p: Person): string | null {
   return p === "a" ? s.salary_account_a : s.salary_account_b;
 }
 
+/** 이 사람의 한 달 시작일 (1~28). 따로 정하지 않았으면(migrations/017 전 포함) 공동 기준 */
+export function cycleOf(s: Settings, p: Person): number {
+  return (p === "a" ? s.cycle_start_a : s.cycle_start_b) ?? s.cycle_start;
+}
+
+/**
+ * 공동 달 month 에 맞는 이 사람의 달(키). 공동 기준과 시작일이 다르면 기간이 엇갈려 1:1 로 맞지 않으므로,
+ * 오늘이 든 공동 달과 오늘이 든 개인 달의 차이만큼 옮긴다 — 지금 달을 보면 늘 오늘이 든 개인 기간이고, 달을 넘기면 함께 넘어간다.
+ */
+export function personalMonth(s: Settings, month: string, p: Person, today = ymd(new Date())): string {
+  const c = cycleOf(s, p);
+  if (c === s.cycle_start) return month;
+  return addMonths(month, monthsBetween(currentMonth(s.cycle_start, today), currentMonth(c, today)));
+}
+
+/** 이 사람의 그날(date)이 드는 개인 기간에 맞는 공동 달 — personalMonth 의 반대 (지출 한 건이 어느 달 용돈에서 빠지는지) */
+export function sharedMonthOf(s: Settings, date: string, p: Person, today = ymd(new Date())): string {
+  const c = cycleOf(s, p);
+  if (c === s.cycle_start) return monthOf(date, c);
+  return addMonths(monthOf(date, c), -monthsBetween(currentMonth(s.cycle_start, today), currentMonth(c, today)));
+}
+
 /** 이 사람의 월급날 (1~31). 사람별 월급날이 없으면(migrations/006 전) 예전 공통 월급날 */
 export function paydayOf(s: Settings, p: Person): number {
   return (p === "a" ? s.payday_a : s.payday_b) ?? s.payday;
@@ -320,8 +342,7 @@ function shiftMonths(date: string, n: number): string {
  * 그 달 기간의 지출. 할부는 산 달부터 개월 수만큼 매달 나눈 금액이 그 달 지출이 된다
  * (예산·카드값·정산 모두 이 금액). 2회차부터는 산 날과 같은 날짜에 둔다.
  */
-export function spendingsIn(data: Data, month: string): MonthSpending[] {
-  const c = data.settings.cycle_start;
+export function spendingsIn(data: Data, month: string, c = data.settings.cycle_start): MonthSpending[] {
   const p = periodOf(month, c);
   const out: MonthSpending[] = [];
   for (const x of data.spendings) {
@@ -351,29 +372,39 @@ export interface LivingStatus {
   pace: number | null;
   daysLeft: number;
   perDay: number | null;
+  /** 쓴 돈을 센 기간. 용돈은 그 사람의 한 달 시작일 기준이라 공동 기간과 다를 수 있다 */
+  period: { start: string; last: string };
+  /** 공동 기간과 다른 개인 기간인가 */
+  own: boolean;
 }
 
 /**
  * 예산 대비 사용. owner 가 joint 면 공동 생활비, 사람이면 그 사람의 용돈.
- * 지출의 비용귀속(owner)이 같은 기록을 더한다.
+ * 지출의 비용귀속(owner)이 같은 기록을 더한다. 예산은 그 공동 달의 플랜에서, 용돈의 쓴 돈은 그 사람의 한 달 기준 기간에서 센다.
  */
 export function budgetStatus(data: Data, month: string, owner: Owner, today = ymd(new Date())): LivingStatus {
+  const s = data.settings;
   const items = itemsOf(data, month).filter((i) => (owner === "joint" ? i.group === "living" : i.group === "allowance" && i.payer === owner));
   const budget = sum(items, (i) => i.amount);
-  const rows = spendingsIn(data, month).filter((x) => x.owner === owner);
+  const c = owner === "joint" ? s.cycle_start : cycleOf(s, owner);
+  const key = owner === "joint" ? month : personalMonth(s, month, owner, today);
+  const rows = spendingsIn(data, key, c).filter((x) => x.owner === owner);
   const spent = sum(rows, (r) => r.amount);
   const byKind = {
     card: sum(rows.filter((r) => r.pay_kind === "card"), (r) => r.amount),
     cash: sum(rows.filter((r) => r.pay_kind === "cash"), (r) => r.amount),
     transfer: sum(rows.filter((r) => r.pay_kind === "transfer"), (r) => r.amount),
   };
-  const prog = periodProgress(month, data.settings.cycle_start, today);
+  const prog = periodProgress(key, c, today);
+  const p = periodOf(key, c);
   const left = budget - spent;
   return {
     budget,
     spent,
     left,
     byKind,
+    period: { start: p.start, last: p.last },
+    own: c !== s.cycle_start,
     pace: prog.state === "current" ? Math.round(budget * prog.ratio) : null,
     daysLeft: prog.daysLeft,
     perDay: prog.state === "current" && prog.daysLeft > 0 && left > 0 ? Math.floor(left / prog.daysLeft) : null,

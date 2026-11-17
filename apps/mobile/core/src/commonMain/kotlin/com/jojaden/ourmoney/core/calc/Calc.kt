@@ -71,6 +71,26 @@ fun Settings.salaryAccount(p: Person): String? = if (p == Person.A) salaryAccoun
 fun Settings.paydayOf(p: Person): Int = (if (p == Person.A) paydayA else paydayB) ?: payday
 
 /** 이 가계부 달 안에서 이 사람의 월급날 (YYYY-MM-DD). 주말이면 월급이 실제로 들어오는 앞 평일 */
+/** 이 사람의 한 달 시작일 (1~28). 따로 정하지 않았으면 공동 기준 */
+fun Settings.cycleOf(p: Person): Int = (if (p == Person.A) cycleStartA else cycleStartB) ?: cycleStart
+
+/**
+ * 공동 달 month 에 맞는 이 사람의 달(키): 오늘이 든 공동 달과 오늘이 든 개인 달의 차이만큼 옮긴다.
+ * 지금 달을 보면 늘 오늘이 든 개인 기간이다. 웹 personalMonth 와 같다.
+ */
+fun Settings.personalMonth(month: String, p: Person, today: String = todayString()): String {
+    val c = cycleOf(p)
+    if (c == cycleStart) return month
+    return addMonths(month, monthsBetween(currentMonth(cycleStart, today), currentMonth(c, today)))
+}
+
+/** 이 사람의 그날이 드는 개인 기간에 맞는 공동 달 — personalMonth 의 반대. 웹 sharedMonthOf 와 같다 */
+fun Settings.sharedMonthOf(date: String, p: Person, today: String = todayString()): String {
+    val c = cycleOf(p)
+    if (c == cycleStart) return monthOf(date, c)
+    return addMonths(monthOf(date, c), -monthsBetween(currentMonth(cycleStart, today), currentMonth(c, today)))
+}
+
 fun Settings.paydayDate(month: String, p: Person): String = weekdayOnOrBefore(dateInMonth(month, paydayOf(p), cycleStart))
 
 /** 이 항목의 돈이 결제일에 있어야 하는 계좌 */
@@ -202,8 +222,7 @@ fun installmentShare(amount: Long, months: Int, no: Int): Long {
  * 그 달 기간의 지출. 할부는 산 달부터 개월 수만큼 매달 나눈 금액이 그 달 지출이 된다
  * (예산·카드값·정산 모두 이 금액). 2회차부터는 산 날과 같은 날짜에 둔다. 웹 spendingsIn 과 같다.
  */
-fun AppData.spendingsIn(month: String): List<Spending> {
-    val c = settings.cycleStart
+fun AppData.spendingsIn(month: String, c: Int = settings.cycleStart): List<Spending> {
     val p = periodOf(month, c)
     val out = mutableListOf<Spending>()
     for (x in spendings) {
@@ -229,6 +248,11 @@ data class BudgetStatus(
     val pace: Long?,
     val daysLeft: Int,
     val perDay: Long?,
+    /** 쓴 돈을 센 기간 (start, last). 용돈은 그 사람의 한 달 기준 */
+    val periodStart: String,
+    val periodLast: String,
+    /** 공동 기간과 다른 개인 기간인가 */
+    val own: Boolean,
 )
 
 /** 예산 대비 사용. owner 가 JOINT 면 공동 생활비, 사람이면 그 사람의 용돈. */
@@ -237,10 +261,15 @@ fun AppData.budgetStatus(month: String, owner: Owner, today: String = todayStrin
         if (owner == Owner.JOINT) it.group == Group.LIVING else it.group == Group.ALLOWANCE && it.payer == owner
     }
     val budget = items.sumOf { it.amount }
-    val rows = spendingsIn(month).filter { it.owner == owner }
+    // 예산은 그 공동 달의 플랜에서, 용돈의 쓴 돈은 그 사람의 한 달 기준 기간에서
+    val person = Person.entries.firstOrNull { it.owner == owner }
+    val c = if (person == null) settings.cycleStart else settings.cycleOf(person)
+    val key = if (person == null) month else settings.personalMonth(month, person, today)
+    val rows = spendingsIn(key, c).filter { it.owner == owner }
     val spent = rows.sumOf { it.amount }
     val byKind = PayKind.entries.associateWith { k -> rows.filter { it.payKind == k }.sumOf { it.amount } }
-    val prog = periodProgress(month, settings.cycleStart, today)
+    val prog = periodProgress(key, c, today)
+    val period = periodOf(key, c)
     val left = budget - spent
     val current = prog.state == PeriodState.CURRENT
     return BudgetStatus(
@@ -251,6 +280,9 @@ fun AppData.budgetStatus(month: String, owner: Owner, today: String = todayStrin
         pace = if (current) (budget * prog.ratio).roundHalfUp() else null,
         daysLeft = prog.daysLeft,
         perDay = if (current && prog.daysLeft > 0 && left > 0) left / prog.daysLeft else null,
+        periodStart = period.start,
+        periodLast = period.last,
+        own = c != settings.cycleStart,
     )
 }
 

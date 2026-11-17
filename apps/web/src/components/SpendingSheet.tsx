@@ -5,7 +5,7 @@ import { AlertTriangle, Trash2 } from "lucide-react";
 import type { Account, Data, Owner, PayKind, Spending } from "@/lib/types";
 import { REVIEW_LABEL } from "@/lib/types";
 import { useData } from "@/lib/store";
-import { allowanceStatus, installmentShare, livingStatus, monthOf, nameOf } from "@/lib/calc";
+import { allowanceStatus, installmentShare, livingStatus, monthOf, nameOf, sharedMonthOf } from "@/lib/calc";
 import { categoryVisual, guessFromMemo, presetsOf, type Preset } from "@/lib/categories";
 import { num, parseYmd, rase, ymd } from "@/lib/format";
 import { haptic } from "@/lib/native";
@@ -460,7 +460,8 @@ function remainingText(data: Data, row: Spending): string {
     const st = livingStatus(next, month);
     return st.left >= 0 ? `생활비 ${num(st.left)}원 남아요` : `생활비가 ${num(-st.left)}원 넘어요`;
   }
-  const st = allowanceStatus(next, month, row.owner);
+  // 용돈은 그 사람의 한 달 기준: 이 날짜가 드는 개인 기간의 용돈에서 빠진다
+  const st = allowanceStatus(next, sharedMonthOf(data.settings, row.date, row.owner), row.owner);
   const who = `${nameOf(data.settings, row.owner)} 용돈`;
   if (st.budget === 0) return `${who}으로 들어가요`;
   return st.left >= 0 ? `${who} ${num(st.left)}원 남아요` : `${who}이 ${num(-st.left)}원 넘어요`;

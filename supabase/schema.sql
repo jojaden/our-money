@@ -1037,3 +1037,14 @@ alter table public.month_items add constraint month_items_pair_shape
 
 comment on column public.plan_items.pair_id is '공동 항목을 나눠 낼 때 두 사람 몫(payer a·b) 두 줄을 묶는 값 (migrations/016)';
 comment on column public.month_items.pair_id is '공동 항목을 나눠 낼 때 두 사람 몫(payer a·b) 두 줄을 묶는 값 (migrations/016)';
+
+-- ============================================================
+-- 017 사람마다 한 달 시작일 (migrations/017_personal_cycle.sql 과 같다)
+-- 용돈·내 지출은 각자의 시작일로 센다. 비우면 공동 기준(cycle_start).
+-- ============================================================
+alter table public.settings
+  add column if not exists cycle_start_a int check (cycle_start_a between 1 and 28),
+  add column if not exists cycle_start_b int check (cycle_start_b between 1 and 28);
+
+comment on column public.settings.cycle_start_a is 'A 의 한 달 시작일 — 용돈·내 지출 기준 (비우면 cycle_start) (migrations/017)';
+comment on column public.settings.cycle_start_b is 'B 의 한 달 시작일 — 용돈·내 지출 기준 (비우면 cycle_start) (migrations/017)';

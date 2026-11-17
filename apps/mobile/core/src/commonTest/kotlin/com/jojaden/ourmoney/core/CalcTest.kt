@@ -164,6 +164,33 @@ class CalcTest {
         assertEquals(98_001, items.first { it.planItemId == "phone" }.copy(paid = false).actualAmount)
     }
 
+    @Test fun allowance_uses_personal_cycle() {
+        // 공동 기준 25일(11월 = 10/25~11/24), 예진은 자기 월급날 10일부터. 오늘 11/12 → 예진의 지금 기간은 11/10~12/9
+        val s = settings.copy(cycleStartB = 10)
+        val items = nov + item("allow-b", Group.ALLOWANCE, 300_000, Owner.B, Method.MANUAL, "acc-b")
+        val data = AppData(
+            settings = s, accounts = accounts, months = listOf(month), monthItems = items,
+            spendings = listOf(
+                Spending("old", "2026-11-05", 50_000, null, PayKind.CARD, null, Owner.B, Person.B, "지난 기간"),
+                Spending("new", "2026-11-11", 20_000, null, PayKind.CARD, null, Owner.B, Person.B, "이번 기간"),
+            ),
+        )
+        assertEquals(10, s.cycleOf(Person.B))
+        assertEquals(25, s.cycleOf(Person.A)) // 따로 정하지 않으면 공동 기준
+        assertEquals("2026-12", s.personalMonth("2026-11", Person.B, "2026-11-12"))
+        val st = data.allowanceStatus("2026-11", Person.B, "2026-11-12")
+        assertEquals(300_000, st.budget) // 예산은 공동 11월 플랜에서
+        assertEquals(20_000, st.spent) // 쓴 돈은 예진의 기간(11/10~)만
+        assertEquals("2026-11-10", st.periodStart)
+        assertEquals("2026-12-09", st.periodLast)
+        assertTrue(st.own)
+        // 지출 한 건이 어느 공동 달 용돈에서 빠지는지
+        assertEquals("2026-11", s.sharedMonthOf("2026-11-11", Person.B, "2026-11-12"))
+        assertEquals("2026-10", s.sharedMonthOf("2026-11-05", Person.B, "2026-11-12"))
+        // 공동 생활비는 그대로 공동 기간
+        assertTrue(!data.livingStatus("2026-11", "2026-11-12").own)
+    }
+
     @Test fun split_joint_item_moves_each_share_from_own_source() {
         // 공동 생활비 70만을 나눠 낸다: 현빈 40만은 급여통장 → 공동통장, 예진 30만은 공동 카드로
         val pa = PlanItem("liv-a", Group.LIVING, "공동 생활비", 400_000, Owner.A, "acc-joint", Method.MANUAL, pairId = "pr-1")

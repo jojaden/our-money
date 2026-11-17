@@ -18,6 +18,8 @@ const settings: Settings = {
   payday: 25,
   payday_a: 25,
   payday_b: 10,
+  cycle_start_a: null,
+  cycle_start_b: null,
 };
 
 // 로그인한 두 계정 (가상). 이름은 각자 설정에서 바꾼다.

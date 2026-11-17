@@ -5,7 +5,7 @@ import { useRef } from "react";
 import { CircleAlert, TrendingDown, TrendingUp } from "lucide-react";
 import type { LivingStatus } from "@/lib/calc";
 import { PAY_KIND_LABEL } from "@/lib/types";
-import { num } from "@/lib/format";
+import { num, shortDate } from "@/lib/format";
 import { Meter, drawMeter, useTween } from "./Meter";
 
 const KINDS = ["card", "cash", "transfer"] as const;
@@ -99,6 +99,8 @@ export function BudgetCard({
         </p>
         <Meter fillRef={fill} mile={mile} mileText={compact ? undefined : "오늘"} label={label} />
         <p className="used">
+          {/* 내 한 달 기준이 공동과 다르면 어느 기간을 센 것인지 */}
+          {status.own && <>{shortDate(status.period.start)}~{shortDate(status.period.last)} · </>}
           {num(budget)}원 중 {num(spent)}원 썼어요 · {pct}%
         </p>
         <div className="budget-foot">
