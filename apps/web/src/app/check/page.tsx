@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { AlertTriangle, Check, ChevronDown, ChevronRight, CircleCheck, Clock, Target } from "lucide-react";
 import { useData } from "@/lib/store";
-import { nameOf, periodOf } from "@/lib/calc";
+import { nameOf, other, periodOf } from "@/lib/calc";
+import type { Person } from "@/lib/types";
 import { FirstRun, MonthHeader } from "@/components/MonthHeader";
 import { Money } from "@/components/ui";
 import { byUrgency, eventTasks, useTasks, type PaydayGroup, type Task } from "@/components/tasks";
@@ -52,9 +53,35 @@ function Rows({ tasks, expandable, fromShown }: { tasks: Task[]; expandable?: bo
   );
 }
 
-/** 카드 위 이름표 + 끝낸 수, 카드 안에는 할 일 줄만. 체크하면 줄이 끝낸 쪽으로 스르륵 옮겨 간다 */
-function Section({ id, title, tasks, empty, foot }: { id: string; title: string; tasks: Task[]; empty: string; foot?: React.ReactNode }) {
+/** 상대 몫 할 일은 한 줄로 접어 두고("예진 것 2건 · 남은 1건"), 누르면 펼친다 */
+function Others({ name, tasks, ruled }: { name: string; tasks: Task[]; ruled: boolean }) {
+  const [open, setOpen] = useState(false);
+  const flip = useMorphFlip();
+  const left = tasks.filter((t) => !t.done).length;
+  return (
+    <>
+      <button type="button" className={`fold-row others${ruled ? " ruled" : ""}`} aria-expanded={open} onClick={() => flip(() => setOpen((v) => !v))}>
+        <span className="fold-t">
+          {name} 것 {tasks.length}건{left > 0 ? ` · 남은 ${left}건` : " · 모두 끝냄"}
+        </span>
+        <span className="fold-a">
+          {open ? "접기" : "보기"}
+          <ChevronDown aria-hidden="true" />
+        </span>
+      </button>
+      {open && <Rows tasks={tasks} />}
+    </>
+  );
+}
+
+/**
+ * 카드 위 이름표 + 끝낸 수, 카드 안에는 할 일 줄만. 체크하면 줄이 끝낸 쪽으로 스르륵 옮겨 간다.
+ * 내 것·공동 것을 먼저 보이고, 상대 것은 아래 한 줄로 접어 둔다(각자 월급날·카드 결제일이 달라 내 할 일부터)
+ */
+function Section({ id, title, tasks, empty, foot, me, otherName }: { id: string; title: string; tasks: Task[]; empty: string; foot?: React.ReactNode; me?: Person; otherName?: string }) {
   const done = tasks.filter((t) => t.done).length;
+  const theirs = me ? tasks.filter((t) => t.person === other(me)) : [];
+  const mine = me ? tasks.filter((t) => t.person !== other(me)) : tasks;
   return (
     <section className="group" aria-labelledby={id}>
       <div className="group-head">
@@ -62,7 +89,14 @@ function Section({ id, title, tasks, empty, foot }: { id: string; title: string;
         {tasks.length > 0 && <span className="aside num">{`${done} / ${tasks.length}`}</span>}
       </div>
       <Morph className="card" track=":scope > *, .rows > *" follow quick>
-        {tasks.length === 0 ? <p className="empty">{empty}</p> : <Rows tasks={tasks} />}
+        {tasks.length === 0 ? (
+          <p className="empty">{empty}</p>
+        ) : (
+          <>
+            {mine.length > 0 && <Rows tasks={mine} />}
+            {theirs.length > 0 && <Others name={otherName ?? ""} tasks={theirs} ruled={mine.length > 0} />}
+          </>
+        )}
         {foot}
       </Morph>
     </section>
@@ -135,8 +169,11 @@ function CheckSummary({ label, done, total, parts }: { label: string; done: numb
 }
 
 /** 한 사람의 월급날: 그날 자기 월급통장에서 옮길 돈. 머리는 칸 나눈 진행 막대(StepTrack), 아래는 할 일 줄 */
-function PaydaySection({ g, today, name }: { g: PaydayGroup; today: string; name: string }) {
+function PaydaySection({ g, today, name, quiet = false }: { g: PaydayGroup; today: string; name: string; quiet?: boolean }) {
   const id = `pay-${g.person}`;
+  // 상대의 월급날은 머리와 남은 상태 한 줄만, 옮길 돈 줄은 눌러야 펼친다
+  const [open, setOpen] = useState(!quiet);
+  const flip = useMorphFlip();
   const left = g.transfers.filter((t) => !t.done);
   const done = g.transfers.length - left.length;
   const leftAmount = left.reduce((a, t) => a + t.amount, 0);
@@ -188,14 +225,24 @@ function PaydaySection({ g, today, name }: { g: PaydayGroup; today: string; name
               건 옮김 · {g.transfers[0].from}에서
             </span>
           </p>
-          {g.transfers.length <= MAX_STEPS && <StepTrack done={done} total={g.transfers.length} />}
+          {open && g.transfers.length <= MAX_STEPS && <StepTrack done={done} total={g.transfers.length} />}
           <p className="step-meta">
             <Clock aria-hidden="true" />
             <span>{status}</span>
           </p>
           {/* 끝낸 건 보기·접기, 나눠 낸 몫 펼치기: 줄이 차례로 떠오르고 상자 높이가 따라간다 */}
           <Morph track=":scope > *, .rows > *" follow quick>
-            <Rows tasks={g.transfers} expandable fromShown />
+            {open ? (
+              <Rows tasks={g.transfers} expandable fromShown />
+            ) : (
+              <button type="button" className="fold-row ruled" aria-expanded={false} onClick={() => flip(() => setOpen(true))}>
+                <span className="fold-t">옮길 돈 {g.transfers.length}건</span>
+                <span className="fold-a">
+                  보기
+                  <ChevronDown aria-hidden="true" />
+                </span>
+              </button>
+            )}
           </Morph>
         </>
       )}
@@ -204,7 +251,8 @@ function PaydaySection({ g, today, name }: { g: PaydayGroup; today: string; name
 }
 
 export default function CheckPage() {
-  const { data, month, today, toggleCheck } = useData();
+  const { data, month, today, toggleCheck, me } = useData();
+  const otherName = nameOf(data.settings, other(me));
   const s = data.settings;
   const { tasks, transfers, pays, bills, settle, issues, paydays, started } = useTasks(month);
   // 달력에서 만든 할 일(재산세 내기 등) — 같은 가계부 달(예: 10/25~11/24). 이체·납부 진행률과 축하에는 넣지 않는다
@@ -261,22 +309,25 @@ export default function CheckPage() {
                 <h2 id="payday-h">월급날에 옮길 돈</h2>
               </div>
               <div className="stack">
-                {paydays.map((g) => (
-                  <PaydaySection key={g.person} g={g} today={today} name={nameOf(s, g.person)} />
-                ))}
+                {/* 내 월급날을 먼저 (날짜가 늦어도), 상대 월급날은 접어서 */}
+                {[...paydays]
+                  .sort((x, y) => Number(x.person !== me) - Number(y.person !== me))
+                  .map((g) => (
+                    <PaydaySection key={g.person} g={g} today={today} name={nameOf(s, g.person)} quiet={g.person !== me} />
+                  ))}
               </div>
             </section>
           </Slot>
         </div>
         <div className="col span-5">
           <Slot k="fixed">
-            <Section id="fixed" title="고정비 납부 확인" tasks={fixed} empty="이번 달 고정비가 없어요." />
+            <Section id="fixed" title="고정비 납부 확인" tasks={fixed} empty="이번 달 고정비가 없어요." me={me} otherName={otherName} />
           </Slot>
           <Slot k="saving">
-            <Section id="saving" title="저축·투자 납입" tasks={saving} empty="이번 달 저축 항목이 없어요." />
+            <Section id="saving" title="저축·투자 납입" tasks={saving} empty="이번 달 저축 항목이 없어요." me={me} otherName={otherName} />
           </Slot>
           <Slot k="cards">
-            <Section id="cards" title="카드값 준비" tasks={bills} empty="이번 달에 결제되는 카드값이 없어요." />
+            <Section id="cards" title="카드값 준비" tasks={bills} empty="이번 달에 결제되는 카드값이 없어요." me={me} otherName={otherName} />
           </Slot>
           {settle && (
             <Slot k="settle">
