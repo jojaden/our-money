@@ -42,6 +42,9 @@ export interface Settings extends Meta {
   /** 사람별 한 달 시작일 (1~28, migrations/017). 용돈·내 지출은 이 기준. 비우면 공동 기준 — cycleOf() 로 읽는다 */
   cycle_start_a?: number | null;
   cycle_start_b?: number | null;
+  /** 월급날이 공휴일이면 앞 영업일에 들어오는가 (migrations/018, 비우면 그렇다) — holidayShiftOf() 로 읽는다 */
+  payday_holiday_a?: boolean | null;
+  payday_holiday_b?: boolean | null;
   /** 예전 공통 월급날 (v0.1). 사람별 월급날이 없을 때(migrations/006 전)만 쓴다 — paydayOf() 로 읽는다 */
   payday: number;
   /** 사람별 월급날 (1~31, 그달에 없는 날이면 말일) */

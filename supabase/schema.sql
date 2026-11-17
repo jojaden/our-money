@@ -1048,3 +1048,14 @@ alter table public.settings
 
 comment on column public.settings.cycle_start_a is 'A 의 한 달 시작일 — 용돈·내 지출 기준 (비우면 cycle_start) (migrations/017)';
 comment on column public.settings.cycle_start_b is 'B 의 한 달 시작일 — 용돈·내 지출 기준 (비우면 cycle_start) (migrations/017)';
+
+-- ============================================================
+-- 018 공휴일 월급날 (migrations/018_payday_holiday.sql 과 같다)
+-- true: 주말·공휴일이면 앞 영업일, false: 공휴일엔 그날·주말만 앞 금요일
+-- ============================================================
+alter table public.settings
+  add column if not exists payday_holiday_a boolean not null default true,
+  add column if not exists payday_holiday_b boolean not null default true;
+
+comment on column public.settings.payday_holiday_a is 'A 의 월급날이 공휴일이면 앞 영업일에 들어오는가 (migrations/018)';
+comment on column public.settings.payday_holiday_b is 'B 의 월급날이 공휴일이면 앞 영업일에 들어오는가 (migrations/018)';

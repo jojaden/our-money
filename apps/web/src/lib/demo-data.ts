@@ -20,6 +20,8 @@ const settings: Settings = {
   payday_b: 10,
   cycle_start_a: null,
   cycle_start_b: null,
+  payday_holiday_a: true,
+  payday_holiday_b: true,
 };
 
 // 로그인한 두 계정 (가상). 이름은 각자 설정에서 바꾼다.

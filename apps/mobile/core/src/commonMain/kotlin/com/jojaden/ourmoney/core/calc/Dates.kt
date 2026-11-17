@@ -108,11 +108,14 @@ fun dayIndexOf(month: String, cycleStart: Int, today: String): Int {
 
 fun shiftDays(date: String, n: Int): String = parseDate(date).plus(DatePeriod(days = n)).toString()
 
-/** 주말이면 그 앞 금요일 (토 → 금, 일 → 금). 공휴일은 보지 않는다 */
-fun weekdayOnOrBefore(date: String): String = when (parseDate(date).dayOfWeek) {
-    DayOfWeek.SATURDAY -> shiftDays(date, -1)
-    DayOfWeek.SUNDAY -> shiftDays(date, -2)
-    else -> date
+/** 쉬는 날이면 그 앞 영업일: 주말은 늘, 공휴일은 holidays 일 때만 (설·추석처럼 이어진 연휴는 그 전날까지 거슬러 간다). 웹과 같다 */
+fun businessDayOnOrBefore(date: String, holidays: Boolean): String {
+    var d = date
+    while (true) {
+        val w = parseDate(d).dayOfWeek
+        if (w != DayOfWeek.SATURDAY && w != DayOfWeek.SUNDAY && !(holidays && isHoliday(d))) return d
+        d = shiftDays(d, -1)
+    }
 }
 
 internal fun Double.roundHalfUp(): Long = kotlin.math.floor(this + 0.5).toLong()

@@ -7,11 +7,11 @@ import { Download, BellRing, CalendarDays, CalendarRange, ChevronLeft, ChevronRi
 import type { Account, AccountKind, Category, Person, Settings } from "@/lib/types";
 import { PAY_KIND_LABEL } from "@/lib/types";
 import { useData } from "@/lib/store";
-import { cycleOf, nameOf, paydayOf } from "@/lib/calc";
-import { num } from "@/lib/format";
+import { cycleOf, holidayShiftOf, nameOf, paydayDate, paydayOf } from "@/lib/calc";
+import { dateWithDay, num } from "@/lib/format";
 import { resetDemo, signOut } from "@/lib/repo";
 import { appCan, toApp, useInApp } from "@/lib/native";
-import { AmountInput, Money, Seg, Who } from "@/components/ui";
+import { AmountInput, Money, Seg, Toggle, Who } from "@/components/ui";
 import { CategorySheet } from "@/components/SettingsSheets";
 import { AddPass } from "@/components/AddPass";
 import { Wallet } from "@/components/Wallet";
@@ -44,7 +44,7 @@ function csv(rows: (string | number)[][]) {
 }
 
 export default function SettingsPage() {
-  const { data, upsert, toast, auth, me, setMe, reload, exportSpendings, setMyName, pending } = useData();
+  const { data, month, upsert, toast, auth, me, setMe, reload, exportSpendings, setMyName, pending } = useData();
   const s = data.settings;
   const router = useRouter();
   const q = useSearchParams().get("s");
@@ -333,6 +333,18 @@ export default function SettingsPage() {
                       </select>
                     </div>
                   </div>
+                  {/* 018 전 DB 에는 칸이 없다(보내면 저장이 거절된다) → 스위치를 숨기고 공휴일이면 앞 영업일로 본다 */}
+                  {s.payday_holiday_a !== undefined && (
+                    <div className="switchrow" style={{ marginTop: 12 }}>
+                      <div>
+                        <div className="t">공휴일이면 앞 영업일에 받아요</div>
+                        <div className="s">
+                          {holidayShiftOf(draft, p) ? "주말·공휴일이면 그 전 영업일에 들어와요" : "공휴일엔 그날, 주말이면 앞 금요일에 들어와요"} · 이번 달 {dateWithDay(paydayDate(month, draft, p))}
+                        </div>
+                      </div>
+                      <Toggle on={holidayShiftOf(draft, p)} onChange={(v) => void save({ [p === "a" ? "payday_holiday_a" : "payday_holiday_b"]: v })} label={`${nameOf(s, p)} 공휴일이면 앞 영업일에 받기`} />
+                    </div>
+                  )}
                 </div>
               );
             })}
