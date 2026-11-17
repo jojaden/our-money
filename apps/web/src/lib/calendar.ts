@@ -113,7 +113,8 @@ export function marksIn(data: Data, from: string, to: string): Map<string, Mark[
     if (row) {
       for (const i of itemsOf(data, key)) {
         if (!i.due_day || !needsPayCheck(i)) continue;
-        add({ kind: "item", date: dateInMonth(key, i.due_day, s.cycle_start), title: i.name, amount: i.amount, owner: i.payer, item: i });
+        // 나눠 내는 공동 항목은 두 사람 몫이 따로 보인다
+        add({ kind: "item", date: dateInMonth(key, i.due_day, s.cycle_start), title: i.pair_id ? `${i.name} (${nameOf(s, i.payer)} 몫)` : i.name, amount: i.amount, owner: i.payer, item: i });
       }
     }
   }
@@ -319,7 +320,7 @@ export function summarize(data: Data, from: string, to: string): Summary {
   const done: Done[] = [];
   for (const i of data.month_items) {
     const d = i.paid ? inRange(i.paid_at) : null;
-    if (d) done.push({ date: d, title: i.name, amount: actualAmount(i), by: i.paid_by });
+    if (d) done.push({ date: d, title: i.pair_id ? `${i.name} (${nameOf(data.settings, i.payer)} 몫)` : i.name, amount: actualAmount(i), by: i.paid_by });
   }
   for (const c of data.checks) {
     const d = inRange(c.done_at);

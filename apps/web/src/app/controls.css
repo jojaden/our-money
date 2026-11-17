@@ -310,6 +310,20 @@ button.row:active, a.row:active { background: var(--well); transform: scale(0.98
 .switchrow { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 6px 0; }
 .switchrow .t { font-size: 16px; font-weight: 500; }
 .switchrow .s { color: var(--faint); font-size: 12.5px; }
+
+/* 플랜 항목: 나가는 곳 — 지갑의 카드·통장 칩(로고 + 이름) 하나 고르기, 끝에 "카드·통장 넣기" */
+.src-add { background: transparent; color: var(--accent-ink); box-shadow: inset 0 0 0 1.5px var(--border); }
+.src-add svg { width: 16px; height: 16px; margin-left: -4px; stroke-width: 2.2; }
+.src-more svg { width: 16px; height: 16px; margin-right: -4px; }
+.src-method { margin-top: 2px; }
+/* 나눠 내기: 사람마다 한 덩어리 — 머리(사람 · 몫 금액) 아래 나가는 곳 */
+.split-part { display: grid; gap: 14px; margin-top: 14px; padding: 14px; border: 1px solid var(--border); border-radius: var(--radius-control); }
+.field + .split-part, .split-part + .field { margin-top: 14px; }
+.split-part > .field + .field { margin-top: 0; }
+.split-head { display: grid; grid-template-columns: auto auto minmax(0, 1fr); align-items: center; gap: 8px; }
+.split-head > svg { width: 22px; height: 22px; }
+.split-head label { color: var(--text); font: 600 15px/20px var(--font-text); white-space: nowrap; }
+.toggle:disabled { opacity: 0.4; }
 .toggle { position: relative; flex: none; width: 48px; height: 28px; border: 0; border-radius: var(--radius-chip); background: var(--control); transition: background-color var(--dur-press) ease; }
 .toggle::after {
   content: "";

@@ -6,7 +6,7 @@ import { ImportSheet } from "@/components/ImportSheet";
 import type { Group, MonthItem, PlanItem } from "@/lib/types";
 import { GROUP_LABEL, METHOD_LABEL } from "@/lib/types";
 import { blankMonth, useData } from "@/lib/store";
-import { goalProgress, groupTotals, incomeOf, itemsOf, lanes, monthRow, nameOf, ratioA } from "@/lib/calc";
+import { goalProgress, groupTotals, incomeOf, itemRows, itemsOf, lanes, monthRow, nameOf, ratioA } from "@/lib/calc";
 import { monthLabel, num } from "@/lib/format";
 import { FirstRun, MonthHeader } from "@/components/MonthHeader";
 import { EmptyState, Money, Who } from "@/components/ui";
@@ -43,17 +43,19 @@ export default function PlanPage() {
 
   const pctOf = (v: number) => (income > 0 ? `${Math.round((v / income) * 100)}%` : "–");
   // 끝 금액이 있는 목표(적금·비상금)는 줄 안 막대 대신 아래 "모으는 목표" 카드로
-  const goals = items.flatMap((i) => {
+  // 나눠 내는 공동 저축은 두 사람 몫이 한 목표라 한 번만
+  const goals = itemRows(items).flatMap(({ item: i }) => {
     const plan = i.plan_item_id ? data.plan_items.find((p) => p.id === i.plan_item_id) : undefined;
     const goal = plan ? goalProgress(data, plan) : null;
     return goal ? [{ item: i, ...goal }] : [];
   });
 
   const renderGroup = (g: Group) => {
-    const rows = items.filter((i) => i.group === g);
+    // 나눠 내는 공동 항목은 두 사람 몫을 한 줄로
+    const rows = itemRows(items.filter((i) => i.group === g));
     // 두 줄 이하는 접어도 줄어들지 않으니 그대로 둔다
     const open = rows.length <= 2 || unfolded.includes(g) || !narrow;
-    const preview = rows.slice(0, 3).map((i) => i.name).join(" · ") + (rows.length > 3 ? ` 외 ${rows.length - 3}개` : "");
+    const preview = rows.slice(0, 3).map((r) => r.item.name).join(" · ") + (rows.length > 3 ? ` 외 ${rows.length - 3}개` : "");
     return (
       <section className="group" aria-labelledby={`g-${g}`}>
         <div className="group-head">
@@ -92,21 +94,29 @@ export default function PlanPage() {
             )}
             {open && (
             <div className="rows">
-              {rows.map((i) => {
-                const where = i.method === "card_auto" ? accName(i.card_id) : accName(i.account_id);
+              {rows.map(({ item: i, partner: p }) => {
+                const whereOf = (x: typeof i) => (x.method === "card_auto" ? accName(x.card_id) : accName(x.account_id));
+                // 나눠 내면 사람마다 나가는 곳 ("현빈 급여통장 · 예진 공동 신용카드"), 아니면 방식 · 나가는 곳
+                const how = p ? [whereOf(i) ?? METHOD_LABEL[i.method], whereOf(p) ?? METHOD_LABEL[p.method]] : [METHOD_LABEL[i.method], whereOf(i)];
                 return (
                   <button type="button" className="row" key={i.id} onClick={() => setSheet({ open: true, item: i })}>
-                    <Who owner={i.payer} s={s} size="sm" />
+                    <Who owner={p ? "joint" : i.payer} s={s} size="sm" />
                     <div style={{ minWidth: 0 }}>
                       <div className="t">{i.name}</div>
                       <div className="s">
-                        {[i.due_day ? `${i.due_day}일` : null, METHOD_LABEL[i.method], where].filter(Boolean).join(" · ")}
-                        {!i.plan_item_id ? " · 이번 달만" : periodText(data.plan_items.find((p) => p.id === i.plan_item_id))}
+                        {[i.due_day ? `${i.due_day}일` : null, ...how].filter(Boolean).join(" · ")}
+                        {!i.plan_item_id ? " · 이번 달만" : periodText(data.plan_items.find((x) => x.id === i.plan_item_id))}
                       </div>
+                      {/* 나눠 내면 사람마다 금액이 달라 폰에서도 한 줄 더 */}
+                      {p && (
+                        <div className="s num">
+                          {nameOf(s, i.payer)} {num(i.amount)} · {nameOf(s, p.payer)} {num(p.amount)}
+                        </div>
+                      )}
                     </div>
                     <div className="r">
-                      <Money value={i.amount} />
-                      {i.payer === "joint" && <div className="s split-note">각자 {num(Math.round(i.amount * rA))} / {num(i.amount - Math.round(i.amount * rA))}</div>}
+                      <Money value={p ? i.amount + p.amount : i.amount} />
+                      {!p && i.payer === "joint" && <div className="s split-note">각자 {num(Math.round(i.amount * rA))} / {num(i.amount - Math.round(i.amount * rA))}</div>}
                     </div>
                   </button>
                 );

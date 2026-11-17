@@ -23,7 +23,23 @@ function newId(prefix: string) {
  * 맨 위 카드 그림이 적는 대로 바뀌고, 넣는 순간 카드가 지갑 쪽으로 내려간다.
  * 이미 있는 카드는 같은 시트를 "고치기"로 연다(종류는 바꾸지 않고, 머리에 "숨기기").
  */
-export function AddPass({ open, onOpenChange, account, kind: initialKind }: { open: boolean; onOpenChange: (v: boolean) => void; account?: Account; kind?: AccountKind }) {
+export function AddPass({
+  open,
+  onOpenChange,
+  account,
+  kind: initialKind,
+  owner: initialOwner,
+  onSaved,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  account?: Account;
+  kind?: AccountKind;
+  /** 새로 넣을 때 처음 골라 둘 주인 (플랜 항목에서 그 사람 몫의 나가는 곳을 넣을 때) */
+  owner?: Owner;
+  /** 새로 넣고 저장까지 끝나면 — 넣은 자리(플랜 항목)에서 방금 넣은 것을 골라 두게 */
+  onSaved?: (a: Account) => void;
+}) {
   const { data, upsert, toast } = useData();
   const s = data.settings;
   const [name, setName] = useState("");
@@ -60,7 +76,7 @@ export function AddPass({ open, onOpenChange, account, kind: initialKind }: { op
     if (!open) return;
     setName(account?.name ?? "");
     setKind(account?.kind ?? initialKind ?? "card");
-    setOwner(account?.owner ?? "joint");
+    setOwner(account?.owner ?? initialOwner ?? "joint");
     setInstitution(account?.institution ?? "");
     setLast4(account?.last4 ?? "");
     setBilling(account?.billing_account_id ?? null);
@@ -68,10 +84,11 @@ export function AddPass({ open, onOpenChange, account, kind: initialKind }: { op
     setColor(account?.color ?? null);
     setNote(account?.note ?? "");
     setDropping(false);
-  }, [open, account, initialKind]);
+  }, [open, account, initialKind, initialOwner]);
 
   const banks = data.accounts.filter((a) => a.kind === "bank" && !a.archived && a.id !== account?.id);
-  const usedBy = account ? data.plan_items.filter((p) => p.active && (p.account_id === account.id || p.card_id === account.id)).length : 0;
+  // 나눠 내는 공동 항목의 두 사람 몫이 같은 곳을 쓰면 한 항목으로 센다
+  const usedBy = account ? new Set(data.plan_items.filter((p) => p.active && (p.account_id === account.id || p.card_id === account.id)).map((p) => p.pair_id ?? p.id)).size : 0;
   const card = kind === "card";
 
   const owners: Owner[] = ["joint", "a", "b"];
@@ -120,7 +137,9 @@ export function AddPass({ open, onOpenChange, account, kind: initialKind }: { op
     const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
     await new Promise((r) => setTimeout(r, reduce ? 0 : 420));
     onOpenChange(false);
-    if (await upsert("accounts", [row])) toast(`${eul(row.name)} 지갑에 넣었어요`);
+    if (!(await upsert("accounts", [row]))) return;
+    toast(`${eul(row.name)} 지갑에 넣었어요`);
+    onSaved?.(row);
   };
 
   const archive = async () => {

@@ -1020,3 +1020,20 @@ drop index if exists public.history_at;
 
 -- ---------- 3. 통계 갱신 ----------
 analyze public.spendings, public.month_items, public.history;
+
+-- ============================================================
+-- 016 공동 항목 나눠 내기 (migrations/016_item_pairs.sql 과 같다)
+-- 나눠 낸 항목은 payer a 줄과 b 줄이 같은 pair_id 를 가진다. 화면은 두 줄을 공동 항목 하나로 묶어 보여 준다.
+-- ============================================================
+alter table public.plan_items add column if not exists pair_id text;
+alter table public.month_items add column if not exists pair_id text;
+
+alter table public.plan_items drop constraint if exists plan_items_pair_shape;
+alter table public.plan_items add constraint plan_items_pair_shape
+  check (pair_id is null or (char_length(pair_id) between 1 and 40 and payer in ('a', 'b')));
+alter table public.month_items drop constraint if exists month_items_pair_shape;
+alter table public.month_items add constraint month_items_pair_shape
+  check (pair_id is null or (char_length(pair_id) between 1 and 40 and payer in ('a', 'b')));
+
+comment on column public.plan_items.pair_id is '공동 항목을 나눠 낼 때 두 사람 몫(payer a·b) 두 줄을 묶는 값 (migrations/016)';
+comment on column public.month_items.pair_id is '공동 항목을 나눠 낼 때 두 사람 몫(payer a·b) 두 줄을 묶는 값 (migrations/016)';

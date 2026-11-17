@@ -84,6 +84,11 @@ interface ItemFields extends Meta {
   due_day: number | null;
   sort: number;
   note: string;
+  /**
+   * 공동 항목을 나눠 낼 때 두 사람 몫을 묶는 값 (migrations/016). 묶인 두 줄은 payer 가 a·b 이고
+   * 줄마다 금액·나가는 곳·납부 확인을 따로 가진다. 화면은 두 줄을 공동 항목 하나로 보여 준다 — pairOf()
+   */
+  pair_id?: string | null;
 }
 
 /** 매달 반복되는 플랜 항목 (템플릿) */

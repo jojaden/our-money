@@ -164,6 +164,33 @@ class CalcTest {
         assertEquals(98_001, items.first { it.planItemId == "phone" }.copy(paid = false).actualAmount)
     }
 
+    @Test fun split_joint_item_moves_each_share_from_own_source() {
+        // 공동 생활비 70만을 나눠 낸다: 현빈 40만은 급여통장 → 공동통장, 예진 30만은 공동 카드로
+        val pa = PlanItem("liv-a", Group.LIVING, "공동 생활비", 400_000, Owner.A, "acc-joint", Method.MANUAL, pairId = "pr-1")
+        val pb = PlanItem("liv-b", Group.LIVING, "공동 생활비", 300_000, Owner.B, null, Method.CARD_AUTO, cardId = "card-joint", pairId = "pr-1")
+        val items = snapshotItems("2026-11", listOf(pa, pb))
+        assertEquals(listOf("pr-1", "pr-1"), items.map { it.pairId })
+        val plan = transfersOf(settings, month, items, accounts)
+        // 각자 자기 몫만, 분담 비율(50:50)과 상관없이
+        assertEquals(400_000, plan.transfers.single { it.person == Person.A }.amount)
+        assertEquals(300_000, plan.transfers.single { it.person == Person.B }.amount)
+        val l = lanes(settings, month, items).associateBy { it.person }
+        assertEquals(400_000, l.getValue(Person.A).jointShare)
+        assertEquals(300_000, l.getValue(Person.B).jointShare)
+        // 공동 생활비 예산은 두 몫의 합
+        val data = AppData(settings = settings, accounts = accounts, planItems = listOf(pa, pb), months = listOf(month), monthItems = items)
+        assertEquals(700_000, data.livingStatus("2026-11", "2026-11-03").budget)
+    }
+
+    @Test fun split_saving_goal_counts_both_shares() {
+        val pa = PlanItem("sv-a", Group.SAVING, "여행 적금", 200_000, Owner.A, "acc-joint", Method.ACCOUNT_AUTO, pairId = "pr-2", goalAmount = 1_000_000, goalStart = 100_000)
+        val pb = PlanItem("sv-b", Group.SAVING, "여행 적금", 100_000, Owner.B, "acc-joint", Method.ACCOUNT_AUTO, pairId = "pr-2", goalAmount = 1_000_000, goalStart = 100_000)
+        val items = snapshotItems("2026-11", listOf(pa, pb)).map { it.copy(paid = true) }
+        val data = AppData(settings = settings, accounts = accounts, planItems = listOf(pa, pb), months = listOf(month), monthItems = items)
+        assertEquals(400_000, data.goalProgress(pa)!!.saved)
+        assertEquals(400_000, data.goalProgress(pb)!!.saved)
+    }
+
     @Test fun installments_split_monthly_with_remainder_first() {
         // 10/28(11월 기간)에 공동 카드로 100,000원 3개월 할부 → 33,334 / 33,333 / 33,333
         val tv = Spending("tv", "2026-10-28", 100_000, null, PayKind.CARD, "card-joint", Owner.JOINT, Person.A, "TV", installmentMonths = 3)

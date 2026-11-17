@@ -197,7 +197,8 @@ export function lanes(s: Settings, m: Month | null, items: MonthItem[]): Lane[] 
     for (const i of items) {
       const v = shareOf(i, p, rA);
       byGroup[i.group] += v;
-      if (i.payer === "joint") jointShare += v;
+      // 나눠 낸 공동 항목의 내 몫도 공동 부담이다
+      if (i.payer === "joint" || i.pair_id) jointShare += v;
     }
     const allocated = GROUP_ORDER.reduce((sum, g) => sum + byGroup[g], 0);
     const income = m ? (p === "a" ? m.income_a : m.income_b) : 0;
@@ -496,11 +497,38 @@ export function itemDone(data: Data, item: MonthItem): boolean {
 
 export function goalProgress(data: Data, item: PlanItem): { saved: number; target: number } | null {
   if (!item.goal_amount) return null;
+  // 나눠 내는 공동 저축은 두 사람 몫을 합쳐 하나의 목표로 (목표·모은 돈은 두 줄에 같은 값)
+  const ids = new Set(item.pair_id ? data.plan_items.filter((p) => p.pair_id === item.pair_id).map((p) => p.id) : [item.id]);
   const paid = sum(
-    data.month_items.filter((i) => i.plan_item_id === item.id && itemDone(data, i)),
+    data.month_items.filter((i) => i.plan_item_id !== null && ids.has(i.plan_item_id) && itemDone(data, i)),
     actualAmount,
   );
   return { saved: (item.goal_start ?? 0) + paid, target: item.goal_amount };
+}
+
+/* ---------- 나눠 내는 공동 항목 ---------- */
+
+/** 나눠 낸 공동 항목의 상대 몫 (같은 목록에서 같은 pair_id) */
+export function partnerOf<T extends Pick<MonthItem, "id" | "pair_id">>(items: T[], item: T): T | undefined {
+  return item.pair_id ? items.find((x) => x.pair_id === item.pair_id && x.id !== item.id) : undefined;
+}
+
+/** 화면에 보일 줄: 나눠 낸 두 줄은 a 몫 줄 하나로 묶고 상대 몫은 partner 로 (한쪽만 남았으면 그 줄 하나) */
+export function itemRows(items: MonthItem[]): { item: MonthItem; partner?: MonthItem }[] {
+  const out: { item: MonthItem; partner?: MonthItem }[] = [];
+  const seen = new Set<string>();
+  for (const i of items) {
+    if (!i.pair_id) {
+      out.push({ item: i });
+      continue;
+    }
+    if (seen.has(i.pair_id)) continue;
+    seen.add(i.pair_id);
+    const partner = partnerOf(items, i);
+    const [a, b] = partner && partner.payer === "a" ? [partner, i] : [i, partner];
+    out.push({ item: a, partner: b });
+  }
+  return out;
 }
 
 /* ---------- 새 달 ---------- */
@@ -528,6 +556,7 @@ export function snapshotItems(month: string, plan: PlanItem[]): MonthItem[] {
       due_day: p.due_day,
       sort: p.sort,
       note: p.note,
+      pair_id: p.pair_id ?? null,
       paid: false,
       paid_at: null,
       paid_by: null,
