@@ -362,8 +362,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const monthMotion = useMemo(() => createMonthMotion(), []);
   useEffect(() => () => monthMotion.cancel(), [monthMotion]);
+  // 넘기는 방향(앞 달·뒤 달)을 정하려고 지금 보고 있는 달을 둔다
+  const monthNow = useRef(month);
+  useEffect(() => {
+    monthNow.current = month;
+  }, [month]);
   const setMonth = useCallback((m: string) => {
-    void monthMotion.run(() => setMonthState(m));
+    const now = monthNow.current;
+    void monthMotion.run(() => setMonthState(m), m > now ? 1 : m < now ? -1 : 0);
     try {
       sessionStorage.setItem(MONTH_KEY, m);
     } catch {}

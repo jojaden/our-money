@@ -1,54 +1,42 @@
-<!-- @dsCard group="Navigation" height=470 subtitle="내 동전 반쪽이 설정 버튼, 둥근 사각 화살표, 따뜻한 띠. 굴리면 유리 + 작은 제목, 다른 달이면 이번 달로" -->
+<!-- @dsCard group="Navigation" height=430 subtitle="왼쪽 위 끝에 달 이름(누르면 달 고르기), 오른쪽 종·톱니. 아래는 기간 줄만. 굴리면 유리, 다른 달이면 이번 달로" -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alan+Sans:wght@300..900&family=Noto+Sans+KR:wght@400..800&display=swap">
 <style>
   body { margin: 0; background: var(--ground); color: var(--text); font-family: var(--font-text); word-break: keep-all; -webkit-font-smoothing: antialiased; }
   .stage { padding: 20px; }
-  .band { max-width: 390px; display: grid; gap: 22px; padding: 16px var(--edge) 28px; box-sizing: border-box; border-radius: var(--radius-card); background: linear-gradient(180deg, var(--warm-100) 0%, var(--warm-50) 62%, var(--ground) 100%); }
-  .bar { display: flex; align-items: center; gap: 8px; }
-  .sq { flex: none; display: grid; place-items: center; width: var(--topbar-btn); height: var(--topbar-btn); border: 0; border-radius: var(--radius-control); background: color-mix(in srgb, var(--surface) 70%, transparent); box-shadow: var(--shadow-raise); color: var(--muted); cursor: pointer; transition: transform var(--dur-press) var(--ease-press); }
-  .sq:active { transform: scale(0.94); }
-  .sq:focus-visible, .month:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-  .sq svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-  .me { --p: var(--a); background: var(--a-soft); }
-  .me svg { width: 24px; height: 24px; }
-  .me .on { fill: var(--p); stroke: none; }
-  .me .off { fill: none; stroke: var(--control); stroke-width: 1.4; }
-  .sq:focus-visible, .now:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-  .mini { flex: 1; min-width: 0; text-align: center; font: 600 16px/1 var(--font-text); letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .band .mini { visibility: hidden; }
-  h1 { margin: 0; font: 700 32px/36px var(--font-display); letter-spacing: -0.02em; }
-  .sub { margin-top: 6px; color: var(--faint); font: 400 14.5px/20px var(--font-text); }
-  .cap { margin: 20px 0 8px; color: var(--faint); font: 500 14.5px/20px var(--font-text); }
-  .plain { max-width: 390px; display: grid; gap: 22px; padding: 16px var(--edge) 20px; box-sizing: border-box; }
-  .title-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .band { max-width: 390px; padding: 6px calc(var(--edge) + var(--text-inset)) 20px; box-sizing: border-box; border-radius: var(--radius-card); background: linear-gradient(180deg, var(--warm-100) 0%, var(--warm-50) 62%, var(--ground) 100%); }
+  .plain, .glass { max-width: 390px; box-sizing: border-box; padding: 6px calc(var(--edge) + var(--text-inset)) 16px; }
+  .bar { display: flex; align-items: center; gap: 6px; }
+  .month { display: inline-flex; align-items: center; height: var(--topbar-btn); margin-left: -6px; padding: 0 6px; border: 0; border-radius: var(--radius-control); background: transparent; color: var(--text); font: 700 26px/32px var(--font-display); letter-spacing: -0.02em; cursor: pointer; transition: transform var(--dur-press) var(--ease-press); }
   .now { height: 32px; padding: 0 12px; border: 0; border-radius: var(--radius-chip); background: var(--tab-active-bg); color: var(--text); font: 600 13.5px/1 var(--font-text); cursor: pointer; transition: transform var(--dur-press) var(--ease-press); }
-  .now:active { transform: scale(0.96); }
-  .glass { max-width: 390px; box-sizing: border-box; padding: 6px var(--edge) 22px; background: color-mix(in srgb, var(--surface) 72%, transparent); -webkit-backdrop-filter: blur(20px) saturate(180%); backdrop-filter: blur(20px) saturate(180%); -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 16px), transparent); mask-image: linear-gradient(to bottom, #000 calc(100% - 16px), transparent); }
+  .month:active, .now:active, .sq:active { transform: scale(0.94); }
+  .actions { display: flex; margin-left: auto; margin-right: -10px; }
+  .sq { display: grid; place-items: center; width: var(--topbar-btn); height: var(--topbar-btn); padding: 0; border: 0; border-radius: var(--radius-control); background: transparent; color: var(--text); cursor: pointer; transition: transform var(--dur-press) var(--ease-press); }
+  .sq svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+  .month:focus-visible, .now:focus-visible, .sq:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .sub { padding-left: 0; color: var(--faint); font: 400 14.5px/20px var(--font-text); }
+  .cap { margin: 20px 0 8px; color: var(--faint); font: 500 14.5px/20px var(--font-text); }
+  .glass { background: color-mix(in srgb, var(--surface) 72%, transparent); -webkit-backdrop-filter: blur(20px) saturate(180%); backdrop-filter: blur(20px) saturate(180%); -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 16px), transparent); mask-image: linear-gradient(to bottom, #000 calc(100% - 16px), transparent); }
 </style>
 <div class="stage">
   <header class="band">
     <div class="bar">
-      <button type="button" class="sq me" aria-label="설정 (현빈)"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="on" d="M11.2 4.6a7.4 7.4 0 0 0 0 14.8Z"/><path class="off" d="M12.8 4.6a7.4 7.4 0 0 1 0 14.8Z"/></svg></button>
-      <span class="mini" aria-hidden="true">11월</span>
-      <button type="button" class="sq" aria-label="지난달"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg></button>
-      <button type="button" class="sq" aria-label="다음 달"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button>
+      <button type="button" class="month" aria-haspopup="dialog" aria-label="11월, 다른 달 고르기">11월</button>
+      <span class="actions">
+        <button type="button" class="sq" aria-label="알림 모음"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg></button>
+        <button type="button" class="sq" aria-label="설정"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-2.82 1.17V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-2.82-1.17l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 3 12.83H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.17-2.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9.9 3.09V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 2.82 1.17l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 21 9.9V10a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+      </span>
     </div>
-    <div>
-      <h1>11월</h1>
-      <div class="sub">10월 25일 – 11월 24일 · 21일 남음</div>
-    </div>
+    <div class="sub">10월 25일 – 11월 24일 · 21일 남음</div>
   </header>
 
-  <div class="cap">굴려서 큰 제목이 막대 밑으로 지나가면</div>
+  <div class="cap">굴려서 머리가 막대 밑으로 지나가면 (유리)</div>
   <div class="bar glass">
-    <button type="button" class="sq me" aria-label="설정 (현빈)"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="on" d="M11.2 4.6a7.4 7.4 0 0 0 0 14.8Z"/><path class="off" d="M12.8 4.6a7.4 7.4 0 0 1 0 14.8Z"/></svg></button>
-    <span class="mini">11월</span>
-    <button type="button" class="sq" aria-label="지난달"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg></button>
-    <button type="button" class="sq" aria-label="다음 달"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button>
+    <button type="button" class="month" aria-haspopup="dialog" aria-label="11월, 다른 달 고르기">11월</button>
   </div>
 
   <div class="cap">다른 달을 볼 때 (홈 밖이라 따뜻한 띠 없음)</div>
   <div class="plain">
-    <div class="title-row"><h1>10월</h1><button type="button" class="now">이번 달로</button></div>
+    <div class="bar"><button type="button" class="month" aria-haspopup="dialog" aria-label="10월, 다른 달 고르기">10월</button><button type="button" class="now">이번 달로</button></div>
+    <div class="sub">9월 25일 – 10월 24일 · 지난 달</div>
   </div>
 </div>

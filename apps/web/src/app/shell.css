@@ -8,6 +8,8 @@
   max-width: 1152px;
   min-height: 100dvh;
   margin: 0 auto;
+  /* 달을 넘길 때 옆으로 빠지는 내용이 가로 스크롤을 만들지 않게 (clip 은 스크롤 상자가 아니라 위쪽 막대 sticky 는 그대로) */
+  overflow-x: clip;
   padding: 0 var(--edge) calc(var(--nav-h) + var(--nav-inset) * 2 + env(safe-area-inset-bottom, 0px));
 }
 .mark { display: block; flex: none; border-radius: 23%; }
@@ -57,13 +59,28 @@
   transition: opacity var(--dur-press) ease, transform var(--dur-tab) var(--ease-drawer);
 }
 .topbar.glass .bar-mini { opacity: 1; transform: none; }
-/* 작은 제목 ‹ 11월 › — 화면 이름은 생략하고, 누르면 달 고르기. 큰 제목이 보일 때는 inert. */
-div.bar-mini { display: flex; align-items: center; justify-content: center; gap: 2px; }
-.mini-title { min-width: 0; height: 36px; padding: 0 8px; overflow: hidden; border: 0; border-radius: var(--radius-control); background: transparent; color: var(--text); font: inherit; letter-spacing: inherit; text-overflow: ellipsis; white-space: nowrap; }
-.mini-step { display: grid; flex: none; place-items: center; width: 32px; height: 36px; padding: 0; border: 0; border-radius: var(--radius-control); background: transparent; color: var(--faint); }
-.mini-step svg { width: 18px; height: 18px; stroke-width: 2.25; }
-.mini-title, .mini-step { transition: transform var(--dur-press) var(--ease-press); }
-.mini-title:active, .mini-step:active { transform: scale(0.94); }
+/* 왼쪽 위 끝의 달 "11월" — 누르면 달 고르기. 글리프가 왼쪽 여백 선에 맞도록 버튼 여백만큼 당긴다. 누르는 칸은 44px.
+   다른 달을 보면 "이번 달로"가 붙는다. 화살표(.bar-step)는 마우스처럼 정밀한 포인터에서만 (폰은 좌우로 밀어 넘긴다) */
+.bar-month { display: flex; flex: 1; align-items: center; gap: 6px; min-width: 0; margin-left: -6px; }
+.bar-month-btn { display: inline-flex; flex: none; align-items: center; height: var(--topbar-btn); padding: 0 6px; border: 0; border-radius: var(--radius-control); background: transparent; color: var(--text); font: 700 26px/32px var(--font-display); letter-spacing: -0.02em; }
+.bar-step { display: none; flex: none; place-items: center; width: 32px; height: var(--topbar-btn); padding: 0; border: 0; border-radius: var(--radius-control); background: transparent; color: var(--faint); }
+.bar-step svg { width: 22px; height: 22px; stroke-width: 2.25; }
+.bar-month .to-now { flex: none; height: 32px; padding: 0 12px; border: 0; border-radius: var(--radius-chip); background: var(--tab-active-bg); color: var(--text); font: 600 13.5px/1 var(--font-text); }
+.bar-month .pill { flex: none; }
+.bar-month-btn, .bar-step, .bar-month .to-now { transition: transform var(--dur-press) var(--ease-press), background-color var(--dur-press) ease, color var(--dur-press) ease; }
+.bar-month-btn:active, .bar-step:active, .bar-month .to-now:active { transform: scale(0.94); }
+/* 달 이름 굴리기: 옛 이름과 새 이름을 같은 칸에 겹친다. 다음 달(--dir 1)은 아래에서 올라오고 옛 이름은 위로 빠진다 */
+.bar-month-n { display: inline-grid; overflow: clip; overflow-clip-margin: 2px; }
+.bar-month-n > span { grid-area: 1 / 1; text-align: left; white-space: nowrap; }
+.bar-month-n > .in { animation: month-in var(--dur-swap) var(--ease-out) both; }
+.bar-month-n > .out { animation: month-out var(--dur-swap) var(--ease-out) both; }
+@keyframes month-in { from { opacity: 0; transform: translateY(calc(var(--dir) * 60%)); } }
+@keyframes month-out { to { opacity: 0; transform: translateY(calc(var(--dir) * -60%)); } }
+@media (hover: hover) and (pointer: fine) {
+  .bar-step { display: grid; }
+  .bar-month { gap: 2px; margin-left: -10px; }
+  .bar-month .to-now { margin-left: 8px; }
+}
 /* 종: 새 알림 수는 오른쪽 위 빨간 알약 (나타날 때 한 번 튐) */
 .bell { position: relative; }
 .bell .badge { position: absolute; top: -3px; right: -3px; display: grid; place-items: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: var(--radius-chip); background: var(--negative); box-shadow: 0 0 0 2px var(--ground); color: var(--on-dark); font: 700 11px/1 var(--font-display); animation: badge-in var(--dur-pop) var(--ease-pop) both; }
@@ -93,21 +110,13 @@ div.bar-mini { display: flex; align-items: center; justify-content: center; gap:
 
 /* ---------- 페이지 머리 ---------- */
 
-.page-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin: 6px 0 20px; padding-inline: var(--text-inset); }
+/* 달 화면의 머리는 기간 줄과 결론만 (달 이름은 위쪽 막대). 설정·모아 보기는 큰 제목을 그대로 둔다 */
+.page-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin: 0 0 16px; padding-inline: var(--text-inset); }
+.page-head:not([data-month-head]) { margin-top: 6px; }
 .page-head .title-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
 .page-head h1 { font: 700 32px/36px var(--font-display); letter-spacing: -0.02em; }
-.page-head .sub { margin-top: 6px; color: var(--faint); font: 400 14.5px/20px var(--font-text); }
-.page-head .to-now { height: 32px; padding: 0 12px; border: 0; border-radius: var(--radius-chip); background: var(--tab-active-bg); color: var(--text); font: 600 13.5px/1 var(--font-text); transition: transform var(--dur-press) var(--ease-press); }
-.page-head .to-now:active { transform: scale(0.96); }
-/* ‹ 11월 › — 큰 제목 글꼴 그대로. 화살표 글리프가 왼쪽 여백 선에 맞도록 버튼 여백만큼 당긴다. 누르는 칸은 44px */
-.page-head .month-step { display: flex; align-items: center; margin: -4px -6px -4px -10px; }
-.page-head .month-arrow { display: grid; flex: none; place-items: center; width: 36px; height: 44px; padding: 0; border: 0; border-radius: var(--radius-control); background: transparent; color: var(--faint); }
-.page-head .month-arrow svg { width: 24px; height: 24px; stroke-width: 2.25; }
-.page-head .month-btn { display: inline-flex; align-items: center; height: 44px; padding: 0 6px; border: 0; border-radius: var(--radius-control); background: transparent; color: var(--text); font: 700 32px/36px var(--font-display); letter-spacing: -0.02em; }
-/* 1월이든 11월이든 오른쪽 화살표가 같은 자리에 오게 두 자리 폭을 잡는다 */
-.page-head .month-btn .m { display: inline-block; min-width: calc(2ch + 1em); text-align: center; }
-.page-head :is(.month-arrow, .month-btn) { transition: transform var(--dur-press) var(--ease-press), background-color var(--dur-press) ease, color var(--dur-press) ease; }
-.page-head :is(.month-arrow, .month-btn):active { transform: scale(0.94); }
+.page-head .sub { color: var(--faint); font: 400 14.5px/20px var(--font-text); }
+.page-head h1:not(.sr-only) + .sub, .page-head .title-row + .sub { margin-top: 6px; }
 /* 모아 보기 머리: "‹ 달력"으로 돌아가고, 기간 제목을 누르면 기간 바꾸기 */
 .back-btn { display: inline-flex; align-items: center; gap: 2px; height: 44px; margin: -6px 0 2px -10px; padding: 0 10px 0 4px; border: 0; border-radius: var(--radius-control); background: transparent; color: var(--accent-ink); font: 600 17px/1 var(--font-text); }
 .back-btn svg { width: 24px; height: 24px; stroke-width: 2.25; }
@@ -116,7 +125,7 @@ div.bar-mini { display: flex; align-items: center; justify-content: center; gap:
 .back-btn, .range-btn { transition: transform var(--dur-press) var(--ease-press), background-color var(--dur-press) ease; }
 .back-btn:active, .range-btn:active { transform: scale(0.96); }
 @media (hover: hover) and (pointer: fine) {
-  .page-head :is(.month-arrow, .month-btn):hover, .mini-title:hover, .mini-step:hover { background: var(--tab-active-bg); color: var(--text); }
+  .bar-month-btn:hover, .bar-step:hover { background: var(--tab-active-bg); color: var(--text); }
   .back-btn:hover, .range-btn:hover { background: var(--tab-active-bg); }
 }
 .head-action { display: none; }
@@ -435,5 +444,7 @@ html[data-navigation="back"]::view-transition-new(app-page) { animation-name: pa
   ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
   .route-page { animation: none !important; }
   .page-enter, .page-enter > *, .page-enter .page-head * { animation: none !important; }
+  .bar-month-n > .in { animation: none; }
+  .bar-month-n > .out { display: none; }
   .fab, .fab-btn, .fab-prompt, .fab-compose, .fab-compose *, .fab-icon, .fab-icon > svg, body::after, .bell .badge, .tabbar { animation: none !important; transition: none !important; }
 }
