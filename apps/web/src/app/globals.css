@@ -415,7 +415,7 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
 .hold { -webkit-touch-callout: none; user-select: none; }
 .hold-layer { position: fixed; top: 0; left: 0; z-index: 60; box-sizing: border-box; width: 100vw; height: 100dvh; padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px); touch-action: none; }
 .hold-dim { position: absolute; inset: 0; background: color-mix(in srgb, var(--scrim) 55%, transparent); -webkit-backdrop-filter: blur(14px) saturate(140%); backdrop-filter: blur(14px) saturate(140%); }
-.hold-preview { position: absolute; display: flex; align-items: center; box-sizing: border-box; padding: 0 8px; overflow: hidden; border-radius: var(--radius-inner); background: var(--surface); box-shadow: var(--shadow-float); }
+.hold-preview { position: absolute; display: flex; align-items: center; box-sizing: border-box; padding: 0 12px; overflow: hidden; border-radius: var(--radius-inner); background: var(--surface); box-shadow: var(--shadow-float); }
 .hold-preview > * { flex: 1; min-width: 0; }
 .hold-menu { position: absolute; width: 232px; overflow: hidden; border-radius: var(--radius-inner); background: color-mix(in srgb, var(--surface) 90%, transparent); -webkit-backdrop-filter: blur(22px) saturate(180%); backdrop-filter: blur(22px) saturate(180%); box-shadow: var(--shadow-float); }
 .hold-menu button { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 48px; padding: 0 16px; border: 0; background: transparent; color: var(--text); font: 500 16px/22px var(--font-text); text-align: left; transition: background-color var(--dur-press) ease; }

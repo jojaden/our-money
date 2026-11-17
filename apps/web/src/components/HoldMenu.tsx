@@ -190,8 +190,8 @@ function HoldLayer({ place, open, actions, label, onClose, onGone }: { place: Pl
     // 줄을 그대로 베껴 같은 자리에 둔다 (눌리지 않게 inert)
     const r = place.row.getBoundingClientRect();
     pv.replaceChildren(place.row.firstElementChild!.cloneNode(true));
-    // 줄의 누르는 칸이 양옆 8px 밖까지 나와 있어서 들린 카드도 그만큼 넓힌다 (.hold-preview 안쪽 여백 8px)
-    Object.assign(pv.style, { left: `${r.left - 8}px`, top: `${r.top}px`, width: `${r.width + 16}px`, height: `${r.height}px` });
+    // 들린 카드는 양옆 12px 넓혀 안쪽 여백(.hold-preview 12px)을 두고, 글자는 원래 자리에 그대로 둔다
+    Object.assign(pv.style, { left: `${r.left - 12}px`, top: `${r.top}px`, width: `${r.width + 24}px`, height: `${r.height}px` });
     const mh = mn.offsetHeight;
     const mw = mn.offsetWidth;
     // 아래에 메뉴 자리가 모자라면 줄을 위로 올리고, 그래도 안 되면 메뉴를 위에

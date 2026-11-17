@@ -12,7 +12,7 @@
   .row .t { font: 600 16px/22px var(--font-text); }
   .row .s { color: var(--faint); font: 500 13px/18px var(--font-text); }
   .dim { position: absolute; inset: 0; background: color-mix(in srgb, var(--scrim) 55%, transparent); -webkit-backdrop-filter: blur(14px) saturate(140%); backdrop-filter: blur(14px) saturate(140%); opacity: 0; pointer-events: none; transition: opacity var(--dur-swap) var(--ease-out); }
-  .lift { position: absolute; left: 12px; right: 12px; padding: 0 8px; border-radius: var(--radius-inner); background: var(--surface); box-shadow: var(--shadow-float); opacity: 0; pointer-events: none; transform: scale(0.96); transition: transform var(--dur-tab) var(--ease-pop), opacity 120ms ease; }
+  .lift { position: absolute; left: 8px; right: 8px; padding: 0 12px; border-radius: var(--radius-inner); background: var(--surface); box-shadow: var(--shadow-float); opacity: 0; pointer-events: none; transform: scale(0.96); transition: transform var(--dur-tab) var(--ease-pop), opacity 120ms ease; }
   .menu { position: absolute; right: 12px; width: 232px; overflow: hidden; border-radius: var(--radius-inner); background: color-mix(in srgb, var(--surface) 90%, transparent); box-shadow: var(--shadow-float); opacity: 0; pointer-events: none; transform: scale(0.4); transform-origin: top right; transition: transform var(--dur-tab) var(--ease-pop), opacity 160ms ease; }
   .menu button { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 48px; padding: 0 16px; border: 0; background: transparent; color: var(--text); font: 500 16px/22px var(--font-text); cursor: pointer; }
   .menu button + button { box-shadow: inset 0 0.6px 0 var(--rule); }
