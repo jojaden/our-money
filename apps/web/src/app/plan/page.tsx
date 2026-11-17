@@ -21,7 +21,7 @@ import { useMatch } from "@/lib/media";
 import { IncomeSheet, ItemSheet } from "@/components/ItemSheet";
 
 export default function PlanPage() {
-  const { data, month } = useData();
+  const { data, month, me } = useData();
   const s = data.settings;
   // 아직 시작하지 않은 달도 빈 플랜을 그대로 보여 준다 (항목·월급을 처음 저장하면 그 달이 생긴다)
   const saved = monthRow(data, month);
@@ -148,7 +148,7 @@ export default function PlanPage() {
               </span>
             </div>
             <div className="card">
-              <SplitBar s={s} lanes={ls} items={items} rA={rA} onOpenItem={(item) => setSheet({ open: true, item })} />
+              <SplitBar s={s} lanes={ls} items={items} rA={rA} me={me} month={month} onOpenItem={(item) => setSheet({ open: true, item })} />
             </div>
           </section>
         </Slot>

@@ -4,8 +4,8 @@ import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 import type { Group, MonthItem, Person, Settings } from "@/lib/types";
 import { GROUP_LABEL, GROUP_ORDER } from "@/lib/types";
-import { nameOf, shareOf, type Lane } from "@/lib/calc";
-import { num } from "@/lib/format";
+import { nameOf, other, paydayDate, shareOf, type Lane } from "@/lib/calc";
+import { dateWithDay, num } from "@/lib/format";
 import { Morph } from "./Morph";
 import { Money, Seg } from "./ui";
 
@@ -16,7 +16,7 @@ type Scope = "both" | Person;
  * 월급이 나뉘는 곳 (docs/design-system/components/SplitBar) — 수입을 큰 숫자로, 남은 돈 한 줄, 그 아래 한 줄 쌓은 막대와 금액 목록.
  * 플랜 화면의 첫 카드라 화면 머리 대신 여기서 결론(남은 돈·나눈 비율)을 말한다.
  * 버킷 색은 이 막대와 목록 점에만 쓴다. 목록 줄을 누르면 그 조각만 남기고 나머지가 옅어지며, 줄 아래에 버킷 항목이 펼쳐진다.
- * 위 세그먼트로 두 사람·현빈·예진을 바꿔 본다.
+ * 위 세그먼트로 나·상대·두 사람을 바꿔 본다. 처음엔 내 월급(내 월급날)부터 — 월급날이 사람마다 달라 내 돈이 어디로 가는지가 먼저다.
  */
 export function SplitBar({
   s,
@@ -24,14 +24,20 @@ export function SplitBar({
   items,
   rA,
   onOpenItem,
+  me,
+  month,
 }: {
   s: Settings;
   lanes: Lane[];
+  /** 로그인한 사람 — 처음 보이는 쪽 */
+  me: Person;
+  /** 보고 있는 달 (그 사람의 월급날을 보인다) */
+  month: string;
   items: MonthItem[];
   rA: number;
   onOpenItem: (item: MonthItem) => void;
 }) {
-  const [scope, setScope] = useState<Scope>("both");
+  const [scope, setScope] = useState<Scope>(me);
   const [picked, setPicked] = useState<Bucket | null>(null);
   const [open, setOpen] = useState<Bucket | null>(null);
 
@@ -59,9 +65,9 @@ export function SplitBar({
 
   return (
     <div className="split">
-      <Seg label="누구 월급" value={scope} onChange={changeScope} options={[{ value: "both", label: "두 사람" }, { value: "a", label: nameOf(s, "a") }, { value: "b", label: nameOf(s, "b") }]} />
+      <Seg label="누구 월급" value={scope} onChange={changeScope} options={[{ value: me, label: nameOf(s, me) }, { value: other(me), label: nameOf(s, other(me)) }, { value: "both", label: "두 사람" }]} />
       <p className="split-total">
-        <span className="hero-label">{lane ? `${nameOf(s, lane.person)} 수입` : "두 사람 수입"}</span>
+        <span className="hero-label">{lane ? `${nameOf(s, lane.person)} 수입 · 월급날 ${dateWithDay(paydayDate(month, s, lane.person))}` : "두 사람 수입"}</span>
         <span className="hero-amt">
           {num(income)}
           <small>원</small>
@@ -126,7 +132,7 @@ export function SplitBar({
                       <button type="button" onClick={() => onOpenItem(i)}>
                         <span className="n">
                           {i.name}
-                          <span className="s">{i.payer === "joint" ? (lane ? `공동 · ${nameOf(s, lane.person)} 몫` : "공동") : nameOf(s, i.payer)}</span>
+                          <span className="s">{i.payer === "joint" ? (lane ? `공동 · ${nameOf(s, lane.person)} 몫` : "공동") : i.pair_id ? `공동 · ${nameOf(s, i.payer)} 몫` : nameOf(s, i.payer)}</span>
                         </span>
                         <Money value={v} />
                       </button>

@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useData } from "@/lib/store";
-import { addMonths, allowanceStatus, categoryUse, groupTotals, itemsOf, livingStatus, nameOf, periodOf, spendingsIn } from "@/lib/calc";
-import { num } from "@/lib/format";
+import { addMonths, allowanceStatus, categoryUse, groupTotals, itemsOf, livingStatus, nameOf, other, periodOf, spendingsIn } from "@/lib/calc";
+import { num, shortDate } from "@/lib/format";
 import { MonthHeader } from "@/components/MonthHeader";
 import { CategoryIcon, EmptyState, Money } from "@/components/ui";
 import { DailyBars } from "@/components/DailyBars";
@@ -21,7 +21,7 @@ import { useRevealOnce } from "@/components/reveal";
 
 /** 가계부 탭은 이번 달 요약만 — 날짜별 전체 목록과 필터는 모든 기록(/ledger/all/)에 둔다. 용돈은 홈, 두 사람 정산은 체크에 있다 */
 export default function LedgerPage() {
-  const { data, month, today } = useData();
+  const { data, month, today, me } = useData();
   const s = data.settings;
   const { openSpending } = useSheets();
   usePrimaryAction("지출 기록", "spending", () => openSpending());
@@ -30,8 +30,9 @@ export default function LedgerPage() {
   const all = spendingsIn(data, month);
   const reviewCount = all.filter((r) => r.review?.length).length;
   const living = livingStatus(data, month, today);
-  const allowA = allowanceStatus(data, month, "a", today);
-  const allowB = allowanceStatus(data, month, "b", today);
+  // 용돈은 내 것을 앞에 (내 한 달 기준 기간), 상대는 쓴 돈만 한 줄
+  const mine = allowanceStatus(data, month, me, today);
+  const theirs = allowanceStatus(data, month, other(me), today);
   const cats = categoryUse(data, month);
   const maxCat = Math.max(1, ...cats.map((c) => Math.max(c.budget, c.spent)));
 
@@ -54,10 +55,10 @@ export default function LedgerPage() {
               { key: "living", name: "공동 생활비", budget: living.budget, spent: living.spent },
               {
                 key: "allowance",
-                name: "두 사람 용돈",
-                budget: allowA.budget + allowB.budget,
-                spent: allowA.spent + allowB.spent,
-                note: `${nameOf(s, "a")} ${num(allowA.spent)} · ${nameOf(s, "b")} ${num(allowB.spent)}`,
+                name: `${nameOf(s, me)} 용돈`,
+                budget: mine.budget,
+                spent: mine.spent,
+                note: [mine.own ? `${shortDate(mine.period.start)}~${shortDate(mine.period.last)}` : "", `${nameOf(s, other(me))} ${num(theirs.spent)}원 씀`].filter(Boolean).join(" · "),
               },
             ]}
           />
