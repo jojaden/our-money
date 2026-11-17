@@ -87,7 +87,8 @@ export function AddPass({
   }, [open, account, initialKind, initialOwner]);
 
   const banks = data.accounts.filter((a) => a.kind === "bank" && !a.archived && a.id !== account?.id);
-  const usedBy = account ? data.plan_items.filter((p) => p.active && (p.account_id === account.id || p.card_id === account.id)).length : 0;
+  // 나눠 내는 공동 항목의 두 사람 몫이 같은 곳을 쓰면 한 항목으로 센다
+  const usedBy = account ? new Set(data.plan_items.filter((p) => p.active && (p.account_id === account.id || p.card_id === account.id)).map((p) => p.pair_id ?? p.id)).size : 0;
   const card = kind === "card";
 
   const owners: Owner[] = ["joint", "a", "b"];

@@ -150,6 +150,8 @@ export function ItemSheet({
   const [source, setSource] = useState<Source>({ method: "account_auto", card_id: null, account_id: null });
   const [split, setSplit] = useState(false);
   const [parts, setParts] = useState<Record<Person, Part>>({ a: { method: "account_auto", card_id: null, account_id: null, amount: 0 }, b: { method: "account_auto", card_id: null, account_id: null, amount: 0 } });
+  // 합계를 직접 적었는지: 적었으면 한 사람 몫을 바꿀 때 나머지가 상대 몫, 아니면(몫부터 적으면) 합계가 두 몫의 합
+  const [totalLed, setTotalLed] = useState(false);
   const [dueDay, setDueDay] = useState<number | null>(null);
   const [note, setNote] = useState("");
   const [goal, setGoal] = useState(0);
@@ -173,6 +175,7 @@ export function ItemSheet({
       setName(item?.name ?? "");
       setGroup(g);
       setAmount(paired ? ia!.amount + ib!.amount : item?.amount ?? 0);
+      setTotalLed(Boolean(item));
       setPayer(paired ? "joint" : item?.payer ?? "joint");
       setSource(sourceOf(paired ? ia : item, dm));
       setSplit(paired);
@@ -205,14 +208,23 @@ export function ItemSheet({
       setSource({ method: parts.a.method, card_id: parts.a.card_id, account_id: parts.a.account_id });
     }
   };
-  // 합계는 그대로 두고 한 사람 몫을 바꾸면 나머지가 상대 몫이 된다
+  // 합계를 먼저 적었으면 한 사람 몫을 바꿀 때 나머지가 상대 몫(예: 70만 중 현빈 40만 → 예진 30만).
+  // 몫부터 적거나 합계를 넘기면 합계가 두 몫의 합이 된다(현빈 40만, 예진 30만 → 70만)
   const setShare = (p: Person, v: number) => {
-    const mine = Math.min(v, amount);
-    setParts((x) => ({ ...x, [p]: { ...x[p], amount: mine }, [p === "a" ? "b" : "a"]: { ...x[p === "a" ? "b" : "a"], amount: amount - mine } }));
+    const o: Person = p === "a" ? "b" : "a";
+    if (totalLed && v <= amount) {
+      setParts((x) => ({ ...x, [p]: { ...x[p], amount: v }, [o]: { ...x[o], amount: amount - v } }));
+    } else {
+      setParts((x) => ({ ...x, [p]: { ...x[p], amount: v } }));
+      setAmount(v + parts[o].amount);
+      setTotalLed(false);
+    }
   };
+  // 합계를 바꾸면 a 몫은 (합계 안에서) 그대로, 나머지가 b 몫 — 나눠 내기가 꺼져 있어도 맞춰 둔다(다시 켜거나 공동으로 돌아올 때 어긋나지 않게)
   const setTotal = (v: number) => {
     setAmount(v);
-    if (splitOn) setParts((x) => ({ a: { ...x.a, amount: Math.min(x.a.amount, v) }, b: { ...x.b, amount: v - Math.min(x.a.amount, v) } }));
+    setTotalLed(v > 0);
+    setParts((x) => ({ a: { ...x.a, amount: Math.min(x.a.amount, v) }, b: { ...x.b, amount: v - Math.min(x.a.amount, v) } }));
   };
   const setPartSource = (p: Person, v: Source) => setParts((x) => ({ ...x, [p]: { ...x[p], ...v } }));
 
@@ -226,11 +238,16 @@ export function ItemSheet({
       : endM && endM < (startM && startM > month ? startM : month)
         ? "끝 달은 시작 달과 이번 달보다 앞일 수 없어요"
         : null;
+  // 이번 달만 바꿀 때 나눠 내기를 켜거나 끄면(공동 → 한 사람으로 바꿔도) 다음 달에 한 사람 몫만 넘어간다
+  const splitError = item && !forward && splitOn !== paired ? "나눠 내기를 켜고 끄는 건 ‘다음 달부터도 적용’을 켰을 때만 돼요" : null;
   const valid =
     name.trim().length > 0 &&
     amount > 0 &&
-    (splitOn ? parts.a.amount > 0 && parts.b.amount > 0 && sourceOk(parts.a) && sourceOk(parts.b) : sourceOk(source)) &&
-    !periodError;
+    (splitOn
+      ? parts.a.amount > 0 && parts.b.amount > 0 && parts.a.amount + parts.b.amount === amount && sourceOk(parts.a) && sourceOk(parts.b)
+      : sourceOk(source)) &&
+    !periodError &&
+    !splitError;
 
   const save = async () => {
     if (!valid) return;
@@ -450,6 +467,11 @@ export function ItemSheet({
           </div>
           <Toggle on={forward} onChange={setForward} label="다음 달부터도 적용" />
         </div>
+        {splitError && (
+          <p className="help" role="alert">
+            {splitError}
+          </p>
+        )}
       </div>
       {forward && (
         <div className="field">
