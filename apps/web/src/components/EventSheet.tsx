@@ -75,23 +75,25 @@ function kindOf(e?: CalEvent): Kind {
  * 다시 쓰면 바꾼다("9시까지"는 끝 시간만). 오전·오후를 안 쓰면 시트를 연 지금에 맞춘다(지난 시각이면 오후).
  * 열 때마다 새 key 로 그려서 입력이 그 일정(또는 고른 날짜)에서 시작한다.
  */
-export function EventSheet({ open, onOpenChange, event, date, draft }: { open: boolean; onOpenChange: (v: boolean) => void; event?: CalEvent; date: string; /** 바로 쓰기에 쓰던 제목·시간 (새로 만들 때) */ draft?: QuickDraft }) {
+export function EventSheet({ open, onOpenChange, event, from, date, draft }: { open: boolean; onOpenChange: (v: boolean) => void; event?: CalEvent; /** 복사: 이 일정과 같은 내용으로 새로 만든다 (저장하면 새 id) */ from?: CalEvent; date: string; /** 바로 쓰기에 쓰던 제목·시간 (새로 만들 때) */ draft?: QuickDraft }) {
   const { data, upsert, remove, toast } = useData();
+  // 처음 값: 고치기면 그 일정, 복사면 베낄 일정 (저장할 때 id·rev 는 event 에서만 가져오므로 복사는 새 일정이 된다)
+  const base = event ?? from;
   const s = data.settings;
-  const [kind, setKind] = useState<Kind>(kindOf(event));
-  const [title, setTitle] = useState(event?.title ?? draft?.title ?? "");
-  const [ranged, setRanged] = useState(Boolean(event?.end_date));
-  const [start, setStart] = useState(event?.start_date ?? date);
-  const [end, setEnd] = useState(event?.end_date ?? "");
-  const [repeat, setRepeat] = useState<Repeat>(event?.repeat ?? "none");
-  const [owner, setOwner] = useState<Owner>(event?.owner ?? "joint");
-  const [dday, setDday] = useState(event?.todo ? event.dday : false);
-  const [pin, setPin] = useState(event?.pin ?? false);
-  const [remind, setRemind] = useState(event?.remind_days == null ? "" : String(event.remind_days));
-  const [amount, setAmount] = useState(event?.amount ?? 0);
-  const [note, setNote] = useState(event?.note ?? "");
-  const [startTime, setStartTime] = useState(event?.start_time ?? draft?.time ?? "");
-  const [endTime, setEndTime] = useState(event?.end_time ?? "");
+  const [kind, setKind] = useState<Kind>(kindOf(base));
+  const [title, setTitle] = useState(base?.title ?? draft?.title ?? "");
+  const [ranged, setRanged] = useState(Boolean(base?.end_date));
+  const [start, setStart] = useState(base?.start_date ?? date);
+  const [end, setEnd] = useState(base?.end_date ?? "");
+  const [repeat, setRepeat] = useState<Repeat>(base?.repeat ?? "none");
+  const [owner, setOwner] = useState<Owner>(base?.owner ?? "joint");
+  const [dday, setDday] = useState(base?.todo ? base.dday : false);
+  const [pin, setPin] = useState(base?.pin ?? false);
+  const [remind, setRemind] = useState(base?.remind_days == null ? "" : String(base.remind_days));
+  const [amount, setAmount] = useState(base?.amount ?? 0);
+  const [note, setNote] = useState(base?.note ?? "");
+  const [startTime, setStartTime] = useState(base?.start_time ?? draft?.time ?? "");
+  const [endTime, setEndTime] = useState(base?.end_time ?? "");
   /** 오전·오후를 안 쓴 시간을 정할 기준 (시트를 연 때) */
   const [now] = useState(() => new Date());
   const titleRef = useRef<HTMLInputElement>(null);

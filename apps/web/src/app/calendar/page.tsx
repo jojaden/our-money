@@ -3,8 +3,11 @@
 import Link from "next/link";
 import { Suspense, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { CalendarPlus, ChevronDown, ChevronLeft, ChevronRight, X } from "lucide-react";
-import type { CalEvent, Spending } from "@/lib/types";
+import { CalendarPlus, ChevronDown, ChevronLeft, ChevronRight, Copy, Pencil, Share, Trash2, X } from "lucide-react";
+import type { CalEvent, Settings, Spending } from "@/lib/types";
+import { toIcs } from "@/lib/ics";
+import { appCan, toApp, useInApp } from "@/lib/native";
+import { HoldMenu } from "@/components/HoldMenu";
 import { useData } from "@/lib/store";
 import { actualAmount, findCheck, nameOf } from "@/lib/calc";
 import { ddayText, eventTodo, marksIn, monthGrid, nextOccurrence, rangeDays, rangeOf, rangeText, spentByDay, type Mark, type Range } from "@/lib/calendar";
@@ -74,6 +77,39 @@ function fromToday(day: string, today: string): string {
   if (n === 1) return "내일";
   if (n === -1) return "어제";
   return n > 0 ? `${n}일 뒤` : `${-n}일 전`;
+}
+
+/** 공유할 글: 제목, 날짜·시간(기간이면 처음~끝), 메모 */
+function shareText(m: Mark): string {
+  const e = m.event!;
+  const o = m.occ!;
+  const time = e.start_time ? ` ${clock(e.start_time)}${e.end_time ? `–${clock(e.end_time)}` : ""}` : "";
+  const when = o.start !== o.end ? `${dateWithDay(o.start)} ~ ${dateWithDay(o.end)}` : `${dateWithDay(o.start)}${time}`;
+  return [e.title, when, e.note].filter(Boolean).join("\n");
+}
+
+/**
+ * 일정 하나 공유. 앱은 .ics 파일로 공유 창(받는 쪽이 캘린더에 바로 넣는다 — 일정 내보내기와 같은 길),
+ * 브라우저는 기기 공유 창, 둘 다 안 되면 글을 클립보드에. 누른 그 순간에 불러야 공유 창이 열린다.
+ */
+async function shareEvent(m: Mark, s: Settings, app: boolean, toast: (msg: string) => void) {
+  const text = shareText(m);
+  if (app && appCan("ics")) return toApp({ type: "ics", text: toIcs([m.event!], s) });
+  if (!app && typeof navigator.share === "function") {
+    try {
+      await navigator.share({ title: m.event!.title, text });
+      return;
+    } catch (err) {
+      // 공유 창을 닫은 것이면 그대로 끝
+      if ((err as Error).name === "AbortError") return;
+    }
+  }
+  try {
+    await navigator.clipboard.writeText(text);
+    toast("일정 내용을 복사했어요");
+  } catch {
+    toast("이 기기에서는 공유할 수 없어요");
+  }
 }
 
 /**
@@ -212,7 +248,7 @@ function CalendarMonth() {
   const returnPanel = useRef(false);
   const [moreTab, setMoreTab] = useState<"month" | "dday">("month");
   const { more, page, hint, openMore } = useCalendarStage();
-  const [sheet, setSheet] = useState<{ open: boolean; key: number; event?: CalEvent; date: string; draft?: QuickDraft }>({ open: false, key: 0, date: day });
+  const [sheet, setSheet] = useState<{ open: boolean; key: number; event?: CalEvent; date: string; draft?: QuickDraft; from?: CalEvent }>({ open: false, key: 0, date: day });
   useEffect(() => {
     carried = null;
     resetSummary();
@@ -238,6 +274,11 @@ function CalendarMonth() {
   const editEvent = (event?: CalEvent) => {
     returnPanel.current = true;
     closeThen(() => openEvent(event));
+  };
+  // 꾹 누르기의 복사: 같은 내용으로 새 일정 시트를 연다 (날짜만 바꿔 저장하면 하나 더 생긴다)
+  const copyEvent = (from: CalEvent) => {
+    returnPanel.current = true;
+    closeThen(() => setSheet((x) => ({ open: true, key: x.key + 1, date: day, from })));
   };
   const closeEvent = (open: boolean) => {
     if (!open && returnPanel.current) {
@@ -341,7 +382,7 @@ function CalendarMonth() {
           e.preventDefault();
           closeThen(() => router.push("/check"));
         }}>
-          <DayAgenda day={day} marks={marks.get(day) ?? []} onOpenEvent={editEvent} onOpenSpending={(x) => closeThen(() => openSpending(x))} />
+          <DayAgenda day={day} marks={marks.get(day) ?? []} onOpenEvent={editEvent} onCopyEvent={copyEvent} onOpenSpending={(x) => closeThen(() => openSpending(x))} />
         </div>
       </Sheet>
       <ZoomPop
@@ -360,7 +401,7 @@ function CalendarMonth() {
       >
         {popKind === "events" ? <MonthEvents marks={monthMarks} onOpenEvent={(e) => openEvent(e)} /> : <SpendingDays rows={monthSpendings} />}
       </ZoomPop>
-      <EventSheet key={sheet.key} open={sheet.open} event={sheet.event} date={sheet.date} draft={sheet.draft} onOpenChange={closeEvent} />
+      <EventSheet key={sheet.key} open={sheet.open} event={sheet.event} from={sheet.from} date={sheet.date} draft={sheet.draft} onOpenChange={closeEvent} />
     </>
   );
 }
@@ -385,8 +426,9 @@ function MonthEvents({ marks, onOpenEvent }: { marks: Mark[]; onOpenEvent: (even
 }
 
 /** 날짜 패널: 얼마나 떨어진 날인지, 그 아래 일정 → 들어올 돈 → 나갈 돈 → 쓴 돈을 묶어서 보여 준다. */
-function DayAgenda({ day, marks, onOpenEvent, onOpenSpending }: { day: string; marks: Mark[]; onOpenEvent: (event?: CalEvent) => void; onOpenSpending: (spending: Spending) => void }) {
-  const { data, today } = useData();
+function DayAgenda({ day, marks, onOpenEvent, onCopyEvent, onOpenSpending }: { day: string; marks: Mark[]; onOpenEvent: (event?: CalEvent) => void; onCopyEvent: (event: CalEvent) => void; onOpenSpending: (spending: Spending) => void }) {
+  const { data, today, upsert, remove, toast } = useData();
+  const app = useInApp();
   const s = data.settings;
   // 하루 종일(시각 없음)이 먼저, 그다음 시작 시각 순
   const events = marks.filter((m) => m.event).sort((a, b) => (a.event!.start_time ?? "").localeCompare(b.event!.start_time ?? ""));
@@ -415,7 +457,33 @@ function DayAgenda({ day, marks, onOpenEvent, onOpenSpending }: { day: string; m
                 <h3 id="cal-ev-h">일정</h3>
               </div>
               <div className="ev-list">
-                {events.map((m) => <EventRow key={m.event!.id} m={m} onOpen={() => onOpenEvent(m.event)} />)}
+                {/* 꾹 누르면 수정·복사·공유·삭제 (짧게 누르면 지금처럼 고치기) */}
+                {events.map((m) => {
+                  const e = m.event!;
+                  const what = e.todo ? "할 일" : e.dday ? "D-day" : "일정";
+                  return (
+                    <HoldMenu
+                      key={e.id}
+                      label={`${e.title} 메뉴`}
+                      actions={[
+                        { label: "수정", icon: Pencil, run: () => onOpenEvent(e) },
+                        { label: "복사", icon: Copy, run: () => onCopyEvent(e) },
+                        { label: "공유", icon: Share, now: true, run: () => void shareEvent(m, s, app, toast) },
+                        {
+                          label: "삭제",
+                          icon: Trash2,
+                          danger: true,
+                          // 일정 시트의 삭제와 같다: 반복 일정은 통째로 지우고, 토스트의 되돌리기로 살린다
+                          run: async () => {
+                            if (await remove("events", [e.id])) toast(`${what}${e.dday && !e.todo ? "를" : "을"} 지웠어요`, () => void upsert("events", [e]));
+                          },
+                        },
+                      ]}
+                    >
+                      <EventRow m={m} onOpen={() => onOpenEvent(e)} />
+                    </HoldMenu>
+                  );
+                })}
               </div>
             </section>
           )}
