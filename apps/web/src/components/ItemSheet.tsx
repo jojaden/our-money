@@ -1,18 +1,125 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { Trash2 } from "lucide-react";
-import type { Group, Method, MonthItem, Owner, PlanItem } from "@/lib/types";
+import { ChevronDown, Plus, Trash2 } from "lucide-react";
+import type { Account, Group, Method, MonthItem, Owner, Person, PlanItem } from "@/lib/types";
 import { GROUP_LABEL, METHOD_LABEL } from "@/lib/types";
 import { blankMonth, useData } from "@/lib/store";
 import { deleteOp, upsertOp, type Op } from "@/lib/repo";
-import { monthRow, nameOf } from "@/lib/calc";
-import { monthLabel } from "@/lib/format";
-import { AmountInput, MAX_GOAL, Seg, Sheet, Toggle } from "./ui";
+import { monthRow, nameOf, partnerOf, ratioA, split as splitBy } from "@/lib/calc";
+import { monthLabel, num } from "@/lib/format";
+import { logoOf } from "@/lib/institutions";
+import { AddPass } from "./AddPass";
+import { AmountInput, MAX_GOAL, PersonGlyph, Seg, Sheet, Toggle } from "./ui";
 
 function newId(prefix: string) {
   return `${prefix}-${typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID().slice(0, 8) : Date.now().toString(36)}`;
+}
+
+/** 돈이 나가는 곳: 카드(카드 자동결제)거나 통장(자동이체·직접 이체·현금) */
+interface Source {
+  method: Method;
+  card_id: string | null;
+  account_id: string | null;
+}
+/** 나눠 낼 때 한 사람 몫 */
+type Part = Source & { amount: number };
+
+const sourceOf = (i: Pick<MonthItem, "method" | "card_id" | "account_id"> | undefined, method: Method): Source => ({
+  method: i?.method ?? method,
+  card_id: i?.card_id ?? null,
+  account_id: i?.account_id ?? null,
+});
+/** 저장할 칸: 카드면 계좌를 비우고, 통장이면 카드를 비운다 */
+const sourceFields = (x: Source) => ({ method: x.method, card_id: x.method === "card_auto" ? x.card_id : null, account_id: x.method === "card_auto" ? null : x.account_id });
+/** 카드 자동결제는 카드를 골라야 한다 (통장은 비워 둘 수 있다 — 체크에 "계좌 미지정"으로 남는다) */
+const sourceOk = (x: Source) => x.method !== "card_auto" || Boolean(x.card_id);
+const BANK_METHODS: Method[] = ["account_auto", "manual", "cash"];
+
+/**
+ * 나가는 곳 고르기 — 지갑의 카드·통장을 로고와 함께 한 줄 목록으로. 카드를 고르면 카드 자동결제,
+ * 통장을 고르면 아래에서 자동이체·직접 이체·현금을 고른다. 끝의 "카드·통장 넣기"는 지갑에 넣는 시트를 위에 연다.
+ */
+function SourcePicker({
+  id,
+  label,
+  value,
+  onChange,
+  accounts,
+  person,
+  saving,
+  onAdd,
+}: {
+  id: string;
+  label: string;
+  value: Source;
+  onChange: (v: Source) => void;
+  accounts: Account[];
+  /** 이 사람 것과 공동 것을 앞에 */
+  person: Owner;
+  saving: boolean;
+  onAdd: () => void;
+}) {
+  const [more, setMore] = useState(false);
+  const picked = value.method === "card_auto" ? value.card_id : value.account_id;
+  // 이 사람 것·공동 것을 먼저 보이고, 다른 사람 것은 "다른 N개"를 눌러야 (골라 둔 것은 늘 보인다)
+  const rank = (a: Account) => (a.owner === person ? 0 : a.owner === "joint" ? 1 : 2);
+  const sorted = [...accounts].sort((x, y) => rank(x) - rank(y) || x.sort - y.sort);
+  const near = (a: Account) => rank(a) < 2 || a.id === picked;
+  const hidden = sorted.filter((a) => !near(a)).length;
+  const list = more ? sorted : sorted.filter(near);
+  const pick = (a: Account) =>
+    onChange(
+      a.kind === "card"
+        ? { method: "card_auto", card_id: a.id, account_id: null }
+        : { method: value.method === "card_auto" ? "account_auto" : value.method, card_id: null, account_id: a.id },
+    );
+  const pickedAcc = accounts.find((a) => a.id === picked);
+  return (
+    <div className="field">
+      <span className="label" id={id}>
+        {label}
+      </span>
+      <div className="chips src-chips" role="radiogroup" aria-labelledby={id}>
+        {list.map((a) => {
+          const logo = logoOf(a.institution);
+          return (
+            <button key={a.id} type="button" role="radio" aria-checked={picked === a.id} className="chip" onClick={() => pick(a)}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              {logo && <img className="chip-logo" src={logo} alt="" width={18} height={18} />}
+              {a.name}
+            </button>
+          );
+        })}
+        {hidden > 0 && !more && (
+          <button type="button" className="chip src-more" onClick={() => setMore(true)}>
+            다른 {hidden}개
+            <ChevronDown aria-hidden="true" />
+          </button>
+        )}
+        <button type="button" className="chip src-add" onClick={onAdd}>
+          <Plus aria-hidden="true" />
+          카드·통장 넣기
+        </button>
+      </div>
+      {value.method !== "card_auto" && (
+        <div className="src-method">
+          <Seg label={`${label} 방식`} value={value.method} onChange={(m) => onChange({ ...value, method: m })} options={BANK_METHODS.map((m) => ({ value: m, label: METHOD_LABEL[m] }))} />
+        </div>
+      )}
+      <p className="help">
+        {value.method === "card_auto"
+          ? pickedAcc
+            ? "카드값이 빠져나가는 결제 계좌로 돈을 옮기도록 체크에 넣어요."
+            : "카드를 골라 주세요."
+          : saving
+            ? "월급통장이 아닌 계좌면 이번 달 ‘옮길 돈’에 올라가요."
+            : pickedAcc
+              ? "월급통장이 아닌 계좌면 이번 달 ‘옮길 돈’에 올라가요."
+              : "고르지 않으면 체크에 ‘계좌 미지정’으로 남아요."}
+      </p>
+    </div>
+  );
 }
 
 export function ItemSheet({
@@ -29,16 +136,20 @@ export function ItemSheet({
   const { data, month, batch, toast } = useData();
   const s = data.settings;
   const plan = item?.plan_item_id ? data.plan_items.find((p) => p.id === item.plan_item_id) : undefined;
-  const cards = useMemo(() => data.accounts.filter((a) => a.kind === "card" && !a.archived).sort((a, b) => a.sort - b.sort), [data.accounts]);
-  const banks = useMemo(() => data.accounts.filter((a) => a.kind === "bank" && !a.archived).sort((a, b) => a.sort - b.sort), [data.accounts]);
+  // 나눠 낸 공동 항목이면 두 사람 몫 (같은 달에서 같은 pair_id)
+  const partner = item ? partnerOf(data.month_items.filter((i) => i.month === item.month), item) : undefined;
+  const paired = Boolean(item?.pair_id && partner);
+  const [ia, ib] = paired ? (item!.payer === "a" ? [item, partner] : [partner, item]) : [undefined, undefined];
+  const wallet = useMemo(() => data.accounts.filter((a) => !a.archived), [data.accounts]);
+  const rA = ratioA(s, monthRow(data, month));
 
   const [name, setName] = useState("");
   const [group, setGroup] = useState<Group>("fixed");
   const [amount, setAmount] = useState(0);
   const [payer, setPayer] = useState<Owner>("joint");
-  const [method, setMethod] = useState<Method>("account_auto");
-  const [cardId, setCardId] = useState<string | null>(null);
-  const [accountId, setAccountId] = useState<string | null>(null);
+  const [source, setSource] = useState<Source>({ method: "account_auto", card_id: null, account_id: null });
+  const [split, setSplit] = useState(false);
+  const [parts, setParts] = useState<Record<Person, Part>>({ a: { method: "account_auto", card_id: null, account_id: null, amount: 0 }, b: { method: "account_auto", card_id: null, account_id: null, amount: 0 } });
   const [dueDay, setDueDay] = useState<number | null>(null);
   const [note, setNote] = useState("");
   const [goal, setGoal] = useState(0);
@@ -48,25 +159,62 @@ export function ItemSheet({
   const [ranged, setRanged] = useState(false);
   const [startM, setStartM] = useState("");
   const [endM, setEndM] = useState("");
+  // 나가는 곳 목록의 "카드·통장 넣기": 어느 칸(한 곳·사람 몫)에서 열었는지 — 넣고 나면 그 칸에 골라 둔다
+  const [adding, setAdding] = useState(false);
+  const [addTarget, setAddTarget] = useState<"one" | Person>("one");
 
-  useEffect(() => {
-    if (!open) return;
-    setName(item?.name ?? "");
-    setGroup(item?.group ?? initialGroup ?? "fixed");
-    setAmount(item?.amount ?? 0);
-    setPayer(item?.payer ?? "joint");
-    setMethod(item?.method ?? (initialGroup === "living" || initialGroup === "allowance" ? "manual" : "account_auto"));
-    setCardId(item?.card_id ?? null);
-    setAccountId(item?.account_id ?? null);
-    setDueDay(item?.due_day ?? null);
-    setNote(item?.note ?? "");
-    setGoal(plan?.goal_amount ?? 0);
-    setGoalStart(plan?.goal_start ?? 0);
-    setForward(true);
-    setRanged(Boolean(plan?.start_month || plan?.end_month));
-    setStartM(plan?.start_month ?? month);
-    setEndM(plan?.end_month ?? "");
-  }, [open, item, plan, initialGroup, month]);
+  // 열 때만 채운다 — 그리는 도중에 바꿔, 위에 겹친 지갑 시트에서 카드를 넣어 data 가 바뀌어도 적던 내용이 그대로 남는다
+  const [wasOpen, setWasOpen] = useState(false);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) {
+      const g = item?.group ?? initialGroup ?? "fixed";
+      const dm: Method = g === "living" || g === "allowance" ? "manual" : "account_auto";
+      setName(item?.name ?? "");
+      setGroup(g);
+      setAmount(paired ? ia!.amount + ib!.amount : item?.amount ?? 0);
+      setPayer(paired ? "joint" : item?.payer ?? "joint");
+      setSource(sourceOf(paired ? ia : item, dm));
+      setSplit(paired);
+      setParts({
+        a: { ...sourceOf(ia ?? item, dm), amount: ia?.amount ?? 0 },
+        b: { ...sourceOf(ib ?? item, dm), amount: ib?.amount ?? 0 },
+      });
+      setDueDay(item?.due_day ?? null);
+      setNote(item?.note ?? "");
+      setGoal(plan?.goal_amount ?? 0);
+      setGoalStart(plan?.goal_start ?? 0);
+      setForward(true);
+      setRanged(Boolean(plan?.start_month || plan?.end_month));
+      setStartM(plan?.start_month ?? month);
+      setEndM(plan?.end_month ?? "");
+      setAdding(false);
+    }
+  }
+
+  const splitOn = payer === "joint" && split;
+  // 이미 있는 항목에서 나눠 내기를 켜고 끄는 건 다음 달부터도 적용할 때만 (이번 달만 바꾸면 다음 달에 한 사람 몫만 넘어간다)
+  const splitLocked = Boolean(item) && !forward;
+  const toggleSplit = (on: boolean) => {
+    setSplit(on);
+    if (on) {
+      // 처음 켜면 지금 분담 비율로 나누고, 나가는 곳은 지금 고른 곳으로 시작한다
+      const [a, b] = [splitBy(amount, rA).a, splitBy(amount, rA).b];
+      setParts({ a: { ...source, amount: a }, b: { ...source, amount: b } });
+    } else {
+      setSource({ method: parts.a.method, card_id: parts.a.card_id, account_id: parts.a.account_id });
+    }
+  };
+  // 합계는 그대로 두고 한 사람 몫을 바꾸면 나머지가 상대 몫이 된다
+  const setShare = (p: Person, v: number) => {
+    const mine = Math.min(v, amount);
+    setParts((x) => ({ ...x, [p]: { ...x[p], amount: mine }, [p === "a" ? "b" : "a"]: { ...x[p === "a" ? "b" : "a"], amount: amount - mine } }));
+  };
+  const setTotal = (v: number) => {
+    setAmount(v);
+    if (splitOn) setParts((x) => ({ a: { ...x.a, amount: Math.min(x.a.amount, v) }, b: { ...x.b, amount: v - Math.min(x.a.amount, v) } }));
+  };
+  const setPartSource = (p: Person, v: Source) => setParts((x) => ({ ...x, [p]: { ...x[p], ...v } }));
 
   // 이번 달에 이미 있는 항목은 이번 달이 기간 안이어야 한다. 새 항목은 나중 달부터 시작할 수 있다
   const periodOn = forward && ranged;
@@ -78,66 +226,74 @@ export function ItemSheet({
       : endM && endM < (startM && startM > month ? startM : month)
         ? "끝 달은 시작 달과 이번 달보다 앞일 수 없어요"
         : null;
-  const valid = name.trim().length > 0 && amount > 0 && (method === "card_auto" ? Boolean(cardId) : true) && !periodError;
+  const valid =
+    name.trim().length > 0 &&
+    amount > 0 &&
+    (splitOn ? parts.a.amount > 0 && parts.b.amount > 0 && sourceOk(parts.a) && sourceOk(parts.b) : sourceOk(source)) &&
+    !periodError;
 
   const save = async () => {
     if (!valid) return;
-    const fields = {
-      group,
-      name: name.trim(),
-      amount,
-      payer,
-      method,
-      card_id: method === "card_auto" ? cardId : null,
-      account_id: method === "card_auto" ? null : accountId,
-      due_day: dueDay,
-      note: note.trim(),
-    };
+    const common = { group, name: name.trim(), due_day: dueDay, note: note.trim() };
+    const pairId = splitOn ? (paired ? item!.pair_id! : newId("pair")) : null;
+    // 저장할 줄: 나눠 내면 두 사람 몫 두 줄, 아니면 한 줄. 나눠 내기를 끄면 a 몫 줄을 공동 항목으로 되돌리고 b 몫 줄은 뺀다
+    const lines: { prev?: MonthItem; payer: Owner; amount: number; src: Source }[] = splitOn
+      ? [
+          { prev: paired ? ia : item, payer: "a", amount: parts.a.amount, src: parts.a },
+          { prev: ib, payer: "b", amount: parts.b.amount, src: parts.b },
+        ]
+      : [{ prev: paired ? ia : item, payer, amount, src: source }];
+    const dropped = !splitOn && paired ? ib : undefined;
+
     // 플랜 항목과 이번 달 항목을 한 트랜잭션으로 (하나만 저장되고 끝나지 않게)
     const ops: Op[] = [];
-    // 빈 플랜(아직 시작하지 않은 달)에 처음 넣는 항목이면 그 달도 같이 만든다
-    let planId = item?.plan_item_id ?? null;
-    if (forward) {
-      planId = planId ?? newId("pi");
-      const base: PlanItem = plan ?? {
-        id: planId,
+    const planRows: PlanItem[] = [];
+    const monthRows: MonthItem[] = [];
+    let nextPlanSort = Math.max(0, ...data.plan_items.map((p) => p.sort)) + 1;
+    const monthSort = item?.sort ?? Math.max(0, ...data.month_items.filter((i) => i.month === month).map((i) => i.sort)) + 1;
+    for (const line of lines) {
+      const prevPlan = line.prev?.plan_item_id ? data.plan_items.find((p) => p.id === line.prev!.plan_item_id) : undefined;
+      const fields = { ...common, amount: line.amount, payer: line.payer, ...sourceFields(line.src), pair_id: pairId };
+      let planId = line.prev?.plan_item_id ?? null;
+      if (forward) {
+        planId = planId ?? newId("pi");
+        const base: PlanItem = prevPlan ?? { id: planId, ...fields, sort: nextPlanSort++, active: true, goal_amount: null, goal_start: null };
+        planRows.push({
+          ...base,
+          ...fields,
+          active: true,
+          goal_amount: group === "saving" && goal > 0 ? goal : null,
+          goal_start: group === "saving" && goal > 0 ? goalStart : null,
+          start_month: periodOn && startM ? startM : null,
+          end_month: periodOn && endM ? endM : null,
+        });
+      }
+      const prev = line.prev;
+      monthRows.push({
+        id: prev?.id ?? (planId ? `${month}:${planId}` : `${month}:${newId("one")}`),
+        month,
+        plan_item_id: planId,
+        // 두 사람 몫은 같은 자리에 (화면에서 한 줄로 묶인다)
+        sort: prev?.sort ?? monthSort,
+        paid: prev?.paid ?? false,
+        paid_at: prev?.paid_at ?? null,
+        paid_by: prev?.paid_by ?? null,
+        paid_amount: prev?.paid_amount ?? null,
         ...fields,
-        sort: Math.max(0, ...data.plan_items.map((p) => p.sort)) + 1,
-        active: true,
-        goal_amount: null,
-        goal_start: null,
-      };
-      ops.push(
-        upsertOp("plan_items", [
-          {
-            ...base,
-            ...fields,
-            active: true,
-            goal_amount: group === "saving" && goal > 0 ? goal : null,
-            goal_start: group === "saving" && goal > 0 ? goalStart : null,
-            start_month: periodOn && startM ? startM : null,
-            end_month: periodOn && endM ? endM : null,
-          },
-        ]),
-      );
+        rev: prev?.rev,
+      });
     }
-    const id = item?.id ?? (planId ? `${month}:${planId}` : `${month}:${newId("one")}`);
-    const row: MonthItem = {
-      id,
-      month,
-      plan_item_id: planId,
-      sort: item?.sort ?? Math.max(0, ...data.month_items.filter((i) => i.month === month).map((i) => i.sort)) + 1,
-      paid: item?.paid ?? false,
-      paid_at: item?.paid_at ?? null,
-      paid_by: item?.paid_by ?? null,
-      paid_amount: item?.paid_amount ?? null,
-      ...fields,
-      rev: item?.rev,
-    };
+    if (dropped && forward) {
+      const dp = dropped.plan_item_id ? data.plan_items.find((p) => p.id === dropped.plan_item_id) : undefined;
+      if (dp) planRows.push({ ...dp, active: false });
+    }
+    if (planRows.length) ops.push(upsertOp("plan_items", planRows));
     // 나중 달부터 시작하는 새 항목은 이번 달에는 넣지 않는다
     if (!later) {
+      // 빈 플랜(아직 시작하지 않은 달)에 처음 넣는 항목이면 그 달도 같이 만든다
       if (!monthRow(data, month)) ops.push(upsertOp("months", [blankMonth(data, month)], { ignoreDuplicates: true }));
-      ops.push(upsertOp("month_items", [row]));
+      ops.push(upsertOp("month_items", monthRows));
+      if (dropped) ops.push(deleteOp("month_items", [dropped.id]));
     }
     onOpenChange(false);
     if (!(await batch(ops))) return;
@@ -146,13 +302,18 @@ export function ItemSheet({
 
   const del = async () => {
     if (!item) return;
-    const backup = item;
-    const planBackup = plan;
+    // 나눠 낸 항목은 두 사람 몫을 함께 뺀다
+    const rows = paired ? [ia!, ib!] : [item];
+    const plans = rows.flatMap((r) => {
+      const p = r.plan_item_id ? data.plan_items.find((x) => x.id === r.plan_item_id) : undefined;
+      return p ? [p] : [];
+    });
     onOpenChange(false);
     // 이번 달에서 빼기와 다음 달부터 끄기를 한 트랜잭션으로
-    if (!(await batch([deleteOp("month_items", [item.id]), ...(forward && plan ? [upsertOp("plan_items", [{ ...plan, active: false }])] : [])]))) return;
-    toast(forward && plan ? "이번 달과 다음 달부터 뺐어요" : "이번 달에서 뺐어요", () => {
-      void batch([...(planBackup ? [upsertOp("plan_items", [planBackup])] : []), upsertOp("month_items", [backup])]);
+    const off = forward && plans.length > 0;
+    if (!(await batch([deleteOp("month_items", rows.map((r) => r.id)), ...(off ? [upsertOp("plan_items", plans.map((p) => ({ ...p, active: false })))] : [])]))) return;
+    toast(off ? "이번 달과 다음 달부터 뺐어요" : "이번 달에서 뺐어요", () => {
+      void batch([...(plans.length ? [upsertOp("plan_items", plans)] : []), upsertOp("month_items", rows)]);
     });
   };
 
@@ -161,6 +322,18 @@ export function ItemSheet({
     { value: "a", label: nameOf(s, "a") },
     { value: "b", label: nameOf(s, "b") },
   ];
+  const sourceLabel = group === "saving" ? "어디에 모아요" : "어디서 나가요";
+  const openAdd = (target: "one" | Person) => {
+    setAddTarget(target);
+    setAdding(true);
+  };
+  // 방금 넣은 카드·통장을 연 칸에 골라 둔다
+  const added = (a: Account) => {
+    const v: Source = a.kind === "card" ? { method: "card_auto", card_id: a.id, account_id: null } : { method: group === "living" || group === "allowance" ? "manual" : "account_auto", card_id: null, account_id: a.id };
+    if (addTarget === "one") setSource(v);
+    else setPartSource(addTarget, v);
+  };
+  const even = splitBy(amount, rA);
 
   return (
     <Sheet
@@ -195,8 +368,8 @@ export function ItemSheet({
       </div>
       <div className="inline-fields field">
         <div className="field">
-          <label htmlFor="it-amount">매달 금액</label>
-          <AmountInput id="it-amount" value={amount} onChange={setAmount} />
+          <label htmlFor="it-amount">{splitOn ? "매달 금액 (합계)" : "매달 금액"}</label>
+          <AmountInput id="it-amount" value={amount} onChange={setTotal} />
         </div>
         <div className="field" style={{ marginTop: 0 }}>
           <label htmlFor="it-due">{group === "living" || group === "allowance" ? "이체일 (선택)" : "결제·이체일"}</label>
@@ -213,58 +386,45 @@ export function ItemSheet({
       <div className="field">
         <span className="label">누구 돈에서 나가나요</span>
         <Seg label="부담" value={payer} onChange={setPayer} options={people} />
-        {payer === "joint" && <p className="help">공동은 설정한 분담 비율로 나눠서 각자 월급통장에서 옮겨요.</p>}
       </div>
-      <div className="field">
-        <label htmlFor="it-method">나가는 방식</label>
-        <select id="it-method" className="select" value={method} onChange={(e) => setMethod(e.target.value as Method)}>
-          {(Object.keys(METHOD_LABEL) as Method[]).map((m) => (
-            <option key={m} value={m}>
-              {METHOD_LABEL[m]}
-            </option>
-          ))}
-        </select>
-      </div>
-      {method === "card_auto" ? (
+      {payer === "joint" && (
         <div className="field">
-          <label htmlFor="it-card">결제 카드</label>
-          <select id="it-card" className="select" value={cardId ?? ""} onChange={(e) => setCardId(e.target.value || null)}>
-            <option value="">카드 선택</option>
-            {cards.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-          <p className="help">
-            카드값이 빠져나가는 결제계좌로 돈을 옮기도록 이체 목록에 넣어요.
-            {cards.length === 0 && (
-              <>
-                {" "}아직 넣은 카드가 없어요 — <Link href="/settings/?s=wallet">설정 › 지갑</Link>에서 넣어요.
-              </>
-            )}
-          </p>
+          <div className="switchrow">
+            <div>
+              <div className="t">나눠 내기</div>
+              <div className="s">{splitLocked ? "켜고 끄는 건 ‘다음 달부터도 적용’을 켰을 때만 돼요." : "사람마다 금액과 나가는 곳을 따로 정해요."}</div>
+            </div>
+            <Toggle on={split} onChange={toggleSplit} label="나눠 내기" disabled={splitLocked} />
+          </div>
+          {!splitOn && amount > 0 && (
+            <p className="help">
+              분담 비율대로 {nameOf(s, "a")} {num(even.a)}원 · {nameOf(s, "b")} {num(even.b)}원씩 각자 월급통장에서 옮겨요.
+            </p>
+          )}
         </div>
+      )}
+      {splitOn ? (
+        (["a", "b"] as Person[]).map((p) => (
+          <div className="split-part" key={p}>
+            <div className="split-head">
+              <PersonGlyph owner={p} />
+              <label htmlFor={`it-amt-${p}`}>{nameOf(s, p)} 몫</label>
+              <AmountInput id={`it-amt-${p}`} value={parts[p].amount} onChange={(v) => setShare(p, v)} />
+            </div>
+            <SourcePicker
+              id={`it-src-${p}`}
+              label={sourceLabel}
+              value={parts[p]}
+              onChange={(v) => setPartSource(p, v)}
+              accounts={wallet}
+              person={p}
+              saving={group === "saving"}
+              onAdd={() => openAdd(p)}
+            />
+          </div>
+        ))
       ) : (
-        <div className="field">
-          <label htmlFor="it-acc">{group === "saving" ? "넣을 계좌" : "돈이 있어야 하는 계좌"}</label>
-          <select id="it-acc" className="select" value={accountId ?? ""} onChange={(e) => setAccountId(e.target.value || null)}>
-            <option value="">계좌 선택</option>
-            {banks.map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.name}
-              </option>
-            ))}
-          </select>
-          <p className="help">
-            월급통장이 아닌 계좌면 이번 달 ‘옮길 돈’ 목록에 올라가요.
-            {banks.length === 0 && (
-              <>
-                {" "}아직 넣은 통장이 없어요 — <Link href="/settings/?s=wallet">설정 › 지갑</Link>에서 넣어요.
-              </>
-            )}
-          </p>
-        </div>
+        <SourcePicker id="it-src" label={sourceLabel} value={source} onChange={setSource} accounts={wallet} person={payer} saving={group === "saving"} onAdd={() => openAdd("one")} />
       )}
       {group === "saving" && (
         <div className="inline-fields field">
@@ -321,6 +481,7 @@ export function ItemSheet({
           )}
         </div>
       )}
+      <AddPass open={adding} onOpenChange={setAdding} owner={addTarget === "one" ? payer : addTarget} onSaved={added} />
     </Sheet>
   );
 }

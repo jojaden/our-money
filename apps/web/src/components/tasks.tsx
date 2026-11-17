@@ -165,7 +165,8 @@ function build(
       kind: "pay",
       title: i.name,
       // 실제로 낸 금액이 플랜과 다르면 플랜 금액을 앞에 남긴다
-      sub: `${paid !== i.amount ? `플랜 ${num(i.amount)}원 · ` : ""}${nameOf(s, i.payer)} · ${METHOD_LABEL[i.method]} · ${via}`,
+      // 나눠 내는 공동 항목은 각자 자기 몫을 체크한다
+      sub: `${paid !== i.amount ? `플랜 ${num(i.amount)}원 · ` : ""}${i.pair_id ? `공동 · ${nameOf(s, i.payer)} 몫` : nameOf(s, i.payer)} · ${METHOD_LABEL[i.method]} · ${via}`,
       amount: paid,
       due: i.due_day ? dateInMonth(month, i.due_day, s.cycle_start) : null,
       done: i.paid,

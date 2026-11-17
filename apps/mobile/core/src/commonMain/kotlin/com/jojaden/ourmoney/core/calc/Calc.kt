@@ -108,7 +108,8 @@ fun lanes(s: Settings, m: Month?, items: List<MonthItem>): List<Lane> {
     val rA = ratioA(s, m)
     return Person.entries.map { p ->
         val byGroup = GROUP_ORDER.associateWith { g -> items.filter { it.group == g }.sumOf { shareOf(it, p, rA) } }
-        val jointShare = items.filter { it.payer == Owner.JOINT }.sumOf { shareOf(it, p, rA) }
+        // 나눠 낸 공동 항목의 내 몫도 공동 부담이다
+        val jointShare = items.filter { it.payer == Owner.JOINT || it.pairId != null }.sumOf { shareOf(it, p, rA) }
         val allocated = byGroup.values.sum()
         val income = if (m == null) 0 else if (p == Person.A) m.incomeA else m.incomeB
         Lane(p, income, byGroup, jointShare, allocated, income - allocated)
@@ -356,7 +357,9 @@ data class GoalProgress(val saved: Long, val target: Long)
 fun AppData.goalProgress(item: PlanItem): GoalProgress? {
     val goal = item.goalAmount ?: return null
     if (goal <= 0) return null
-    val paid = monthItems.filter { it.planItemId == item.id && itemDone(it) }.sumOf { it.actualAmount }
+    // 나눠 내는 공동 저축은 두 사람 몫을 합쳐 하나의 목표로 (목표·모은 돈은 두 줄에 같은 값)
+    val ids = if (item.pairId != null) planItems.filter { it.pairId == item.pairId }.map { it.id }.toSet() else setOf(item.id)
+    val paid = monthItems.filter { it.planItemId in ids && itemDone(it) }.sumOf { it.actualAmount }
     return GoalProgress((item.goalStart ?: 0) + paid, goal)
 }
 
@@ -371,7 +374,7 @@ fun snapshotItems(month: String, plan: List<PlanItem>): List<MonthItem> = plan.f
     MonthItem(
         id = "$month:${p.id}", month = month, planItemId = p.id, group = p.group, name = p.name, amount = p.amount,
         payer = p.payer, accountId = p.accountId, method = p.method, cardId = p.cardId, dueDay = p.dueDay,
-        sort = p.sort, note = p.note,
+        sort = p.sort, note = p.note, pairId = p.pairId,
     )
 }
 
