@@ -66,6 +66,8 @@ function fitCells(grid: HTMLElement | null) {
     const fits = (limit: number) => items.filter((i) => i.offsetTop + i.offsetHeight <= limit).length;
     let shown = fits(room);
     if (shown < items.length || extra > 0) {
+      // 빈 줄은 높이가 0이라 글자를 먼저 넣고 잰다
+      more.textContent = "+";
       more.hidden = false;
       shown = fits(room - more.offsetHeight - 2);
       items.slice(shown).forEach((i) => (i.hidden = true));
@@ -79,7 +81,7 @@ function fitCells(grid: HTMLElement | null) {
  * - 기간 일정(이틀 이상)은 걸친 칸을 잇는 칠한 막대에 이름 (날짜 바로 아래 맨 위, 칸 위에 겹친 그리드 아이템)
  * - 하루 종일 일정은 칠한 칸, 시간이 있는 일정은 왼쪽 막대 + 옅은 바탕 — 색은 공동·현빈·예진(일정의 owner)
  * - 체크(카드값·이체·납부, 할 일 일정)는 앞에 동그라미, 끝내면 채운 동그라미와 옅은 글자
- * - 들어올 돈(월급)은 +금액, 쓴 돈은 금액으로 칸 아래에
+ * - 들어올 돈(월급날)은 +금액(금액이 없으면 "월급"), 쓴 돈은 금액으로 칸 아래에
  * 폰에서는 줄이 남는 높이를 나눠 가져 화면을 꽉 채운다(달력 화면의 첫 칸). 좌우로 밀면 날짜 칸만 넘어가고 요일 줄은 제자리다.
  */
 export function CalendarCard({
@@ -137,6 +139,8 @@ export function CalendarCard({
           const checks = ms.filter((m) => m.kind === "card" || m.kind === "item");
           const amount = spent.get(d) ?? 0;
           const income = ms.reduce((a, m) => a + (m.kind === "payday" ? (m.amount ?? 0) : 0), 0);
+          // 월급 금액을 아직 안 적은 월급날도 표시는 남긴다
+          const payday = ms.some((m) => m.kind === "payday");
           const label = [dateWithDay(d), income ? `들어올 돈 ${num(income)}원` : "", amount ? `쓴 돈 ${num(amount)}원` : "", ...ms.map((m) => m.title)].filter(Boolean).join(", ");
           return (
             <button
@@ -168,7 +172,7 @@ export function CalendarCard({
                 ))}
                 <span className="cal-over" hidden />
               </span>
-              {income > 0 && <span className="amt in">+{short(income)}</span>}
+              {payday && <span className="amt in">{income > 0 ? `+${short(income)}` : "월급"}</span>}
               {amount > 0 && <span className="amt">{short(amount)}</span>}
             </button>
           );

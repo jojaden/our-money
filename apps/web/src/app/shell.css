@@ -66,7 +66,8 @@
 .bar-step { display: none; flex: none; place-items: center; width: 32px; height: var(--topbar-btn); padding: 0; border: 0; border-radius: var(--radius-control); background: transparent; color: var(--faint); }
 .bar-step svg { width: 22px; height: 22px; stroke-width: 2.25; }
 .bar-month .to-now { flex: none; height: 32px; padding: 0 12px; border: 0; border-radius: var(--radius-chip); background: var(--tab-active-bg); color: var(--text); font: 600 13.5px/1 var(--font-text); }
-.bar-month .pill { flex: none; }
+/* 좁을 때(다른 해 + 이번 달로) 예시 데이터 알약이 먼저 줄어든다 */
+.bar-month .pill { display: block; flex: 0 1 auto; min-width: 0; overflow: hidden; line-height: 22px; text-overflow: ellipsis; }
 .bar-month-btn, .bar-step, .bar-month .to-now { transition: transform var(--dur-press) var(--ease-press), background-color var(--dur-press) ease, color var(--dur-press) ease; }
 .bar-month-btn:active, .bar-step:active, .bar-month .to-now:active { transform: scale(0.94); }
 /* 달 이름 굴리기: 옛 이름과 새 이름을 같은 칸에 겹친다. 다음 달(--dir 1)은 아래에서 올라오고 옛 이름은 위로 빠진다 */
