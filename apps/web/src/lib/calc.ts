@@ -17,6 +17,7 @@ import type {
 } from "./types";
 import { GROUP_ORDER } from "./types";
 import { pad, parseYmd, ymd } from "./format";
+import { isHoliday } from "./holidays";
 
 /* ---------- 기간 ---------- */
 
@@ -153,16 +154,25 @@ export function paydayOf(s: Settings, p: Person): number {
   return (p === "a" ? s.payday_a : s.payday_b) ?? s.payday;
 }
 
-/** 주말이면 그 앞 금요일 (토 → 금, 일 → 금). 공휴일은 보지 않는다 */
-export function weekdayOnOrBefore(date: string): string {
-  const d = parseYmd(date);
-  const back = d.getDay() === 6 ? 1 : d.getDay() === 0 ? 2 : 0;
-  return back ? ymd(new Date(d.getFullYear(), d.getMonth(), d.getDate() - back)) : date;
+
+/** 쉬는 날이면 그 앞 영업일: 주말은 늘, 공휴일은 holidays 일 때만 (설·추석처럼 이어진 연휴는 그 전날까지 거슬러 간다). Calc.kt 와 같다 */
+export function businessDayOnOrBefore(date: string, holidays: boolean): string {
+  let d = parseYmd(date);
+  for (;;) {
+    const day = d.getDay();
+    if (day !== 0 && day !== 6 && !(holidays && isHoliday(ymd(d)))) return ymd(d);
+    d = new Date(d.getFullYear(), d.getMonth(), d.getDate() - 1);
+  }
 }
 
-/** 이 가계부 달 안에서 이 사람의 월급날 (YYYY-MM-DD). 주말이면 월급이 실제로 들어오는 앞 평일 */
+/** 이 사람의 월급이 공휴일이면 앞 영업일에 들어오는가 (018 전·비워 두면 그렇다고 본다). 주말은 늘 앞 금요일 */
+export function holidayShiftOf(s: Settings, p: Person): boolean {
+  return (p === "a" ? s.payday_holiday_a : s.payday_holiday_b) ?? true;
+}
+
+/** 이 가계부 달 안에서 이 사람의 월급날 (YYYY-MM-DD). 주말(그리고 holidayShiftOf 면 공휴일)이면 월급이 실제로 들어오는 앞 영업일 */
 export function paydayDate(month: string, s: Settings, p: Person): string {
-  return weekdayOnOrBefore(dateInMonth(month, paydayOf(s, p), s.cycle_start));
+  return businessDayOnOrBefore(dateInMonth(month, paydayOf(s, p), s.cycle_start), holidayShiftOf(s, p));
 }
 
 export function accountMap(accounts: Account[]): Map<string, Account> {

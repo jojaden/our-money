@@ -91,7 +91,11 @@ fun Settings.sharedMonthOf(date: String, p: Person, today: String = todayString(
     return addMonths(monthOf(date, c), -monthsBetween(currentMonth(cycleStart, today), currentMonth(c, today)))
 }
 
-fun Settings.paydayDate(month: String, p: Person): String = weekdayOnOrBefore(dateInMonth(month, paydayOf(p), cycleStart))
+/** 이 사람의 월급이 공휴일이면 앞 영업일에 들어오는가 (018 전·비워 두면 그렇다고 본다). 주말은 늘 앞 금요일 */
+fun Settings.holidayShiftOf(p: Person): Boolean = (if (p == Person.A) paydayHolidayA else paydayHolidayB) ?: true
+
+/** 이 가계부 달 안에서 이 사람의 월급날. 주말(그리고 holidayShiftOf 면 공휴일)이면 실제로 들어오는 앞 영업일 */
+fun Settings.paydayDate(month: String, p: Person): String = businessDayOnOrBefore(dateInMonth(month, paydayOf(p), cycleStart), holidayShiftOf(p))
 
 /** 이 항목의 돈이 결제일에 있어야 하는 계좌 */
 fun destinationOf(item: MonthItem, accounts: Map<String, Account>): String? {

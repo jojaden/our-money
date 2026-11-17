@@ -61,10 +61,26 @@ class CalcTest {
     }
 
     @Test fun weekend_payday_moves_to_friday() {
-        assertEquals("2026-10-23", weekdayOnOrBefore("2026-10-25")) // 일
-        assertEquals("2026-10-23", weekdayOnOrBefore("2026-10-24")) // 토
-        assertEquals("2026-10-23", weekdayOnOrBefore("2026-10-23")) // 금 그대로
-        assertEquals("2026-10-26", weekdayOnOrBefore("2026-10-26")) // 월 그대로
+        assertEquals("2026-10-23", businessDayOnOrBefore("2026-10-25", false)) // 일
+        assertEquals("2026-10-23", businessDayOnOrBefore("2026-10-24", false)) // 토
+        assertEquals("2026-10-23", businessDayOnOrBefore("2026-10-23", false)) // 금 그대로
+        assertEquals("2026-10-26", businessDayOnOrBefore("2026-10-26", false)) // 월 그대로
+    }
+
+    @Test fun holiday_payday_moves_to_business_day_before() {
+        // 2026 추석 9/24~26(목~토) → 9/25 월급은 9/23(수)에. 공휴일을 보지 않는 사람은 그날(9/25, 금)
+        assertEquals("2026-09-23", businessDayOnOrBefore("2026-09-25", true))
+        assertEquals("2026-09-25", businessDayOnOrBefore("2026-09-25", false))
+        // 대체공휴일 2026-10-05(월) → 앞 금요일 10/2. 개천절 10/3 은 토요일이라 주말로 이미 당겨진다
+        assertEquals("2026-10-02", businessDayOnOrBefore("2026-10-05", true))
+        assertEquals("2026-10-05", businessDayOnOrBefore("2026-10-05", false))
+        // 표에 없는 해는 주말만
+        assertEquals("2031-01-01", businessDayOnOrBefore("2031-01-01", true))
+        assertTrue(isHoliday("2027-02-09")) // 설 대체공휴일
+        val s = settings.copy(paydayA = 25, paydayB = 25, paydayHolidayB = false)
+        // 2026-12-25(금) 성탄절: 현빈은 12/24(목), 예진은 공휴일에도 받아 12/25
+        assertEquals("2026-12-24", s.paydayDate("2027-01", Person.A))
+        assertEquals("2026-12-25", s.paydayDate("2027-01", Person.B))
     }
 
     @Test fun paydays_per_person() {
