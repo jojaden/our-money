@@ -324,6 +324,10 @@ button.row:active, a.row:active { background: var(--well); transform: scale(0.98
 .split-head > svg { width: 22px; height: 22px; }
 .split-head label { color: var(--text); font: 600 15px/20px var(--font-text); white-space: nowrap; }
 .toggle:disabled { opacity: 0.4; }
+/* 설정 › 한 달의 기준: 사람마다 시작일 (고르기 + "월급날로" 칩) */
+.cycle-own { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border); }
+.cycle-row { display: flex; align-items: center; gap: 8px; }
+.cycle-row .select { flex: 1; min-width: 0; }
 .toggle { position: relative; flex: none; width: 48px; height: 28px; border: 0; border-radius: var(--radius-chip); background: var(--control); transition: background-color var(--dur-press) ease; }
 .toggle::after {
   content: "";

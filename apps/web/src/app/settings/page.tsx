@@ -7,7 +7,7 @@ import { Download, BellRing, CalendarDays, CalendarRange, ChevronLeft, ChevronRi
 import type { Account, AccountKind, Category, Person, Settings } from "@/lib/types";
 import { PAY_KIND_LABEL } from "@/lib/types";
 import { useData } from "@/lib/store";
-import { nameOf, paydayOf } from "@/lib/calc";
+import { cycleOf, nameOf, paydayOf } from "@/lib/calc";
 import { num } from "@/lib/format";
 import { resetDemo, signOut } from "@/lib/repo";
 import { appCan, toApp, useInApp } from "@/lib/native";
@@ -88,6 +88,10 @@ export default function SettingsPage() {
   };
 
   const perPerson = s.payday_a != null && s.payday_b != null;
+  // 017 전 DB 에는 사람별 한 달 시작일 칸이 없다(없는 칸을 보내면 저장이 거절된다) → 공동 기준만 보인다
+  const perCycle = s.cycle_start_a !== undefined;
+  /** 11월이 며칠부터 며칠까지인지 */
+  const rangeText = (c: number) => (c === 1 ? "11월 1일 ~ 11월 30일" : `10월 ${c}일 ~ 11월 ${c - 1}일`);
   const banks = data.accounts.filter((a) => a.kind === "bank" && !a.archived).sort((a, b) => a.sort - b.sort);
   const hidden = data.accounts.filter((a) => a.archived).sort((a, b) => a.sort - b.sort);
   const cats = [...data.categories].sort((a, b) => a.sort - b.sort);
@@ -128,8 +132,10 @@ export default function SettingsPage() {
     },
     cycle: {
       title: "한 달의 기준",
-      desc: "한 사람의 월급날부터 다음 월급 전날까지를 한 달로 보면 생활비 계산이 편해요. 두 사람 월급날이 다르면 보통 먼저 받는 사람의 월급날로 맞춰요.",
-      summary: s.cycle_start === 1 ? "1일부터 (달력 기준)" : `매달 ${s.cycle_start}일부터`,
+      desc: "공동 생활비·정산·플랜의 한 달은 공동 기준 하나예요. 용돈과 내 지출은 사람마다 자기 월급날부터 다음 월급 전날까지로 따로 셀 수 있어요.",
+      summary:
+        (s.cycle_start === 1 ? "1일부터 (달력 기준)" : `매달 ${s.cycle_start}일부터`) +
+        ((["a", "b"] as Person[]).some((p) => cycleOf(s, p) !== s.cycle_start) ? " · 사람마다 따로" : ""),
       icon: CalendarRange,
     },
     wallet: {
@@ -389,7 +395,7 @@ export default function SettingsPage() {
           </div>
           <div className="card">
             <div className="field" style={{ marginTop: 0 }}>
-                <label htmlFor="cycle">가계부 시작일</label>
+                <label htmlFor="cycle">공동 기준 (공동 생활비·정산·플랜)</label>
                 <select id="cycle" className="select" value={draft.cycle_start} onChange={(e) => void save({ cycle_start: Number(e.target.value) })}>
                   {Array.from({ length: 28 }, (_, i) => i + 1).map((d) => (
                     <option key={d} value={d}>
@@ -399,8 +405,36 @@ export default function SettingsPage() {
                 </select>
             </div>
             <p className="help kpi-sub" style={{ marginTop: 12 }}>
-              {draft.cycle_start === 1 ? "11월 = 11월 1일 ~ 11월 30일" : `11월 = 10월 ${draft.cycle_start}일 ~ 11월 ${draft.cycle_start - 1}일`}
+              11월 = {rangeText(draft.cycle_start)}
             </p>
+            {perCycle &&
+              (["a", "b"] as Person[]).map((p) => {
+                const key = p === "a" ? "cycle_start_a" : "cycle_start_b";
+                const own = draft[key] ?? null;
+                const pay = paydayOf(draft, p);
+                return (
+                  <div className="field cycle-own" key={p}>
+                    <label htmlFor={`cycle-${p}`}>{nameOf(s, p)} 용돈·내 지출</label>
+                    <div className="cycle-row">
+                      <select id={`cycle-${p}`} className="select" value={own ?? ""} onChange={(e) => void save({ [key]: e.target.value ? Number(e.target.value) : null })}>
+                        <option value="">공동 기준과 같게</option>
+                        {Array.from({ length: 28 }, (_, i) => i + 1).map((d) => (
+                          <option key={d} value={d}>
+                            {d === 1 ? "1일 (달력 기준)" : `${d}일`}
+                          </option>
+                        ))}
+                      </select>
+                      {/* 월급날이 29~31일이면 달마다 없는 날이 있어 시작일로 쓸 수 없다 */}
+                      {pay <= 28 && cycleOf(draft, p) !== pay && (
+                        <button type="button" className="chip" onClick={() => void save({ [key]: pay })}>
+                          월급날({pay}일)로
+                        </button>
+                      )}
+                    </div>
+                    <p className="help">{own === null ? "공동 기준과 같아요" : own === 1 ? "매달 1일 ~ 말일" : `매달 ${own}일 ~ 다음 달 ${own - 1}일`}</p>
+                  </div>
+                );
+              })}
           </div>
         </section>
 

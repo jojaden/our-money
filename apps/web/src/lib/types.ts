@@ -37,8 +37,11 @@ export interface Settings extends Meta {
   split_mode: "fixed" | "income";
   /** A가 공동비용을 부담하는 비율 (0~100) */
   ratio_a: number;
-  /** 가계부 한 달의 시작일 (1~28). 25면 11월 = 10/25 ~ 11/24 */
+  /** 가계부 한 달의 시작일 (1~28). 25면 11월 = 10/25 ~ 11/24. 공동 생활비·정산·플랜 달은 이 기준 */
   cycle_start: number;
+  /** 사람별 한 달 시작일 (1~28, migrations/017). 용돈·내 지출은 이 기준. 비우면 공동 기준 — cycleOf() 로 읽는다 */
+  cycle_start_a?: number | null;
+  cycle_start_b?: number | null;
   /** 예전 공통 월급날 (v0.1). 사람별 월급날이 없을 때(migrations/006 전)만 쓴다 — paydayOf() 로 읽는다 */
   payday: number;
   /** 사람별 월급날 (1~31, 그달에 없는 날이면 말일) */

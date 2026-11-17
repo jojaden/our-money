@@ -81,6 +81,9 @@ data class Settings(
     /** 사람별 월급날 (1~31, 그달에 없는 날이면 말일) */
     @SerialName("payday_a") val paydayA: Int? = null,
     @SerialName("payday_b") val paydayB: Int? = null,
+    /** 사람별 한 달 시작일 (1~28, migrations/017). 용돈·내 지출은 이 기준, 비우면 cycleStart — cycleOf() 로 읽는다 */
+    @SerialName("cycle_start_a") val cycleStartA: Int? = null,
+    @SerialName("cycle_start_b") val cycleStartB: Int? = null,
     @SerialName("created_at") val createdAt: String? = null,
     /** 서버가 채우는 칸 (migrations/004). rev 는 읽은 그대로 돌려보낸다 — 다른 기기가 그사이 고쳤으면 저장 거절 */
     val rev: Int? = null,
