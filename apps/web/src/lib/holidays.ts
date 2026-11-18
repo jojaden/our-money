@@ -43,6 +43,27 @@ export function holidayName(date: string): string | null {
   return m.get(md) ?? FIXED_NAMES[md] ?? "공휴일";
 }
 
+/**
+ * 쉬는 날은 아니지만 한국에서 챙기는 날 (날짜가 해마다 같은 것만) — 달력에서 초록으로 적는다.
+ * 부부의 날은 두 사람이 쓰는 가계부라 넣었다. 음력 날(정월대보름 등)은 표가 따로 있어야 해서 두지 않았다.
+ */
+const SPECIAL_DAYS: Record<string, string> = {
+  "0214": "밸런타인데이",
+  "0314": "화이트데이",
+  "0508": "어버이날",
+  "0515": "스승의 날",
+  "0521": "부부의 날",
+  "1031": "핼러윈",
+  "1111": "빼빼로데이",
+  "1224": "크리스마스 이브",
+};
+
+/** 그날(YYYY-MM-DD)이 기념일이면 이름, 아니면 null. 공휴일과 겹치면 공휴일이 먼저라 null */
+export function specialDayName(date: string): string | null {
+  if (isHoliday(date)) return null;
+  return SPECIAL_DAYS[date.slice(5, 7) + date.slice(8, 10)] ?? null;
+}
+
 const sets = new Map<number, Set<string>>();
 
 /** 그날(YYYY-MM-DD)이 공휴일인가 (주말은 따로 본다) */

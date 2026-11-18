@@ -25,7 +25,7 @@ import { SpendingDays } from "@/components/SpendingDays";
 import { ZoomPop } from "@/components/ZoomPop";
 import { usePrimaryAction, useSheets } from "@/components/Shell";
 import { spendingVisual } from "@/lib/categories";
-import { holidayName } from "@/lib/holidays";
+import { holidayName, specialDayName } from "@/lib/holidays";
 
 const ORDER: Record<Mark["kind"], number> = { event: 0, payday: 1, card: 2, item: 3 };
 const WEEKDAY = ["일", "월", "화", "수", "목", "금", "토"];
@@ -421,7 +421,7 @@ function DayAgenda({ day, marks, onOpenEvent, onOpenSpending, hold }: { day: str
         </div>
       ) : (
         <div className="cal-day-body" key={day}>
-          <p className="cal-rel">{[fromToday(day, today), holidayName(day) ?? "", ...counts].filter(Boolean).join(" · ")}</p>
+          <p className="cal-rel">{[fromToday(day, today), holidayName(day) ?? specialDayName(day) ?? "", ...counts].filter(Boolean).join(" · ")}</p>
           {events.length > 0 && (
             <section className="cal-sec" aria-labelledby="cal-ev-h">
               <div className="group-head">

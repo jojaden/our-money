@@ -64,6 +64,7 @@
   --step-todo: var(--border);
   --saturday: #3563c9;
   --positive: #367940;
+  --on-positive: #ffffff;
   --negative: #c9202e;
   --on-negative: #ffffff;
   --warning: #b45309;
@@ -161,6 +162,7 @@
   --cat-tint: 8%;
   --saturday: #6f9bff;
   --positive: #5fc77a;
+  --on-positive: #222326;
   --negative: #ff5b63;
   --on-negative: #222326;
   --warning: #f59e3b;
@@ -214,6 +216,7 @@
     --cat-tint: 8%;
     --saturday: #6f9bff;
     --positive: #5fc77a;
+    --on-positive: #222326;
     --negative: #ff5b63;
     --on-negative: #222326;
     --warning: #f59e3b;
