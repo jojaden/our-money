@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 import { useData } from "@/lib/store";
 import { addMonths, currentMonth, livingStatus, monthRow } from "@/lib/calc";
@@ -8,6 +7,7 @@ import { addDays } from "@/lib/calendar";
 import { monthLabel } from "@/lib/format";
 import { haptic } from "@/lib/native";
 import { useTasks } from "./tasks";
+import { MonthReportSheet } from "./MonthReport";
 
 const LATER_KEY = "our-money-close-later";
 /** "나중에"를 누르면 홈 카드를 며칠 숨기나 (종에는 그대로 남는다) */
@@ -47,12 +47,13 @@ function readLater(): { month: string; until: string } | null {
 
 /**
  * 홈 맨 위 카드 "10월이 끝났어요" — 화면을 막는 시트 대신 제자리에 둔다(토스 UX: 들어오자마자 가리지 않기).
- * [10월 마감하기]는 바로 마감, [나중에]는 이 기기에서 3일 숨김, "돌아보기"는 그달 체크 화면 맨 아래(메모)로.
+ * [10월 마감하기]는 바로 마감, [나중에]는 이 기기에서 3일 숨김, "돌아보기"는 그달 결산 한 장(MonthReport — 메모는 거기서 체크로).
  */
 export function ClosePrompt() {
-  const { today, setMonth } = useData();
+  const { today } = useData();
   const c = usePendingClose();
   const [later, setLater] = useState(readLater);
+  const [report, setReport] = useState(false);
   if (!c || (later && later.month === c.month && today < later.until)) return null;
 
   const snooze = () => {
@@ -67,9 +68,9 @@ export function ClosePrompt() {
     <section className="card close-prompt" aria-labelledby="close-prompt-h">
       <div className="card-head">
         <h2 id="close-prompt-h">{c.label}이 끝났어요</h2>
-        <Link className="aside" href="/check#month-close" onClick={() => setMonth(c.month)}>
+        <button type="button" className="aside" onClick={() => setReport(true)}>
           돌아보기
-        </Link>
+        </button>
       </div>
       <p className="s">{c.summary}</p>
       <div className="close-prompt-actions">
@@ -80,6 +81,7 @@ export function ClosePrompt() {
           {c.label} 마감하기
         </button>
       </div>
+      <MonthReportSheet month={c.month} open={report} onOpenChange={setReport} />
     </section>
   );
 }

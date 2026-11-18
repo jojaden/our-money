@@ -163,6 +163,7 @@ export default function PlanPage() {
                 {goals.map((g) => (
                   <GoalBar
                     key={g.item.id}
+                    id={g.item.id}
                     name={g.item.name}
                     desc={[accName(g.item.account_id), `매달 ${num(g.item.amount)}원`].filter(Boolean).join(" · ")}
                     saved={g.saved}
