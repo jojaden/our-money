@@ -26,6 +26,7 @@ import { ZoomPop } from "@/components/ZoomPop";
 import { usePrimaryAction, useSheets } from "@/components/Shell";
 import { spendingVisual } from "@/lib/categories";
 import { holidayName, specialDayName } from "@/lib/holidays";
+import { useFirstHint } from "@/components/hints";
 
 const ORDER: Record<Mark["kind"], number> = { event: 0, payday: 1, card: 2, item: 3 };
 const WEEKDAY = ["일", "월", "화", "수", "목", "금", "토"];
@@ -214,6 +215,7 @@ function CalendarMonth() {
   const day = picked && inMonth(picked) ? picked : inMonth(today) ? today : `${month}-01`;
   // 날짜 패널(그날 내역)만 시트로 연다. 모아 보기는 달력 아래에 있다
   const [panelOpen, setPanelOpen] = useState(Boolean(carried?.openDay));
+  useFirstHint("hold", "일정·할 일 줄을 꾹 누르면 수정·복사·공유 메뉴가 나와요", panelOpen);
   const returnPanel = useRef(false);
   const [moreTab, setMoreTab] = useState<"month" | "dday">("month");
   const { more, page, hint, openMore } = useCalendarStage();

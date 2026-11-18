@@ -7,7 +7,7 @@ import { GROUP_LABEL, GROUP_ORDER } from "@/lib/types";
 import { nameOf, other, paydayDate, shareOf, type Lane } from "@/lib/calc";
 import { dateWithDay, num } from "@/lib/format";
 import { Morph } from "./Morph";
-import { Money, Seg } from "./ui";
+import { Money, Seg, useRolling } from "./ui";
 
 type Bucket = Group | "left";
 type Scope = "both" | Person;
@@ -63,13 +63,15 @@ export function SplitBar({
 
   const detail = open && open !== "left" ? items.filter((i) => i.group === open).map((i) => ({ i, v: lane ? shareOf(i, lane.person, rA) : i.amount })).filter((x) => x.v > 0).sort((a, b) => b.v - a.v) : [];
 
+  // 플랜을 고치면 수입 큰 숫자가 굴러 바뀐다 (useRolling)
+  const incomeShown = useRolling(income);
   return (
     <div className="split">
       <Seg label="누구 월급" value={scope} onChange={changeScope} options={[{ value: me, label: nameOf(s, me) }, { value: other(me), label: nameOf(s, other(me)) }, { value: "both", label: "두 사람" }]} />
       <p className="split-total">
         <span className="hero-label">{lane ? `${nameOf(s, lane.person)} 수입 · 월급날 ${dateWithDay(paydayDate(month, s, lane.person))}` : "두 사람 수입"}</span>
         <span className="hero-amt">
-          {num(income)}
+          {num(incomeShown)}
           <small>원</small>
         </span>
       </p>

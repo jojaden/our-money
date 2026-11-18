@@ -233,7 +233,7 @@ function HoldLayer({ place, open, actions, label, onClose, onGone }: { place: Pl
     };
     if (still() || !el || !pv || !mn) return done();
     const t = tokens();
-    mn.animate([{ opacity: 1, transform: "scale(1)" }, { opacity: 0, transform: "scale(0.7)" }], { duration: 160, easing: "ease-in", fill: "forwards" });
+    mn.animate([{ opacity: 1, transform: "scale(1)" }, { opacity: 0, transform: "scale(0.7)" }], { duration: 160, easing: t.out, fill: "forwards" });
     el.querySelector(".hold-dim")!.animate([{ opacity: 1 }, { opacity: 0 }], { duration: t.swap, easing: t.out, fill: "forwards" });
     const a = pv.animate([{ transform: `translateY(${shift.current}px) scale(1)` }, { transform: "translateY(0) scale(1)" }], { duration: t.swap, easing: t.out, fill: "forwards" });
     a.finished.then(done, done);
