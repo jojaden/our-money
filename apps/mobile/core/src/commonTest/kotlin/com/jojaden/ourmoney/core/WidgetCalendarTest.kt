@@ -1,6 +1,8 @@
 package com.jojaden.ourmoney.core
 
 import com.jojaden.ourmoney.core.calendar.Dot
+import com.jojaden.ourmoney.core.calendar.DayTone
+import com.jojaden.ourmoney.core.calendar.dayTone
 import com.jojaden.ourmoney.core.calendar.monthCells
 import com.jojaden.ourmoney.core.calendar.parseWidgetCalendar
 import kotlinx.datetime.LocalDate
@@ -69,5 +71,17 @@ class WidgetCalendarTest {
         assertNull(aug[5])
         assertEquals(LocalDate(2026, 8, 1), aug[6])
         assertEquals(LocalDate(2026, 8, 31), aug[36])
+    }
+
+    @Test
+    fun 날짜_색은_공휴일_빨강_기념일_초록_토요일_파랑() {
+        assertEquals(DayTone.RED, dayTone(LocalDate(2026, 12, 25))) // 크리스마스 (금)
+        assertEquals(DayTone.RED, dayTone(LocalDate(2026, 9, 24))) // 추석 (목)
+        assertEquals(DayTone.RED, dayTone(LocalDate(2026, 11, 22))) // 일요일
+        assertEquals(DayTone.GREEN, dayTone(LocalDate(2026, 12, 24))) // 크리스마스 이브 (목)
+        assertEquals(DayTone.GREEN, dayTone(LocalDate(2026, 3, 14))) // 화이트데이 (토) — 초록이 먼저
+        assertEquals(DayTone.RED, dayTone(LocalDate(2027, 2, 14))) // 밸런타인데이가 일요일이면 빨강
+        assertEquals(DayTone.BLUE, dayTone(LocalDate(2026, 11, 21))) // 토요일
+        assertEquals(DayTone.PLAIN, dayTone(LocalDate(2026, 11, 18)))
     }
 }

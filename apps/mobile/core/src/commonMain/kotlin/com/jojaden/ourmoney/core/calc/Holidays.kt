@@ -18,3 +18,13 @@ private val holidaySets: Map<Int, Set<String>> = KR_HOLIDAYS.mapValues { (_, v) 
 /** 그날(YYYY-MM-DD)이 공휴일인가 (주말은 따로 본다) */
 fun isHoliday(date: String): Boolean =
     holidaySets[date.substring(0, 4).toInt()]?.contains(date.substring(5, 7) + date.substring(8, 10)) == true
+
+// 쉬는 날은 아니지만 챙기는 날 — 달력·위젯에서 초록. 웹 holidays.ts SPECIAL_DAYS 와 같은 날짜다(holidays.test.mjs 가 맞춰 본다).
+/** 해마다 같은 기념일 MMDD (공백으로 나눔) */
+const val KR_SPECIAL_DAYS = "0214 0314 0508 0515 0521 1031 1111 1224"
+
+private val specialSet: Set<String> = KR_SPECIAL_DAYS.split(' ').toSet()
+
+/** 그날(YYYY-MM-DD)이 기념일인가 — 공휴일이면 공휴일이 먼저라 false */
+fun isSpecialDay(date: String): Boolean =
+    !isHoliday(date) && specialSet.contains(date.substring(5, 7) + date.substring(8, 10))
