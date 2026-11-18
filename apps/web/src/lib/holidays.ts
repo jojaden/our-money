@@ -12,6 +12,58 @@ export const KR_HOLIDAYS: Record<number, string> = {
   2029: "0101 0212 0213 0214 0301 0505 0507 0520 0521 0606 0815 0921 0922 0923 0924 1003 1009 1225",
 };
 
+/** 날짜가 해마다 같은 공휴일의 이름 (달력 칸에 짧게) */
+const FIXED_NAMES: Record<string, string> = { "0101": "신정", "0301": "삼일절", "0505": "어린이날", "0606": "현충일", "0815": "광복절", "1003": "개천절", "1009": "한글날", "1225": "크리스마스" };
+
+/**
+ * 해마다 날짜가 바뀌는 공휴일의 이름 "MMDD 이름 · …" — 설·추석(연휴 사흘 모두), 부처님오신날, 대체공휴일, 선거일, 임시공휴일.
+ * python holidays 0.83 KR(ko) 에서 뽑아 짧게 줄였다(기독탄신일 → 크리스마스, 대체 휴일 → 대체공휴일, ○○ 선거일 → 선거일).
+ * 두 공휴일이 겹치면 더 알려진 쪽 하나(2025-05-05 어린이날, 2028-10-03 개천절). KR_HOLIDAYS 와 같이 고친다(holidays.test.mjs).
+ */
+const YEAR_NAMES: Record<number, string> = {
+  2025: "0127 임시공휴일 · 0128 설날 · 0129 설날 · 0130 설날 · 0303 대체공휴일 · 0506 대체공휴일 · 0603 선거일 · 1005 추석 · 1006 추석 · 1007 추석 · 1008 대체공휴일",
+  2026: "0216 설날 · 0217 설날 · 0218 설날 · 0302 대체공휴일 · 0524 부처님오신날 · 0525 대체공휴일 · 0603 선거일 · 0817 대체공휴일 · 0924 추석 · 0925 추석 · 0926 추석 · 1005 대체공휴일",
+  2027: "0206 설날 · 0207 설날 · 0208 설날 · 0209 대체공휴일 · 0513 부처님오신날 · 0816 대체공휴일 · 0914 추석 · 0915 추석 · 0916 추석 · 1004 대체공휴일 · 1011 대체공휴일 · 1227 대체공휴일",
+  2028: "0126 설날 · 0127 설날 · 0128 설날 · 0412 선거일 · 0502 부처님오신날 · 1002 추석 · 1004 추석 · 1005 대체공휴일",
+  2029: "0212 설날 · 0213 설날 · 0214 설날 · 0507 대체공휴일 · 0520 부처님오신날 · 0521 대체공휴일 · 0921 추석 · 0922 추석 · 0923 추석 · 0924 대체공휴일",
+};
+
+const names = new Map<number, Map<string, string>>();
+
+/** 그날(YYYY-MM-DD) 공휴일 이름, 공휴일이 아니면 null — 달력에서 날짜를 빨갛게 하고 이름을 적는다 */
+export function holidayName(date: string): string | null {
+  if (!isHoliday(date)) return null;
+  const y = Number(date.slice(0, 4));
+  let m = names.get(y);
+  if (!m) {
+    m = new Map((YEAR_NAMES[y] ?? "").split(" · ").filter(Boolean).map((x) => [x.slice(0, 4), x.slice(5)] as [string, string]));
+    names.set(y, m);
+  }
+  const md = date.slice(5, 7) + date.slice(8, 10);
+  return m.get(md) ?? FIXED_NAMES[md] ?? "공휴일";
+}
+
+/**
+ * 쉬는 날은 아니지만 한국에서 챙기는 날 (날짜가 해마다 같은 것만) — 달력에서 초록으로 적는다.
+ * 부부의 날은 두 사람이 쓰는 가계부라 넣었다. 음력 날(정월대보름 등)은 표가 따로 있어야 해서 두지 않았다.
+ */
+const SPECIAL_DAYS: Record<string, string> = {
+  "0214": "밸런타인데이",
+  "0314": "화이트데이",
+  "0508": "어버이날",
+  "0515": "스승의 날",
+  "0521": "부부의 날",
+  "1031": "핼러윈",
+  "1111": "빼빼로데이",
+  "1224": "크리스마스 이브",
+};
+
+/** 그날(YYYY-MM-DD)이 기념일이면 이름, 아니면 null. 공휴일과 겹치면 공휴일이 먼저라 null */
+export function specialDayName(date: string): string | null {
+  if (isHoliday(date)) return null;
+  return SPECIAL_DAYS[date.slice(5, 7) + date.slice(8, 10)] ?? null;
+}
+
 const sets = new Map<number, Set<string>>();
 
 /** 그날(YYYY-MM-DD)이 공휴일인가 (주말은 따로 본다) */

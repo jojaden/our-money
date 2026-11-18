@@ -6,6 +6,7 @@ import { eventTodo } from "@/lib/calendar";
 import { findCheck } from "@/lib/calc";
 import { useData } from "@/lib/store";
 import { dateWithDay, num } from "@/lib/format";
+import { holidayName, specialDayName } from "@/lib/holidays";
 
 const WEEK = ["일", "월", "화", "수", "목", "금", "토"];
 
@@ -31,10 +32,20 @@ interface Span {
   tail: boolean;
 }
 
-/** 주마다 기간 일정(이틀 이상)을 줄에 배정한다: 먼저 시작한 것, 같으면 긴 것부터 비어 있는 가장 위 줄로 — 그래야 같은 일정이 매일 같은 줄에 있다 */
-function weekSpans(week: string[], marks: Map<string, Mark[]>): Span[] {
+/** 이만큼(일) 이상 이어지는 일정은 이름 막대 대신 칸 아래 얇은 선 + 끝나는 날 "마감" (한 달짜리 신고 기간 등) */
+const LONG = 7;
+const dayNo = (d: string) => Date.UTC(Number(d.slice(0, 4)), Number(d.slice(5, 7)) - 1, Number(d.slice(8, 10))) / 86_400_000;
+/** 기간 일정인가 (이틀 이상), 그중 긴 것인가 */
+const ranged = (m: Mark) => Boolean(m.occ && m.occ.start !== m.occ.end);
+const isLong = (m: Mark) => ranged(m) && dayNo(m.occ!.end) - dayNo(m.occ!.start) + 1 >= LONG;
+
+/**
+ * 주마다 기간 일정을 줄에 배정한다: 먼저 시작한 것, 같으면 긴 것부터 비어 있는 가장 위 줄로 — 그래야 같은 일정이 매일 같은 줄에 있다.
+ * long: 짧은 것(이름 막대)과 긴 것(아래 얇은 선)을 따로 배정한다
+ */
+function weekSpans(week: string[], marks: Map<string, Mark[]>, long: boolean): Span[] {
   const seen = new Map<string, Mark>();
-  for (const d of week) for (const m of marks.get(d) ?? []) if (m.occ && m.occ.start !== m.occ.end) seen.set(`${m.event!.id}:${m.occ.start}`, m);
+  for (const d of week) for (const m of marks.get(d) ?? []) if (ranged(m) && isLong(m) === long) seen.set(`${m.event!.id}:${m.occ!.start}`, m);
   const lanes: number[] = []; // 줄마다 마지막으로 찬 칸
   return [...seen.entries()]
     .sort(([, a], [, b]) => a.occ!.start.localeCompare(b.occ!.start) || b.occ!.end.localeCompare(a.occ!.end))
@@ -78,9 +89,12 @@ function fitCells(grid: HTMLElement | null) {
 
 /**
  * 달력 — 카드로 감싸지 않고 화면 너비를 다 쓴다. 날짜 칸 안에서 무엇이 있는지 이름으로 바로 읽힌다:
- * - 기간 일정(이틀 이상)은 걸친 칸을 잇는 칠한 막대에 이름 (날짜 바로 아래 맨 위, 칸 위에 겹친 그리드 아이템)
+ * - 7일 이상 이어지는 일정(한 달짜리 신고 기간 등)은 막대 대신 걸친 칸 아래 여백에 2px 선, 끝나는 날에 "마감 이름"
+ * - 기간 일정(이틀~6일)은 걸친 칸을 잇는 칠한 막대에 이름 (날짜 바로 아래 맨 위, 칸 위에 겹친 그리드 아이템)
  * - 하루 종일 일정은 칠한 칸, 시간이 있는 일정은 왼쪽 막대 + 옅은 바탕 — 색은 공동·현빈·예진(일정의 owner)
  * - 체크(카드값·이체·납부, 할 일 일정)는 앞에 동그라미, 끝내면 채운 동그라미와 옅은 글자
+ * - 공휴일은 날짜를 빨갛게(일요일처럼), 칸 첫 줄에 빨간 칸 이름("크리스마스")
+ * - 쉬는 날은 아닌 기념일(크리스마스 이브·빼빼로데이·화이트데이…)은 같은 자리에 초록 (일요일이면 날짜는 빨강 그대로)
  * - 들어올 돈(월급날)은 +금액(금액이 없으면 "월급"), 쓴 돈은 금액으로 칸 아래에
  * 폰에서는 줄이 남는 높이를 나눠 가져 화면을 꽉 채운다(달력 화면의 첫 칸). 좌우로 밀면 날짜 칸만 넘어가고 요일 줄은 제자리다.
  */
@@ -114,7 +128,9 @@ export function CalendarCard({
     return () => ro.disconnect();
   }, []);
   const inMonth = (d: string) => d.slice(0, 7) === month;
-  const weeks = Array.from({ length: Math.ceil(cells.length / 7) }, (_, w) => weekSpans(cells.slice(w * 7, w * 7 + 7), marks));
+  const weekCells = Array.from({ length: Math.ceil(cells.length / 7) }, (_, w) => cells.slice(w * 7, w * 7 + 7));
+  const weeks = weekCells.map((week) => weekSpans(week, marks, false));
+  const threads = weekCells.map((week) => weekSpans(week, marks, true));
   /** 끝낸 체크인가 — 이체·납부는 낸 표시, 카드값은 체크 기록, 할 일 일정은 그 회차의 체크 */
   const done = (m: Mark) => (m.item ? m.item.paid : m.bill ? Boolean(findCheck(data.checks, m.bill.id)) : m.event?.todo && m.occ ? Boolean(eventTodo(data, m.occ).check) : false);
   return (
@@ -137,16 +153,22 @@ export function CalendarCard({
             .filter((m) => m.event && !(m.occ && m.occ.start !== m.occ.end))
             .sort((a, b) => (a.event!.start_time ?? "").localeCompare(b.event!.start_time ?? ""));
           const checks = ms.filter((m) => m.kind === "card" || m.kind === "item");
+          // 긴 기간 일정이 끝나는 날: 칸에 "마감 이름" (선만으로는 무엇인지 모르니 끝날에만 이름을 적는다)
+          const dues = ms.filter((m) => isLong(m) && m.occ!.end === d);
           const amount = spent.get(d) ?? 0;
           const income = ms.reduce((a, m) => a + (m.kind === "payday" ? (m.amount ?? 0) : 0), 0);
           // 월급 금액을 아직 안 적은 월급날도 표시는 남긴다
           const payday = ms.some((m) => m.kind === "payday");
-          const label = [dateWithDay(d), income ? `들어올 돈 ${num(income)}원` : "", amount ? `쓴 돈 ${num(amount)}원` : "", ...ms.map((m) => m.title)].filter(Boolean).join(", ");
+          // 공휴일(설·추석·크리스마스·대체공휴일…): 날짜를 일요일처럼 빨갛게, 칸 첫 줄에 이름
+          const hol = holidayName(d);
+          // 쉬는 날은 아니지만 챙기는 날(크리스마스 이브·빼빼로데이…): 초록으로
+          const sp = hol ? null : specialDayName(d);
+          const label = [dateWithDay(d), hol ?? sp ?? "", income ? `들어올 돈 ${num(income)}원` : "", amount ? `쓴 돈 ${num(amount)}원` : "", ...ms.map((m) => m.title)].filter(Boolean).join(", ");
           return (
             <button
               key={d}
               type="button"
-              className={`cal-day ${inMonth(d) ? "" : "out"} ${d === today ? "today" : ""} ${d === day ? "picked" : ""} ${i % 7 === 0 ? "sun" : i % 7 === 6 ? "sat" : ""}`}
+              className={`cal-day ${inMonth(d) ? "" : "out"} ${d === today ? "today" : ""} ${d === day ? "picked" : ""} ${i % 7 === 0 ? "sun" : i % 7 === 6 ? "sat" : ""} ${hol ? "hol" : sp ? "sp" : ""}`}
               style={{ gridRow: Math.floor(i / 7) + 1, gridColumn: (i % 7) + 1 }}
               aria-label={label}
               aria-pressed={d === day}
@@ -155,6 +177,14 @@ export function CalendarCard({
               <span className="n">{Number(d.slice(8))}</span>
               <span className="cal-events" aria-hidden="true" data-extra={spans.filter((s) => s.lane >= LINES).length}>
                 {used > 0 && <span className="cal-lanes" style={{ "--n": used } as CSSProperties} />}
+                {hol && <span className="cal-item hol">{hol}</span>}
+                {sp && <span className="cal-item sp">{sp}</span>}
+                {dues.map((m) => (
+                  <span key={`due:${m.event!.id}`} className={`cal-item due o-${m.event!.owner} ${m.event!.todo && done(m) ? "done" : ""}`}>
+                    {m.event!.todo && <i className="ring" />}
+                    <b>마감</b> {m.title}
+                  </span>
+                ))}
                 {singles.map((m) => {
                   const e = m.event!;
                   return (
@@ -190,6 +220,19 @@ export function CalendarCard({
               >
                 {s.mark.title}
               </span>
+            )),
+        )}
+        {/* 긴 기간 일정(7일 이상): 걸친 칸 아래 여백에 2px 선만 (두 줄까지). 칸의 자리는 쓰지 않는다 */}
+        {threads.flatMap((spans, w) =>
+          spans
+            .filter((s) => s.lane < 2)
+            .map((s) => (
+              <span
+                key={`${s.key}:${w}`}
+                className={`cal-thread o-${s.mark.event!.owner} ${s.head ? "head" : ""} ${s.tail ? "tail" : ""}`}
+                style={{ gridRow: w + 1, gridColumn: `${s.c0 + 1} / ${s.c1 + 2}`, "--lane": s.lane } as CSSProperties}
+                aria-hidden="true"
+              />
             )),
         )}
       </div>

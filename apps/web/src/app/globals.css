@@ -285,6 +285,9 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
 .cal-week span { padding: 2px 0 8px; color: var(--faint); font: 600 12px/16px var(--font-text); text-align: center; }
 .cal-week .sun, .cal-day.sun .n { color: var(--negative); }
 .cal-week .sat, .cal-day.sat .n { color: var(--saturday); }
+/* 기념일은 초록(일요일은 쉬는 날 빨강 그대로), 공휴일은 토요일이어도 빨강 (토요일 줄보다 뒤에 둔다) */
+.cal-day.sp:not(.sun) .n { color: var(--positive); }
+.cal-day.hol .n { color: var(--negative); }
 .cal-day {
   position: relative;
   display: flex;
@@ -321,6 +324,13 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
 .cal-item.fill .ring { box-shadow: inset 0 0 0 1.5px currentColor; }
 .cal-item.done { opacity: 0.55; text-decoration: line-through; }
 .cal-item.done .ring { background: var(--primary); box-shadow: inset 0 0 0 1.5px var(--accent-ink); }
+/* 공휴일 이름: 날짜와 같은 빨강으로 칠한 칸 한 줄 (하루 종일 일정처럼), 위 글자는 on-negative */
+/* 공휴일·기념일 이름 칸: "크리스마스"·"대체공휴일" 다섯 글자가 한 줄에 들어가게 글자를 살짝 좁힌다 */
+/* 두 줄까지: 띄어쓰기에서 먼저 바꾸고("크리스마스 / 이브"), 한 단어가 칸보다 길면 그 안에서 ("밸런타인데 / 이") */
+.cal-item:is(.hol, .sp) { padding-inline: 2px; font-size: 10px; letter-spacing: -0.05em; word-break: keep-all; overflow-wrap: anywhere; }
+.cal-item.hol { background: var(--negative); color: var(--on-negative); }
+/* 쉬는 날은 아닌 기념일: 같은 모양을 초록으로 */
+.cal-item.sp { background: var(--positive); color: var(--on-positive); }
 .cal-over { flex: none; color: var(--muted); font: 600 10px/13px var(--font-text); text-align: left; }
 /* 기간 일정: 날짜 바로 아래 맨 위에 걸친 칸을 잇는 칠한 막대에 이름(owner 색). 시작·끝나는 날은 칸 안쪽에서 둥글게 끝나고,
    주를 넘어가는 쪽은 칸 끝까지 이어진다(주마다 이름을 다시 쓴다). 칸에는 막대 수만큼 빈자리(.cal-lanes)를 둬 하루 일정이 그 아래로 비킨다 */
@@ -328,6 +338,13 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
 .cal-line { --who: var(--joint); position: relative; z-index: 1; align-self: start; min-width: 0; height: var(--ln-h); margin-top: calc(var(--cal-pad-t) + var(--cal-num) + var(--cal-num-gap) + var(--lane) * (var(--ln-h) + var(--ln-gap))); padding: 0 4px; overflow: hidden; background: var(--who); color: var(--on-primary); font: 600 10.5px/15px var(--font-text); text-overflow: clip; white-space: nowrap; pointer-events: none; }
 .cal-line.head { margin-left: var(--cal-pad-x); border-top-left-radius: 3px; border-bottom-left-radius: 3px; }
 .cal-line.tail { margin-right: var(--cal-pad-x); border-top-right-radius: 3px; border-bottom-right-radius: 3px; }
+/* 7일 이상 이어지는 일정: 이름 막대 대신 칸 아래 여백(6px) 안에 2px 선 — 두 줄이면 1px 띄워 위로. 칸 안의 자리는 쓰지 않는다 */
+.cal-thread { --who: var(--joint); position: relative; z-index: 1; align-self: end; min-width: 0; height: 2px; margin-bottom: calc(1px + var(--lane) * 3px); background: var(--who); pointer-events: none; }
+.cal-thread.head { margin-left: calc(var(--cal-pad-x) + 2px); border-top-left-radius: 1px; border-bottom-left-radius: 1px; }
+.cal-thread.tail { margin-right: calc(var(--cal-pad-x) + 2px); border-top-right-radius: 1px; border-bottom-right-radius: 1px; }
+/* 그 일정이 끝나는 날: 옅은 바탕 + 왼쪽 막대(시간 일정과 같은 모양)에 굵은 "마감" */
+.cal-item.due { padding-left: 4px; background: var(--who-soft); box-shadow: inset 2px 0 0 var(--who); }
+.cal-item.due b { font-weight: 800; }
 .cal-day .amt { flex: none; margin-top: 2px; }
 .cal-day .amt.in + .amt { margin-top: 0; }
 .cal-day .amt.in { color: var(--positive); }
