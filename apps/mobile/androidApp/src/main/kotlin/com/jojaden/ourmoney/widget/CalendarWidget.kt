@@ -69,7 +69,7 @@ class CalendarWidget : GlanceAppWidget() {
             val cal = remember(rev) { CalendarStore.read(context) }
             val today = remember(rev) { LocalDate.now().toKotlinLocalDate() }
             // 웹 설정 › 화면의 테마 (앱이 웹에서 받아 둔다) — 바뀌면 앱이 판을 올린다
-            val theme = remember(rev) { context.getSharedPreferences(MainActivity.PREFS, Context.MODE_PRIVATE).getString(MainActivity.THEME, null) ?: "light" }
+            val theme = remember(rev) { context.getSharedPreferences(MainActivity.PREFS, Context.MODE_PRIVATE).getString(MainActivity.THEME, null) ?: "system" }
             CalendarContent(cal, today, theme)
         }
     }

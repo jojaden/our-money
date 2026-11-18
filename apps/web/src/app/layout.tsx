@@ -29,7 +29,7 @@ export const viewport: Viewport = {
 };
 
 // 첫 그림 전에 테마를 고른다 (흰 화면이 번쩍이지 않게). lib/theme.ts 와 같은 키·규칙, #17171c 는 tokens.json ground 의 dark 값
-const THEME_SCRIPT = `(function(){try{var t=localStorage.getItem("our-money-theme");if(t!=="dark"&&t!=="system")t="light";document.documentElement.dataset.theme=t;if(t==="dark"||(t==="system"&&matchMedia("(prefers-color-scheme: dark)").matches)){var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content","#17171c")}}catch(e){}})()`;
+const THEME_SCRIPT = `(function(){try{var t=localStorage.getItem("our-money-theme");if(t!=="dark"&&t!=="light")t="system";document.documentElement.dataset.theme=t;if(t==="dark"||(t==="system"&&matchMedia("(prefers-color-scheme: dark)").matches)){var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content","#17171c")}}catch(e){}})()`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
