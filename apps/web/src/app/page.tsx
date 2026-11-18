@@ -21,6 +21,7 @@ import { ClosePrompt } from "@/components/ClosePrompt";
 import { Morph } from "@/components/Morph";
 import { Nudges, type Nudge } from "@/components/Nudges";
 import { Arrange, Slot } from "@/components/Arrange";
+import { useFirstHint } from "@/components/hints";
 
 /** 홈에서 옮길 수 있는 카드와 처음 순서 (폰) */
 const HOME_CARDS = ["living", "allowance", "todo", "cards", "recent"];
@@ -33,6 +34,7 @@ export default function Home() {
   const { tasks, paydays, started } = useTasks(month);
   const { openSpending } = useSheets();
   usePrimaryAction("지출 기록", "spending", () => openSpending());
+  useFirstHint("arrange", "카드를 꾹 누르면 순서를 옮길 수 있어요", started);
   const s = data.settings;
 
   if (!started) {

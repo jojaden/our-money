@@ -188,6 +188,7 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
   border-bottom: 2px solid var(--border);
   transition: border-color 200ms ease;
 }
+.cap-hint { margin: 4px 0 0; color: var(--negative); font: 500 13px/18px var(--font-text); text-align: center; }
 .bigamount:focus-within { border-color: var(--accent-ink); }
 .bigamount input {
   flex: 1;

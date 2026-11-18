@@ -182,3 +182,18 @@
 @media (prefers-reduced-motion: reduce) {
   .scene.bob .brand, .scene.bob .floor, .scene.meet .coin, .scene.meet .lens, .stage-screen.loading .scene, .stage-screen.loading .copy { animation: none; }
 }
+
+/* ---------- 월급날 첫 진입: 위쪽에서 동전 알갱이 (components/PaydayCheer) ---------- */
+/* 100% 축하의 bead 와 같은 알갱이·같은 터짐(celebrate-burst), 더 작고 짧게. 누르는 것을 막지 않는다 */
+.payday-cheer { position: fixed; top: calc(env(safe-area-inset-top, 0px) + 96px); left: 50%; z-index: 65; width: 0; height: 0; pointer-events: none; }
+.payday-cheer i {
+  position: absolute;
+  top: 0;
+  left: 0;
+  translate: -50% -50%;
+  border-radius: var(--radius-chip);
+  background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--primary) 30%, var(--surface)) 0 18%, var(--primary) 55%, var(--primary-press) 100%);
+  opacity: 0;
+  animation: celebrate-burst var(--dur-ring) var(--ease-out) var(--d) both;
+}
+@media (prefers-reduced-motion: reduce) { .payday-cheer { display: none; } }

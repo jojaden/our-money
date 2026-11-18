@@ -17,6 +17,7 @@ import { afterSheet, Mark, Toasts } from "./ui";
 import { QuickAdd, type QuickDraft } from "./QuickAdd";
 import { SpendingSheet } from "./SpendingSheet";
 import { MonthSheet } from "./MonthSheet";
+import { PaydayCheer } from "./PaydayCheer";
 import { CelebrateWatch } from "./CelebrateWatch";
 import { JointEventWatch } from "./JointEventWatch";
 import { BellButton } from "./Bell";
@@ -530,6 +531,8 @@ function Frame({ children }: { children: React.ReactNode }) {
               {/* 상대가 공동 일정을 더하면 토스트 (켜져 있을 때) */}
               {data && <JointEventWatch />}
               {data && <MonthSheet key={months.key} open={months.open} range={months.range} onOpenChange={(open) => setMonths((x) => ({ ...x, open }))} />}
+              {/* 내 월급날 그날 처음 열면 한 번: 동전 알갱이·진동·토스트 */}
+              {data && <PaydayCheer />}
               {/* 안드로이드 앱: 결제 알림으로 맞춘 고정비·이체를 체크 */}
               {data && app && <NoticeSync />}
               {/* 안드로이드 앱: 홈 화면 달력 위젯에 달력 요약 넘기기, 위젯을 누르면 달력으로 */}

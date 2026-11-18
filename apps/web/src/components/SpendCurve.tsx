@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import type { Spending } from "@/lib/types";
 import { periodOf } from "@/lib/calc";
 import { num, parseYmd, ymd } from "@/lib/format";
-import { TextTabs } from "./ui";
+import { TextTabs, useRolling } from "./ui";
 import { Meter } from "./Meter";
 import { Morph } from "./Morph";
 import { useRevealOnce } from "./reveal";
@@ -137,13 +137,15 @@ export function SpendCurve({
   })();
   const pctOf = (v: number, b: number) => (b > 0 ? Math.round((v / b) * 100) : 0);
 
+  // 기록이 늘면 큰 금액이 이전 값에서 굴러 바뀐다 (홈 예산 카드와 같은 useRolling)
+  const spentShown = useRolling(spent);
   return (
     <section className="card curve" aria-labelledby="curve-h">
       {/* 이름표는 작고 흐리게, 금액만 크게 — 색 대신 크기로 강조한다 */}
       <h2 id="curve-h" className="curve-title">
         <span className="hero-label">이번 달 누적 지출</span>
         <span className="hero-amt">
-          {num(spent)}
+          {num(spentShown)}
           <small>원</small>
         </span>
       </h2>

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, Check, ChevronDown, ChevronRight, CircleCheck, Clock, Target } from "lucide-react";
 import { useData } from "@/lib/store";
 import { nameOf, other, periodOf } from "@/lib/calc";
@@ -13,7 +13,8 @@ import { dDay, dateWithDay, monthLabel, shortDate } from "@/lib/format";
 import { TaskRow } from "@/components/TaskRow";
 import { MAX_STEPS, StepTrack } from "@/components/StepTrack";
 import { MonthClose } from "@/components/MonthClose";
-import { Morph, useMorphFlip } from "@/components/Morph";
+import { Morph, still, tokens, useMorphFlip } from "@/components/Morph";
+import { haptic } from "@/lib/native";
 import { Arrange, Slot } from "@/components/Arrange";
 
 /** 체크에서 옮길 수 있는 카드와 처음 순서 (폰) */
@@ -180,6 +181,19 @@ function PaydaySection({ g, today, name, quiet = false }: { g: PaydayGroup; toda
   const arrived = g.date <= today;
   const early = left.filter((t) => t.early);
   const sum = (l: Task[]) => l.reduce((a, t) => a + t.amount, 0);
+  // 내 월급날 옮길 돈을 이 기기에서 마지막 하나까지 체크한 순간: 카드가 살짝 부풀고 진동·토스트 (월급날 의식의 끝)
+  const { doneSeq, toast } = useData();
+  const card = useRef<HTMLElement>(null);
+  const seen = useRef({ left: left.length, seq: doneSeq });
+  useEffect(() => {
+    const was = seen.current;
+    seen.current = { left: left.length, seq: doneSeq };
+    if (quiet || was.left === 0 || left.length !== 0 || doneSeq === was.seq) return;
+    haptic([10, 50, 14]);
+    toast(`${name} 월급날 옮길 돈을 모두 옮겼어요`);
+    const t = tokens();
+    if (!still()) card.current?.animate([{ transform: "scale(1)" }, { transform: "scale(1.02)", offset: 0.4 }, { transform: "scale(1)" }], { duration: t.move, easing: t.out });
+  }, [left.length, doneSeq, quiet, name, toast]);
   const when = <span className={arrived && left.length > 0 ? "neg" : undefined}>{dDay(g.date, today)}</span>;
   let status: React.ReactNode;
   if (left.length === 0) status = "모두 옮겼어요.";
@@ -207,7 +221,7 @@ function PaydaySection({ g, today, name, quiet = false }: { g: PaydayGroup; toda
       </>
     );
   return (
-    <section className="card payday" aria-labelledby={id}>
+    <section className="card payday" aria-labelledby={id} ref={card}>
       <div className="card-head">
         <h3 id={id}>{name} 월급날</h3>
         <span className="aside">{dateWithDay(g.date)}</span>
