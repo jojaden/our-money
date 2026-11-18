@@ -19,7 +19,7 @@ const BEADS = Array.from({ length: 16 }, (_, i) => {
  * 100% 축하 — 그달 체크를 모두 끝낸 순간 (docs/design-system/components/Celebrate). 띄우는 때는 CelebrateWatch 가 정한다.
  * - play: 직접 끝낸 순간마다 1씩 늘린다 → 그때마다 띄운다(본 적 있어도)
  * - done: 앱을 열었을 때 이미 다 끝나 있으면(상대가 끝냈을 때 등) 이 기기에서 그달 한 번만
- * 아무 곳이나 누르거나 Esc 로 닫힌다.
+ * 아무 곳이나(여백) 누르거나 Esc 로 닫히고 원래 화면으로 돌아간다. 날짜 창(시트) 위에 떴으면 그 누르기·Esc 가 시트까지 닫지 않는다.
  * 페이지 틀(main)은 넘기기 움직임 때문에 transform 을 가져서, 위쪽 막대·캡슐보다 위에 덮으려면 body 에 그린다.
  */
 export function Celebrate({
@@ -78,10 +78,22 @@ export function Celebrate({
 
   useEffect(() => {
     if (!open) return;
-    root.current?.focus();
-    const close = (e: KeyboardEvent) => e.key === "Escape" && setLeaving(true);
-    addEventListener("keydown", close);
-    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return () => removeEventListener("keydown", close);
+    const el = root.current;
+    el?.focus();
+    // 시트(Radix)는 document 에서 바깥 누르기·Esc 를 듣는다 — 축하 화면에서 끝내 시트가 함께 닫히지 않게
+    const stop = (e: Event) => e.stopPropagation();
+    el?.addEventListener("pointerdown", stop);
+    const close = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      e.stopPropagation();
+      setLeaving(true);
+    };
+    addEventListener("keydown", close, true);
+    const off = () => {
+      el?.removeEventListener("pointerdown", stop);
+      removeEventListener("keydown", close, true);
+    };
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return off;
     // 300ms 에 숫자가 튀며 1.3초 동안 0→100 (4제곱 감속), 같은 순간 짧은 진동
     let raf = 0;
     if (n.current) n.current.textContent = "0";
@@ -98,7 +110,7 @@ export function Celebrate({
     return () => {
       clearTimeout(t);
       cancelAnimationFrame(raf);
-      removeEventListener("keydown", close);
+      off();
     };
   }, [open]);
 

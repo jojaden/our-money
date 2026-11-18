@@ -11,6 +11,8 @@
   background: radial-gradient(120% 85% at 50% 32%, var(--glow) 0%, var(--accent-soft) 42%, var(--lilac) 100%);
   outline: none;
   cursor: pointer;
+  /* 날짜 창(모달 시트)이 열려 있으면 body 가 pointer-events: none 이라, 그 위에서도 여백 누르기를 받게 */
+  pointer-events: auto;
   animation: celebrate-in var(--dur-bloom) var(--ease-out) both;
 }
 .celebrate.leaving { animation: celebrate-out 220ms var(--ease-out) both; }

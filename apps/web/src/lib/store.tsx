@@ -48,6 +48,8 @@ interface Store {
   startMonth: (month: string, opts?: { from?: string | null; oneOffs?: boolean }) => Promise<boolean>;
   toggleCheck: (c: Omit<Check, "done_at" | "done_by">, done: boolean) => Promise<void>;
   togglePaid: (item: MonthItem) => Promise<void>;
+  /** 이 기기에서 직접 완료로 체크한 횟수 — 100% 축하는 이게 늘었을 때만 다시 띄운다 (실시간 동기화의 되풀이로는 늘지 않는다) */
+  doneSeq: number;
   /** 로그인한 사람(me)의 이름 바꾸기 — 다른 사람 이름은 그 사람만 바꾼다 */
   setMyName: (name: string) => Promise<void>;
   /** 로그인한 사람(me)의 화면별 카드 순서 (서버 줄, 015 전이면 이 기기) */
@@ -209,6 +211,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [localOrder, setLocalOrder] = useState<LocalOrder | null>(readLocalOrder);
   const [month, setMonthState] = useState<string>("");
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const [doneSeq, setDoneSeq] = useState(0);
   const [today] = useState(todayStr);
   const toastSeq = useRef(0);
   const repo = useMemo(() => (typeof window === "undefined" ? null : getRepo()), []);
@@ -662,6 +665,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const toggleCheck = useCallback(
     async (c: Omit<Check, "done_at" | "done_by">, done: boolean) => {
       haptic(done ? [12, 40, 12] : 8);
+      if (done) setDoneSeq((n) => n + 1);
       if (done) await upsert("checks", [{ ...c, done_at: new Date().toISOString(), done_by: me }]);
       else await remove("checks", [c.id]);
     },
@@ -672,6 +676,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     async (item: MonthItem) => {
       const paid = !item.paid;
       haptic(paid ? [12, 40, 12] : 8);
+      if (paid) setDoneSeq((n) => n + 1);
       // 완료를 취소하면 적어 둔 실제 금액도 지운다 (다시 완료할 때는 플랜 금액부터)
       await upsert("month_items", [{ ...item, paid, paid_at: paid ? new Date().toISOString() : null, paid_by: paid ? me : null, paid_amount: paid ? item.paid_amount ?? null : null }]);
     },
@@ -701,6 +706,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     startMonth,
     toggleCheck,
     togglePaid,
+    doneSeq,
     setMyName,
     cardOrder,
     setCardOrder,

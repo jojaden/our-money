@@ -10,18 +10,22 @@ import { Celebrate } from "./Celebrate";
 /**
  * 100% 축하를 어느 화면에서 끝내든 띄운다 (홈 할 일·체크·달력 날짜 창).
  * 보고 있는 달의 체크(옮길 돈·고정비·저축·카드값·정산)가 남은 1건 이상 → 0건이 되는 순간 — 달은 이번 달이 아니어도 된다(다음 달을 미리 끝내도).
+ * 단, 지난 축하 뒤에 이 기기에서 직접 완료로 체크한 것이 있을 때만(doneSeq). 체크를 뺐다 넣으면 실시간 동기화가
+ * 두 변경을 뒤늦게 다시 보내 잠깐 "1건 남음 → 0건"이 되풀이되는데, 그것으로는 다시 띄우지 않는다.
  * 앱을 열었을 때 이미 이번 달을 다 끝냈으면(상대가 끝냈을 때 등) 이 기기에서 그달 한 번만.
  */
 export function CelebrateWatch() {
-  const { data, month, today, setMonth } = useData();
+  const { data, month, today, setMonth, doneSeq } = useData();
   const { tasks, transfers, pays, bills, started } = useTasks(month);
   const left = tasks.filter((t) => !t.done).length;
   // 그리기 중에 지난 값과 견준다 — 같은 달에서 남은 일이 0이 된 순간만 센다(달을 옮겨 이미 끝난 달을 봐도 띄우지 않는다)
-  const [last, setLast] = useState({ month, left });
+  // played: 마지막으로 띄운 때의 doneSeq
+  const [last, setLast] = useState({ month, left, played: -1 });
   const [play, setPlay] = useState(0);
   if (last.month !== month || last.left !== left) {
-    if (last.month === month && last.left > 0 && left === 0 && tasks.length > 0) setPlay((n) => n + 1);
-    setLast({ month, left });
+    const finished = last.month === month && last.left > 0 && left === 0 && tasks.length > 0 && doneSeq !== last.played;
+    if (finished) setPlay((n) => n + 1);
+    setLast({ month, left, played: finished ? doneSeq : last.played });
   }
   if (!started) return null;
 
