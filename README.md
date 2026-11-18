@@ -24,28 +24,29 @@
 | 폰에서 칸을 찾아 고치기 어려움 | 엄지 하나로 10초 안에 지출 기록 |
 | "이번 달 누가 어디로 얼마 옮기지?"를 매달 계산 | 플랜에서 **이체 목록을 자동으로** 만들고 체크 |
 | 한 사람이 고치면 다른 사람은 모름 | 두 폰에 **실시간** 반영, 동시에 고쳐도 충돌을 막음 |
+| "그거 옮겼어?"를 카톡으로 물어봄 | 상대의 공동 일정·공동 지출은 **알림**으로, 안 옮긴 돈은 **콕 찌르기**로 |
 
 ```mermaid
 flowchart LR
-  P["💰 월급날<br/>(주말이면 앞 금요일)"] --> A["플랜<br/>4개 묶음으로 나누기"]
+  P["💰 월급날<br/>(주말·공휴일이면 앞 영업일)"] --> A["플랜<br/>4개 묶음으로 나누기"]
   A --> B["체크<br/>옮길 돈 · 납부 · 카드값"]
   B --> C["가계부<br/>지출 기록 · 누적 그래프"]
   C --> D["달력<br/>일정 · 들어올/나갈 돈"]
-  D --> E["지난주 돌아보기<br/>달 마감"]
+  D --> E["알림 · 콕 찌르기<br/>한 장 결산 · 달 마감"]
   E -->|"다음 달 이어받기"| A
 ```
 
 ## 화면
 
-| 플랜 | 체크 | 가계부 | 달력 | 알림 |
+| 알림 모음 | 콕 찌르기 | 나눠 내기 | 한 장 결산 | 목표 이정표 |
 |:---:|:---:|:---:|:---:|:---:|
-| <img src="docs/screenshots/plan-pick.jpg" width="160"> | <img src="docs/screenshots/check.jpg" width="160"> | <img src="docs/screenshots/ledger.jpg" width="160"> | <img src="docs/screenshots/calendar-day.jpg" width="160"> | <img src="docs/screenshots/bell.jpg" width="160"> |
-| 수입 큰 숫자와 한 줄로 나뉜 월급 | 월급날마다 옮길 돈 칸 막대 | 이번 달 vs 지난달 누적 지출 | 애플 캘린더식 날짜 패널 | 지난주 돌아보기 |
+| <img src="docs/screenshots/bell.jpg" width="160"> | <img src="docs/screenshots/nudge.jpg" width="160"> | <img src="docs/screenshots/split.jpg" width="160"> | <img src="docs/screenshots/report.jpg" width="160"> | <img src="docs/screenshots/goal.jpg" width="160"> |
+| 지난달 마무리 · 지난 것 · 잘 나갔나요? | 상대 월급날 안 옮긴 돈을 알리고 카톡으로도 | 공동 항목을 두 사람 몫으로, 나가는 곳도 따로 | 지난달 쓴 돈 · 구성 · 눈에 띈 것 | 25 · 50 · 75 · 100% 도장 |
 
-| 카드 옮기기 | 달력 빠른 추가 | 100% 축하 | 어두운 화면 |
+| 달력 날짜 창 | 꾹 누르기 메뉴 | 카드 넣기 | 어두운 화면 |
 |:---:|:---:|:---:|:---:|
-| <img src="docs/screenshots/arrange.jpg" width="160"> | <img src="docs/screenshots/calendar-quick.jpg" width="160"> | <img src="docs/screenshots/celebrate.jpg" width="160"> | <img src="docs/screenshots/dark.jpg" width="160"> |
-| 꾹 눌러 흔들고 끌어 옮기기, 순서는 사람마다 | 날짜를 고르고 바로 쓰기 | 어디서 끝내도 그 자리에서 | 밝게 · 어둡게 · 기기 설정 |
+| <img src="docs/screenshots/calendar-day.jpg" width="160"> | <img src="docs/screenshots/calendar-hold.jpg" width="160"> | <img src="docs/screenshots/wallet-add.jpg" width="160"> | <img src="docs/screenshots/dark.jpg" width="160"> |
+| 칸에 일정 이름 · 누르면 그날 일정과 쓴 돈 | 줄이 떠오르고 수정 · 복사 · 공유 · 삭제 | 한 번에 하나씩, 카드사를 로고로 | 밝게 · 어둡게 · 기기 설정(기본) |
 
 <img src="docs/screenshots/desktop-plan.jpg" width="100%" alt="데스크톱: 플랜">
 
@@ -117,7 +118,7 @@ quadrantChart
 
 | 결정 | 얻는 것 | 내는 대가 | 2명이라 괜찮은 이유 | 다시 볼 때 |
 |---|---|---|---|---|
-| **하이브리드 앱**<br/>(vs 전부 Kotlin · 전부 PWA) | 화면 한 벌, 웹 배포로 앱 화면도 바뀜, 알림 읽기 가능 | 첫 화면이 조금 느림, 웹↔앱 다리 관리 | 체감 속도보다 **고치는 속도**가 중요(10일 PR 93개). 다리는 정해 둔 메시지만 · 우리 주소만 | 무거운 오프라인·애니메이션이 핵심이 될 때 |
+| **하이브리드 앱**<br/>(vs 전부 Kotlin · 전부 PWA) | 화면 한 벌, 웹 배포로 앱 화면도 바뀜, 알림 읽기 가능 | 첫 화면이 조금 느림, 웹↔앱 다리 관리 | 체감 속도보다 **고치는 속도**가 중요(16일 PR 115개). 다리는 정해 둔 메시지만 · 우리 주소만 | 무거운 오프라인·애니메이션이 핵심이 될 때 |
 | **서버 없이 Supabase**<br/>(vs 직접 API 서버) | 운영할 서버 0, 로그인·실시간 기본, **규칙을 DB 가 강제** | 로직이 SQL 로, 외부 연동·배치 작업이 어려움 | 요청이 적어 무료 플랜 안, 외부 연동이 없음 | 은행 API·정기 배치·푸시 서버가 필요할 때 |
 | **정적 웹 + PWA**<br/>(vs 서버 렌더링) | 호스팅 비용 0, CDN, 어디든 배포 | 첫 로딩에 JS, 검색 노출 없음 | 공개 페이지가 없음 — 전부 로그인 뒤 | 공개 페이지·공유 링크가 생길 때 |
 | **낙관적 저장 + 대기열 + rev**<br/>(vs 기다리기 · 마지막 저장이 이김) | 누르자마자 보임, 끊겨도 안 사라짐, **덮어쓰기 0** | 코드가 가장 복잡(대기열·rev 이어 맞추기·되돌리기) | 두 사람이 같은 체크·항목을 **실제로 동시에** 고치고, 돈이라 덮어쓰기는 안 됨 | 유지 (사용자가 늘어도 같은 문제) |
@@ -134,7 +135,7 @@ quadrantChart
 | 달 시작 = 달 + 항목 수십 줄 | `apply_batch` 한 트랜잭션, 같은 칸 구성끼리 한 문장으로 (014) | 500줄 **114ms → 20ms** (약 5배) |
 | PostgREST 는 1,000줄까지 | `(date, id)` keyset 페이지, OFFSET 없음 | 받는 도중 줄이 바뀌어도 빠짐·겹침 없음 |
 | 이메일만으로 멤버가 되면 위험 | RLS 를 `auth.uid()` 에 묶고, 처음 로그인은 구글 계정만 연결 | 남이 만든 같은 이메일 계정 차단 |
-| 웹·안드로이드 계산이 어긋날 위험 | 같은 규칙을 `calc.ts` · `Calc.kt` 로, 코어 테스트 46개 | 월급날 주말 당김까지 같은 결과 |
+| 웹·안드로이드 계산이 어긋날 위험 | 같은 규칙을 `calc.ts` · `Calc.kt` 로, 코어 테스트 51개 | 월급날 주말·공휴일 당김까지 같은 결과 |
 | 카드 알림을 지출로 | 알림 해석기 + 확실하지 않은 칸은 `review` 로 남기기 | 사람이 확인할 칸만 표시 |
 | 실수로 대량 삭제 | 문장 단위 트리거 `guard_bulk` (200줄 초과 거절) | 조건 빠진 DELETE 사고 방지 |
 
@@ -144,7 +145,7 @@ quadrantChart
 
 - 색·글꼴·간격·움직임은 [`tokens.json`](docs/design-system/tokens.json) 하나에서 → `tokens.css` 생성, CI 가 어긋남을 막음
 - 노랑은 흰 바탕과 대비가 1.35:1 → **넓은 채움에만**, 글자·선은 올리브(`accent-ink` 8.1:1)
-- 컴포넌트 25개마다 규칙 + 움직이는 미리보기 → [`docs/design-system/`](docs/design-system/README.md)
+- 컴포넌트 28개마다 규칙 + 움직이는 미리보기 → [`docs/design-system/`](docs/design-system/README.md)
 
 ## 버전
 
