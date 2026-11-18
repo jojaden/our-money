@@ -280,8 +280,8 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
 /* 카드 없이 화면 너비를 다 쓴다: 바깥 여백(--edge)을 거슬러 가장자리 4px까지, 가로 안전 영역(노치)은 피한다 */
 .cal { margin-inline: calc(max(4px, env(safe-area-inset-left, 0px)) - var(--edge)) calc(max(4px, env(safe-area-inset-right, 0px)) - var(--edge)); }
 .cal-week, .cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
-/* 칸 안쪽 여백과 기간 줄 굵기·사이 — 기간 줄(.cal-line)이 칸의 빈자리(.cal-lanes)와 같은 자리에 오도록 함께 쓴다 */
-.cal-grid { --cal-pad-t: 6px; --cal-pad-x: 2px; --ln-h: 4px; --ln-gap: 3px; gap: 4px 2px; }
+/* 칸 안쪽 여백, 날짜 숫자 높이, 기간 막대 높이·사이 — 기간 막대(.cal-line)가 칸의 빈자리(.cal-lanes)와 같은 자리에 오도록 함께 쓴다 */
+.cal-grid { --cal-pad-t: 4px; --cal-pad-x: 2px; --cal-num: 22px; --cal-num-gap: 3px; --ln-h: 15px; --ln-gap: 2px; gap: 3px 2px; }
 .cal-week span { padding: 2px 0 8px; color: var(--faint); font: 600 12px/16px var(--font-text); text-align: center; }
 .cal-week .sun, .cal-day.sun .n { color: var(--negative); }
 .cal-week .sat, .cal-day.sat .n { color: var(--saturday); }
@@ -290,10 +290,10 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  min-height: clamp(112px, calc((100svh - 260px) / 6), 148px);
+  gap: var(--cal-num-gap);
+  min-height: clamp(112px, calc((100svh - 220px) / 6), 160px);
   min-width: 0;
-  padding: 6px 2px 8px;
+  padding: var(--cal-pad-t) var(--cal-pad-x) 6px;
   border: 0;
   border-radius: var(--radius-small);
   background: var(--well);
@@ -301,34 +301,42 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
   transition: background-color var(--dur-press) ease;
 }
 .cal-day.out { opacity: 0.35; }
-.cal-day .n { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; font: 600 14px/1 var(--font-display); font-variant-numeric: tabular-nums; }
+.cal-day .n { display: grid; flex: none; place-items: center; width: var(--cal-num); height: var(--cal-num); border-radius: 50%; font: 600 13px/1 var(--font-display); font-variant-numeric: tabular-nums; }
 .cal-day.today .n { background: var(--primary); color: var(--on-primary); }
 .cal-day.picked { background: var(--accent-soft); box-shadow: inset 0 0 0 1.5px var(--accent-ink); }
-.cal-events { display: flex; flex-direction: column; gap: 3px; width: 100%; min-width: 0; }
-/* 일정은 입력한 사람 색으로 칠한다(왼쪽 막대 + 옅은 바탕, 글자는 본문색이라 대비 유지). 누가 적었는지 모르면 공동색.
-   위아래 여백은 투명 테두리로 둔다: 패딩이면 두 줄로 자른 아래 셋째 줄이 비친다 */
-.cal-event { --who: var(--joint); display: -webkit-box; overflow: hidden; padding: 0 3px; border: 2px solid transparent; border-left-color: var(--who); border-radius: 4px; background: color-mix(in srgb, var(--who) 24%, var(--surface)); color: var(--text); font: 600 11px/14px var(--font-text); text-align: left; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
-.cal-event.a { --who: var(--a); background: color-mix(in srgb, var(--who) 32%, var(--surface)); }
-.cal-event.b { --who: var(--b); background: color-mix(in srgb, var(--who) 32%, var(--surface)); }
-/* 기간 일정: 이름 없이 날짜 바로 아래 맨 위에 걸친 칸을 잇는 얇은 줄(입력한 사람 색). 시작·끝나는 날은 칸 안쪽에서 둥글게 끝나고,
-   주를 넘어가는 쪽은 칸 끝까지 이어진다. 칸에는 줄 수만큼 빈자리(.cal-lanes)를 둬 하루 일정이 그 아래로 비킨다 */
+/* 칸 안 목록: 남는 높이를 다 쓰고, 넘치는 것은 그린 뒤 재서 숨기고 "+N"(.cal-over)으로 접는다 (CalendarCard fitCells) */
+.cal-events { position: relative; display: flex; flex: 1; flex-direction: column; gap: 2px; width: 100%; min-width: 0; min-height: 0; overflow: hidden; }
+.cal-events > [hidden] { display: none; }
+/* 일정·체크 한 줄: 좁은 칸이라 두 줄까지 접어 쓰고 단어 중간에서도 줄을 바꾼다 */
+.cal-item { --who: var(--joint); --who-soft: var(--joint-soft); flex: none; display: -webkit-box; overflow: hidden; padding: 1px 3px; border-radius: 3px; color: var(--text); font: 600 10.5px/13px var(--font-text); text-align: left; word-break: break-all; /* 전역 keep-all 을 풀어 동그라미 뒤 첫 줄부터 채운다 */ -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.o-a { --who: var(--a); --who-soft: var(--a-soft); }
+.o-b { --who: var(--b); --who-soft: var(--b-soft); }
+/* 일정 색은 공동·현빈·예진(owner). 하루 종일은 그 색으로 칠하고(위 글자는 on-primary — 노랑·주황·분홍 모두 6:1 이상),
+   시간이 있으면 왼쪽 막대 + 옅은 바탕 */
+.cal-item.fill { background: var(--who); color: var(--on-primary); }
+.cal-item.timed { padding-left: 4px; background: var(--who-soft); box-shadow: inset 2px 0 0 var(--who); }
+/* 체크(카드값·이체·납부, 할 일 일정): 앞에 빈 동그라미, 끝내면 채운 동그라미(완료 체크 원과 같은 primary)와 옅은 글자 */
+.cal-item.chk { padding-inline: 1px; color: var(--muted); font-weight: 500; }
+.cal-item .ring { display: inline-block; width: 8px; height: 8px; margin-right: 3px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--control); vertical-align: -0.5px; }
+.cal-item.fill .ring { box-shadow: inset 0 0 0 1.5px currentColor; }
+.cal-item.done { opacity: 0.55; text-decoration: line-through; }
+.cal-item.done .ring { background: var(--primary); box-shadow: inset 0 0 0 1.5px var(--accent-ink); }
+.cal-over { flex: none; color: var(--muted); font: 600 10px/13px var(--font-text); text-align: left; }
+/* 기간 일정: 날짜 바로 아래 맨 위에 걸친 칸을 잇는 칠한 막대에 이름(owner 색). 시작·끝나는 날은 칸 안쪽에서 둥글게 끝나고,
+   주를 넘어가는 쪽은 칸 끝까지 이어진다(주마다 이름을 다시 쓴다). 칸에는 막대 수만큼 빈자리(.cal-lanes)를 둬 하루 일정이 그 아래로 비킨다 */
 .cal-lanes { flex: none; height: calc(var(--n) * (var(--ln-h) + var(--ln-gap)) - var(--ln-gap)); }
-.cal-line { --who: var(--joint); position: relative; z-index: 1; align-self: start; min-width: 0; height: var(--ln-h); margin-top: calc(var(--cal-pad-t) + 30px + var(--lane) * (var(--ln-h) + var(--ln-gap))); background: var(--who); pointer-events: none; }
-.cal-line.a { --who: var(--a); }
-.cal-line.b { --who: var(--b); }
-.cal-line.head { margin-left: var(--cal-pad-x); border-top-left-radius: var(--ln-h); border-bottom-left-radius: var(--ln-h); }
-.cal-line.tail { margin-right: var(--cal-pad-x); border-top-right-radius: var(--ln-h); border-bottom-right-radius: var(--ln-h); }
-.cal-more { color: var(--muted); font: 500 10px/14px var(--font-text); text-align: left; }
-.cal-day .amt { margin-top: auto; }
+.cal-line { --who: var(--joint); position: relative; z-index: 1; align-self: start; min-width: 0; height: var(--ln-h); margin-top: calc(var(--cal-pad-t) + var(--cal-num) + var(--cal-num-gap) + var(--lane) * (var(--ln-h) + var(--ln-gap))); padding: 0 4px; overflow: hidden; background: var(--who); color: var(--on-primary); font: 600 10.5px/15px var(--font-text); text-overflow: clip; white-space: nowrap; pointer-events: none; }
+.cal-line.head { margin-left: var(--cal-pad-x); border-top-left-radius: 3px; border-bottom-left-radius: 3px; }
+.cal-line.tail { margin-right: var(--cal-pad-x); border-top-right-radius: 3px; border-bottom-right-radius: 3px; }
+.cal-day .amt { flex: none; margin-top: 2px; }
 .cal-day .amt.in + .amt { margin-top: 0; }
 .cal-day .amt.in { color: var(--positive); }
-.cal-day .amt { color: var(--muted); font: 600 10.5px/14px var(--font-display); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; white-space: nowrap; }
-.cal-day .dots { display: flex; gap: 3px; margin-top: 1px; }
-.cal-day .dots i, .mark-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--primary); }
-/* 월급날은 그 사람 색, 카드 결제일·이체일은 고정비 색, 일정은 입력한 사람 색(모르면 남색). k- 를 붙인다: .card 같은 공용 이름과 겹치지 않게 */
-.cal-day .dots .k-payday.a, .mark-dot.k-payday.a, .mark-dot.k-event.a { background: var(--a); }
-.cal-day .dots .k-payday.b, .mark-dot.k-payday.b, .mark-dot.k-event.b { background: var(--b); }
-.cal-day .dots .k-card, .cal-day .dots .k-item, .mark-dot.k-card, .mark-dot.k-item { background: var(--g-fixed); }
+.cal-day .amt { color: var(--muted); font: 600 10.5px/13px var(--font-display); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; white-space: nowrap; }
+.mark-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--primary); }
+/* 날짜 패널의 점: 월급날은 그 사람 색, 카드 결제일·이체일은 고정비 색, 일정은 입력한 사람 색. k- 를 붙인다: .card 같은 공용 이름과 겹치지 않게 */
+.mark-dot.k-payday.a, .mark-dot.k-event.a { background: var(--a); }
+.mark-dot.k-payday.b, .mark-dot.k-event.b { background: var(--b); }
+.mark-dot.k-card, .mark-dot.k-item { background: var(--g-fixed); }
 .cal-summary { color: var(--muted); font: 400 13px/20px var(--font-text); }
 .cal-summary { margin-top: 8px; }
 .cal-summary > span[aria-hidden] { margin: 0 4px; }
@@ -413,9 +421,10 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
 .cal-empty .btn svg { width: 18px; height: 18px; }
 .cal-overview { margin-top: 16px; }
 @media (min-width: 720px) {
-  .cal-grid { --cal-pad-t: 8px; --cal-pad-x: 6px; gap: 6px; }
+  .cal-grid { --cal-pad-t: 8px; --cal-pad-x: 6px; --cal-num: 26px; --cal-num-gap: 4px; --ln-h: 18px; --ln-gap: 3px; gap: 6px; }
   .cal-day { padding: 8px 6px; }
-  .cal-event { font-size: 12px; line-height: 18px; }
+  .cal-item, .cal-line { font-size: 12px; line-height: 16px; }
+  .cal-line { line-height: 18px; }
 }
 @media (min-width: 1024px) {
   .cal { margin-inline: 0; }
@@ -472,7 +481,7 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
     padding-bottom: calc(var(--fab-wide-h) + var(--fab-clear) * 2 + env(safe-area-inset-bottom, 0px));
     scroll-snap-align: start;
   }
-  .cal-stage .page-head { margin-bottom: 14px; }
+  .cal-stage .page-head { margin-bottom: 8px; }
   /* 막대 위아래를 줄인 만큼(16px) 요일 줄을 키우고 굵게 */
   .cal-stage .cal-week span { padding: 6px 0 14px; color: var(--muted); font: 700 15px/22px var(--font-text); }
   .cal-stage .calendar-month, .cal-stage .cal { display: flex; flex: 1; flex-direction: column; min-height: 0; }

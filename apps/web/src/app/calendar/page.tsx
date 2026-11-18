@@ -281,7 +281,8 @@ function CalendarMonth() {
       {/* 폰: 처음엔 달력만 화면에 꽉 차고(하단 메뉴는 숨고 일정 추가 버튼이 가운데로), 아래로 내리면 모아 보기와 메뉴가 나온다 */}
       <div className="cal-page" ref={page}>
         <div className="cal-stage">
-          <MonthHeader name="달력" sub={`${Number(month.slice(5))}월 1일 – ${Number(cells.filter(inMonth).at(-1)!.slice(8))}일`}>
+          {/* 1일~말일은 달력이 보여 주니 기간 줄은 빼고, 요약 줄만 */}
+          <MonthHeader name="달력" sub="">
             {/* 없는 것은 빼고, 있으면 눌러서 모아 본다 */}
             {(monthEvents > 0 || monthSpent > 0) && (
               <p className="cal-summary">
@@ -306,7 +307,7 @@ function CalendarMonth() {
             <CalendarCard month={month} cells={cells} marks={marks} spent={spent} day={day} today={today} onPick={pick} />
           </section>
         </div>
-        <section className="cal-more" ref={more} aria-labelledby="cal-more-h">
+        <section className="cal-more" ref={more} aria-labelledby="cal-more-h" data-month-slide="">
           <div className="group-head">
             <h2 id="cal-more-h">{monthLabel(month)} 모아 보기</h2>
           </div>
