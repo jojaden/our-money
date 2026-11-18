@@ -19,7 +19,7 @@ import { SpendingSheet } from "./SpendingSheet";
 import { MonthSheet } from "./MonthSheet";
 import { PaydayCheer } from "./PaydayCheer";
 import { CelebrateWatch } from "./CelebrateWatch";
-import { JointEventWatch } from "./JointEventWatch";
+import { PartnerWatch } from "./PartnerWatch";
 import { BellButton } from "./Bell";
 import { NoticeSync } from "./NoticeSync";
 import { CalendarSync } from "./CalendarSync";
@@ -529,7 +529,7 @@ function Frame({ children }: { children: React.ReactNode }) {
               {/* 그달 체크를 모두 끝낸 순간 100% 축하 — 어느 화면에서 끝내든 */}
               {data && <CelebrateWatch />}
               {/* 상대가 공동 일정을 더하면 토스트 (켜져 있을 때) */}
-              {data && <JointEventWatch />}
+              {data && <PartnerWatch />}
               {data && <MonthSheet key={months.key} open={months.open} range={months.range} onOpenChange={(open) => setMonths((x) => ({ ...x, open }))} />}
               {/* 내 월급날 그날 처음 열면 한 번: 동전 알갱이·진동·토스트 */}
               {data && <PaydayCheer />}

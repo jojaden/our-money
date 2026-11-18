@@ -218,6 +218,7 @@ export function buildDemoData(today = ymd(new Date())): Data {
     spendings: spendings.filter((s) => s.date <= today && s.date >= periodOf(prev, 25).start),
     users,
     events: demoEvents(today),
+    nudges: [],
   };
 }
 

@@ -16,6 +16,7 @@ export const LIST_TABLES = [
   "spendings",
   "users",
   "events",
+  "nudges",
 ] as const satisfies readonly TableName[];
 
 /** 다른 폰이 먼저 같은 줄을 고쳐서 서버가 저장을 거절했다 (SQLSTATE OM409, migrations/005. 005 전에는 40001 + "conflict:") */
@@ -158,8 +159,8 @@ class SupabaseRepo implements Repo {
         return (after ? q.gt("id", after.id) : q).order("id").limit(PAGE);
       });
     } catch (e) {
-      // 003 전이면 users, 011 전이면 events 가 없다 → 빈 목록 (이름은 settings 로, 달력은 일정 없이)
-      if ((table === "users" || table === "events") && e instanceof Error && isMissingTable({ message: e.message })) return [];
+      // 003 전이면 users, 011 전이면 events, 019 전이면 nudges 가 없다 → 빈 목록 (이름은 settings 로, 달력은 일정 없이, 콕 찌르기 없이)
+      if ((table === "users" || table === "events" || table === "nudges") && e instanceof Error && isMissingTable({ message: e.message })) return [];
       throw e;
     }
   }
@@ -267,26 +268,37 @@ class SupabaseRepo implements Repo {
 
 
   subscribe(onChange: (change: Change) => void) {
-    const channel = this.db.channel("household");
-    for (const t of [...LIST_TABLES, "settings"] as TableName[]) {
-      // 바뀐 줄을 그대로 받아서 붙인다 (테이블을 다시 읽지 않는다)
-      channel.on("postgres_changes", { event: "*", schema: "public", table: t }, (p) => {
-        if (p.eventType === "DELETE") {
-          const id = (p.old as { id?: unknown }).id;
-          onChange(id == null ? { type: "RELOAD", table: t } : { type: "DELETE", table: t, id: String(id) });
-        } else onChange({ type: p.eventType, table: t, row: p.new as Record<string, unknown> });
-      });
-    }
-    // 연결이 끊겼다 다시 붙으면 그사이 바뀐 것을 놓쳤을 수 있으니 전부 다시 읽는다
-    let joined = false;
-    channel.subscribe((status) => {
-      if (status === "SUBSCRIBED") {
-        if (joined) onChange({ type: "RELOAD" });
-        joined = true;
+    // 나중에 생긴 표(019 nudges)는 따로 구독한다 — Realtime 은 한 채널의 표 중 하나라도 발행에 없으면
+    // 그 채널 구독을 통째로 되돌려서, 019 전 DB 에서 지출·체크까지 실시간이 멈춘다
+    const late = new Set<TableName>(["nudges"]);
+    const listen = (name: string, tables: TableName[], reload: () => void) => {
+      const channel = this.db.channel(name);
+      for (const t of tables) {
+        // 바뀐 줄을 그대로 받아서 붙인다 (테이블을 다시 읽지 않는다)
+        channel.on("postgres_changes", { event: "*", schema: "public", table: t }, (p) => {
+          if (p.eventType === "DELETE") {
+            const id = (p.old as { id?: unknown }).id;
+            onChange(id == null ? { type: "RELOAD", table: t } : { type: "DELETE", table: t, id: String(id) });
+          } else onChange({ type: p.eventType, table: t, row: p.new as Record<string, unknown> });
+        });
       }
-    });
+      // 연결이 끊겼다 다시 붙으면 그사이 바뀐 것을 놓쳤을 수 있으니 다시 읽는다
+      let joined = false;
+      channel.subscribe((status) => {
+        if (status === "SUBSCRIBED") {
+          if (joined) reload();
+          joined = true;
+        }
+      });
+      return channel;
+    };
+    const all = [...LIST_TABLES, "settings"] as TableName[];
+    const channels = [
+      listen("household", all.filter((t) => !late.has(t)), () => onChange({ type: "RELOAD" })),
+      ...[...late].map((t) => listen(`household-${t}`, [t], () => onChange({ type: "RELOAD", table: t }))),
+    ];
     return () => {
-      void this.db.removeChannel(channel);
+      for (const c of channels) void this.db.removeChannel(c);
     };
   }
 }
@@ -376,6 +388,8 @@ class LocalRepo implements Repo {
         if (!this.data.users) this.data.users = demoUsers(this.data.settings);
         // 일정이 생기기 전에 저장된 데모 데이터
         if (!this.data.events) this.data.events = buildDemoData().events;
+        // 콕 찌르기(019)가 생기기 전에 저장된 데모 데이터
+        this.data.nudges ??= [];
         // 카드 순서 칸(015)이 생기기 전에 저장된 데모 데이터 — 서버처럼 빈 순서로 시작
         for (const u of this.data.users) u.card_order ??= {};
         return this.data;

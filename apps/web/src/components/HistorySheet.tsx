@@ -20,6 +20,7 @@ const TABLE: Record<string, string> = {
   checks: "체크",
   users: "이름",
   events: "일정",
+  nudges: "콕 찌르기",
 };
 
 const FIELD: Record<string, string> = {

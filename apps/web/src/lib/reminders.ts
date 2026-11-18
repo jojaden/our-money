@@ -3,6 +3,8 @@
 // - 일정 미리 알림: 일정 시트에서 고른 며칠 전(remind_days) 아침 9시. 내 일정과 공동 일정만, 끝낸 할 일은 빼고
 // - 월급날 아침 9시: 내 월급날, 그날 옮길 돈
 // - 나갈 돈 전날 저녁 8시: 내일 기한인 고정비 납부·카드값 (나와 공동 몫, 아직 체크하지 않은 것)
+// - 오늘 요약 아침 8시: 그날 시작하는 내 일정·공동 일정(끝낸 할 일 빼고)과 그날 기한인 나갈 돈을 한 알림으로.
+//   요약이 있는 날(오늘 빼고)은 당일(0일 전) 일정 미리 알림을 따로 보내지 않는다. 채널은 예전 앱도 아는 event·due 를 쓴다.
 
 import type { Data, Person } from "./types";
 import type { PaydayGroup, Task } from "@/components/tasks";
@@ -26,6 +28,7 @@ export interface Reminder {
 const DAYS = 35;
 const MORNING = "09:00";
 const EVENING = "20:00";
+const EARLY = "08:00";
 
 /** 그달의 월급날·나갈 돈 (useTasks 의 결과 — 아직 만들지 않은 달이면 비어 있다) */
 export interface MonthTasks {
@@ -104,5 +107,42 @@ export function reminders(data: Data, me: Person, today: string, months: MonthTa
     });
   }
 
-  return out.sort((a, b) => a.at.localeCompare(b.at)).slice(0, 80);
+  // 오늘 요약 — 그날 시작하는 일정과 그날 기한인 나갈 돈
+  const day = new Map<string, { events: string[]; dues: Task[] }>();
+  const at = (d: string) => day.get(d) ?? (day.set(d, { events: [], dues: [] }), day.get(d)!);
+  for (const e of data.events) {
+    if (!mine(me, e.owner)) continue;
+    for (const o of occurrences(e, today, until)) {
+      if (o.start < today || o.start > until) continue;
+      if (e.todo && eventTodo(data, o).check) continue;
+      at(o.start).events.push(e.title);
+    }
+  }
+  for (const m of months)
+    for (const t of [...m.pays, ...m.bills]) {
+      if (t.done || !t.due || !mine(me, t.person) || t.due < today || t.due > until) continue;
+      const list = at(t.due).dues;
+      if (!list.some((x) => x.key === t.key)) list.push(t);
+    }
+  for (const [d, { events, dues }] of day) {
+    if (events.length === 0 && dues.length === 0) continue;
+    const head = [events.length > 0 && `일정 ${events.length}개`, dues.length > 0 && `나갈 돈 ${dues.length}건 · ${num(dues.reduce((a, t) => a + t.amount, 0))}원`].filter(Boolean).join(" · ");
+    const names = [...events, ...dues.map((t) => (t.kind === "card" ? `${t.bill!.card.name} 카드값` : t.title))];
+    out.push({
+      id: `t:${me}:${d}`,
+      at: `${d}T${EARLY}`,
+      ch: events.length > 0 ? "event" : "due",
+      title: `오늘 ${head}`,
+      body: `${names.slice(0, 3).join(" · ")}${names.length > 3 ? ` 외 ${names.length - 3}개` : ""}`,
+      open: events.length > 0 ? "calendar" : "check",
+    });
+  }
+  // 요약이 있는 날의 당일(0일 전) 일정 미리 알림은 요약에 들어 있다. 오늘은 빼지 않는다 —
+  // 8시가 지나 처음 넘기면 8시 요약은 이미 지나 울리지 않으니 9시 미리 알림까지 없어지면 안 된다
+  const summarized = (r: Reminder) => r.id.startsWith("e:") && r.id.endsWith(":0") && r.at.slice(0, 10) !== today && day.has(r.at.slice(0, 10));
+
+  return out
+    .filter((r) => !summarized(r))
+    .sort((a, b) => a.at.localeCompare(b.at))
+    .slice(0, 80);
 }

@@ -2,19 +2,20 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, Check, ChevronDown, ChevronRight, CircleCheck, Clock, Target } from "lucide-react";
+import { AlertTriangle, BellRing, Check, ChevronDown, ChevronRight, CircleCheck, Clock, Target } from "lucide-react";
 import { useData } from "@/lib/store";
-import { nameOf, other, periodOf } from "@/lib/calc";
+import { currentMonth, nameOf, other, periodOf } from "@/lib/calc";
 import type { Person } from "@/lib/types";
 import { FirstRun, MonthHeader } from "@/components/MonthHeader";
 import { Money } from "@/components/ui";
 import { byUrgency, eventTasks, useTasks, type PaydayGroup, type Task } from "@/components/tasks";
-import { dDay, dateWithDay, monthLabel, shortDate } from "@/lib/format";
+import { dDay, dateWithDay, monthLabel, num, shortDate } from "@/lib/format";
+import { haptic, shareText } from "@/lib/native";
+import { nudgeId, sentRecently } from "@/lib/partner";
 import { TaskRow } from "@/components/TaskRow";
 import { MAX_STEPS, StepTrack } from "@/components/StepTrack";
 import { MonthClose } from "@/components/MonthClose";
 import { Morph, still, tokens, useMorphFlip } from "@/components/Morph";
-import { haptic } from "@/lib/native";
 import { Arrange, Slot } from "@/components/Arrange";
 
 /** 체크에서 옮길 수 있는 카드와 처음 순서 (폰) */
@@ -170,7 +171,42 @@ function CheckSummary({ label, done, total, parts }: { label: string; done: numb
 }
 
 /** 한 사람의 월급날: 그날 자기 월급통장에서 옮길 돈. 머리는 칸 나눈 진행 막대(StepTrack), 아래는 할 일 줄 */
-function PaydaySection({ g, today, name, quiet = false }: { g: PaydayGroup; today: string; name: string; quiet?: boolean }) {
+/**
+ * 콕 찌르기 — 상대 월급날이 지났는데 옮길 돈이 남았으면 상대에게 알린다.
+ * 앱 안 알림(nudges 표 → 상대 종·토스트, 하루 한 번)과 함께, 카톡 같은 앱으로 보낼 글을 공유 창으로 연다.
+ */
+function NudgeFoot({ g, name, month, count, amount }: { g: PaydayGroup; name: string; month: string; count: number; amount: number }) {
+  const { data, me, upsert, toast } = useData();
+  const [busy, setBusy] = useState(false);
+  const send = async () => {
+    if (busy) return;
+    setBusy(true);
+    haptic(10);
+    const title = `${name} 월급날 옮길 돈 ${count}건 · ${num(amount)}원이 남았어요`;
+    const again = sentRecently(data.nudges, me, g.person, month, Date.now());
+    // 저장은 시작만 하고 공유 창을 먼저 연다 — 공유·복사는 누른 순간(사용자 제스처) 안에 불러야 막히지 않는다
+    const saving = again ? Promise.resolve(true) : upsert("nudges", [{ id: nudgeId(), to_person: g.person, month, title }]);
+    const r = await shareText(`[우리 집 가계부] ${title}`);
+    const ok = await saving;
+    setBusy(false);
+    // 저장이 거절되면(019 전 DB 등) 스토어가 이미 "저장하지 못했어요"를 띄운다 — 알렸다고 하지 않는다
+    if (!ok) return;
+    toast(again ? "오늘은 앱 알림을 이미 보냈어요" : r === "copied" ? `${name}에게 알렸어요 · 보낼 글을 복사했어요` : `${name}에게 알렸어요`);
+  };
+  return (
+    <div className="card-foot">
+      <span className="s">앱 알림과 함께 카톡으로도 보낼 수 있어요</span>
+      <button type="button" className="btn" disabled={busy} onClick={() => void send()}>
+        <BellRing aria-hidden="true" /> 콕 찌르기
+      </button>
+    </div>
+  );
+}
+
+function PaydaySection({ g, today, name, month, quiet = false }: { g: PaydayGroup; today: string; name: string; month: string; quiet?: boolean }) {
+  const { data, doneSeq, toast } = useData();
+  // 콕 찌르기는 이번 달에만 — 받는 쪽 종은 이번 달 옮길 돈이 남았을 때만 보여 준다
+  const current = month === currentMonth(data.settings.cycle_start, today);
   const id = `pay-${g.person}`;
   // 상대의 월급날은 머리와 남은 상태 한 줄만, 옮길 돈 줄은 눌러야 펼친다
   const [open, setOpen] = useState(!quiet);
@@ -182,7 +218,6 @@ function PaydaySection({ g, today, name, quiet = false }: { g: PaydayGroup; toda
   const early = left.filter((t) => t.early);
   const sum = (l: Task[]) => l.reduce((a, t) => a + t.amount, 0);
   // 내 월급날 옮길 돈을 이 기기에서 마지막 하나까지 체크한 순간: 카드가 살짝 부풀고 진동·토스트 (월급날 의식의 끝)
-  const { doneSeq, toast } = useData();
   const card = useRef<HTMLElement>(null);
   const seen = useRef({ left: left.length, seq: doneSeq });
   useEffect(() => {
@@ -258,6 +293,7 @@ function PaydaySection({ g, today, name, quiet = false }: { g: PaydayGroup; toda
               </button>
             )}
           </Morph>
+          {quiet && current && arrived && left.length > 0 && <NudgeFoot g={g} name={name} month={month} count={left.length} amount={leftAmount} />}
         </>
       )}
     </section>
@@ -327,7 +363,7 @@ export default function CheckPage() {
                 {[...paydays]
                   .sort((x, y) => Number(x.person !== me) - Number(y.person !== me))
                   .map((g) => (
-                    <PaydaySection key={g.person} g={g} today={today} name={nameOf(s, g.person)} quiet={g.person !== me} />
+                    <PaydaySection key={g.person} g={g} today={today} name={nameOf(s, g.person)} month={month} quiet={g.person !== me} />
                   ))}
               </div>
             </section>

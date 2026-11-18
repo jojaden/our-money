@@ -2,14 +2,15 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Bell, CalendarCheck, CalendarDays, CalendarPlus, CreditCard, Heart, ReceiptText, Repeat, Wallet } from "lucide-react";
+import { Bell, BellRing, CalendarCheck, CalendarDays, CalendarPlus, CreditCard, Heart, ReceiptText, Repeat, TrendingUp, Wallet } from "lucide-react";
 import type { Person } from "@/lib/types";
 import { METHOD_LABEL } from "@/lib/types";
 import { useData } from "@/lib/store";
-import { addMonths, currentMonth, nameOf, paydayDate, periodOf } from "@/lib/calc";
+import { addMonths, allowanceStatus, currentMonth, livingStatus, nameOf, paydayDate, periodOf } from "@/lib/calc";
 import { ddayText, isPartnerJointAdd, nextOccurrence, summaryHref, timeText } from "@/lib/calendar";
 import { eventKind } from "@/lib/ics";
-import { dateWithDay, num, parseYmd, shortDate } from "@/lib/format";
+import { dateWithDay, eul, iga, num, parseYmd, shortDate } from "@/lib/format";
+import { isNudgeForMe, isPartnerJointSpend } from "@/lib/partner";
 import { asking, byUrgency, dueState, eventTasks, useTasks, waiting, type Task } from "./tasks";
 import { TaskRow } from "./TaskRow";
 import { afterSheet, EmptyState, Sheet } from "./ui";
@@ -21,6 +22,8 @@ const SEEN_KEY = "our-money-bell-seen";
 const PAYDAY_AHEAD = 3;
 /** 상대가 더한 공동 일정은 며칠 동안 알림 모음에 두나 */
 const ADDED_DAYS = 7;
+/** 콕 찌르기를 며칠 남겨 두나 */
+const NUDGE_DAYS = 3;
 
 /** 체크할 것이 아닌 다가오는 날 (월급날, 미리 알림을 켠 일정·D-day) */
 interface Upcoming {
@@ -47,12 +50,15 @@ function daysUntil(today: string, d: string) {
  * - 다가오는 날: 월급날(3일 안), 미리 알림을 켠 일정·D-day(그 날 수 안)
  * - 지난주 돌아보기: 일·월·화요일에 지난주(일~토) 쓴 돈 (주마다 새 알림 하나)
  * - 새 공동 일정: 상대가 7일 안에 더한 공동 일정·할 일·D-day (새로 더한 것만 — 고친 것은 아님. 폰 푸시는 아직 없다)
+ * - 콕 찔렀어요: 상대가 3일 안에 보낸 콕 찌르기(019) — 이번 달 내 월급날에 옮길 돈이 아직 남아 있을 때만
+ * - 상대 공동 지출: 상대가 24시간 안에 적은 공동 지출(가져오기 빼고)을 한 줄로
+ * - 예산 속도: 공동 생활비·내 용돈이 오늘까지 써도 되는 선을 넘었거나 예산을 넘었을 때 (하루에 새 알림 하나)
  */
 function useAlerts() {
   const { data, today, toggleCheck, me } = useData();
   const s = data.settings;
   const month = currentMonth(s.cycle_start, today);
-  const { tasks } = useTasks(month);
+  const { tasks, paydays } = useTasks(month);
   return useMemo(() => {
     const p = periodOf(month, s.cycle_start);
     const todos = eventTasks(data, p.start, p.last, toggleCheck);
@@ -92,6 +98,23 @@ function useAlerts() {
     const now = Date.now();
     const added = data.events.filter((e) => isPartnerJointAdd(e, me, now, ADDED_DAYS * 86_400_000)).sort((x, y) => (y.created_at ?? "").localeCompare(x.created_at ?? ""));
     const week = weekSummary(data, today);
+    // 콕 찌르기: 이번 달 내 월급날에 옮길 돈이 남았을 때만, 가장 최근 하나
+    const myLeft = paydays.find((g) => g.person === me)?.transfers.some((t) => !t.done) ?? false;
+    const nudge = myLeft
+      ? data.nudges.filter((n) => n.month === month && isNudgeForMe(n, me, now, NUDGE_DAYS * 86_400_000)).sort((x, y) => (y.created_at ?? "").localeCompare(x.created_at ?? ""))[0] ?? null
+      : null;
+    // 상대 공동 지출 (24시간)
+    const jointSpends = data.spendings.filter((x) => isPartnerJointSpend(x, me, now, 86_400_000)).sort((x, y) => y.created_at.localeCompare(x.created_at));
+    // 예산 속도: 공동 생활비와 내 용돈
+    const pace = (["joint", me] as const).flatMap((owner) => {
+      const st = owner === "joint" ? livingStatus(data, month, today) : allowanceStatus(data, month, owner, today);
+      if (st.budget <= 0) return [];
+      const label = owner === "joint" ? "공동 생활비" : "내 용돈";
+      if (st.left < 0) return [{ key: `pace:${owner}:${today}:over`, title: `${label} 예산을 ${num(-st.left)}원 넘었어요`, sub: `예산 ${num(st.budget)}원 · 쓴 돈 ${num(st.spent)}원` }];
+      if (st.pace !== null && st.spent > st.pace)
+        return [{ key: `pace:${owner}:${today}:fast`, title: `${eul(label)} 예상보다 ${num(st.spent - st.pace)}원 더 썼어요`, sub: `남은 돈 ${num(st.left)}원${st.perDay !== null ? ` · 하루 ${num(st.perDay)}원씩 쓰면 맞아요` : ""}` }];
+      return [];
+    });
 
     return {
       week,
@@ -102,9 +125,12 @@ function useAlerts() {
       reviews,
       upcoming,
       added,
-      keys: [...added.map((e) => `added:${e.id}`), ...pinned.map((t) => t.key), ...urgent.map((t) => t.key), ...asks.map((t) => `ask:${t.key}`), ...reviews.map((x) => `rv:${x.id}`), ...upcoming.map((u) => u.key), ...(week ? [week.key] : [])],
+      nudge,
+      jointSpends,
+      pace,
+      keys: [...(nudge ? [`nudge:${nudge.id}`] : []), ...(jointSpends.length ? [`js:${jointSpends[0].id}`] : []), ...pace.map((p) => p.key), ...added.map((e) => `added:${e.id}`), ...pinned.map((t) => t.key), ...urgent.map((t) => t.key), ...asks.map((t) => `ask:${t.key}`), ...reviews.map((x) => `rv:${x.id}`), ...upcoming.map((u) => u.key), ...(week ? [week.key] : [])],
     };
-  }, [data, month, s, tasks, today, toggleCheck, me]);
+  }, [data, month, s, tasks, paydays, today, toggleCheck, me]);
 }
 
 function readSeen(): Set<string> {
@@ -176,7 +202,7 @@ export function BellButton({ rail = false }: { rail?: boolean }) {
           <EmptyState
             key="empty"
             title="지금 챙길 것이 없어요"
-            body="상대가 더한 공동 일정, 마감하지 않은 지난달, 기한이 3일 안으로 다가온 이체·납부·할 일, 다가오는 월급날, 미리 알림을 켠 일정, 그리고 일요일마다 지난주 돌아보기가 여기에 모여요."
+            body="상대가 보낸 콕 찌르기, 예산 속도, 상대의 공동 지출, 상대가 더한 공동 일정, 마감하지 않은 지난달, 기한이 3일 안으로 다가온 이체·납부·할 일, 다가오는 월급날, 미리 알림을 켠 일정, 그리고 일요일마다 지난주 돌아보기가 여기에 모여요."
           />
         ) : (
           <>
@@ -204,6 +230,61 @@ export function BellButton({ rail = false }: { rail?: boolean }) {
                       </button>
                     </div>
                   </div>
+                </div>
+              </div>
+            )}
+            {a.nudge && (
+              <div className="field" key="nudge">
+                <h3 className="sum-h">콕 찔렀어요</h3>
+                <div className="rows" style={{ ["--inset" as string]: "52px" }}>
+                  <button type="button" className="row" onClick={() => go("/check")}>
+                    <span className={`alert-ic ${a.nudge.created_by}`} aria-hidden="true">
+                      <BellRing />
+                    </span>
+                    <div style={{ minWidth: 0 }}>
+                      <div className="t">{a.nudge.title}</div>
+                      <div className="s">{iga(nameOf(data.settings, a.nudge.created_by!))} 알렸어요 · 체크에서 옮기고 체크해 주세요</div>
+                    </div>
+                  </button>
+                </div>
+              </div>
+            )}
+            {a.pace.length > 0 && (
+              <div className="field" key="pace">
+                <h3 className="sum-h">예산 속도</h3>
+                <div className="rows" style={{ ["--inset" as string]: "52px" }}>
+                  {a.pace.map((p) => (
+                    <button type="button" className="row" key={p.key} onClick={() => go("/")}>
+                      <span className="alert-ic dday" aria-hidden="true">
+                        <TrendingUp />
+                      </span>
+                      <div style={{ minWidth: 0 }}>
+                        <div className="t">{p.title}</div>
+                        <div className="s">{p.sub}</div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            {a.jointSpends.length > 0 && (
+              <div className="field" key="joint-spends">
+                <h3 className="sum-h">상대 공동 지출</h3>
+                <div className="rows" style={{ ["--inset" as string]: "52px" }}>
+                  <button type="button" className="row" onClick={() => go("/ledger")}>
+                    <span className={`alert-ic ${a.jointSpends[0].created_by}`} aria-hidden="true">
+                      <ReceiptText />
+                    </span>
+                    <div style={{ minWidth: 0 }}>
+                      <div className="t">
+                        {nameOf(data.settings, a.jointSpends[0].created_by!)} 공동 지출 {a.jointSpends.length}건 · {num(a.jointSpends.reduce((x, y) => x + y.amount, 0))}원
+                      </div>
+                      <div className="s">
+                        {a.jointSpends.slice(0, 2).map((x) => `${x.memo || "기록"} ${num(x.amount)}원`).join(" · ")}
+                        {a.jointSpends.length > 2 ? ` 외 ${a.jointSpends.length - 2}건` : ""} · 24시간 안
+                      </div>
+                    </div>
+                  </button>
                 </div>
               </div>
             )}

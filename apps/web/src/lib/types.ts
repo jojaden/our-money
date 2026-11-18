@@ -209,6 +209,15 @@ export interface HistoryRow {
 
 export type Repeat = "none" | "monthly" | "yearly";
 
+/** 콕 찌르기 (supabase/migrations/019) — 한 사람이 상대에게 남기는 짧은 알림. 보낸 사람은 created_by */
+export interface Nudge extends Meta {
+  id: string;
+  to_person: Person;
+  /** 어느 가계부 달의 일인지 'YYYY-MM' */
+  month: string;
+  title: string;
+}
+
 /** 달력 일정 (supabase/migrations/011). 하루면 end_date 가 비고, 기간이면 끝 날까지(포함) */
 export interface CalEvent extends Meta {
   id: string;
@@ -268,6 +277,7 @@ export interface Data {
   spendings: Spending[];
   users: User[];
   events: CalEvent[];
+  nudges: Nudge[];
 }
 
 export type TableName = Exclude<keyof Data, "settings"> | "settings";
