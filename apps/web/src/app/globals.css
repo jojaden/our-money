@@ -338,6 +338,13 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
 .cal-line { --who: var(--joint); position: relative; z-index: 1; align-self: start; min-width: 0; height: var(--ln-h); margin-top: calc(var(--cal-pad-t) + var(--cal-num) + var(--cal-num-gap) + var(--lane) * (var(--ln-h) + var(--ln-gap))); padding: 0 4px; overflow: hidden; background: var(--who); color: var(--on-primary); font: 600 10.5px/15px var(--font-text); text-overflow: clip; white-space: nowrap; pointer-events: none; }
 .cal-line.head { margin-left: var(--cal-pad-x); border-top-left-radius: 3px; border-bottom-left-radius: 3px; }
 .cal-line.tail { margin-right: var(--cal-pad-x); border-top-right-radius: 3px; border-bottom-right-radius: 3px; }
+/* 7일 이상 이어지는 일정: 이름 막대 대신 칸 아래 여백(6px) 안에 2px 선 — 두 줄이면 1px 띄워 위로. 칸 안의 자리는 쓰지 않는다 */
+.cal-thread { --who: var(--joint); position: relative; z-index: 1; align-self: end; min-width: 0; height: 2px; margin-bottom: calc(1px + var(--lane) * 3px); background: var(--who); pointer-events: none; }
+.cal-thread.head { margin-left: calc(var(--cal-pad-x) + 2px); border-top-left-radius: 1px; border-bottom-left-radius: 1px; }
+.cal-thread.tail { margin-right: calc(var(--cal-pad-x) + 2px); border-top-right-radius: 1px; border-bottom-right-radius: 1px; }
+/* 그 일정이 끝나는 날: 옅은 바탕 + 왼쪽 막대(시간 일정과 같은 모양)에 굵은 "마감" */
+.cal-item.due { padding-left: 4px; background: var(--who-soft); box-shadow: inset 2px 0 0 var(--who); }
+.cal-item.due b { font-weight: 800; }
 .cal-day .amt { flex: none; margin-top: 2px; }
 .cal-day .amt.in + .amt { margin-top: 0; }
 .cal-day .amt.in { color: var(--positive); }
