@@ -41,6 +41,7 @@ import com.jojaden.ourmoney.widget.CalendarStore
 import com.jojaden.ourmoney.widget.CalendarWidget
 import org.json.JSONObject
 import java.io.File
+import java.util.UUID
 
 /**
  * 하이브리드 앱 껍데기: 화면은 웹앱(BuildConfig.WEB_URL)을 웹뷰로 띄우고, 안드로이드에서만 되는 것(카드 알림 읽기)만 네이티브로.
@@ -223,11 +224,14 @@ class MainActivity : ComponentActivity() {
     /**
      * 일정 내보내기: 웹이 만든 .ics 글을 캐시의 exports/ 에 한 파일로 쓰고 공유 창을 연다.
      * 파일 이름은 앱이 정하고(웹이 주는 이름은 쓰지 않는다), 받는 앱에는 그 파일 읽기만 잠깐 허락한다(FileProvider, 내보내지 않음).
+     * 내보낼 때마다 새 이름으로 쓰고 지난 파일은 지운다 — 앞서 받은 앱이 같은 주소로 다른 앱에 보낸 이번 내보내기를 읽지 못하게.
      * 공유 창에는 파일을 바로 여는 달력 앱(삼성 캘린더 등)도 함께 보인다.
      */
     private fun shareIcs(text: String) {
         if (!text.startsWith("BEGIN:VCALENDAR") || text.length > MAX_ICS) return
-        val file = File(cacheDir, "exports").apply { mkdirs() }.resolve("our-money-calendar.ics")
+        val dir = File(cacheDir, "exports").apply { mkdirs() }
+        dir.listFiles()?.forEach { it.delete() }
+        val file = dir.resolve("our-money-calendar-${UUID.randomUUID().toString().take(8)}.ics")
         file.writeText(text)
         val uri = FileProvider.getUriForFile(this, "$packageName.files", file)
         val send = Intent(Intent.ACTION_SEND).apply {
