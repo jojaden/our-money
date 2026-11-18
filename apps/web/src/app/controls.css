@@ -256,6 +256,10 @@ button.row:active, a.row:active { background: var(--well); transform: scale(0.98
 .btn:active { transform: scale(0.96); }
 .btn:disabled { opacity: 0.45; cursor: default; transform: none; }
 .btn.block { width: 100%; height: 52px; font-size: 17px; }
+/* 저장 ✓ — 글은 그대로 바뀌고 체크만 작게서 튀어나온다 (transform·opacity 만, components/SpendingSheet) */
+.btn.saved svg { animation: saved-pop var(--dur-swap) var(--ease-pop) both; }
+@keyframes saved-pop { from { opacity: 0; transform: scale(0.6); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .btn.saved svg { animation: none; } }
 .btn.sm { height: 36px; padding: 0 14px; font-size: 14.5px; }
 .btn.secondary { background: var(--accent-soft); color: var(--accent-ink); }
 .btn.ghost { height: 36px; padding: 0 8px; background: transparent; color: var(--accent-ink); }

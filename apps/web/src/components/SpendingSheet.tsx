@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, Trash2 } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { AlertTriangle, Check, Trash2 } from "lucide-react";
 import type { Account, Data, Owner, PayKind, Spending } from "@/lib/types";
 import { REVIEW_LABEL } from "@/lib/types";
 import { useData } from "@/lib/store";
@@ -9,7 +9,8 @@ import { allowanceStatus, installmentShare, livingStatus, monthOf, nameOf, share
 import { categoryVisual, guessFromMemo, presetsOf, type Preset } from "@/lib/categories";
 import { num, parseYmd, rase, ymd } from "@/lib/format";
 import { haptic } from "@/lib/native";
-import { CategoryIcon, MAX_SPENDING, Seg, Sheet } from "./ui";
+import { afterSheet, CategoryIcon, MAX_SPENDING, Seg, Sheet } from "./ui";
+import { still, tokens } from "./Morph";
 import { MiniCard } from "./pass";
 
 const LAST_CARD = "our-money-last-card";
@@ -22,6 +23,9 @@ function shiftDay(date: string, n: number) {
   d.setDate(d.getDate() + n);
   return ymd(d);
 }
+
+/** 저장 버튼의 ✓ 를 보여 주는 시간 — 손가락을 떼고 확인하기에 충분하고, 10초 기록을 늦추지 않게 짧게 */
+const SAVED_MS = 320;
 
 function newId() {
   return typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `sp-${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -52,6 +56,25 @@ export function SpendingSheet({ open, onOpenChange, editing }: { open: boolean; 
   const [autoOwner, setAutoOwner] = useState(false);
   // 자주 쓰는 지출 버튼으로 시작한 기록인지 (spendings.source)
   const [fromPreset, setFromPreset] = useState(false);
+  // 새 기록 저장을 서버가 거절하면(연결 문제가 아닌 거절) 적던 내용으로 시트를 다시 연다
+  const [restore, setRestore] = useState<Spending | null>(null);
+  // 저장 버튼이 잠깐 ✓ 로 바뀐 뒤 닫힌다 (토스 송금 완료처럼 — 네트워크를 기다리지 않는다)
+  const [saved, setSaved] = useState(false);
+  // 금액 상한(MAX_SPENDING)에 닿으면 칸이 짧게 흔들리고 안내가 남는다
+  const [capHint, setCapHint] = useState(false);
+  const big = useRef<HTMLDivElement>(null);
+  const setCapped = (v: number) => {
+    if (v > MAX_SPENDING) {
+      setCapHint(true);
+      haptic([8, 40, 8]);
+      if (!still())
+        big.current?.animate(
+          [{ transform: "translateX(0)" }, { transform: "translateX(-6px)" }, { transform: "translateX(5px)" }, { transform: "translateX(-3px)" }, { transform: "translateX(0)" }],
+          { duration: tokens().swap, easing: tokens().out },
+        );
+    } else setCapHint(false);
+    setAmount(Math.min(MAX_SPENDING, v));
+  };
 
   /** 결제수단으로 누구 돈인지 추측: 공동 카드·공동 통장이면 공동, 아니면 그 사람(내 지갑은 나) */
   const inferOwner = (kind: PayKind, acc: string | null): Owner => {
@@ -73,6 +96,24 @@ export function SpendingSheet({ open, onOpenChange, editing }: { open: boolean; 
 
   useEffect(() => {
     if (!open) return;
+    setSaved(false);
+    setCapHint(false);
+    if (restore && !editing) {
+      setAmount(restore.amount);
+      setCategory(restore.category_id);
+      setPayKind(restore.pay_kind);
+      setAccount(restore.account_id ?? (restore.pay_kind === "cash" ? MINE : null));
+      setOwner(restore.owner);
+      setDate(restore.date);
+      setMemo(restore.memo);
+      setMonths(restore.installment_months ?? 1);
+      setTouched({ category: true, owner: true, pay: true });
+      setAutoCat(false);
+      setAutoOwner(false);
+      setFromPreset(restore.source === "preset");
+      setRestore(null);
+      return;
+    }
     if (editing) {
       setAmount(editing.amount);
       setCategory(editing.category_id);
@@ -209,7 +250,7 @@ export function SpendingSheet({ open, onOpenChange, editing }: { open: boolean; 
   }
 
   const save = async () => {
-    if (amount <= 0) return;
+    if (amount <= 0 || saved) return;
     const row = buildRow();
     if (payKind === "card" && row.account_id) {
       try {
@@ -217,8 +258,20 @@ export function SpendingSheet({ open, onOpenChange, editing }: { open: boolean; 
       } catch {}
     }
     haptic(14);
+    if (!still()) {
+      setSaved(true);
+      await new Promise((r) => setTimeout(r, SAVED_MS));
+    }
     onOpenChange(false);
-    if (!(await upsert("spendings", [row]))) return;
+    if (!(await upsert("spendings", [row]))) {
+      // 수정은 원래 기록이 남아 있고(다른 폰이 먼저 고쳤으면 다시 불러옴), 새 기록만 적던 내용을 살린다
+      if (!editing) {
+        setRestore(row);
+        // 닫으며 뺀 뒤로 가기 기록이 다 빠진 다음에 연다 (먼저 열면 그 popstate 가 새 시트를 닫는다)
+        afterSheet(() => onOpenChange(true));
+      }
+      return;
+    }
     toast(`${editing ? "수정했어요" : `${num(amount)}원 기록했어요`} · ${remainingText(data, row)}`);
   };
 
@@ -260,8 +313,18 @@ export function SpendingSheet({ open, onOpenChange, editing }: { open: boolean; 
         )
       }
       footer={
-        <button type="button" className="btn block" disabled={amount <= 0} onClick={() => void save()}>
-          {editing ? "저장" : amount > 0 ? `${num(amount)}원 기록하기` : "기록하기"}
+        <button type="button" className={`btn block${saved ? " saved" : ""}`} disabled={amount <= 0} aria-live="polite" onClick={() => void save()}>
+          {saved ? (
+            <>
+              <Check aria-hidden="true" /> {editing ? "저장했어요" : "기록했어요"}
+            </>
+          ) : editing ? (
+            "저장"
+          ) : amount > 0 ? (
+            `${num(amount)}원 기록하기`
+          ) : (
+            "기록하기"
+          )}
         </button>
       }
     >
@@ -274,7 +337,7 @@ export function SpendingSheet({ open, onOpenChange, editing }: { open: boolean; 
       <label className="sr-only" htmlFor="sp-amount">
         금액
       </label>
-      <div className="bigamount">
+      <div className="bigamount" ref={big}>
         <input
           id="sp-amount"
           inputMode="numeric"
@@ -283,16 +346,21 @@ export function SpendingSheet({ open, onOpenChange, editing }: { open: boolean; 
           autoFocus={!editing}
           enterKeyHint="done"
           value={amount ? num(amount) : ""}
-          onChange={(e) => setAmount(Math.min(MAX_SPENDING, Number(e.target.value.replace(/[^\d]/g, "")) || 0))}
+          onChange={(e) => setCapped(Number(e.target.value.replace(/[^\d]/g, "")) || 0)}
           onKeyDown={(e) => {
             if (e.key === "Enter") void save();
           }}
         />
         <span className="unit">원</span>
       </div>
+      {capHint && (
+        <p className="cap-hint" role="status">
+          한 번에 {MAX_SPENDING / 100_000_000}억 원까지 적을 수 있어요
+        </p>
+      )}
       <div className="quick">
         {[10_000, 50_000, 100_000].map((v) => (
-          <button key={v} type="button" onClick={() => setAmount((a) => Math.min(MAX_SPENDING, a + v))}>
+          <button key={v} type="button" onClick={() => setCapped(amount + v)}>
             +{v / 10_000}만
           </button>
         ))}
