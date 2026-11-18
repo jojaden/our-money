@@ -88,13 +88,22 @@ fun parseNotice(title: String, text: String): Payment? {
         ?: return null
     // "입출금"은 통장 종류라 나감·들어옴을 가리지 않는다
     val words = body.replace("입출금", "")
-    val card = Regex("""일시불|할부|승인|카드""").containsMatchIn(body) || Regex("""[0-9]{4}-[0-9*]{2,4}-\*{4}-[0-9]{4}""").containsMatchIn(body)
+    // 입금 알림의 보낸 사람 이름(받는 통장 표시)은 보낸 사람이 정한다. 그 글이 카드·방향 말을 담아도
+    // 카드 사용(지출로 적힘)이나 나간 돈(할 일 자동 체크)으로 기울지 않게, 계좌 알림 표시가 있으면 카드로 보지 않는다
+    val account = "입출금" in body || "입금" in words
+    val card = !account && (Regex("""일시불|할부|승인|카드""").containsMatchIn(body) || Regex("""[0-9]{4}-[0-9*]{2,4}-\*{4}-[0-9]{4}""").containsMatchIn(body))
+    // "입출금" 통장 알림(신한)은 이름이 본문에 있고 방향은 제목에만 온다 — 본문의 방향 말은 이름일 수 있다
+    val way = if ("입출금" in body) title.replace("입출금", "") else words
+    val deposit = "입금" in way
+    val out = "출금" in way || "이체" in way
     val kind = when {
         // 계좌 알림의 "취소"는 어느 쪽인지 모른다
         "취소" in words -> if (card) PaymentKind.CANCEL else PaymentKind.MOVE
         card -> PaymentKind.APPROVE
-        "출금" in words || "이체" in words -> PaymentKind.WITHDRAW
-        "입금" in words -> PaymentKind.DEPOSIT
+        // 들어옴·나감 말이 둘 다 있으면 하나는 이름 속 글이다 — 늘 물어보는 쪽으로
+        deposit && out -> PaymentKind.MOVE
+        out -> PaymentKind.WITHDRAW
+        deposit -> PaymentKind.DEPOSIT
         else -> PaymentKind.MOVE
     }
     val last4 = maskedLast(body) ?: PAREN_NO.find(body)?.groupValues?.get(1)

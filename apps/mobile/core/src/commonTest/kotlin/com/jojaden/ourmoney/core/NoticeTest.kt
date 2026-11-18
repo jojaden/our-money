@@ -76,6 +76,35 @@ class NoticeTest {
         )
     }
 
+    // 입금 알림의 보낸 사람 이름은 보낸 사람이 정한다 — 그 글에 카드·방향 말이 있어도 카드 사용이나 나간 돈으로 읽지 않는다
+    @Test
+    fun 입금_보낸_사람_이름이_카드여도_입금() {
+        assertEquals(
+            Payment(PaymentKind.DEPOSIT, 1, "카드", "000", null),
+            p("2026/11/04/ 06:38 KB국민 000000-**-***000 입금 1원 카드"),
+        )
+        assertEquals(
+            Payment(PaymentKind.DEPOSIT, 1, "카드", "0003", null),
+            p("1원 카드 입출금(0003)\n10.30 22:14", title = "입금"),
+        )
+    }
+
+    @Test
+    fun 카드사_환급_입금은_입금() {
+        assertEquals(PaymentKind.DEPOSIT, p("2026/11/12/ 09:10 KB국민 000000-**-***000 입금 30,000원 삼성카드")?.kind)
+    }
+
+    @Test
+    fun 방향_없는_통장_알림의_이름_속_말은_방향이_아니다() {
+        assertEquals(PaymentKind.MOVE, p("1원 승인 입출금(0003)\n10.30 22:14")?.kind)
+        assertEquals(PaymentKind.MOVE, p("1원 출금 입출금(0003)\n10.30 22:14")?.kind)
+    }
+
+    @Test
+    fun 입금과_출금이_함께_있으면_방향_모름() {
+        assertEquals(PaymentKind.MOVE, p("2026/11/04/ 06:38 KB국민 000000-**-***000 입금 1원 이체")?.kind)
+    }
+
     @Test
     fun 잔액은_금액이_아니다() {
         val r = p("[신한] 잔액 1,200,000원\n출금 230,000원 관리비")
