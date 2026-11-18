@@ -6,6 +6,7 @@ import { eventTodo } from "@/lib/calendar";
 import { findCheck } from "@/lib/calc";
 import { useData } from "@/lib/store";
 import { dateWithDay, num } from "@/lib/format";
+import { holidayName } from "@/lib/holidays";
 
 const WEEK = ["일", "월", "화", "수", "목", "금", "토"];
 
@@ -81,6 +82,7 @@ function fitCells(grid: HTMLElement | null) {
  * - 기간 일정(이틀 이상)은 걸친 칸을 잇는 칠한 막대에 이름 (날짜 바로 아래 맨 위, 칸 위에 겹친 그리드 아이템)
  * - 하루 종일 일정은 칠한 칸, 시간이 있는 일정은 왼쪽 막대 + 옅은 바탕 — 색은 공동·현빈·예진(일정의 owner)
  * - 체크(카드값·이체·납부, 할 일 일정)는 앞에 동그라미, 끝내면 채운 동그라미와 옅은 글자
+ * - 공휴일은 날짜를 빨갛게(일요일처럼), 칸 첫 줄에 빨간 이름("크리스마스")
  * - 들어올 돈(월급날)은 +금액(금액이 없으면 "월급"), 쓴 돈은 금액으로 칸 아래에
  * 폰에서는 줄이 남는 높이를 나눠 가져 화면을 꽉 채운다(달력 화면의 첫 칸). 좌우로 밀면 날짜 칸만 넘어가고 요일 줄은 제자리다.
  */
@@ -141,12 +143,14 @@ export function CalendarCard({
           const income = ms.reduce((a, m) => a + (m.kind === "payday" ? (m.amount ?? 0) : 0), 0);
           // 월급 금액을 아직 안 적은 월급날도 표시는 남긴다
           const payday = ms.some((m) => m.kind === "payday");
-          const label = [dateWithDay(d), income ? `들어올 돈 ${num(income)}원` : "", amount ? `쓴 돈 ${num(amount)}원` : "", ...ms.map((m) => m.title)].filter(Boolean).join(", ");
+          // 공휴일(설·추석·크리스마스·대체공휴일…): 날짜를 일요일처럼 빨갛게, 칸 첫 줄에 이름
+          const hol = holidayName(d);
+          const label = [dateWithDay(d), hol ?? "", income ? `들어올 돈 ${num(income)}원` : "", amount ? `쓴 돈 ${num(amount)}원` : "", ...ms.map((m) => m.title)].filter(Boolean).join(", ");
           return (
             <button
               key={d}
               type="button"
-              className={`cal-day ${inMonth(d) ? "" : "out"} ${d === today ? "today" : ""} ${d === day ? "picked" : ""} ${i % 7 === 0 ? "sun" : i % 7 === 6 ? "sat" : ""}`}
+              className={`cal-day ${inMonth(d) ? "" : "out"} ${d === today ? "today" : ""} ${d === day ? "picked" : ""} ${i % 7 === 0 ? "sun" : i % 7 === 6 ? "sat" : ""} ${hol ? "hol" : ""}`}
               style={{ gridRow: Math.floor(i / 7) + 1, gridColumn: (i % 7) + 1 }}
               aria-label={label}
               aria-pressed={d === day}
@@ -155,6 +159,7 @@ export function CalendarCard({
               <span className="n">{Number(d.slice(8))}</span>
               <span className="cal-events" aria-hidden="true" data-extra={spans.filter((s) => s.lane >= LINES).length}>
                 {used > 0 && <span className="cal-lanes" style={{ "--n": used } as CSSProperties} />}
+                {hol && <span className="cal-item hol">{hol}</span>}
                 {singles.map((m) => {
                   const e = m.event!;
                   return (

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
-import { KR_HOLIDAYS, isHoliday } from "./holidays.ts";
+import { KR_HOLIDAYS, holidayName, isHoliday } from "./holidays.ts";
 
 // 공휴일 표가 웹과 안드로이드(core Holidays.kt)에서 같은지, 몇 날짜가 맞는지
 
@@ -18,4 +18,15 @@ test("설·추석·대체공휴일·선거일", () => {
   assert.equal(isHoliday("2026-06-03"), true); // 지방선거
   assert.equal(isHoliday("2026-10-06"), false);
   assert.equal(isHoliday("2031-01-01"), false); // 표 밖의 해는 보지 않는다
+});
+
+test("공휴일마다 이름이 있다 (달력 칸)", () => {
+  for (const [y, days] of Object.entries(KR_HOLIDAYS))
+    for (const md of days.split(" ")) assert.notEqual(holidayName(`${y}-${md.slice(0, 2)}-${md.slice(2)}`), "공휴일", `${y}${md} 이름 없음`);
+  assert.equal(holidayName("2026-12-25"), "크리스마스");
+  assert.equal(holidayName("2026-02-17"), "설날");
+  assert.equal(holidayName("2026-09-24"), "추석");
+  assert.equal(holidayName("2026-05-05"), "어린이날");
+  assert.equal(holidayName("2026-10-05"), "대체공휴일");
+  assert.equal(holidayName("2026-10-06"), null);
 });
