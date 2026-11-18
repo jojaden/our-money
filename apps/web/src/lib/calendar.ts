@@ -55,6 +55,16 @@ export function occurrences(e: CalEvent, from: string, to: string): Occurrence[]
 }
 
 /** 오늘 이후(진행 중 포함) 가장 가까운 한 번 — 3년 안에서 찾는다 */
+/**
+ * 상대가 within(ms) 안에 새로 더한 공동 일정·할 일·D-day 인가 — 종 알림 모음(7일)과 켜져 있을 때 토스트(2분)가 같이 쓴다.
+ * 만든 사람·때는 DB 트리거가 채운다(created_by·created_at). 내가 만든 것, 개인 일정, 만든 사람을 모르는 옛 일정은 아니다.
+ */
+export function isPartnerJointAdd(e: CalEvent, me: Person, now: number, within: number): boolean {
+  if (e.owner !== "joint" || !e.created_by || e.created_by === me || !e.created_at) return false;
+  const at = Date.parse(e.created_at);
+  return Number.isFinite(at) && now - at <= within;
+}
+
 export function nextOccurrence(e: CalEvent, today: string): Occurrence | null {
   return occurrences(e, today, addDays(today, 3 * 366))[0] ?? null;
 }

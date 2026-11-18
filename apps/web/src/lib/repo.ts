@@ -353,6 +353,15 @@ function logDemo(table: string, id: string, op: HistoryRow["op"], old: object | 
   }
 }
 
+/** 예시 데이터에서 지금 쓰는 사람 (설정 › 지금 사용하는 사람, store 의 ME_KEY) */
+function demoMe(): Person {
+  try {
+    return localStorage.getItem("our-money-me") === "b" ? "b" : "a";
+  } catch {
+    return "a";
+  }
+}
+
 class LocalRepo implements Repo {
   mode = "demo" as const;
   private data: Data | null = null;
@@ -428,6 +437,7 @@ class LocalRepo implements Repo {
         (d[key] as unknown as { id: string }[]) = keep;
         continue;
       }
+      const saved: { id: string }[] = [];
       for (const row of o.rows as unknown as { id: string }[]) {
         const i = list.findIndex((x) => x.id === row.id);
         if (i >= 0) {
@@ -435,12 +445,16 @@ class LocalRepo implements Repo {
             logDemo(key, row.id, "update", list[i], row);
             list[i] = { ...list[i], ...row };
           }
+          saved.push(row);
         } else {
-          logDemo(key, row.id, "insert", null, row);
-          list.push(row);
+          // DB 트리거처럼 새 줄에 만든 때·사람을 적는다 (상대가 더한 공동 일정 알림이 예시 데이터에서도 보이게)
+          const fresh = { ...row, created_at: new Date().toISOString(), created_by: demoMe() };
+          logDemo(key, row.id, "insert", null, fresh);
+          list.push(fresh);
+          saved.push(fresh);
         }
       }
-      out.push({ table: o.table, rows: structuredClone(o.rows) });
+      out.push({ table: o.table, rows: structuredClone(saved) as never });
     }
     this.write();
     return out;

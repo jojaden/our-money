@@ -2,12 +2,13 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Bell, CalendarCheck, CalendarDays, CreditCard, Heart, ReceiptText, Repeat, Wallet } from "lucide-react";
+import { Bell, CalendarCheck, CalendarDays, CalendarPlus, CreditCard, Heart, ReceiptText, Repeat, Wallet } from "lucide-react";
 import type { Person } from "@/lib/types";
 import { METHOD_LABEL } from "@/lib/types";
 import { useData } from "@/lib/store";
 import { addMonths, currentMonth, nameOf, paydayDate, periodOf } from "@/lib/calc";
-import { ddayText, nextOccurrence, summaryHref, timeText } from "@/lib/calendar";
+import { ddayText, isPartnerJointAdd, nextOccurrence, summaryHref, timeText } from "@/lib/calendar";
+import { eventKind } from "@/lib/ics";
 import { dateWithDay, num, parseYmd, shortDate } from "@/lib/format";
 import { asking, byUrgency, dueState, eventTasks, useTasks, waiting, type Task } from "./tasks";
 import { TaskRow } from "./TaskRow";
@@ -18,6 +19,8 @@ import { WeekReport, weekSummary } from "./WeekReport";
 const SEEN_KEY = "our-money-bell-seen";
 /** 월급날은 며칠 전부터 알리나 */
 const PAYDAY_AHEAD = 3;
+/** 상대가 더한 공동 일정은 며칠 동안 알림 모음에 두나 */
+const ADDED_DAYS = 7;
 
 /** 체크할 것이 아닌 다가오는 날 (월급날, 미리 알림을 켠 일정·D-day) */
 interface Upcoming {
@@ -43,9 +46,10 @@ function daysUntil(today: string, d: string) {
  * - 지난 것 / 오늘·곧: 이체·납부·카드값·정산은 3일 안, 할 일은 3일과 그 할 일의 미리 알림 중 긴 쪽 안. 월급날 전 이체는 빼고
  * - 다가오는 날: 월급날(3일 안), 미리 알림을 켠 일정·D-day(그 날 수 안)
  * - 지난주 돌아보기: 일·월·화요일에 지난주(일~토) 쓴 돈 (주마다 새 알림 하나)
+ * - 새 공동 일정: 상대가 7일 안에 더한 공동 일정·할 일·D-day (새로 더한 것만 — 고친 것은 아님. 폰 푸시는 아직 없다)
  */
 function useAlerts() {
-  const { data, today, toggleCheck } = useData();
+  const { data, today, toggleCheck, me } = useData();
   const s = data.settings;
   const month = currentMonth(s.cycle_start, today);
   const { tasks } = useTasks(month);
@@ -83,6 +87,10 @@ function useAlerts() {
     }
     upcoming.sort((a, b) => a.date.localeCompare(b.date));
     const reviews = data.spendings.filter((x) => x.review?.length);
+    // 지금 시각은 불러온 데이터가 바뀔 때마다 다시 본다 (그사이 7일이 지나도 다음 갱신에 빠진다)
+    // eslint-disable-next-line react-hooks/purity -- 알림 모음의 "최근 7일"은 지금 시각이 기준이다
+    const now = Date.now();
+    const added = data.events.filter((e) => isPartnerJointAdd(e, me, now, ADDED_DAYS * 86_400_000)).sort((x, y) => (y.created_at ?? "").localeCompare(x.created_at ?? ""));
     const week = weekSummary(data, today);
 
     return {
@@ -93,9 +101,10 @@ function useAlerts() {
       asks,
       reviews,
       upcoming,
-      keys: [...pinned.map((t) => t.key), ...urgent.map((t) => t.key), ...asks.map((t) => `ask:${t.key}`), ...reviews.map((x) => `rv:${x.id}`), ...upcoming.map((u) => u.key), ...(week ? [week.key] : [])],
+      added,
+      keys: [...added.map((e) => `added:${e.id}`), ...pinned.map((t) => t.key), ...urgent.map((t) => t.key), ...asks.map((t) => `ask:${t.key}`), ...reviews.map((x) => `rv:${x.id}`), ...upcoming.map((u) => u.key), ...(week ? [week.key] : [])],
     };
-  }, [data, month, s, tasks, today, toggleCheck]);
+  }, [data, month, s, tasks, today, toggleCheck, me]);
 }
 
 function readSeen(): Set<string> {
@@ -115,6 +124,7 @@ const ICON = { payday: Wallet, event: CalendarDays, dday: Heart };
  */
 export function BellButton({ rail = false }: { rail?: boolean }) {
   const router = useRouter();
+  const { data, today } = useData();
   const a = useAlerts();
   // 지난달을 아직 마감하지 않았으면 맨 위에 (홈 카드에서 "나중에"를 눌러도 여기엔 남는다)
   const close = usePendingClose();
@@ -166,7 +176,7 @@ export function BellButton({ rail = false }: { rail?: boolean }) {
           <EmptyState
             key="empty"
             title="지금 챙길 것이 없어요"
-            body="마감하지 않은 지난달, 기한이 3일 안으로 다가온 이체·납부·할 일, 다가오는 월급날, 미리 알림을 켠 일정, 그리고 일요일마다 지난주 돌아보기가 여기에 모여요."
+            body="상대가 더한 공동 일정, 마감하지 않은 지난달, 기한이 3일 안으로 다가온 이체·납부·할 일, 다가오는 월급날, 미리 알림을 켠 일정, 그리고 일요일마다 지난주 돌아보기가 여기에 모여요."
           />
         ) : (
           <>
@@ -194,6 +204,28 @@ export function BellButton({ rail = false }: { rail?: boolean }) {
                       </button>
                     </div>
                   </div>
+                </div>
+              </div>
+            )}
+            {a.added.length > 0 && (
+              <div className="field" key="added">
+                <h3 className="sum-h">새 공동 일정</h3>
+                <div className="rows" style={{ ["--inset" as string]: "52px" }}>
+                  {a.added.map((e) => {
+                    const o = nextOccurrence(e, today) ?? { start: e.start_date, end: e.end_date ?? e.start_date };
+                    const when = o.start === o.end ? dateWithDay(o.start) : `${shortDate(o.start)}~${shortDate(o.end)}`;
+                    return (
+                      <button type="button" className="row" key={e.id} onClick={() => go("/calendar")}>
+                        <span className="alert-ic event joint" aria-hidden="true">
+                          <CalendarPlus />
+                        </span>
+                        <div style={{ minWidth: 0 }}>
+                          <div className="t">{e.title}</div>
+                          <div className="s">{[`${nameOf(data.settings, e.created_by!)} 추가`, eventKind(e), when, timeText(e)].filter(Boolean).join(" · ")}</div>
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}
