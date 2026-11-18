@@ -233,6 +233,15 @@
 .goal-now .pill { margin-left: auto; }
 .goal-bar { display: block; }
 .goal-bar .meter { margin: 0; }
+/* 이정표 도장 (25·50·75·100%) — 지난 것은 accent 로 찍히고, 처음 보는 도장은 한 번 튄다(ease-pop) */
+.goal-stamps { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.stamp { display: inline-flex; align-items: center; gap: 2px; height: 26px; padding: 0 9px; border-radius: var(--radius-chip); background: var(--well); color: var(--faint); font: 600 12.5px/1 var(--font-display); font-variant-numeric: tabular-nums; }
+.stamp svg { width: 13px; height: 13px; stroke-width: 3; }
+.stamp.on { background: var(--accent); color: var(--on-primary); }
+.stamp.new { animation: stamp-pop var(--dur-pop) var(--ease-pop) both; }
+@keyframes stamp-pop { from { opacity: 0; transform: scale(0.6); } to { opacity: 1; transform: none; } }
+.stamp-next { margin-left: auto; color: var(--faint); font: 500 13px/18px var(--font-text); font-variant-numeric: tabular-nums; }
+@media (prefers-reduced-motion: reduce) { .stamp.new { animation: none; } }
 @media (prefers-reduced-motion: reduce) {
   .goal-card { transition: none; }
 }
@@ -335,3 +344,11 @@
 @media (prefers-reduced-motion: reduce) {
   .split-track i, .split-row, .split-row .chev { transition: none; }
 }
+
+/* ---------- 한 달 결산 (components/MonthReport) — 큰 금액 한 줄, 나간 돈 구성, 눈에 띈 것, 생활비 결과 ---------- */
+.report .hero-amt { margin: 2px 0 0; }
+.report-sub { margin: 4px 0 0; color: var(--muted); font: 500 14.5px/20px var(--font-text); }
+.report-sub b { color: var(--text); font-weight: 700; }
+.report-living { margin: 0; color: var(--muted); font: 500 14.5px/22px var(--font-text); }
+.report-living .pos { color: var(--positive); }
+.report .link-btn { display: inline-flex; align-items: center; min-height: 44px; margin-top: 12px; padding: 0; border: 0; background: none; color: var(--accent-ink); font: 600 14.5px/20px var(--font-text); cursor: pointer; }

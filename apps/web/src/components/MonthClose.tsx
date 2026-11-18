@@ -6,6 +6,7 @@ import { currentMonth, monthRow, periodOf } from "@/lib/calc";
 import { addDays } from "@/lib/calendar";
 import { monthLabel, parseYmd } from "@/lib/format";
 import { Morph } from "./Morph";
+import { MonthReportSheet } from "./MonthReport";
 import { haptic } from "@/lib/native";
 
 /** DB 한도 (migrations/005 months_text_len) */
@@ -21,6 +22,7 @@ export function MonthClose({ month }: { month: string }) {
   const m = monthRow(data, month);
   const saved = m?.note ?? "";
   const [draft, setDraft] = useState<string | null>(null);
+  const [report, setReport] = useState(false);
   if (!m) return null;
   const note = draft ?? saved;
   const dirty = draft !== null && draft.trim() !== saved;
@@ -50,7 +52,11 @@ export function MonthClose({ month }: { month: string }) {
     <section className="group" id="month-close" aria-labelledby="close-h">
       <div className="group-head">
         <h2 id="close-h">{label} 마무리</h2>
-        {closed && <span className="aside">마감</span>}
+        {ended && (
+          <button type="button" className="aside" onClick={() => setReport(true)}>
+            결산 보기
+          </button>
+        )}
       </div>
       {/* 메모를 고치면 "메모 저장" 줄이 떠오르고 아래 줄이 미끄러져 내려간다 (Morph) */}
       <Morph className="card month-close" track=":scope > *">
@@ -97,6 +103,7 @@ export function MonthClose({ month }: { month: string }) {
           )}
         </div>
       </Morph>
+      {ended && <MonthReportSheet month={month} open={report} onOpenChange={setReport} />}
     </section>
   );
 }
