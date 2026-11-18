@@ -96,6 +96,8 @@
 .step-track i::after { content: ""; position: absolute; inset: 0; border-radius: inherit; background: var(--accent); transform: translateX(-100%); transition: transform var(--dur-value) var(--ease-value); }
 .step-track i.done::after { transform: none; }
 .payday .rows { margin-top: 10px; }
+/* 상대 월급날의 콕 찌르기 줄 — 설명은 흐리게, 버튼은 오른쪽 */
+.payday .card-foot .s { min-width: 0; color: var(--faint); font: 400 13px/18px var(--font-text); }
 @media (prefers-reduced-motion: reduce) {
   .step-track i::after { transition: none; }
 }

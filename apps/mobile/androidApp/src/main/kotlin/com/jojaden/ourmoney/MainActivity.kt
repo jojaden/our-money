@@ -51,6 +51,7 @@ import java.io.File
  *   다른 앱이 같은 스킴으로 code 를 가로채도 PKCE 값이 없어 쓸 수 없다.
  * - 웹 → 앱 메시지는 우리 주소(origin)의 맨 위 화면에서 온 것만 받는다 (WebMessageListener).
  *   "card-notice" 는 카드 알림 화면, {"type":"ics","text":…} 는 일정 .ics 를 파일로 만들어 공유 창으로 넘긴다.
+ *   {"type":"share","text":…} 는 짧은 글(콕 찌르기 등)을 공유 창으로 — 카톡 같은 앱을 사람이 고른다.
  *   결제 알림 맞추기: {"type":"expect"} 이번 달 남은 할 일 받기, {"type":"matches"} 맞춘 것과 확인할 지출을 답장으로 보내기,
  *   {"type":"applied"} 웹이 체크를 마친 것 지우기. 앱으로 돌아올 때마다 웹에 "ourmoney-resume" 를 알려 다시 가져가게 한다.
  *   달력 위젯: {"type":"calendar",…} 달력 요약 저장(위젯이 그린다), {"type":"calendar-clear"} 로그아웃할 때 지우기.
@@ -81,7 +82,7 @@ class MainActivity : ComponentActivity() {
             settings.allowContentAccess = false
             settings.mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
             // 웹이 앱 안인지, 이 앱이 무엇을 할 수 있는지 알도록 (로그인 돌아올 주소, 카드 알림 메뉴, 일정 공유)
-            settings.userAgentString = "${settings.userAgentString} OurMoneyApp/${BuildConfig.VERSION_NAME} OurMoneyCan/ics,match,widget,remind"
+            settings.userAgentString = "${settings.userAgentString} OurMoneyApp/${BuildConfig.VERSION_NAME} OurMoneyCan/ics,match,widget,remind,share"
             webViewClient = ShellClient()
         }
         if (WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)) {
@@ -138,6 +139,7 @@ class MainActivity : ComponentActivity() {
             "notify-ask" -> askNotify()
             "notify-settings" -> openNotifySettings()
             "ics" -> shareIcs(msg.optString("text"))
+            "share" -> shareText(msg.optString("text"))
             "calendar" -> CalendarStore.save(this, raw)
             "calendar-clear" -> CalendarStore.clear(this)
             "expect" -> Expects.save(this, msg.optJSONArray("items"))
@@ -242,6 +244,17 @@ class MainActivity : ComponentActivity() {
         runCatching { startActivity(chooser) }
     }
 
+    /** 짧은 글을 공유 창으로 (글만 — 파일·권한 없음). 빈 글·제어 문자는 버리고 MAX_SHARE 자까지 */
+    private fun shareText(text: String) {
+        val clean = text.filter { it == '\n' || !it.isISOControl() }.trim().take(MAX_SHARE)
+        if (clean.isEmpty()) return
+        val send = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_TEXT, clean)
+        }
+        runCatching { startActivity(Intent.createChooser(send, null)) }
+    }
+
     /** ourmoney://auth-callback?code=… 이면 우리 주소에 code 만 붙여서. 그 밖의 값은 쓰지 않는다 */
     private fun callbackUrl(intent: Intent?): String? {
         val data = intent?.data ?: return null
@@ -287,5 +300,6 @@ class MainActivity : ComponentActivity() {
         private const val ICS = "text/calendar"
         /** 일정 수천 개도 넉넉한 크기 — 넘으면 받지 않는다 */
         private const val MAX_ICS = 5_000_000
+        private const val MAX_SHARE = 500
     }
 }

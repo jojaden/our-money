@@ -913,7 +913,8 @@ on conflict do nothing;
 create or replace function public.apply_batch(ops jsonb) returns jsonb
 language plpgsql security invoker set search_path = public as $$
 declare
-  writable constant text[] := array['settings','accounts','plan_items','months','month_items','checks','categories','spendings','events'];
+  -- 019 에서 nudges 를 더했다
+  writable constant text[] := array['settings','accounts','plan_items','months','month_items','checks','categories','spendings','events','nudges'];
   chunk constant int := 200;
   op jsonb;
   t text;
@@ -1059,3 +1060,63 @@ alter table public.settings
 
 comment on column public.settings.payday_holiday_a is 'A 의 월급날이 공휴일이면 앞 영업일에 들어오는가 (migrations/018)';
 comment on column public.settings.payday_holiday_b is 'B 의 월급날이 공휴일이면 앞 영업일에 들어오는가 (migrations/018)';
+
+-- ============================================================
+-- 019 콕 찌르기 (migrations/019_nudges.sql 과 같다 — apply_batch 의 표 목록은 위 014 함수에 반영)
+-- 한 사람이 상대에게 남기는 짧은 알림. 보내는 사람은 created_by(stamp), 자기에게는 못 보낸다.
+-- ============================================================
+create table if not exists public.nudges (
+  id text primary key,
+  to_person text not null,
+  month text not null,
+  title text not null,
+  rev integer not null default 1,
+  created_at timestamptz not null default now(),
+  created_by text check (created_by in ('a', 'b')),
+  updated_at timestamptz not null default now(),
+  updated_by text check (updated_by in ('a', 'b'))
+);
+
+do $$
+begin
+  if not exists (select 1 from pg_constraint where conname = 'nudges_ok' and conrelid = 'public.nudges'::regclass) then
+    alter table public.nudges add constraint nudges_ok check (
+      char_length(id) between 1 and 40
+      and to_person in ('a', 'b')
+      and created_by is distinct from to_person
+      and month ~ '^[0-9]{4}-(0[1-9]|1[0-2])$'
+      and char_length(btrim(title)) between 1 and 80
+      and rev between 1 and 1000000000
+    );
+  end if;
+end $$;
+
+create index if not exists nudges_created on public.nudges (created_at);
+
+-- 접근: 멤버만, 익명 키는 아무것도
+alter table public.nudges enable row level security;
+drop policy if exists "members only" on public.nudges;
+create policy "members only" on public.nudges for all to authenticated
+  using ((select public.is_member())) with check ((select public.is_member()));
+revoke all on public.nudges from anon;
+revoke truncate, trigger, references on public.nudges from authenticated;
+grant select, insert, update, delete on public.nudges to authenticated;
+
+-- rev·누가 언제 / 바뀐 기록 / 한 번에 너무 많이 고치거나 지우기 막기
+drop trigger if exists stamp on public.nudges;
+create trigger stamp before insert or update on public.nudges for each row execute function public.stamp_row();
+drop trigger if exists log_change on public.nudges;
+create trigger log_change after insert or update or delete on public.nudges for each row execute function public.log_change();
+drop trigger if exists guard_bulk_delete on public.nudges;
+create trigger guard_bulk_delete after delete on public.nudges referencing old table as old_rows for each statement execute function public.guard_bulk();
+drop trigger if exists guard_bulk_update on public.nudges;
+create trigger guard_bulk_update after update on public.nudges referencing new table as new_rows for each statement execute function public.guard_bulk();
+
+-- 실시간 (상대가 보내면 바로)
+do $$
+begin
+  alter publication supabase_realtime add table public.nudges;
+exception when duplicate_object then null;
+end $$;
+
+comment on table public.nudges is '콕 찌르기 — 한 사람이 상대에게 남기는 짧은 알림(아직 안 옮긴 돈 등). 받는 사람 종 알림·토스트 (migrations/019)';
