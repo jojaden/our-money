@@ -1091,8 +1091,6 @@ begin
   end if;
 end $$;
 
-create index if not exists nudges_created on public.nudges (created_at);
-
 -- 접근: 멤버만, 익명 키는 아무것도
 alter table public.nudges enable row level security;
 drop policy if exists "members only" on public.nudges;

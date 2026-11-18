@@ -1,6 +1,7 @@
 -- 019 콕 찌르기 — 018 까지 실행한 프로젝트에 한 번 실행한다 (여러 번 실행해도 안전).
 -- Supabase 대시보드 > SQL Editor 에 붙여넣고 Run. 웹을 배포하기 전에 실행할 것 (앱이 이 표를 불러오고 실시간으로 지켜본다).
--- 실행하기 전에도 앱은 그대로 동작한다(표가 없으면 빈 목록, 콕 찌르기 저장만 거절된다).
+-- 실행하기 전에도 앱은 그대로 동작한다(표가 없으면 빈 목록, 콕 찌르기의 앱 알림 저장만 거절된다 — 실시간은 nudges 만
+-- 따로 구독해서 다른 표의 실시간은 그대로다).
 --
 -- 한 사람이 상대에게 "아직 안 옮긴 돈" 같은 짧은 알림을 남긴다. 받는 사람의 종 알림 모음과 토스트에 뜬다.
 --   to_person: 받는 사람 (보내는 사람은 stamp 가 채우는 created_by — 자기에게는 못 보낸다)
@@ -33,8 +34,6 @@ begin
     );
   end if;
 end $$;
-
-create index if not exists nudges_created on public.nudges (created_at);
 
 -- 접근: 멤버만, 익명 키는 아무것도
 alter table public.nudges enable row level security;

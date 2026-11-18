@@ -268,26 +268,37 @@ class SupabaseRepo implements Repo {
 
 
   subscribe(onChange: (change: Change) => void) {
-    const channel = this.db.channel("household");
-    for (const t of [...LIST_TABLES, "settings"] as TableName[]) {
-      // 바뀐 줄을 그대로 받아서 붙인다 (테이블을 다시 읽지 않는다)
-      channel.on("postgres_changes", { event: "*", schema: "public", table: t }, (p) => {
-        if (p.eventType === "DELETE") {
-          const id = (p.old as { id?: unknown }).id;
-          onChange(id == null ? { type: "RELOAD", table: t } : { type: "DELETE", table: t, id: String(id) });
-        } else onChange({ type: p.eventType, table: t, row: p.new as Record<string, unknown> });
-      });
-    }
-    // 연결이 끊겼다 다시 붙으면 그사이 바뀐 것을 놓쳤을 수 있으니 전부 다시 읽는다
-    let joined = false;
-    channel.subscribe((status) => {
-      if (status === "SUBSCRIBED") {
-        if (joined) onChange({ type: "RELOAD" });
-        joined = true;
+    // 나중에 생긴 표(019 nudges)는 따로 구독한다 — Realtime 은 한 채널의 표 중 하나라도 발행에 없으면
+    // 그 채널 구독을 통째로 되돌려서, 019 전 DB 에서 지출·체크까지 실시간이 멈춘다
+    const late = new Set<TableName>(["nudges"]);
+    const listen = (name: string, tables: TableName[], reload: () => void) => {
+      const channel = this.db.channel(name);
+      for (const t of tables) {
+        // 바뀐 줄을 그대로 받아서 붙인다 (테이블을 다시 읽지 않는다)
+        channel.on("postgres_changes", { event: "*", schema: "public", table: t }, (p) => {
+          if (p.eventType === "DELETE") {
+            const id = (p.old as { id?: unknown }).id;
+            onChange(id == null ? { type: "RELOAD", table: t } : { type: "DELETE", table: t, id: String(id) });
+          } else onChange({ type: p.eventType, table: t, row: p.new as Record<string, unknown> });
+        });
       }
-    });
+      // 연결이 끊겼다 다시 붙으면 그사이 바뀐 것을 놓쳤을 수 있으니 다시 읽는다
+      let joined = false;
+      channel.subscribe((status) => {
+        if (status === "SUBSCRIBED") {
+          if (joined) reload();
+          joined = true;
+        }
+      });
+      return channel;
+    };
+    const all = [...LIST_TABLES, "settings"] as TableName[];
+    const channels = [
+      listen("household", all.filter((t) => !late.has(t)), () => onChange({ type: "RELOAD" })),
+      ...[...late].map((t) => listen(`household-${t}`, [t], () => onChange({ type: "RELOAD", table: t }))),
+    ];
     return () => {
-      void this.db.removeChannel(channel);
+      for (const c of channels) void this.db.removeChannel(c);
     };
   }
 }

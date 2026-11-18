@@ -4,7 +4,7 @@
 // - 월급날 아침 9시: 내 월급날, 그날 옮길 돈
 // - 나갈 돈 전날 저녁 8시: 내일 기한인 고정비 납부·카드값 (나와 공동 몫, 아직 체크하지 않은 것)
 // - 오늘 요약 아침 8시: 그날 시작하는 내 일정·공동 일정(끝낸 할 일 빼고)과 그날 기한인 나갈 돈을 한 알림으로.
-//   요약이 있는 날은 당일(0일 전) 일정 미리 알림을 따로 보내지 않는다. 채널은 예전 앱도 아는 event·due 를 쓴다.
+//   요약이 있는 날(오늘 빼고)은 당일(0일 전) 일정 미리 알림을 따로 보내지 않는다. 채널은 예전 앱도 아는 event·due 를 쓴다.
 
 import type { Data, Person } from "./types";
 import type { PaydayGroup, Task } from "@/components/tasks";
@@ -137,8 +137,9 @@ export function reminders(data: Data, me: Person, today: string, months: MonthTa
       open: events.length > 0 ? "calendar" : "check",
     });
   }
-  // 요약이 있는 날의 당일(0일 전) 일정 미리 알림은 요약에 들어 있다
-  const summarized = (r: Reminder) => r.id.startsWith("e:") && r.id.endsWith(":0") && day.has(r.at.slice(0, 10));
+  // 요약이 있는 날의 당일(0일 전) 일정 미리 알림은 요약에 들어 있다. 오늘은 빼지 않는다 —
+  // 8시가 지나 처음 넘기면 8시 요약은 이미 지나 울리지 않으니 9시 미리 알림까지 없어지면 안 된다
+  const summarized = (r: Reminder) => r.id.startsWith("e:") && r.id.endsWith(":0") && r.at.slice(0, 10) !== today && day.has(r.at.slice(0, 10));
 
   return out
     .filter((r) => !summarized(r))

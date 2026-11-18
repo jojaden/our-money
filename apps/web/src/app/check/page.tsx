@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { AlertTriangle, BellRing, Check, ChevronDown, ChevronRight, CircleCheck, Clock, Target } from "lucide-react";
 import { useData } from "@/lib/store";
-import { nameOf, other, periodOf } from "@/lib/calc";
+import { currentMonth, nameOf, other, periodOf } from "@/lib/calc";
 import type { Person } from "@/lib/types";
 import { FirstRun, MonthHeader } from "@/components/MonthHeader";
 import { Money } from "@/components/ui";
@@ -177,18 +177,26 @@ function CheckSummary({ label, done, total, parts }: { label: string; done: numb
  */
 function NudgeFoot({ g, name, month, count, amount }: { g: PaydayGroup; name: string; month: string; count: number; amount: number }) {
   const { data, me, upsert, toast } = useData();
+  const [busy, setBusy] = useState(false);
   const send = async () => {
+    if (busy) return;
+    setBusy(true);
     haptic(10);
     const title = `${name} 월급날 옮길 돈 ${count}건 · ${num(amount)}원이 남았어요`;
     const again = sentRecently(data.nudges, me, g.person, month, Date.now());
-    if (!again) await upsert("nudges", [{ id: nudgeId(), to_person: g.person, month, title }]);
+    // 저장은 시작만 하고 공유 창을 먼저 연다 — 공유·복사는 누른 순간(사용자 제스처) 안에 불러야 막히지 않는다
+    const saving = again ? Promise.resolve(true) : upsert("nudges", [{ id: nudgeId(), to_person: g.person, month, title }]);
     const r = await shareText(`[우리 집 가계부] ${title}`);
+    const ok = await saving;
+    setBusy(false);
+    // 저장이 거절되면(019 전 DB 등) 스토어가 이미 "저장하지 못했어요"를 띄운다 — 알렸다고 하지 않는다
+    if (!ok) return;
     toast(again ? "오늘은 앱 알림을 이미 보냈어요" : r === "copied" ? `${name}에게 알렸어요 · 보낼 글을 복사했어요` : `${name}에게 알렸어요`);
   };
   return (
     <div className="card-foot">
       <span className="s">앱 알림과 함께 카톡으로도 보낼 수 있어요</span>
-      <button type="button" className="btn" onClick={() => void send()}>
+      <button type="button" className="btn" disabled={busy} onClick={() => void send()}>
         <BellRing aria-hidden="true" /> 콕 찌르기
       </button>
     </div>
@@ -196,6 +204,9 @@ function NudgeFoot({ g, name, month, count, amount }: { g: PaydayGroup; name: st
 }
 
 function PaydaySection({ g, today, name, month, quiet = false }: { g: PaydayGroup; today: string; name: string; month: string; quiet?: boolean }) {
+  // 콕 찌르기는 이번 달에만 — 받는 쪽 종은 이번 달 옮길 돈이 남았을 때만 보여 준다
+  const { data } = useData();
+  const current = month === currentMonth(data.settings.cycle_start, today);
   const id = `pay-${g.person}`;
   // 상대의 월급날은 머리와 남은 상태 한 줄만, 옮길 돈 줄은 눌러야 펼친다
   const [open, setOpen] = useState(!quiet);
@@ -270,7 +281,7 @@ function PaydaySection({ g, today, name, month, quiet = false }: { g: PaydayGrou
               </button>
             )}
           </Morph>
-          {quiet && arrived && left.length > 0 && <NudgeFoot g={g} name={name} month={month} count={left.length} amount={leftAmount} />}
+          {quiet && current && arrived && left.length > 0 && <NudgeFoot g={g} name={name} month={month} count={left.length} amount={leftAmount} />}
         </>
       )}
     </section>
