@@ -9,7 +9,7 @@ import { allowanceStatus, installmentShare, livingStatus, monthOf, nameOf, share
 import { categoryVisual, guessFromMemo, presetsOf, type Preset } from "@/lib/categories";
 import { num, parseYmd, rase, ymd } from "@/lib/format";
 import { haptic } from "@/lib/native";
-import { CategoryIcon, MAX_SPENDING, Seg, Sheet } from "./ui";
+import { afterSheet, CategoryIcon, MAX_SPENDING, Seg, Sheet } from "./ui";
 import { MiniCard } from "./pass";
 
 const LAST_CARD = "our-money-last-card";
@@ -52,6 +52,8 @@ export function SpendingSheet({ open, onOpenChange, editing }: { open: boolean; 
   const [autoOwner, setAutoOwner] = useState(false);
   // 자주 쓰는 지출 버튼으로 시작한 기록인지 (spendings.source)
   const [fromPreset, setFromPreset] = useState(false);
+  // 새 기록 저장을 서버가 거절하면(연결 문제가 아닌 거절) 적던 내용으로 시트를 다시 연다
+  const [restore, setRestore] = useState<Spending | null>(null);
 
   /** 결제수단으로 누구 돈인지 추측: 공동 카드·공동 통장이면 공동, 아니면 그 사람(내 지갑은 나) */
   const inferOwner = (kind: PayKind, acc: string | null): Owner => {
@@ -73,6 +75,22 @@ export function SpendingSheet({ open, onOpenChange, editing }: { open: boolean; 
 
   useEffect(() => {
     if (!open) return;
+    if (restore && !editing) {
+      setAmount(restore.amount);
+      setCategory(restore.category_id);
+      setPayKind(restore.pay_kind);
+      setAccount(restore.account_id ?? (restore.pay_kind === "cash" ? MINE : null));
+      setOwner(restore.owner);
+      setDate(restore.date);
+      setMemo(restore.memo);
+      setMonths(restore.installment_months ?? 1);
+      setTouched({ category: true, owner: true, pay: true });
+      setAutoCat(false);
+      setAutoOwner(false);
+      setFromPreset(restore.source === "preset");
+      setRestore(null);
+      return;
+    }
     if (editing) {
       setAmount(editing.amount);
       setCategory(editing.category_id);
@@ -218,7 +236,15 @@ export function SpendingSheet({ open, onOpenChange, editing }: { open: boolean; 
     }
     haptic(14);
     onOpenChange(false);
-    if (!(await upsert("spendings", [row]))) return;
+    if (!(await upsert("spendings", [row]))) {
+      // 수정은 원래 기록이 남아 있고(다른 폰이 먼저 고쳤으면 다시 불러옴), 새 기록만 적던 내용을 살린다
+      if (!editing) {
+        setRestore(row);
+        // 닫으며 뺀 뒤로 가기 기록이 다 빠진 다음에 연다 (먼저 열면 그 popstate 가 새 시트를 닫는다)
+        afterSheet(() => onOpenChange(true));
+      }
+      return;
+    }
     toast(`${editing ? "수정했어요" : `${num(amount)}원 기록했어요`} · ${remainingText(data, row)}`);
   };
 

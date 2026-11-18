@@ -1,4 +1,4 @@
-// 화면 테마 — 밝게 · 어둡게 · 기기 설정. 기기마다 따로(localStorage) 저장하고, <html data-theme> 로 tokens.css 의 다크 값을 고른다.
+// 화면 테마 — 밝게 · 어둡게 · 기기 설정(기본, 고른 적 없으면 폰의 다크 모드를 따른다). 기기마다 따로(localStorage) 저장하고, <html data-theme> 로 tokens.css 의 다크 값을 고른다.
 // 첫 그림 전에 고르는 것은 app/layout.tsx 의 THEME_SCRIPT (같은 키·같은 규칙).
 
 import { useSyncExternalStore } from "react";
@@ -11,9 +11,9 @@ const listeners = new Set<() => void>();
 const isChoice = (v: unknown): v is ThemeChoice => v === "light" || v === "dark" || v === "system";
 
 export function themeChoice(): ThemeChoice {
-  if (typeof document === "undefined") return "light";
+  if (typeof document === "undefined") return "system";
   const t = document.documentElement.dataset.theme;
-  return isChoice(t) ? t : "light";
+  return isChoice(t) ? t : "system";
 }
 
 const systemDark = () => typeof window !== "undefined" && window.matchMedia?.("(prefers-color-scheme: dark)").matches === true;
@@ -42,9 +42,9 @@ function subscribe(fn: () => void) {
   };
 }
 
-/** 고른 테마와 지금 어두운지 — 미리 그린 HTML 은 밝게로 본다 */
+/** 고른 테마와 지금 어두운지 — 미리 그린 HTML 은 기기 설정·밝은 화면으로 본다 */
 export function useTheme(): { choice: ThemeChoice; dark: boolean } {
-  const choice = useSyncExternalStore(subscribe, themeChoice, () => "light" as const);
+  const choice = useSyncExternalStore(subscribe, themeChoice, () => "system" as const);
   const dark = useSyncExternalStore(subscribe, isDark, () => false);
   return { choice, dark };
 }

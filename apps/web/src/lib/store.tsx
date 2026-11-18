@@ -502,7 +502,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
             toast("다른 폰에서 먼저 바꿨어요. 최신 내용으로 다시 불러왔어요");
             for (const t of tables) await reload(t);
           } else {
-            toast(`저장하지 못했어요: ${e instanceof Error ? e.message : e}`);
+            // 서버의 영어 오류 글은 콘솔에만 (사람에게는 무엇을 하면 되는지만)
+            console.warn("저장 거절", e);
+            toast("저장하지 못했어요. 바꾼 내용을 확인하고 다시 저장해 주세요");
             await reload();
           }
         }

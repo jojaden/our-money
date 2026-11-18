@@ -6,6 +6,8 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- 폰 알림(일정·월급날·나갈 돈)의 알람은 재부팅하면 지워져서 다시 건다 -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- 웹의 짧은 진동(navigator.vibrate — 완료·저장·꾹 누르기)이 웹뷰에서 울리려면 필요하다. 설치 때 허용되는 일반 권한 -->
+    <uses-permission android:name="android.permission.VIBRATE" />
 
     <!-- 로그인 크롬 맞춤 탭을 찾으려고 (Android 11+ 패키지 공개 범위) -->
     <queries>
