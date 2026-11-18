@@ -9,7 +9,7 @@ import { useTheme } from "@/lib/theme";
 import { useRouter } from "next/navigation";
 import { StoreProvider, useStore } from "@/lib/store";
 import { signInWithGoogle, signOut } from "@/lib/repo";
-import { addMonths, type MonthSpending } from "@/lib/calc";
+import { addMonths, currentMonth, type MonthSpending } from "@/lib/calc";
 import { monthLabel } from "@/lib/format";
 import type { Spending } from "@/lib/types";
 import type { Range } from "@/lib/calendar";
@@ -23,6 +23,7 @@ import { NoticeSync } from "./NoticeSync";
 import { CalendarSync } from "./CalendarSync";
 import { ReminderSync } from "./ReminderSync";
 import { PageTransition } from "./PageTransition";
+import { monthTargets } from "@/lib/monthMotion";
 import { LoadingScreen, StageScreen } from "./Stage";
 
 // 설정은 탭이 아니다 — 폰은 위쪽 막대의 내 동전 버튼, 데스크톱은 레일 맨 아래
@@ -229,20 +230,18 @@ function Gate({ children }: { children: React.ReactNode }) {
 }
 
 /**
- * 월 교체는 store의 monthMotion이 사라짐 → 교체 → 나타남 순서로 잇는다.
- * 좌우로 쓸면 손가락을 따라 움직이다가 충분히 끌거나 빠르게 튕기면 달이 넘어간다.
+ * 월 교체는 store의 monthMotion이 내용만 넘기는 쪽으로 빼고 → 교체 → 반대쪽에서 밀어 넣는다 (머리·위쪽 막대는 제자리).
+ * 좌우로 쓸면 손가락을 따라 움직이다가 충분히 끌거나 빠르게 튕기면 그 자리에서 이어 달이 넘어간다.
  */
 function PageMotion({ path, children }: { path: string; children: React.ReactNode }) {
   const { month, setMonth } = useStore();
   const box = useRef<HTMLDivElement>(null);
 
-  const swipeable = path !== "/settings";
   const g = useRef<{ x: number; y: number; t: number; id: number; lock: "x" | "y" | null; dx: number } | null>(null);
 
-  // 달을 넘길 때 큰 제목 줄(‹ 11월 ›)은 제자리에 두고 아래 내용만 움직인다 — 화살표가 손가락 밑에서 달아나지 않게
-  const parts = () => [...(box.current?.children ?? [])].filter((c) => !c.classList.contains("page-head")) as HTMLElement[];
+  // 머리(기간 줄)는 두고 아래 내용만 — 달력은 요일 줄도 두고 날짜 칸만 (monthTargets)
   const slide = (transform: string, opacity: string, transition: string) => {
-    for (const c of parts()) Object.assign(c.style, { transform, opacity, transition });
+    for (const c of monthTargets(box.current)) Object.assign(c.style, { transform, opacity, transition });
   };
 
   const shift = (n: number) => {
@@ -252,8 +251,8 @@ function PageMotion({ path, children }: { path: string; children: React.ReactNod
   };
 
   const onDown = (e: React.PointerEvent) => {
-    // 달 넘기기가 있는 화면에서만 (모아 보기·설정은 아님)
-    if (!swipeable || e.pointerType === "mouse" || !box.current?.querySelector(".page-head .month-step")) return;
+    // 달 머리가 있는 화면에서만 (모아 보기·설정은 아님)
+    if (e.pointerType === "mouse" || !box.current?.querySelector(".page-head[data-month-head]")) return;
     // 카드를 옮기는 동안은 달을 넘기지 않는다
     if (document.documentElement.hasAttribute("data-arranging")) return;
     const t = e.target as HTMLElement;
@@ -291,7 +290,7 @@ function PageMotion({ path, children }: { path: string; children: React.ReactNod
     const v = s0.dx / dt; // px/ms
     const commit = Math.abs(s0.dx) > 80 || Math.abs(v) > 0.45;
     if (commit) {
-      slide("", "", "");
+      // 끈 자리에서 그대로 빠져나가게 인라인 위치는 두고 넘긴다 (monthMotion 이 이어받고, 새 달은 새로 그린다)
       shift(s0.dx < 0 ? 1 : -1);
     } else {
       slide("translateX(0)", "1", "transform var(--dur-tab) var(--ease-drawer), opacity 300ms ease");
@@ -315,33 +314,56 @@ function PageMotion({ path, children }: { path: string; children: React.ReactNod
 }
 
 /**
- * 위쪽 막대 — 굴렸을 때 가운데에 뜨는 작은 제목, 오른쪽에 종(알림 모음)과 톱니(설정). 화면 위에 붙어 있다.
- * 데스크톱은 종·톱니가 레일 아래에 있어 막대에서는 뺀다.
- * 달 넘기기는 큰 제목 줄(‹ 11월 ›)에 있고, 큰 제목 줄이 막대 밑으로 지나가면 막대가 유리 바탕이 되며
- * 가운데에 ‹ 11월 체크 › 가 작게 떠오른다 (굴릴 때마다가 아니라 지나갈 때 한 번). 작은 제목을 누르면 달 고르기.
+ * 위쪽 막대의 달 이름. 바뀌면 옛 이름은 넘긴 쪽으로 빠지고 새 이름이 반대쪽에서 굴러 들어온다
+ * (다음 달은 아래에서 위로, 지난달은 위에서 아래로 — 숫자 카운터처럼). 두 이름은 같은 칸에 겹쳐 둔다.
+ */
+function BarMonth({ month }: { month: string }) {
+  const [view, setView] = useState({ month, prev: "", dir: 0 });
+  if (view.month !== month) setView({ month, prev: view.month, dir: month > view.month ? 1 : -1 });
+  return (
+    <span className="bar-month-n num" style={{ ["--dir" as string]: view.dir }}>
+      {view.prev && (
+        <span key={`out-${view.prev}`} className="out" aria-hidden="true" onAnimationEnd={() => setView((v) => ({ ...v, prev: "" }))}>
+          {monthLabel(view.prev)}
+        </span>
+      )}
+      <span key={view.month} className={view.prev ? "in" : undefined}>
+        {monthLabel(view.month)}
+      </span>
+    </span>
+  );
+}
+
+/**
+ * 위쪽 막대 — 왼쪽 위 끝에 보고 있는 달("11월", 누르면 달 고르기)과 다른 달일 때 "이번 달로", 오른쪽에 종(알림 모음)과 톱니(설정). 화면 위에 붙어 있다.
+ * 달은 좌우로 밀어 넘긴다(PageMotion). 화살표는 마우스처럼 정밀한 포인터에서만 달 양옆에 보인다(shell.css).
+ * 달이 바뀌면 달 이름만 그 방향에서 굴러 들어오고(BarMonth) 막대는 제자리다.
+ * 달이 없는 화면(설정·모아 보기)은 큰 제목이 막대 밑으로 지나가면 가운데에 그 제목이 작게 떠오른다.
+ * 내용이 막대 밑으로 지나가면 막대가 유리 바탕이 된다. 데스크톱은 종·톱니가 레일 아래에 있어 막대에서는 뺀다.
  */
 function TopBar({ path }: { path: string }) {
-  const { auth, month, setMonth } = useStore();
+  const { auth, data, month, today, setMonth } = useStore();
   const { openMonths } = useSheets();
   const q = useSearchParams();
   const search = q.toString();
-  // 모아 보기(달력 + 기간 주소)는 작은 제목에 화살표 없이 기간 제목만
+  // 모아 보기(달력 + 기간 주소)·설정은 달 대신 그 화면 제목
   const summary = path === "/calendar" && q.has("from");
+  const settings = path === "/settings";
+  const monthPage = !settings && !summary && Boolean(month);
   const bar = useRef<HTMLDivElement>(null);
   const [glass, setGlass] = useState(false);
-  const [title, setTitle] = useState({ lead: "", name: "" });
+  const [title, setTitle] = useState("");
   useEffect(() => {
-    const h1 = document.querySelector<HTMLElement>(".page-head h1");
-    const row = document.querySelector<HTMLElement>(".page-head .title-row") ?? h1;
-    if (!h1 || !row) return;
+    const head = document.querySelector<HTMLElement>(".page-head");
+    const h1 = head?.querySelector<HTMLElement>("h1");
+    // 달 화면은 머리 전체, 나머지는 보이는 큰 제목이 막대 밑으로 지나갈 때
+    const row = head?.querySelector<HTMLElement>(".title-row") ?? head?.querySelector<HTMLElement>("h1:not(.sr-only)") ?? head;
+    if (!row) return;
     const h = bar.current?.offsetHeight ?? 64;
     // 처음 한 번은 바로 불린다. 막대 아래 선을 지나 위로 올라갔을 때만 유리 (화면 아래로 벗어난 것은 아님)
     const io = new IntersectionObserver(
       ([e]) => {
-        // 달(제목 앞의 가려 둔 글)과 화면 이름을 나눠 둔다 — 좁은 폰의 작은 제목에는 달만 (shell.css)
-        const text = h1.textContent ?? "";
-        const lead = h1.querySelector(".sr-only")?.textContent ?? text;
-        setTitle({ lead: lead.trim(), name: text.slice(lead.length).trim() });
+        setTitle(h1?.textContent?.trim() ?? "");
         setGlass(!e.isIntersecting && e.boundingClientRect.top < h);
       },
       { rootMargin: `-${h}px 0px 0px 0px` },
@@ -349,35 +371,40 @@ function TopBar({ path }: { path: string }) {
     io.observe(row);
     return () => io.disconnect();
   }, [path, month, search]);
-  const settings = path === "/settings";
-  const full = [title.lead, title.name].filter(Boolean).join(" ");
+  const now = data ? currentMonth(data.settings.cycle_start, today) : month;
+  const demo = auth.state === "demo" && (
+    <Link href="/settings" className="pill warning">
+      예시 데이터
+    </Link>
+  );
   return (
     <div ref={bar} className={`topbar ${glass ? "glass" : ""}`}>
-      {/* 왼쪽은 오른쪽 두 버튼만큼 비워 작은 제목을 가운데에 둔다 (예시 데이터 알약만 여기에) */}
-      <div className="bar-lead">
-        {auth.state === "demo" && (
-          <Link href="/settings" className="pill warning">
-            예시 데이터
-          </Link>
-        )}
-      </div>
-      {!settings && month && !summary ? (
-        // 큰 제목이 보일 때는 숨기고 누를 수도 없게 (같은 버튼이 큰 제목 줄에 있다)
-        <div className="bar-mini" inert={!glass}>
-          <button type="button" className="mini-step" aria-label={`지난달 (${monthLabel(addMonths(month, -1))})`} onClick={() => setMonth(addMonths(month, -1))}>
+      {monthPage ? (
+        <div className="bar-month">
+          <button type="button" className="bar-step" aria-label={`지난달 (${monthLabel(addMonths(month, -1))})`} onClick={() => setMonth(addMonths(month, -1))}>
             <ChevronLeft aria-hidden="true" />
           </button>
-          <button type="button" className="mini-title" aria-haspopup="dialog" aria-label={`${full}, 다른 달 고르기`} onClick={() => openMonths()}>
-            {title.lead}
+          <button type="button" className="bar-month-btn" aria-haspopup="dialog" aria-label={`${monthLabel(month)}, 다른 달 고르기`} onClick={() => openMonths()}>
+            <BarMonth month={month} />
           </button>
-          <button type="button" className="mini-step" aria-label={`다음 달 (${monthLabel(addMonths(month, 1))})`} onClick={() => setMonth(addMonths(month, 1))}>
+          <button type="button" className="bar-step" aria-label={`다음 달 (${monthLabel(addMonths(month, 1))})`} onClick={() => setMonth(addMonths(month, 1))}>
             <ChevronRight aria-hidden="true" />
           </button>
+          {month !== now && (
+            <button type="button" className="to-now" onClick={() => setMonth(now)}>
+              이번 달로
+            </button>
+          )}
+          {demo}
         </div>
       ) : (
-        <span className="bar-mini" aria-hidden="true">
-          {full}
-        </span>
+        <>
+          {/* 왼쪽은 오른쪽 두 버튼만큼 비워 작은 제목을 가운데에 둔다 (예시 데이터 알약만 여기에) */}
+          <div className="bar-lead">{demo}</div>
+          <span className="bar-mini" aria-hidden="true">
+            {title}
+          </span>
+        </>
       )}
       <div className="bar-actions">
         <BellButton />

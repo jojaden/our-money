@@ -1,13 +1,12 @@
 "use client";
 
 import { useData } from "@/lib/store";
-import { addMonths, currentMonth, itemsFromMonth, itemsOf, latestMonthBefore, monthRow, periodOf, periodProgress } from "@/lib/calc";
+import { itemsFromMonth, itemsOf, latestMonthBefore, monthRow, periodOf, periodProgress } from "@/lib/calc";
 import { useState } from "react";
 import { monthLabel, parseYmd } from "@/lib/format";
 import { Toggle } from "./ui";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import { PrimaryIcon, usePrimary, useSheets } from "./Shell";
+import { PrimaryIcon, usePrimary } from "./Shell";
 
 function rangeText(month: string, cycle: number) {
   const p = periodOf(month, cycle);
@@ -17,49 +16,29 @@ function rangeText(month: string, cycle: number) {
 }
 
 /**
- * 페이지 머리 — 큰 제목 "‹ 11월 ›", 기간 줄, 결론. 화면 이름은 읽는 제목에만 둔다.
- * 화살표는 달만 감싸서 늘 같은 자리에 있다. "11월"을 누르면 달 고르기 (따로 ▾ 표시는 두지 않는다 — 제목을 누르면 열리는 것은 다들 안다).
- * 달을 넘겨도 이 줄은 제자리에 있고 달 이름만 그 방향에서 밀려 들어온다. 다른 달을 보면 "이번 달로"가 붙는다.
+ * 페이지 머리 — 기간 줄과 결론. 달 이름("11월")·달 고르기·"이번 달로"는 위쪽 막대 왼쪽에 있다(Shell TopBar).
+ * 화면 이름은 읽는 제목(h1)에만 둔다. 달을 넘겨도 이 머리는 제자리에 있고 아래 내용만 움직인다(monthMotion).
+ * sub="" 이면 기간 줄을 뺀다 (달력: 1일~말일은 달력이 보여 준다).
  */
-export function MonthHeader({ name, sub, back, children }: { /** 탭 이름 (홈은 없음) */ name?: string; /** 기간 줄 대신 (달력은 1일~말일) */ sub?: string; /** 상세 화면의 "‹ 가계부" 돌아가기 (제목 줄 위) */ back?: React.ReactNode; children?: React.ReactNode }) {
-  const { data, month, today, setMonth } = useData();
-  const { openMonths } = useSheets();
+export function MonthHeader({ name, sub, back, children }: { /** 탭 이름 (홈은 없음) */ name?: string; /** 기간 줄 대신 */ sub?: string; /** 상세 화면의 "‹ 가계부" 돌아가기 (기간 줄 위) */ back?: React.ReactNode; children?: React.ReactNode }) {
+  const { data, month, today } = useData();
   const prog = periodProgress(month, data.settings.cycle_start, today);
   const tail = prog.state === "current" ? ` · ${prog.daysLeft}일 남음` : prog.state === "past" ? " · 지난 달" : " · 다가오는 달";
-  const now = currentMonth(data.settings.cycle_start, today);
   const label = monthLabel(month);
   return (
-    <header className="page-head">
+    // data-month-head: 이 화면은 좌우로 밀어 달을 넘긴다 (Shell PageMotion)
+    <header className="page-head" data-month-head="">
       <div style={{ minWidth: 0 }}>
         {back}
-        <div className="title-row">
-          <div className="month-step">
-            <button type="button" className="month-arrow" aria-label={`지난달 (${monthLabel(addMonths(month, -1))})`} onClick={() => setMonth(addMonths(month, -1))}>
-              <ChevronLeft aria-hidden="true" />
-            </button>
-            <button type="button" className="month-btn" aria-haspopup="dialog" aria-label={`${label}, 다른 달 고르기`} onClick={() => openMonths()}>
-              <span className="m num">{label}</span>
-            </button>
-            <button type="button" className="month-arrow" aria-label={`다음 달 (${monthLabel(addMonths(month, 1))})`} onClick={() => setMonth(addMonths(month, 1))}>
-              <ChevronRight aria-hidden="true" />
-            </button>
-          </div>
-          {/* 화면에는 월만 보이고, 읽는 이름과 달 고르기 접근성 이름에는 화면 이름을 남긴다 */}
-          <h1 className="sr-only">
-            <span className="sr-only">{name ? `${label} ` : label}</span>
-            {name}
-          </h1>
-          {month !== now && (
-            <button type="button" className="to-now" onClick={() => setMonth(now)}>
-              이번 달로
-            </button>
-          )}
-        </div>
-        <p className="sub">
-          {sub ?? rangeText(month, data.settings.cycle_start)}
-          {sub ? "" : tail}
-          {monthRow(data, month)?.closed_at ? " · 마감" : ""}
-        </p>
+        {/* 화면에는 위쪽 막대의 달만 보이고, 읽는 제목에는 달과 화면 이름을 함께 둔다 */}
+        <h1 className="sr-only">{name ? `${label} ${name}` : label}</h1>
+        {sub !== "" && (
+          <p className="sub">
+            {sub ?? rangeText(month, data.settings.cycle_start)}
+            {sub ? "" : tail}
+            {monthRow(data, month)?.closed_at ? " · 마감" : ""}
+          </p>
+        )}
         {children}
       </div>
       <HeadAction />
