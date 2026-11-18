@@ -11,6 +11,16 @@ test("웹과 Kotlin 의 공휴일 표가 같다", () => {
   assert.deepEqual(fromKt, KR_HOLIDAYS);
 });
 
+test("웹과 Kotlin 의 기념일 표가 같다 (위젯 초록)", () => {
+  const kt = readFileSync(new URL("../../../mobile/core/src/commonMain/kotlin/com/jojaden/ourmoney/core/calc/Holidays.kt", import.meta.url), "utf8");
+  const days = new Set(kt.match(/KR_SPECIAL_DAYS = "([\d ]+)"/)[1].split(" "));
+  // 2028(윤년) 하루하루: 웹이 기념일이라 하는 날 = Kotlin 표에 있고 공휴일이 아닌 날
+  for (let t = Date.UTC(2028, 0, 1); t < Date.UTC(2029, 0, 1); t += 864e5) {
+    const d = new Date(t).toISOString().slice(0, 10);
+    assert.equal(specialDayName(d) !== null, days.has(d.slice(5, 7) + d.slice(8, 10)) && !isHoliday(d), d);
+  }
+});
+
 test("설·추석·대체공휴일·선거일", () => {
   assert.equal(isHoliday("2026-02-17"), true); // 설날
   assert.equal(isHoliday("2026-09-25"), true); // 추석

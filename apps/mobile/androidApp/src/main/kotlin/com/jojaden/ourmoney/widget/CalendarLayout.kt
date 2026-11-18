@@ -39,11 +39,11 @@ import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import com.jojaden.ourmoney.MainActivity
 import com.jojaden.ourmoney.R
+import com.jojaden.ourmoney.core.calendar.DayTone
 import com.jojaden.ourmoney.core.calendar.Dot
 import com.jojaden.ourmoney.core.calendar.UpItem
 import com.jojaden.ourmoney.core.calendar.WidgetCalendar
-import com.jojaden.ourmoney.core.calendar.isSaturday
-import com.jojaden.ourmoney.core.calendar.isSunday
+import com.jojaden.ourmoney.core.calendar.dayTone
 import com.jojaden.ourmoney.core.calendar.monthCells
 import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.LocalDate
@@ -164,7 +164,7 @@ private fun Large(cal: WidgetCalendar?, today: LocalDate) {
     }
 }
 
-/** 이번 달 칸 — 오늘은 노란 동그라미, 일요일 빨강·토요일 파랑, 그 달이 아닌 칸은 비운다 */
+/** 이번 달 칸 — 오늘은 노란 동그라미, 일요일·공휴일 빨강·기념일 초록·토요일 파랑, 그 달이 아닌 칸은 비운다 */
 @Composable
 private fun MonthGrid(cal: WidgetCalendar?, today: LocalDate, dots: Boolean, header: Boolean) {
     val pal = LocalPal.current
@@ -205,10 +205,11 @@ private fun dayColor(index: Int, base: ColorProvider, pal: Pal) = when (index) {
 @Composable
 private fun Day(d: LocalDate, isToday: Boolean, num: TextUnit, circle: Dp, dots: List<Dot>) {
     val pal = LocalPal.current
-    val color = when {
-        isSunday(d) -> pal.sunday
-        isSaturday(d) -> pal.saturday
-        else -> pal.text
+    val color = when (dayTone(d)) {
+        DayTone.RED -> pal.sunday
+        DayTone.GREEN -> pal.positive
+        DayTone.BLUE -> pal.saturday
+        DayTone.PLAIN -> pal.text
     }
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Box(

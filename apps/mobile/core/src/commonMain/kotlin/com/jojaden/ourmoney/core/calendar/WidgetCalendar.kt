@@ -1,5 +1,7 @@
 package com.jojaden.ourmoney.core.calendar
 
+import com.jojaden.ourmoney.core.calc.isHoliday
+import com.jojaden.ourmoney.core.calc.isSpecialDay
 import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
@@ -74,6 +76,19 @@ fun monthCells(year: Int, month: Int): List<LocalDate?> {
     return List(cells) { i -> (i - lead).takeIf { it in 0 until length }?.let { first.plus(DatePeriod(days = it)) } }
 }
 
-/** 일요일·토요일 (칸 글자 색) */
+/** 일요일·토요일 */
 fun isSunday(d: LocalDate) = d.dayOfWeek == DayOfWeek.SUNDAY
 fun isSaturday(d: LocalDate) = d.dayOfWeek == DayOfWeek.SATURDAY
+
+/** 날짜 숫자 색 — 웹 달력과 같은 순서: 일요일·공휴일 빨강, 기념일 초록(토요일이어도), 토요일 파랑 */
+enum class DayTone { RED, GREEN, BLUE, PLAIN }
+
+fun dayTone(d: LocalDate): DayTone {
+    val s = d.toString()
+    return when {
+        isSunday(d) || isHoliday(s) -> DayTone.RED
+        isSpecialDay(s) -> DayTone.GREEN
+        isSaturday(d) -> DayTone.BLUE
+        else -> DayTone.PLAIN
+    }
+}
