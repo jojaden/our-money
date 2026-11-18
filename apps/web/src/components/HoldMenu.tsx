@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import type { LucideIcon } from "lucide-react";
 import { afterSheet, useBackToClose } from "./ui";
 import { still, tokens } from "./Morph";
+import { haptic } from "@/lib/native";
 
 export interface HoldAction {
   label: string;
@@ -58,11 +59,7 @@ export function HoldMenu({ actions, label, children }: { actions: HoldAction[]; 
   const show = (from: number, pointer: number | null) => {
     const row = wrap.current;
     if (!row || place) return;
-    try {
-      navigator.vibrate?.(8);
-    } catch {
-      // 진동이 막혀 있어도 메뉴는 연다
-    }
+    haptic(8);
     setPlace({ row, host: row.closest(".sheet") ?? document.body, from, pointer });
     setOpen(true);
   };
@@ -273,13 +270,14 @@ function HoldLayer({ place, open, actions, label, onClose, onGone }: { place: Pl
       if (i >= 0) pick(items[i]);
     };
     const stop = () => {
-      document.removeEventListener("pointermove", move);
-      document.removeEventListener("pointerup", up);
-      document.removeEventListener("pointercancel", stop);
+      document.removeEventListener("pointermove", move, true);
+      document.removeEventListener("pointerup", up, true);
+      document.removeEventListener("pointercancel", stop, true);
     };
-    document.addEventListener("pointermove", move);
-    document.addEventListener("pointerup", up);
-    document.addEventListener("pointercancel", stop);
+    // 캡처로 듣는다 — 메뉴 층이 pointermove 를 막아도 끌어서 고르기는 받는다
+    document.addEventListener("pointermove", move, true);
+    document.addEventListener("pointerup", up, true);
+    document.addEventListener("pointercancel", stop, true);
     return stop;
     // 손가락 하나에 한 번만 건다
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -301,7 +299,9 @@ function HoldLayer({ place, open, actions, label, onClose, onGone }: { place: Pl
       ref={layer}
       className="hold-layer"
       data-vaul-no-drag=""
+      // 메뉴 위에서 끄는 손가락이 React 로 올라가 시트 끌기·달 넘기기 밀기를 움직이지 않게 (pointerup 은 시트가 끌기를 끝내도록 둔다)
       onPointerDown={(e) => e.stopPropagation()}
+      onPointerMove={(e) => e.stopPropagation()}
       onClickCapture={(e) => {
         if (!lifted.current || e.timeStamp - lifted.current > 600) return;
         lifted.current = 0;

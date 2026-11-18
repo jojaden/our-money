@@ -3,11 +3,10 @@
 import Link from "next/link";
 import { Suspense, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { CalendarPlus, ChevronDown, ChevronLeft, ChevronRight, Copy, Pencil, Share, Trash2, X } from "lucide-react";
-import type { CalEvent, Settings, Spending } from "@/lib/types";
-import { toIcs } from "@/lib/ics";
-import { appCan, toApp, useInApp } from "@/lib/native";
+import { CalendarPlus, ChevronDown, ChevronLeft, ChevronRight, X } from "lucide-react";
+import type { CalEvent, Spending } from "@/lib/types";
 import { HoldMenu } from "@/components/HoldMenu";
+import { useHoldActions, type HoldActions } from "@/components/holdActions";
 import { useData } from "@/lib/store";
 import { actualAmount, findCheck, nameOf } from "@/lib/calc";
 import { ddayText, eventTodo, marksIn, monthGrid, nextOccurrence, rangeDays, rangeOf, rangeText, spentByDay, type Mark, type Range } from "@/lib/calendar";
@@ -37,7 +36,7 @@ function dayTitle(day: string): string {
 }
 
 /** 그날 나갈 돈(이체·납부·카드값) — 앞 동그라미로 끝내고, 나머지를 누르면 체크 화면으로 */
-function CheckMark({ m }: { m: Mark }) {
+function CheckMark({ m, hold }: { m: Mark; hold: HoldActions }) {
   const { data, toggleCheck, togglePaid } = useData();
   const s = data.settings;
   const st = (() => {
@@ -50,17 +49,19 @@ function CheckMark({ m }: { m: Mark }) {
     return { done: Boolean(c), by: c?.done_by ?? null, amount: m.amount, sub: "카드값", toggle: () => void toggleCheck({ id, month, kind: "card", amount: m.amount ?? 0 }, !c) };
   })();
   return (
-    <div className={`row cal-mark ${st.done ? "done" : ""}`}>
-      <CheckButton on={st.done} onToggle={st.toggle} label={`${m.title} ${st.done ? "완료 취소" : "완료로 표시"}`} />
-      <Link href="/check" className="row-open">
-        <div className="t">{m.title}</div>
-        <div className="s">
-          {st.sub}
-          {st.done ? ` · ${st.by ? `${nameOf(s, st.by)} ` : ""}완료` : ""}
-        </div>
-      </Link>
-      <div className="r">{st.amount ? <Money value={-st.amount} /> : null}</div>
-    </div>
+    <HoldMenu label={`${m.title} 메뉴`} actions={hold.forCheck(st.done, st.toggle, m.item)}>
+      <div className={`row cal-mark ${st.done ? "done" : ""}`}>
+        <CheckButton on={st.done} onToggle={st.toggle} label={`${m.title} ${st.done ? "완료 취소" : "완료로 표시"}`} />
+        <Link href="/check" className="row-open">
+          <div className="t">{m.title}</div>
+          <div className="s">
+            {st.sub}
+            {st.done ? ` · ${st.by ? `${nameOf(s, st.by)} ` : ""}완료` : ""}
+          </div>
+        </Link>
+        <div className="r">{st.amount ? <Money value={-st.amount} /> : null}</div>
+      </div>
+    </HoldMenu>
   );
 }
 
@@ -77,39 +78,6 @@ function fromToday(day: string, today: string): string {
   if (n === 1) return "내일";
   if (n === -1) return "어제";
   return n > 0 ? `${n}일 뒤` : `${-n}일 전`;
-}
-
-/** 공유할 글: 제목, 날짜·시간(기간이면 처음~끝), 메모 */
-function shareText(m: Mark): string {
-  const e = m.event!;
-  const o = m.occ!;
-  const time = e.start_time ? ` ${clock(e.start_time)}${e.end_time ? `–${clock(e.end_time)}` : ""}` : "";
-  const when = o.start !== o.end ? `${dateWithDay(o.start)} ~ ${dateWithDay(o.end)}` : `${dateWithDay(o.start)}${time}`;
-  return [e.title, when, e.note].filter(Boolean).join("\n");
-}
-
-/**
- * 일정 하나 공유. 앱은 .ics 파일로 공유 창(받는 쪽이 캘린더에 바로 넣는다 — 일정 내보내기와 같은 길),
- * 브라우저는 기기 공유 창, 둘 다 안 되면 글을 클립보드에. 누른 그 순간에 불러야 공유 창이 열린다.
- */
-async function shareEvent(m: Mark, s: Settings, app: boolean, toast: (msg: string) => void) {
-  const text = shareText(m);
-  if (app && appCan("ics")) return toApp({ type: "ics", text: toIcs([m.event!], s) });
-  if (!app && typeof navigator.share === "function") {
-    try {
-      await navigator.share({ title: m.event!.title, text });
-      return;
-    } catch (err) {
-      // 공유 창을 닫은 것이면 그대로 끝
-      if ((err as Error).name === "AbortError") return;
-    }
-  }
-  try {
-    await navigator.clipboard.writeText(text);
-    toast("일정 내용을 복사했어요");
-  } catch {
-    toast("이 기기에서는 공유할 수 없어요");
-  }
 }
 
 /**
@@ -280,6 +248,9 @@ function CalendarMonth() {
     returnPanel.current = true;
     closeThen(() => setSheet((x) => ({ open: true, key: x.key + 1, date: day, from })));
   };
+  // 꾹 누르기 메뉴 — 날짜 패널 안에서는 패널을 닫고 간 뒤 돌아오고, 아래 모아 보기에서는 바로 간다
+  const panelHold = useHoldActions({ go: (path) => closeThen(() => router.push(path)), edit: editEvent, copy: copyEvent, editSpending: (x) => closeThen(() => openSpending(x)) });
+  const moreHold = useHoldActions({ go: (path) => router.push(path), edit: (e) => openEvent(e), copy: (from) => setSheet((x) => ({ open: true, key: x.key + 1, date: from.start_date, from })) });
   const closeEvent = (open: boolean) => {
     if (!open && returnPanel.current) {
       returnPanel.current = false;
@@ -355,7 +326,7 @@ function CalendarMonth() {
           <Seg label="달력 모아 보기" value={moreTab} onChange={setMoreTab} options={[{ value: "month", label: "할 일·일정" }, { value: "dday", label: "D-day" }]} />
           {/* 탭을 바꾸면 옛 목록은 흐려지며 빠지고 새 목록이 떠오르며 높이가 따라간다 (Morph) */}
           <Morph className="cal-overview" track=":scope > *">
-            {moreTab === "dday" ? <DdayList onOpenEvent={openEvent} /> : <MonthTodo month={month} onOpenEvent={openEvent} />}
+            {moreTab === "dday" ? <DdayList onOpenEvent={openEvent} hold={moreHold} /> : <MonthTodo month={month} onOpenEvent={openEvent} hold={moreHold} />}
           </Morph>
         </section>
       </div>
@@ -382,7 +353,7 @@ function CalendarMonth() {
           e.preventDefault();
           closeThen(() => router.push("/check"));
         }}>
-          <DayAgenda day={day} marks={marks.get(day) ?? []} onOpenEvent={editEvent} onCopyEvent={copyEvent} onOpenSpending={(x) => closeThen(() => openSpending(x))} />
+          <DayAgenda day={day} marks={marks.get(day) ?? []} onOpenEvent={editEvent} onOpenSpending={(x) => closeThen(() => openSpending(x))} hold={panelHold} />
         </div>
       </Sheet>
       <ZoomPop
@@ -426,9 +397,8 @@ function MonthEvents({ marks, onOpenEvent }: { marks: Mark[]; onOpenEvent: (even
 }
 
 /** 날짜 패널: 얼마나 떨어진 날인지, 그 아래 일정 → 들어올 돈 → 나갈 돈 → 쓴 돈을 묶어서 보여 준다. */
-function DayAgenda({ day, marks, onOpenEvent, onCopyEvent, onOpenSpending }: { day: string; marks: Mark[]; onOpenEvent: (event?: CalEvent) => void; onCopyEvent: (event: CalEvent) => void; onOpenSpending: (spending: Spending) => void }) {
-  const { data, today, upsert, remove, toast } = useData();
-  const app = useInApp();
+function DayAgenda({ day, marks, onOpenEvent, onOpenSpending, hold }: { day: string; marks: Mark[]; onOpenEvent: (event?: CalEvent) => void; onOpenSpending: (spending: Spending) => void; hold: HoldActions }) {
+  const { data, today } = useData();
   const s = data.settings;
   // 하루 종일(시각 없음)이 먼저, 그다음 시작 시각 순
   const events = marks.filter((m) => m.event).sort((a, b) => (a.event!.start_time ?? "").localeCompare(b.event!.start_time ?? ""));
@@ -457,33 +427,12 @@ function DayAgenda({ day, marks, onOpenEvent, onCopyEvent, onOpenSpending }: { d
                 <h3 id="cal-ev-h">일정</h3>
               </div>
               <div className="ev-list">
-                {/* 꾹 누르면 수정·복사·공유·삭제 (짧게 누르면 지금처럼 고치기) */}
-                {events.map((m) => {
-                  const e = m.event!;
-                  const what = e.todo ? "할 일" : e.dday ? "D-day" : "일정";
-                  return (
-                    <HoldMenu
-                      key={e.id}
-                      label={`${e.title} 메뉴`}
-                      actions={[
-                        { label: "수정", icon: Pencil, run: () => onOpenEvent(e) },
-                        { label: "복사", icon: Copy, run: () => onCopyEvent(e) },
-                        { label: "공유", icon: Share, now: true, run: () => void shareEvent(m, s, app, toast) },
-                        {
-                          label: "삭제",
-                          icon: Trash2,
-                          danger: true,
-                          // 일정 시트의 삭제와 같다: 반복 일정은 통째로 지우고, 토스트의 되돌리기로 살린다
-                          run: async () => {
-                            if (await remove("events", [e.id])) toast(`${what}${e.dday && !e.todo ? "를" : "을"} 지웠어요`, () => void upsert("events", [e]));
-                          },
-                        },
-                      ]}
-                    >
-                      <EventRow m={m} onOpen={() => onOpenEvent(e)} />
-                    </HoldMenu>
-                  );
-                })}
+                {/* 꾹 누르면 종류에 맞는 메뉴 (짧게 누르면 지금처럼 고치기) */}
+                {events.map((m) => (
+                  <HoldMenu key={m.event!.id} label={`${m.title} 메뉴`} actions={hold.forEvent(m.occ!)}>
+                    <EventRow m={m} onOpen={() => onOpenEvent(m.event)} />
+                  </HoldMenu>
+                ))}
               </div>
             </section>
           )}
@@ -494,7 +443,8 @@ function DayAgenda({ day, marks, onOpenEvent, onCopyEvent, onOpenSpending }: { d
               </div>
               <div className="rows cal-money">
                 {incoming.map((m, i) => (
-                  <Link href="/check" className="row cal-mark" key={`${m.kind}${i}`}>
+                  <HoldMenu key={`${m.kind}${i}`} label={`${m.title} 메뉴`} actions={hold.forPayday()}>
+                  <Link href="/check" className="row cal-mark">
                     <span className="mark-lead" aria-hidden="true"><i className={`mark-dot k-${m.kind} ${m.owner ?? ""}`} /></span>
                     <div style={{ minWidth: 0 }}>
                       <div className="t">{m.title}</div>
@@ -502,6 +452,7 @@ function DayAgenda({ day, marks, onOpenEvent, onCopyEvent, onOpenSpending }: { d
                     </div>
                     <div className="r">{m.amount ? <Money value={m.amount} sign className="in" /> : null}</div>
                   </Link>
+                  </HoldMenu>
                 ))}
               </div>
             </section>
@@ -512,7 +463,7 @@ function DayAgenda({ day, marks, onOpenEvent, onCopyEvent, onOpenSpending }: { d
                 <h3 id="cal-out-h">나갈 돈</h3>
               </div>
               <div className="rows cal-money">
-                {outgoing.map((m, i) => <CheckMark key={`${m.kind}${i}`} m={m} />)}
+                {outgoing.map((m, i) => <CheckMark key={`${m.kind}${i}`} m={m} hold={hold} />)}
               </div>
             </section>
           )}
@@ -524,7 +475,8 @@ function DayAgenda({ day, marks, onOpenEvent, onCopyEvent, onOpenSpending }: { d
               </div>
               <div className="rows">
                 {daySpendings.map((x) => (
-                  <button type="button" className="row" key={x.id} onClick={() => onOpenSpending(x)}>
+                  <HoldMenu key={x.id} label={`${x.memo || "지출"} 메뉴`} actions={hold.forSpending(x)}>
+                  <button type="button" className="row" onClick={() => onOpenSpending(x)}>
                     <CategoryIcon visual={spendingVisual(data, x)} />
                     <div style={{ minWidth: 0 }}>
                       <div className="t">{x.memo || "지출"}</div>
@@ -534,6 +486,7 @@ function DayAgenda({ day, marks, onOpenEvent, onCopyEvent, onOpenSpending }: { d
                       <Money value={-x.amount} />
                     </div>
                   </button>
+                  </HoldMenu>
                 ))}
               </div>
             </section>
@@ -544,7 +497,7 @@ function DayAgenda({ day, marks, onOpenEvent, onCopyEvent, onOpenSpending }: { d
   );
 }
 
-function DdayList({ onOpenEvent }: { onOpenEvent: (event: CalEvent) => void }) {
+function DdayList({ onOpenEvent, hold }: { onOpenEvent: (event: CalEvent) => void; hold: HoldActions }) {
   const { data, today } = useData();
   const ddays = data.events.filter((e) => e.dday)
     .map((e) => ({ e, o: nextOccurrence(e, today) }))
@@ -561,7 +514,8 @@ function DdayList({ onOpenEvent }: { onOpenEvent: (event: CalEvent) => void }) {
         ) : (
           <div className="rows">
             {ddays.map(({ e, o }) => (
-              <button type="button" className="row no-lead" key={e.id} onClick={() => onOpenEvent(e)}>
+              <HoldMenu key={e.id} label={`${e.title} 메뉴`} actions={hold.forEvent(o)}>
+              <button type="button" className="row no-lead" onClick={() => onOpenEvent(e)}>
                 <div style={{ minWidth: 0 }}>
                   <div className="t">{e.title}</div>
                   <div className="s">{o.start === o.end ? dateWithDay(o.start) : `${shortDate(o.start)} ~ ${shortDate(o.end)}`}</div>
@@ -570,6 +524,7 @@ function DdayList({ onOpenEvent }: { onOpenEvent: (event: CalEvent) => void }) {
                   <span className={`pill ${o.start <= today ? "warning" : ""}`}>{ddayText(o, today)}</span>
                 </div>
               </button>
+              </HoldMenu>
             ))}
           </div>
         )}

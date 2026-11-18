@@ -84,7 +84,8 @@
 .row.no-lead { grid-template-columns: minmax(0, 1fr) auto; }
 /* 구분선은 앞 표시 뒤(list-inset)부터 */
 .rows > .row + .row::before,
-.rows > .row + .parts + .row::before {
+.rows > .row + .parts + .row::before,
+.rows > .hold + .hold > .row::before {
   content: "";
   position: absolute;
   top: 0;
@@ -95,7 +96,7 @@
   transform: scaleY(0.6);
   transform-origin: top;
 }
-.rows > .row.no-lead + .row::before, .rows > .row.no-lead::before { left: 0; }
+.rows > .row.no-lead + .row::before, .rows > .row.no-lead::before, .rows > .hold > .row.no-lead::before { left: 0; }
 .row .t { font: 500 16px/24px var(--font-text); letter-spacing: -0.01em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .row .s { margin-top: 1px; color: var(--faint); font: 500 12.5px/16px var(--font-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .row .r { text-align: right; }
@@ -127,7 +128,7 @@ button.row, a.row {
   font: inherit;
   transition: background-color var(--dur-press) ease, transform var(--dur-press) var(--ease-press);
 }
-.rows > button.row + button.row::before { left: calc(var(--inset, var(--list-inset)) + 10px); right: 10px; }
+.rows > button.row + button.row::before, .rows > .hold + .hold > button.row::before { left: calc(var(--inset, var(--list-inset)) + 10px); right: 10px; }
 button.row:active, a.row:active { background: var(--well); transform: scale(0.98); }
 @media (hover: hover) and (pointer: fine) {
   button.row:hover, a.row:hover { background: var(--raised); }
