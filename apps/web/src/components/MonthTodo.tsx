@@ -13,6 +13,8 @@ import { TaskRow } from "./TaskRow";
 import { EmptyState } from "./ui";
 import { Morph } from "./Morph";
 import { Meter } from "./Meter";
+import { HoldMenu } from "./HoldMenu";
+import type { HoldActions } from "./holdActions";
 
 /** 접었을 때 보이는 남은 할 일·다가오는 일정 수 */
 const BRIEF = 4;
@@ -26,7 +28,7 @@ const WEEK = ["일", "월", "화", "수", "목", "금", "토"];
  * 접어 두면 남은 할 일과 다가오는 일정 몇 개만, 펼치면 끝낸 일·지난 일정까지 전부.
  * 체크 화면과 같은 가계부 달(예: 10/25~11/24) 기준이다.
  */
-export function MonthTodo({ month, onOpenEvent, className = "" }: { month: string; onOpenEvent: (e: CalEvent) => void; className?: string }) {
+export function MonthTodo({ month, onOpenEvent, hold, className = "" }: { month: string; onOpenEvent: (e: CalEvent) => void; /** 꾹 누르기 메뉴 (할 일·일정마다 다르게) */ hold: HoldActions; className?: string }) {
   const { data, today, toggleCheck } = useData();
   const s = data.settings;
   const { tasks: money } = useTasks(month);
@@ -76,7 +78,9 @@ export function MonthTodo({ month, onOpenEvent, className = "" }: { month: strin
                 ) : (
                   <div className="rows" style={{ ["--inset" as string]: "40px" }}>
                     {shown.map((t) => (
-                      <TaskRow key={t.key} task={t} />
+                      <HoldMenu key={t.key} label={`${t.title} 메뉴`} actions={hold.forTask(t)}>
+                        <TaskRow task={t} />
+                      </HoldMenu>
                     ))}
                   </div>
                 )}
@@ -97,7 +101,8 @@ export function MonthTodo({ month, onOpenEvent, className = "" }: { month: strin
                       const d = parseYmd(o.start);
                       const past = o.end < today;
                       return (
-                        <button type="button" className={`row ${past ? "past" : ""}`} key={`${e.id}${o.start}`} onClick={() => onOpenEvent(e)}>
+                        <HoldMenu key={`${e.id}${o.start}`} label={`${e.title} 메뉴`} actions={hold.forEvent(o)}>
+                        <button type="button" className={`row ${past ? "past" : ""}`} onClick={() => onOpenEvent(e)}>
                           <span className={`date-lead ${e.owner}`} aria-hidden="true">
                             <b>{d.getDate()}</b>
                             <small>{WEEK[d.getDay()]}</small>
@@ -112,6 +117,7 @@ export function MonthTodo({ month, onOpenEvent, className = "" }: { month: strin
                           </div>
                           <div className="r">{!past && <span className="s">{ddayText(o, today)}</span>}</div>
                         </button>
+                        </HoldMenu>
                       );
                     })}
                   </div>

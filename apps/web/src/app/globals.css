@@ -408,6 +408,29 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
 .ev-row .check { margin: -6px -10px -6px 0; }
 .ev-row.done .ev-body .t { color: var(--faint); text-decoration: line-through; text-decoration-thickness: 1.5px; }
 .ev-row.done .ev-bar { opacity: 0.4; }
+
+/* ---------- 꾹 누르기 메뉴 (components/HoldMenu.tsx, docs/design-system/components/HoldMenu) ----------
+   뒤는 흐리게 덮고, 누른 줄은 그림자를 단 카드로 떠오르며, 줄 오른쪽 끝에 맞춘 메뉴가 그 모서리에서 튀어나온다.
+   움직임은 transform·opacity 만(흐림은 미리 흐린 층의 투명도로) */
+.hold { -webkit-touch-callout: none; user-select: none; }
+.hold-layer { position: fixed; top: 0; left: 0; z-index: 60; box-sizing: border-box; width: 100vw; height: 100dvh; padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px); touch-action: none; }
+.hold-dim { position: absolute; inset: 0; background: color-mix(in srgb, var(--scrim) 55%, transparent); -webkit-backdrop-filter: blur(14px) saturate(140%); backdrop-filter: blur(14px) saturate(140%); }
+.hold-preview { position: absolute; display: flex; align-items: center; box-sizing: border-box; padding: 0 12px; overflow: hidden; border-radius: var(--radius-inner); background: var(--surface); box-shadow: var(--shadow-float); }
+.hold-preview > * { flex: 1; min-width: 0; }
+.hold-menu { position: absolute; width: 232px; overflow: hidden; border-radius: var(--radius-inner); background: color-mix(in srgb, var(--surface) 90%, transparent); -webkit-backdrop-filter: blur(22px) saturate(180%); backdrop-filter: blur(22px) saturate(180%); box-shadow: var(--shadow-float); }
+.hold-menu button { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 48px; padding: 0 16px; border: 0; background: transparent; color: var(--text); font: 500 16px/22px var(--font-text); text-align: left; transition: background-color var(--dur-press) ease; }
+.hold-menu button + button { box-shadow: inset 0 0.6px 0 var(--rule); }
+/* 지우기는 굵은 틈으로 떼어 맨 아래에 (애플 메뉴의 묶음 사이) */
+.hold-menu button.split { border-top: 6px solid var(--well); box-shadow: none; }
+.hold-menu button svg { flex: none; width: 20px; height: 20px; stroke-width: 2; }
+.hold-menu button.danger { color: var(--negative); }
+.hold-menu button:active, .hold-menu button.hot { background: var(--well); }
+.hold-menu button:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: -2px; }
+@media (hover: hover) and (pointer: fine) { .hold-menu button:hover { background: var(--well); } }
+@media (prefers-reduced-transparency: reduce) {
+  .hold-dim { background: var(--scrim); -webkit-backdrop-filter: none; backdrop-filter: none; }
+  .hold-menu { background: var(--surface); -webkit-backdrop-filter: none; backdrop-filter: none; }
+}
 /* 들어올 돈·나갈 돈: 체크 동그라미와 같은 자리에 점을 두고 구분선은 글자부터 */
 .cal-money { --inset: 40px; }
 .mark-lead { display: flex; align-items: center; width: 28px; padding-left: 9px; }
