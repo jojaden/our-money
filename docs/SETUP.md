@@ -15,7 +15,7 @@ npm run dev          # http://localhost:3000 — .env.local 이 없으면 데모
 ## 1. Supabase 프로젝트 (DB · 로그인 · 실시간)
 
 1. https://supabase.com 에서 새 프로젝트를 만들어요. 무료 플랜이면 충분하고, 지역은 서울(Northeast Asia)을 추천해요.
-2. **SQL Editor** 에 [`supabase/schema.sql`](../supabase/schema.sql) 전체를 붙여넣고 Run 해요.
+2. **SQL Editor** 에 [`supabase/schema.sql`](../supabase/schema.sql) 전체를 붙여넣고 Run 해요. 새 프로젝트에서 한 번만 실행해요(이미 쓰는 DB 는 `supabase/migrations/` 의 새 파일만).
 3. 맨 아래 주석 처리된 `insert into public.members …` 두 줄을 두 사람의 구글 이메일(소문자)로 바꿔서 실행해요. `'a'` 가 설정의 첫 번째 사람이에요.
 4. **Project Settings → API** 에서 `Project URL` 과 `anon`(publishable) 키를 복사해요. `service_role` 키는 쓰지 않아요.
 

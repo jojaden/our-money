@@ -196,7 +196,7 @@ erDiagram
   }
 ```
 
-모든 데이터 테이블에는 `rev`, `created_at/by`, `updated_at/by` 가 있어요(그림에서는 생략). 전체 정의는 [`supabase/schema.sql`](../supabase/schema.sql)에 있어요. 테이블 12개, RLS 정책, 트리거, 외래키, Realtime 등록, 기본 분류가 들어 있어요.
+모든 데이터 테이블에는 `rev`, `created_at/by`, `updated_at/by` 가 있어요(그림에서는 생략). 전체 정의는 [`supabase/schema.sql`](../supabase/schema.sql)에 있어요. 테이블 13개, RLS 정책, 트리거, 외래키, Realtime 등록, 기본 분류가 들어 있어요.
 
 ### 보안
 
@@ -274,7 +274,7 @@ python3 scripts/secret_check.py         # 직접 돌려 보기
 
 - `main` 에 바로 푸시할 수 없어요. 브랜치(`feat/…`, `fix/…`)에서 작업하고 PR 로 합쳐요. 합치려면 CI(`비밀값 검사`, `웹 빌드`, `모바일 테스트·빌드`, `PR 규칙 점검`)가 통과해야 해요.
 - 커밋 메시지는 한국어로 써요. 제목은 `무엇 — 어떻게`, 본문에는 바꾼 이유를 적어요.
-- 앱이 바뀌는 변경은 [`CHANGELOG.md`](../CHANGELOG.md) "다음 버전"에 한 줄을 적어요. DB 를 바꿨다면 `supabase/migrations/` 에 새 파일을 만들고, `schema.sql` 도 고치고, "**DB 이전:**" 줄에 실행할 파일을 적어요. PR 규칙 점검이 이걸 확인해요. 알아챌 변경이 아니면 `변경기록 없음` 라벨을 붙여요.
+- 앱이 바뀌는 변경은 [`CHANGELOG.md`](../CHANGELOG.md) "다음 버전"에 한 줄을 적어요. DB 를 바꿨다면 `supabase/migrations/` 에 새 파일을 만들고, `schema.sql` 은 덧붙이지 말고 해당 표·함수 정의를 그 자리에서 고치고, "**DB 이전:**" 줄에 실행할 파일을 적어요. PR 규칙 점검이 이걸 확인해요. 알아챌 변경이 아니면 `변경기록 없음` 라벨을 붙여요.
 - **릴리스:**
   1. "다음 버전"을 `vX.Y.Z — 날짜`로 바꿔요.
   2. `apps/web/package.json` 의 `version` 과 안드로이드 `versionName` 을 같은 번호로 올려요(`versionCode` 도 +1).
