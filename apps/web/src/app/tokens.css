@@ -65,6 +65,7 @@
   --saturday: #3563c9;
   --positive: #367940;
   --negative: #c9202e;
+  --on-negative: #ffffff;
   --warning: #b45309;
   --pill-positive-bg: #ecf7e9;
   --pill-positive-ink: #134d35;
@@ -161,6 +162,7 @@
   --saturday: #6f9bff;
   --positive: #5fc77a;
   --negative: #ff5b63;
+  --on-negative: #222326;
   --warning: #f59e3b;
   --pill-positive-bg: #16301f;
   --pill-positive-ink: #7fdc98;
@@ -213,6 +215,7 @@
     --saturday: #6f9bff;
     --positive: #5fc77a;
     --negative: #ff5b63;
+    --on-negative: #222326;
     --warning: #f59e3b;
     --pill-positive-bg: #16301f;
     --pill-positive-ink: #7fdc98;

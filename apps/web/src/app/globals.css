@@ -323,8 +323,9 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
 .cal-item.fill .ring { box-shadow: inset 0 0 0 1.5px currentColor; }
 .cal-item.done { opacity: 0.55; text-decoration: line-through; }
 .cal-item.done .ring { background: var(--primary); box-shadow: inset 0 0 0 1.5px var(--accent-ink); }
-/* 공휴일 이름: 날짜와 같은 빨강, 바탕 없이 한 줄 */
-.cal-item.hol { padding-inline: 1px; color: var(--negative); white-space: nowrap; text-overflow: ellipsis; -webkit-line-clamp: 1; }
+/* 공휴일 이름: 날짜와 같은 빨강으로 칠한 칸 한 줄 (하루 종일 일정처럼), 위 글자는 on-negative */
+/* 좁은 칸에 "크리스마스"·"대체공휴일" 다섯 글자가 한 줄에 들어가게 글자를 살짝 좁힌다 */
+.cal-item.hol { padding-inline: 2px; background: var(--negative); color: var(--on-negative); font-size: 10px; letter-spacing: -0.05em; white-space: nowrap; text-overflow: ellipsis; -webkit-line-clamp: 1; }
 .cal-over { flex: none; color: var(--muted); font: 600 10px/13px var(--font-text); text-align: left; }
 /* 기간 일정: 날짜 바로 아래 맨 위에 걸친 칸을 잇는 칠한 막대에 이름(owner 색). 시작·끝나는 날은 칸 안쪽에서 둥글게 끝나고,
    주를 넘어가는 쪽은 칸 끝까지 이어진다(주마다 이름을 다시 쓴다). 칸에는 막대 수만큼 빈자리(.cal-lanes)를 둬 하루 일정이 그 아래로 비킨다 */
