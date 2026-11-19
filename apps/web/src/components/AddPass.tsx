@@ -186,7 +186,7 @@ export function AddPass({
       title={title}
       headerAction={
         account && (
-          <button type="button" className="btn danger sm" onClick={() => void archive()}>
+          <button type="button" className="btn ghost sm" onClick={() => void archive()}>
             <EyeOff aria-hidden="true" /> 숨기기
           </button>
         )
