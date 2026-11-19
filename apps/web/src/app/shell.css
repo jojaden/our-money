@@ -1,4 +1,4 @@
-/* 셸 — 위쪽 막대, 페이지 머리, 하단 캡슐과 원형 기록 버튼, 데스크톱 레일, 화면 전환, 토스트, 설치 안내
+/* 셸 — 위쪽 막대, 페이지 머리, 하단 캡슐과 원형 기록 버튼, 데스크톱 레일, 화면 전환, 토스트
    규칙: docs/design-system/components/TopBar·TabBar/README.md, README "위쪽 막대와 하단 메뉴" */
 
 .shell { min-height: 100dvh; }
@@ -423,23 +423,6 @@ html[data-navigation="back"]::view-transition-new(app-page) { animation-name: pa
 .toast-stack { display: grid; gap: 8px; }
 .toast button { flex: none; height: 36px; padding: 0 12px; white-space: nowrap; border: 0; border-radius: var(--radius-small); background: transparent; color: var(--toast-action); font-weight: 700; }
 @media (min-width: 1024px) { .toasts { bottom: 32px; } }
-
-/* ---------- 설치 안내 ---------- */
-
-.install {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto auto;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
-  padding: 12px 8px 12px 14px;
-  border-radius: var(--radius-inner);
-  background: var(--surface);
-  box-shadow: var(--shadow-card);
-  animation: tabIn 300ms ease-out both;
-}
-.install .t { font-size: 15px; font-weight: 600; }
-.install .s { color: var(--faint); font-size: 12.5px; }
 
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }

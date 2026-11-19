@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { createContext, Suspense, useCallback, useContext, useEffect, useRef, useState } from "react";
-import { House, Layers, ListChecks, ReceiptText, CalendarDays, CalendarPlus, Settings, Plus, X, ChevronLeft, ChevronRight } from "lucide-react";
-import { appCan, isStandalone, toApp, useInApp } from "@/lib/native";
+import { House, Layers, ListChecks, ReceiptText, CalendarDays, CalendarPlus, Settings, Plus, ChevronLeft, ChevronRight } from "lucide-react";
+import { appCan, toApp, useInApp } from "@/lib/native";
 import { useTheme } from "@/lib/theme";
 import { useRouter } from "next/navigation";
 import { StoreProvider, useStore } from "@/lib/store";
@@ -421,56 +421,6 @@ function TopBar({ path }: { path: string }) {
 /** 앱이 열어 달라는 화면 (위젯 → 달력, 폰 알림 → 달력·체크) */
 const OPEN_PATHS: Record<string, string> = { calendar: "/calendar/", check: "/check/" };
 
-/** 브라우저로 열었을 때만, 홈 화면에 앱으로 설치하라고 한 번 권한다 */
-function InstallPrompt() {
-  const [evt, setEvt] = useState<(Event & { prompt: () => Promise<void> }) | null>(null);
-  const [hidden, setHidden] = useState(true);
-  useEffect(() => {
-    if (isStandalone()) return;
-    let dismissed = false;
-    try {
-      dismissed = localStorage.getItem("our-money-install-dismissed") === "1";
-    } catch {}
-    if (dismissed) return;
-    const on = (e: Event) => {
-      e.preventDefault();
-      setEvt(e as Event & { prompt: () => Promise<void> });
-      setHidden(false);
-    };
-    window.addEventListener("beforeinstallprompt", on);
-    return () => window.removeEventListener("beforeinstallprompt", on);
-  }, []);
-  if (hidden || !evt) return null;
-  const dismiss = () => {
-    setHidden(true);
-    try {
-      localStorage.setItem("our-money-install-dismissed", "1");
-    } catch {}
-  };
-  return (
-    <div className="install" role="region" aria-label="앱 설치">
-      <Mark size={36} />
-      <div style={{ minWidth: 0 }}>
-        <div className="t">홈 화면에 앱으로 설치</div>
-        <div className="s">주소창 없이 앱처럼 바로 열려요</div>
-      </div>
-      <button
-        type="button"
-        className="btn sm"
-        onClick={async () => {
-          await evt.prompt();
-          dismiss();
-        }}
-      >
-        설치
-      </button>
-      <button type="button" className="iconbtn" aria-label="닫기" onClick={dismiss}>
-        <X aria-hidden="true" />
-      </button>
-    </div>
-  );
-}
-
 function Frame({ children }: { children: React.ReactNode }) {
   const [sheet, setSheet] = useState<{ open: boolean; editing?: Spending }>({ open: false });
   // 할부의 2회차 줄을 눌러도 원래 기록을 고친다
@@ -520,7 +470,6 @@ function Frame({ children }: { children: React.ReactNode }) {
                 <Suspense fallback={null}>
                   <TopBar path={path} />
                 </Suspense>
-                <InstallPrompt />
                 <Suspense fallback={null}>
                   <PageTransition><PageMotion path={path}>{children}</PageMotion></PageTransition>
                 </Suspense>
