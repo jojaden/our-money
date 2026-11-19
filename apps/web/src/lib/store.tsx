@@ -685,8 +685,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       const paid = !item.paid;
       haptic(paid ? [12, 40, 12] : 8);
       if (paid) setDoneSeq((n) => n + 1);
-      // 완료를 취소하면 적어 둔 실제 금액도 지운다 (다시 완료할 때는 플랜 금액부터)
-      await upsert("month_items", [{ ...item, paid, paid_at: paid ? new Date().toISOString() : null, paid_by: paid ? me : null, paid_amount: paid ? item.paid_amount ?? null : null }]);
+      // 완료를 취소해도 적어 둔 실제 금액은 남긴다 — 계산은 완료일 때만 읽고(actualAmount), 다시 완료하면 그 금액이 살아난다
+      await upsert("month_items", [{ ...item, paid, paid_at: paid ? new Date().toISOString() : null, paid_by: paid ? me : null }]);
     },
     [upsert, me],
   );

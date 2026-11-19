@@ -14,8 +14,11 @@ import { MAX_AMOUNT, Sheet } from "./ui";
 export function PaidAmountSheet({ open, onOpenChange, item }: { open: boolean; onOpenChange: (v: boolean) => void; item: MonthItem }) {
   const { upsert, toast } = useData();
   const [amount, setAmount] = useState(() => actualAmount(item));
+  // 비운 채 저장하려 했는지 — 0원으로 저장하지 않고 칸 아래에서 알려 준다
+  const [empty, setEmpty] = useState(false);
 
   const save = async () => {
+    if (!amount) return setEmpty(true);
     onOpenChange(false);
     // 플랜과 같으면 비워 둔다 (플랜 금액을 나중에 고쳐도 따라가게)
     const ok = await upsert("month_items", [{ ...item, paid_amount: amount === item.amount ? null : amount }]);
@@ -47,6 +50,8 @@ export function PaidAmountSheet({ open, onOpenChange, item }: { open: boolean; o
           placeholder="0"
           enterKeyHint="done"
           value={amount ? num(amount) : ""}
+          aria-invalid={empty && !amount}
+          aria-describedby={empty && !amount ? "paid-empty" : undefined}
           onChange={(e) => setAmount(Math.min(MAX_AMOUNT, Number(e.target.value.replace(/[^\d]/g, "")) || 0))}
           onKeyDown={(e) => {
             if (e.key === "Enter") void save();
@@ -54,6 +59,11 @@ export function PaidAmountSheet({ open, onOpenChange, item }: { open: boolean; o
         />
         <span className="unit">원</span>
       </div>
+      {empty && !amount && (
+        <p className="help" id="paid-empty" role="alert">
+          낸 금액을 적어 주세요. 플랜과 같으면 ‘플랜대로’를 눌러요.
+        </p>
+      )}
       {amount !== item.amount && (
         <div className="quick">
           <button type="button" onClick={() => setAmount(item.amount)}>

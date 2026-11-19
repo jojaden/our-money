@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { ChevronDown, Plus, Trash2 } from "lucide-react";
 import type { Account, Group, Method, MonthItem, Owner, Person, PlanItem } from "@/lib/types";
 import { GROUP_LABEL, METHOD_LABEL } from "@/lib/types";
@@ -167,6 +167,7 @@ export function ItemSheet({
 
   // 열 때만 채운다 — 그리는 도중에 바꿔, 위에 겹친 지갑 시트에서 카드를 넣어 data 가 바뀌어도 적던 내용이 그대로 남는다
   const [wasOpen, setWasOpen] = useState(false);
+  const [initial, setInitial] = useState<string | null>(null);
   if (open !== wasOpen) {
     setWasOpen(open);
     if (open) {
@@ -192,8 +193,13 @@ export function ItemSheet({
       setStartM(plan?.start_month ?? month);
       setEndM(plan?.end_month ?? "");
       setAdding(false);
+      setInitial(null);
     }
   }
+  // 적던 내용이 있는지: 연 순간의 값과 비교 (다시 불러오기로 바뀌지 않게 채운 바로 다음 그리기에서 한 번 찍어 둔다)
+  const form = JSON.stringify([name, group, amount, payer, source, split, parts, dueDay, note, goal, goalStart, forward, ranged, startM, endM]);
+  if (open && wasOpen && initial === null) setInitial(form);
+  const dirty = initial !== null && form !== initial;
 
   const splitOn = payer === "joint" && split;
   // 이미 있는 항목에서 나눠 내기를 켜고 끄는 건 다음 달부터도 적용할 때만 (이번 달만 바꾸면 다음 달에 한 사람 몫만 넘어간다)
@@ -356,6 +362,7 @@ export function ItemSheet({
     <Sheet
       open={open}
       onOpenChange={onOpenChange}
+      keep={dirty}
       title={item ? item.name : `${GROUP_LABEL[group]} 추가`}
       headerAction={
         item && (
@@ -472,6 +479,12 @@ export function ItemSheet({
             {splitError}
           </p>
         )}
+        {/* 목표는 플랜 항목에만 저장된다 — 이번 달만 바꾸면 적은 목표가 말없이 버려지지 않게 */}
+        {group === "saving" && !forward && (goal !== (plan?.goal_amount ?? 0) || goalStart !== (plan?.goal_start ?? 0)) && (
+          <p className="help" role="alert">
+            목표 금액은 ‘다음 달부터도 적용’을 켰을 때만 저장돼요
+          </p>
+        )}
       </div>
       {forward && (
         <div className="field">
@@ -518,19 +531,26 @@ export function IncomeSheet({ open, onOpenChange }: { open: boolean; onOpenChang
   const [b, setB] = useState(0);
   const [extra, setExtra] = useState(0);
   const [note, setNote] = useState("");
-
-  useEffect(() => {
-    if (!open) return;
-    setA(m.income_a);
-    setB(m.income_b);
-    setExtra(m.extra_income);
-    setNote(m.extra_note);
-  }, [open, m]);
+  // 열 때만 채운다 — 다른 앱에 다녀와 다시 불러오거나 상대가 그 달을 고쳐도 적던 값이 되돌아가지 않게
+  const [wasOpen, setWasOpen] = useState(false);
+  const [initial, setInitial] = useState("");
+  const form = JSON.stringify([a, b, extra, note]);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) {
+      setA(m.income_a);
+      setB(m.income_b);
+      setExtra(m.extra_income);
+      setNote(m.extra_note);
+      setInitial(JSON.stringify([m.income_a, m.income_b, m.extra_income, m.extra_note]));
+    }
+  }
 
   return (
     <Sheet
       open={open}
       onOpenChange={onOpenChange}
+      keep={form !== initial}
       title="이번 달 수입"
       footer={
         <button

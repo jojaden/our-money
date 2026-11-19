@@ -56,8 +56,10 @@ export function SpendingSheet({ open, onOpenChange, editing }: { open: boolean; 
   const [autoOwner, setAutoOwner] = useState(false);
   // 자주 쓰는 지출 버튼으로 시작한 기록인지 (spendings.source)
   const [fromPreset, setFromPreset] = useState(false);
-  // 새 기록 저장을 서버가 거절하면(연결 문제가 아닌 거절) 적던 내용으로 시트를 다시 연다
+  // 저장을 서버가 거절하면(연결 문제가 아닌 거절·다른 폰이 먼저 고침) 적던 내용으로 시트를 다시 연다
   const [restore, setRestore] = useState<Spending | null>(null);
+  // 다시 연 시트인지 — 안에 이유 한 줄을 두고, 수정이면 다시 불러온 줄의 rev 로 저장한다
+  const [failed, setFailed] = useState(false);
   // 저장 버튼이 잠깐 ✓ 로 바뀐 뒤 닫힌다 (토스 송금 완료처럼 — 네트워크를 기다리지 않는다)
   const [saved, setSaved] = useState(false);
   // 금액 상한(MAX_SPENDING)에 닿으면 칸이 짧게 흔들리고 안내가 남는다
@@ -98,7 +100,8 @@ export function SpendingSheet({ open, onOpenChange, editing }: { open: boolean; 
     if (!open) return;
     setSaved(false);
     setCapHint(false);
-    if (restore && !editing) {
+    setFailed(Boolean(restore));
+    if (restore) {
       setAmount(restore.amount);
       setCategory(restore.category_id);
       setPayKind(restore.pay_kind);
@@ -244,8 +247,11 @@ export function SpendingSheet({ open, onOpenChange, editing }: { open: boolean; 
       installment_months: payKind === "card" ? months : 1,
       // 자동 기록을 사람이 보고 저장하면 확인 끝 (010 전 DB 에 보내지 않게 확인할 게 있던 기록만)
       ...(editing?.review?.length ? { review: [] } : {}),
-      // 고칠 때는 읽은 rev 를 그대로 (다른 폰이 그사이 고쳤으면 서버가 거절), 새 기록은 어떻게 시작했는지
-      ...(editing ? { rev: editing.rev } : { source: fromPreset ? "preset" : "manual" }),
+      // 고칠 때는 읽은 rev 를 그대로 (다른 폰이 그사이 고쳤으면 서버가 거절), 새 기록은 어떻게 시작했는지.
+      // 거절 뒤 다시 연 수정은 사람이 이유를 보고 다시 저장하는 것이라 다시 불러온 줄의 rev 로 (지워졌으면 처음 rev — 내 내용으로 되살린다)
+      ...(editing
+        ? { rev: failed ? data.spendings.find((x) => x.id === editing.id)?.rev ?? editing.rev : editing.rev }
+        : { source: fromPreset ? "preset" : "manual" }),
     };
   }
 
@@ -264,12 +270,10 @@ export function SpendingSheet({ open, onOpenChange, editing }: { open: boolean; 
     }
     onOpenChange(false);
     if (!(await upsert("spendings", [row]))) {
-      // 수정은 원래 기록이 남아 있고(다른 폰이 먼저 고쳤으면 다시 불러옴), 새 기록만 적던 내용을 살린다
-      if (!editing) {
-        setRestore(row);
-        // 닫으며 뺀 뒤로 가기 기록이 다 빠진 다음에 연다 (먼저 열면 그 popstate 가 새 시트를 닫는다)
-        afterSheet(() => onOpenChange(true));
-      }
+      // 새 기록도 수정도 적던 내용으로 다시 연다 (수정은 다른 폰이 먼저 고쳤으면 그 줄을 다시 불러온 뒤 내 값으로 덮어 다시 저장할 수 있게)
+      setRestore(row);
+      // 닫으며 뺀 뒤로 가기 기록이 다 빠진 다음에 연다 (먼저 열면 그 popstate 가 새 시트를 닫는다)
+      afterSheet(() => onOpenChange(true));
       return;
     }
     toast(`${editing ? "수정했어요" : `${num(amount)}원 기록했어요`} · ${remainingText(data, row)}`);
@@ -328,6 +332,12 @@ export function SpendingSheet({ open, onOpenChange, editing }: { open: boolean; 
         </button>
       }
     >
+      {failed && (
+        <div className="notice" role="alert" style={{ marginBottom: 12 }}>
+          <AlertTriangle aria-hidden="true" />
+          <span>{editing ? "내 수정은 저장되지 않았어요. 적던 내용은 그대로 두었으니 확인하고 다시 저장해 주세요." : "기록이 저장되지 않았어요. 적던 내용은 그대로 두었으니 확인하고 다시 기록해 주세요."}</span>
+        </div>
+      )}
       {editing?.review?.length ? (
         <div className="notice" role="note" style={{ marginBottom: 12 }}>
           <AlertTriangle aria-hidden="true" />
