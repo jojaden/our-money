@@ -6,7 +6,7 @@
 
 **부부 두 사람의 월급 배분 → 이체 체크 → 지출 기록 → 일정까지, 한 달을 한 앱으로**
 
-![version](https://img.shields.io/badge/version-v0.6.1-f5df4d?style=flat-square&labelColor=222326)
+![version](https://img.shields.io/badge/version-v0.7.0-f5df4d?style=flat-square&labelColor=222326)
 ![Next.js](https://img.shields.io/badge/Next.js_16-PWA-222326?style=flat-square)
 ![Supabase](https://img.shields.io/badge/Supabase-Postgres_·_RLS_·_Realtime-939597?style=flat-square&labelColor=222326)
 ![Kotlin](https://img.shields.io/badge/Kotlin_Multiplatform-Android-939597?style=flat-square&labelColor=222326)
@@ -151,7 +151,7 @@ quadrantChart
 
 ```mermaid
 timeline
-  title 10일, 8번의 릴리스
+  title 17일, 9번의 릴리스
   11.03 : v0.1.0 플랜 · 체크 · 가계부 · 구글 로그인 · 실시간
   11.05 : v0.2.0 디자인 시스템 · 지갑 · rev 충돌 막기
   11.06 : v0.3.0 할부 · 실제로 낸 금액 · 달 마무리 · 변경 이력 · 안드로이드 하이브리드
@@ -160,6 +160,7 @@ timeline
   11.11 : v0.5.0 화면 구조 다듬기 (가계부·설정 요약→상세 · 체크·플랜 접기 · 스며드는 카드)
   11.12 : v0.6.0 위젯 · 어두운 화면 · 폰 알림 · 숫자 먼저(막대) · 토스식 알림 · 달력 빠른 추가 · 카드 옮기기 · 어디서나 100% 축하
         : v0.6.1 달력 고무줄 저항 · 기간 일정 얇은 줄 · 은행·카드사·증권사 로고
+  11.19 : v0.7.0 둘이 쓰는 알림(공동 일정·공동 지출·콕 찌르기·예산 속도) · 공휴일 달력·위젯 · 한 장 결산 · 목표 이정표 · 나눠 내기 · 사람마다 한 달 기준
 ```
 
 ## 기술
