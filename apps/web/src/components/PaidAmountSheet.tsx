@@ -18,7 +18,8 @@ export function PaidAmountSheet({ open, onOpenChange, item }: { open: boolean; o
   const [empty, setEmpty] = useState(false);
 
   const save = async () => {
-    if (!amount) return setEmpty(true);
+    // 플랜이 0원인 항목은 비워 둔 것(0원)이 곧 플랜대로라 그대로 저장한다
+    if (!amount && item.amount !== 0) return setEmpty(true);
     onOpenChange(false);
     // 플랜과 같으면 비워 둔다 (플랜 금액을 나중에 고쳐도 따라가게)
     const ok = await upsert("month_items", [{ ...item, paid_amount: amount === item.amount ? null : amount }]);

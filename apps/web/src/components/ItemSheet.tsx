@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { ChevronDown, Plus, Trash2 } from "lucide-react";
-import type { Account, Group, Method, MonthItem, Owner, Person, PlanItem } from "@/lib/types";
+import type { Account, Group, Method, Month, MonthItem, Owner, Person, PlanItem } from "@/lib/types";
 import { GROUP_LABEL, METHOD_LABEL } from "@/lib/types";
 import { blankMonth, useData } from "@/lib/store";
 import { deleteOp, upsertOp, type Op } from "@/lib/repo";
@@ -521,6 +521,8 @@ export function ItemSheet({
   );
 }
 
+type Income = Pick<Month, "income_a" | "income_b" | "extra_income" | "extra_note">;
+
 export function IncomeSheet({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
   const { data, month, upsert, toast } = useData();
   const s = data.settings;
@@ -533,8 +535,7 @@ export function IncomeSheet({ open, onOpenChange }: { open: boolean; onOpenChang
   const [note, setNote] = useState("");
   // 열 때만 채운다 — 다른 앱에 다녀와 다시 불러오거나 상대가 그 달을 고쳐도 적던 값이 되돌아가지 않게
   const [wasOpen, setWasOpen] = useState(false);
-  const [initial, setInitial] = useState("");
-  const form = JSON.stringify([a, b, extra, note]);
+  const [base, setBase] = useState<Income>({ income_a: 0, income_b: 0, extra_income: 0, extra_note: "" });
   if (open !== wasOpen) {
     setWasOpen(open);
     if (open) {
@@ -542,15 +543,19 @@ export function IncomeSheet({ open, onOpenChange }: { open: boolean; onOpenChang
       setB(m.income_b);
       setExtra(m.extra_income);
       setNote(m.extra_note);
-      setInitial(JSON.stringify([m.income_a, m.income_b, m.extra_income, m.extra_note]));
+      setBase({ income_a: m.income_a, income_b: m.income_b, extra_income: m.extra_income, extra_note: m.extra_note });
     }
   }
+  // 연 뒤 고친 칸만 — 저장은 지금 줄 위에 이것만 얹어, 그사이 상대가 바꾼 다른 칸을 연 때 값으로 되돌리지 않는다
+  const form: Income = { income_a: a, income_b: b, extra_income: extra, extra_note: note.trim() };
+  const changed = Object.fromEntries((Object.keys(form) as (keyof Income)[]).filter((k) => form[k] !== base[k]).map((k) => [k, form[k]])) as Partial<Income>;
+  const dirty = Object.keys(changed).length > 0;
 
   return (
     <Sheet
       open={open}
       onOpenChange={onOpenChange}
-      keep={form !== initial}
+      keep={dirty}
       title="이번 달 수입"
       footer={
         <button
@@ -558,7 +563,7 @@ export function IncomeSheet({ open, onOpenChange }: { open: boolean; onOpenChang
           className="btn block"
           onClick={async () => {
             onOpenChange(false);
-            if (!(await upsert("months", [{ ...m, income_a: a, income_b: b, extra_income: extra, extra_note: note.trim() }]))) return;
+            if (!(await upsert("months", [{ ...m, ...changed }]))) return;
             toast("수입을 저장했어요");
           }}
         >

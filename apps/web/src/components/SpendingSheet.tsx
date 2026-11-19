@@ -96,8 +96,15 @@ export function SpendingSheet({ open, onOpenChange, editing }: { open: boolean; 
     }
   };
 
+  // 열 때 한 번만 채운다 — 열린 동안 다시 불러오기(다른 앱 다녀오기·상대 변경)로 cards 가 바뀌어도 적던 값을 덮지 않게
+  const filled = useRef(false);
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      filled.current = false;
+      return;
+    }
+    if (filled.current) return;
+    filled.current = true;
     setSaved(false);
     setCapHint(false);
     setFailed(Boolean(restore));
