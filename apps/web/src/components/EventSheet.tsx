@@ -96,6 +96,10 @@ export function EventSheet({ open, onOpenChange, event, from, date, draft }: { o
   const [endTime, setEndTime] = useState(base?.end_time ?? "");
   /** 오전·오후를 안 쓴 시간을 정할 기준 (시트를 연 때) */
   const [now] = useState(() => new Date());
+  // 적던 내용이 있는지: 열 때마다 새 key 로 그리므로 첫 그리기의 값이 연 순간의 값. 새로 만들 때는 제목을 적었으면
+  const form = JSON.stringify([kind, title, ranged, start, end, repeat, owner, dday, pin, remind, amount, note, startTime, endTime]);
+  const [initial] = useState(form);
+  const dirty = form !== initial || (!base && title.trim() !== "");
   const titleRef = useRef<HTMLInputElement>(null);
   const mirrorRef = useRef<HTMLSpanElement>(null);
   /** 제목을 고쳐 쓴 뒤 놓을 커서 자리 */
@@ -205,6 +209,7 @@ export function EventSheet({ open, onOpenChange, event, from, date, draft }: { o
     <Sheet
       open={open}
       onOpenChange={onOpenChange}
+      keep={dirty}
       title={event ? event.title : `새 ${k.label}`}
       headerAction={
         event && (
