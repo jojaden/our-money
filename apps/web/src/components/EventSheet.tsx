@@ -197,7 +197,8 @@ export function EventSheet({ open, onOpenChange, event, from, date, draft }: { o
     const backup = event;
     onOpenChange(false);
     if (!(await remove("events", [event.id]))) return;
-    toast(`${eul(KIND.find((x) => x.value === kindOf(backup))!.label)} 지웠어요`, () => void upsert("events", [backup]));
+    const what = eul(KIND.find((x) => x.value === kindOf(backup))!.label);
+    toast(backup.repeat !== "none" ? `반복하는 ${what} 모두 지웠어요` : `${what} 지웠어요`, () => void upsert("events", [backup]));
   };
 
   return (

@@ -7,7 +7,7 @@ import { Drawer } from "vaul";
 import type { Owner, Settings } from "@/lib/types";
 import { num } from "@/lib/format";
 import { nameOf } from "@/lib/calc";
-import { useStore } from "@/lib/store";
+import { useStore, type Toast } from "@/lib/store";
 import { Morph, still } from "./Morph";
 import { X } from "lucide-react";
 
@@ -313,8 +313,9 @@ export function Toasts() {
     <div className="toasts" aria-live="polite">
       {/* 사라진 토스트는 흐려지고 나머지는 제자리로 내려온다 (들어오기는 .toast 의 @starting-style) */}
       <Morph className="toast-stack" track=":scope > *" enter={false}>
+        {/* 남는 토스트(.sticky): 있는 동안 페이지 아래 여백을 그만큼 늘려 맨 아래 내용을 가리지 않는다 (shell.css) */}
         {error && data && (
-          <div className="toast stale" role="status">
+          <div className="toast stale sticky" role="status">
             <span>최신 내용을 불러오지 못했어요</span>
             <button type="button" onClick={() => void reload()}>
               다시 시도
@@ -322,27 +323,54 @@ export function Toasts() {
           </div>
         )}
         {pending > 0 && (
-          <div className="toast" role="status">
+          <div className="toast sticky" role="status">
             <span>보내지 못한 저장 {pending}건 · 연결되면 자동으로 보내요</span>
           </div>
         )}
         {toasts.map((t) => (
-          <div className="toast" key={t.id} role="status">
-            <span>{t.text}</span>
-            {t.undo && (
-              <button
-                type="button"
-                onClick={() => {
-                  t.undo?.();
-                  dismissToast(t.id);
-                }}
-              >
-                되돌리기
-              </button>
-            )}
-          </div>
+          <ToastItem key={t.id} t={t} dismiss={dismissToast} />
         ))}
       </Morph>
+    </div>
+  );
+}
+
+/** 토스트 한 장: 정한 시간 뒤 사라지되 손가락·초점이 올라가 있는 동안은 멈춘다(WCAG 2.2.1). 실패는 닫을 때까지 남는다 */
+function ToastItem({ t, dismiss }: { t: Toast; dismiss: (id: number) => void }) {
+  const [held, setHeld] = useState(false);
+  useEffect(() => {
+    if (t.error || held) return;
+    const timer = window.setTimeout(() => dismiss(t.id), t.undo ? 5000 : 2600);
+    return () => window.clearTimeout(timer);
+  }, [t, held, dismiss]);
+  return (
+    <div
+      className="toast"
+      role={t.error ? "alert" : "status"}
+      onPointerEnter={() => setHeld(true)}
+      onPointerLeave={() => setHeld(false)}
+      onFocus={() => setHeld(true)}
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget)) setHeld(false);
+      }}
+    >
+      <span>{t.text}</span>
+      {t.undo && (
+        <button
+          type="button"
+          onClick={() => {
+            t.undo?.();
+            dismiss(t.id);
+          }}
+        >
+          되돌리기
+        </button>
+      )}
+      {t.error && (
+        <button type="button" className="toast-close" aria-label="알림 닫기" onClick={() => dismiss(t.id)}>
+          <X aria-hidden="true" />
+        </button>
+      )}
     </div>
   );
 }

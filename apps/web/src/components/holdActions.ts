@@ -30,7 +30,7 @@ function shareText(o: Occurrence, today: string): string {
  * 일정 하나 공유. 앱은 .ics 파일로 공유 창(받는 쪽이 캘린더에 바로 넣는다 — 일정 내보내기와 같은 길),
  * 브라우저는 기기 공유 창, 둘 다 안 되면 글을 클립보드에. 누른 그 순간에 불러야 공유 창이 열린다.
  */
-async function shareEvent(o: Occurrence, s: Settings, app: boolean, today: string, toast: (msg: string) => void) {
+async function shareEvent(o: Occurrence, s: Settings, app: boolean, today: string, toast: (msg: string, undo?: () => void, opts?: { error?: boolean }) => void) {
   const text = shareText(o, today);
   if (app && appCan("ics")) return toApp({ type: "ics", text: toIcs([o.event], s) });
   if (!app && typeof navigator.share === "function") {
@@ -46,7 +46,7 @@ async function shareEvent(o: Occurrence, s: Settings, app: boolean, today: strin
     await navigator.clipboard.writeText(text);
     toast("일정 내용을 복사했어요");
   } catch {
-    toast("이 기기에서는 공유할 수 없어요");
+    toast("이 기기에서는 공유도 복사도 안 돼요. 설정 › 일정 내보내기로 파일을 보내 주세요", undefined, { error: true });
   }
 }
 
@@ -82,7 +82,7 @@ export function useHoldActions(nav: HoldNav) {
         danger: true,
         // 일정 시트의 삭제와 같다: 묻지 않고 지우고 토스트의 되돌리기로 살린다 (반복 일정은 통째로)
         run: async () => {
-          if (await remove("events", [e.id])) toast(`${what} 지웠어요`, () => void upsert("events", [e]));
+          if (await remove("events", [e.id])) toast(e.repeat !== "none" ? `반복하는 ${what} 모두 지웠어요` : `${what} 지웠어요`, () => void upsert("events", [e]));
         },
       },
     ];
