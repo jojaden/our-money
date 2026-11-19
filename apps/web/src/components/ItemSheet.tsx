@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { ChevronDown, Plus, Trash2 } from "lucide-react";
-import type { Account, Group, Method, MonthItem, Owner, Person, PlanItem } from "@/lib/types";
+import type { Account, Group, Method, Month, MonthItem, Owner, Person, PlanItem } from "@/lib/types";
 import { GROUP_LABEL, METHOD_LABEL } from "@/lib/types";
 import { blankMonth, useData } from "@/lib/store";
 import { deleteOp, upsertOp, type Op } from "@/lib/repo";
@@ -167,6 +167,7 @@ export function ItemSheet({
 
   // 열 때만 채운다 — 그리는 도중에 바꿔, 위에 겹친 지갑 시트에서 카드를 넣어 data 가 바뀌어도 적던 내용이 그대로 남는다
   const [wasOpen, setWasOpen] = useState(false);
+  const [initial, setInitial] = useState<string | null>(null);
   if (open !== wasOpen) {
     setWasOpen(open);
     if (open) {
@@ -192,8 +193,13 @@ export function ItemSheet({
       setStartM(plan?.start_month ?? month);
       setEndM(plan?.end_month ?? "");
       setAdding(false);
+      setInitial(null);
     }
   }
+  // 적던 내용이 있는지: 연 순간의 값과 비교 (다시 불러오기로 바뀌지 않게 채운 바로 다음 그리기에서 한 번 찍어 둔다)
+  const form = JSON.stringify([name, group, amount, payer, source, split, parts, dueDay, note, goal, goalStart, forward, ranged, startM, endM]);
+  if (open && wasOpen && initial === null) setInitial(form);
+  const dirty = initial !== null && form !== initial;
 
   const splitOn = payer === "joint" && split;
   // 이미 있는 항목에서 나눠 내기를 켜고 끄는 건 다음 달부터도 적용할 때만 (이번 달만 바꾸면 다음 달에 한 사람 몫만 넘어간다)
@@ -356,6 +362,7 @@ export function ItemSheet({
     <Sheet
       open={open}
       onOpenChange={onOpenChange}
+      keep={dirty}
       title={item ? item.name : `${GROUP_LABEL[group]} 추가`}
       headerAction={
         item && (
@@ -472,6 +479,12 @@ export function ItemSheet({
             {splitError}
           </p>
         )}
+        {/* 목표는 플랜 항목에만 저장된다 — 이번 달만 바꾸면 적은 목표가 말없이 버려지지 않게 */}
+        {group === "saving" && !forward && (goal !== (plan?.goal_amount ?? 0) || goalStart !== (plan?.goal_start ?? 0)) && (
+          <p className="help" role="alert">
+            목표 금액은 ‘다음 달부터도 적용’을 켰을 때만 저장돼요
+          </p>
+        )}
       </div>
       {forward && (
         <div className="field">
@@ -508,6 +521,8 @@ export function ItemSheet({
   );
 }
 
+type Income = Pick<Month, "income_a" | "income_b" | "extra_income" | "extra_note">;
+
 export function IncomeSheet({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
   const { data, month, upsert, toast } = useData();
   const s = data.settings;
@@ -518,19 +533,29 @@ export function IncomeSheet({ open, onOpenChange }: { open: boolean; onOpenChang
   const [b, setB] = useState(0);
   const [extra, setExtra] = useState(0);
   const [note, setNote] = useState("");
-
-  useEffect(() => {
-    if (!open) return;
-    setA(m.income_a);
-    setB(m.income_b);
-    setExtra(m.extra_income);
-    setNote(m.extra_note);
-  }, [open, m]);
+  // 열 때만 채운다 — 다른 앱에 다녀와 다시 불러오거나 상대가 그 달을 고쳐도 적던 값이 되돌아가지 않게
+  const [wasOpen, setWasOpen] = useState(false);
+  const [base, setBase] = useState<Income>({ income_a: 0, income_b: 0, extra_income: 0, extra_note: "" });
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) {
+      setA(m.income_a);
+      setB(m.income_b);
+      setExtra(m.extra_income);
+      setNote(m.extra_note);
+      setBase({ income_a: m.income_a, income_b: m.income_b, extra_income: m.extra_income, extra_note: m.extra_note });
+    }
+  }
+  // 연 뒤 고친 칸만 — 저장은 지금 줄 위에 이것만 얹어, 그사이 상대가 바꾼 다른 칸을 연 때 값으로 되돌리지 않는다
+  const form: Income = { income_a: a, income_b: b, extra_income: extra, extra_note: note.trim() };
+  const changed = Object.fromEntries((Object.keys(form) as (keyof Income)[]).filter((k) => form[k] !== base[k]).map((k) => [k, form[k]])) as Partial<Income>;
+  const dirty = Object.keys(changed).length > 0;
 
   return (
     <Sheet
       open={open}
       onOpenChange={onOpenChange}
+      keep={dirty}
       title="이번 달 수입"
       footer={
         <button
@@ -538,7 +563,7 @@ export function IncomeSheet({ open, onOpenChange }: { open: boolean; onOpenChang
           className="btn block"
           onClick={async () => {
             onOpenChange(false);
-            if (!(await upsert("months", [{ ...m, income_a: a, income_b: b, extra_income: extra, extra_note: note.trim() }]))) return;
+            if (!(await upsert("months", [{ ...m, ...changed }]))) return;
             toast("수입을 저장했어요");
           }}
         >

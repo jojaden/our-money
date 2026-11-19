@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Download, BellRing, CalendarDays, CalendarRange, ChevronLeft, ChevronRight, FlaskConical, History, LogOut, RotateCcw, Receipt, Scale, Smartphone, SunMoon, Tags, UserRound, Users, Wallet as Wallet2, WalletCards } from "lucide-react";
@@ -75,7 +75,17 @@ export default function SettingsPage() {
   const [ics, setIcs] = useState({ open: false, key: 0 });
   const openIcs = () => setIcs((x) => ({ open: true, key: x.key + 1 }));
 
-  useEffect(() => setDraft(s), [s]);
+  // 새로 불러온 설정을 받되, 고치던 칸(저장 전이라 불러오기 전 값과 다른 칸)은 적던 값 그대로 둔다
+  const prevS = useRef(s);
+  useEffect(() => {
+    const before = prevS.current;
+    prevS.current = s;
+    setDraft((d) => {
+      const next: Record<string, unknown> = { ...s };
+      for (const k of Object.keys(d) as (keyof Settings)[]) if (d[k] !== before[k]) next[k] = d[k];
+      return next as unknown as Settings;
+    });
+  }, [s]);
 
   const save = async (patch: Partial<Settings>) => {
     const next = { ...draft, ...patch };
