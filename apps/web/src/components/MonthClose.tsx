@@ -45,7 +45,7 @@ export function MonthClose({ month }: { month: string }) {
     const ok = await upsert("months", [{ ...m, note: note.trim(), closed_at: on ? new Date().toISOString() : null }]);
     if (!ok) return;
     setDraft(null);
-    toast(on ? `${label}을 마감했어요` : `${label}을 다시 열었어요`, () => void upsert("months", [{ ...m, closed_at: m.closed_at ?? null }]));
+    toast(on ? `${label}을 마감했어요` : `${label}을 다시 열었어요`, () => void upsert("months", [{ ...m, note: note.trim(), closed_at: m.closed_at ?? null }]));
   };
 
   return (
