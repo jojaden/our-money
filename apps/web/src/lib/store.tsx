@@ -6,6 +6,7 @@ import { getRepo, hasSupabase, currentMember, supabase, LIST_TABLES, ConflictErr
 import { addMonths, currentMonth, itemsFromMonth, latestMonthBefore, monthRow, periodOf, snapshotItems, withUserNames } from "./calc";
 import { createMonthMotion } from "./monthMotion";
 import { haptic } from "./native";
+import { num } from "./format";
 
 type Auth =
   | { state: "loading" }
@@ -685,10 +686,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       const paid = !item.paid;
       haptic(paid ? [12, 40, 12] : 8);
       if (paid) setDoneSeq((n) => n + 1);
-      // 완료를 취소해도 적어 둔 실제 금액은 남긴다 — 계산은 완료일 때만 읽고(actualAmount), 다시 완료하면 그 금액이 살아난다
-      await upsert("month_items", [{ ...item, paid, paid_at: paid ? new Date().toISOString() : null, paid_by: paid ? me : null }]);
+      // 완료를 취소하면 적어 둔 실제 금액도 지운다 (다시 완료할 때는 플랜 금액부터). 지운 금액은 되돌리기로 살린다
+      const ok = await upsert("month_items", [{ ...item, paid, paid_at: paid ? new Date().toISOString() : null, paid_by: paid ? me : null, paid_amount: paid ? item.paid_amount ?? null : null }]);
+      if (ok && !paid && item.paid_amount != null) toast(`완료를 취소해서 적어 둔 실제 금액 ${num(item.paid_amount)}원을 지웠어요`, () => void upsert("month_items", [item]));
     },
-    [upsert, me],
+    [upsert, me, toast],
   );
 
   // 화면에는 각자 계정의 이름을 쓴다 (계산과 저장은 원본 data 로)
