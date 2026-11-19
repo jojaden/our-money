@@ -10,7 +10,7 @@ import { useData } from "@/lib/store";
 import { cycleOf, holidayShiftOf, nameOf, paydayDate, paydayOf } from "@/lib/calc";
 import { dateWithDay, num } from "@/lib/format";
 import { resetDemo, signOut } from "@/lib/repo";
-import { appCan, toApp, useInApp } from "@/lib/native";
+import { appCan, toApp, useInApp, useNotifyOn } from "@/lib/native";
 import { AmountInput, Money, Seg, Toggle, Who } from "@/components/ui";
 import { CategorySheet } from "@/components/SettingsSheets";
 import { AddPass } from "@/components/AddPass";
@@ -103,20 +103,8 @@ export default function SettingsPage() {
   };
   const demo = auth.state === "demo";
   const theme = useTheme().choice;
-  // 폰 알림 허용 여부 — 앱이 "ourmoney-notify" 로 알려 준다 (열 때·돌아올 때마다 다시 묻는다)
-  const [notifyOn, setNotifyOn] = useState<boolean | null>(null);
-  useEffect(() => {
-    if (!canRemind) return;
-    const got = (e: Event) => setNotifyOn((e as CustomEvent).detail === true);
-    const ask = () => toApp({ type: "notify-status" });
-    window.addEventListener("ourmoney-notify", got);
-    window.addEventListener("ourmoney-resume", ask);
-    ask();
-    return () => {
-      window.removeEventListener("ourmoney-notify", got);
-      window.removeEventListener("ourmoney-resume", ask);
-    };
-  }, [canRemind]);
+  // 폰 알림 허용 여부 (열 때·돌아올 때마다 다시 묻는다)
+  const notifyOn = useNotifyOn(canRemind);
   const SECS: Record<SecId, { title: string; desc: string; summary: string; icon: typeof Users }> = {
     people: {
       title: "두 사람",

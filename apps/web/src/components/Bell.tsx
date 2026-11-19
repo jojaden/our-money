@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Bell, BellRing, CalendarCheck, CalendarDays, CalendarPlus, CreditCard, Heart, ReceiptText, Repeat, TrendingUp, Wallet } from "lucide-react";
+import { Bell, BellOff, BellRing, CalendarCheck, CalendarDays, CalendarPlus, CreditCard, Heart, ReceiptText, Repeat, Smartphone, TrendingUp, Wallet, X } from "lucide-react";
 import type { Person } from "@/lib/types";
 import { METHOD_LABEL } from "@/lib/types";
 import { useData } from "@/lib/store";
@@ -11,6 +11,7 @@ import { ddayText, isPartnerJointAdd, nextOccurrence, summaryHref, timeText } fr
 import { eventKind } from "@/lib/ics";
 import { dateWithDay, eul, iga, num, parseYmd, shortDate } from "@/lib/format";
 import { isNudgeForMe, isPartnerJointSpend } from "@/lib/partner";
+import { appCan, toApp, useInApp, useInstall, useNotifyOn } from "@/lib/native";
 import { asking, byUrgency, dueState, eventTasks, useTasks, waiting, type Task } from "./tasks";
 import { TaskRow } from "./TaskRow";
 import { afterSheet, EmptyState, Sheet } from "./ui";
@@ -154,7 +155,12 @@ export function BellButton({ rail = false }: { rail?: boolean }) {
   const a = useAlerts();
   // 지난달을 아직 마감하지 않았으면 맨 위에 (홈 카드에서 "나중에"를 눌러도 여기엔 남는다)
   const close = usePendingClose();
-  const keys = close ? [`close:${close.month}`, ...a.keys] : a.keys;
+  // 이 기기: 폰 알림이 꺼진 앱, 앱으로 설치할 수 있는 브라우저 (고칠 때까지 남는다 — 숫자는 처음 한 번만)
+  const app = useInApp();
+  const notifyOff = useNotifyOn(app && appCan("remind")) === false;
+  const install = useInstall();
+  const device = [...(notifyOff ? ["device:notify-off"] : []), ...(install ? ["device:install"] : [])];
+  const keys = [...(close ? [`close:${close.month}`] : []), ...a.keys, ...device];
   const [open, setOpen] = useState(false);
   const [seen, setSeen] = useState(readSeen);
   const unseen = keys.filter((k) => !seen.has(k)).length;
@@ -202,7 +208,7 @@ export function BellButton({ rail = false }: { rail?: boolean }) {
           <EmptyState
             key="empty"
             title="지금 챙길 것이 없어요"
-            body="상대가 보낸 콕 찌르기, 예산 속도, 상대의 공동 지출, 상대가 더한 공동 일정, 마감하지 않은 지난달, 기한이 3일 안으로 다가온 이체·납부·할 일, 다가오는 월급날, 미리 알림을 켠 일정, 그리고 일요일마다 지난주 돌아보기가 여기에 모여요."
+            body="상대가 보낸 콕 찌르기, 예산 속도, 상대의 공동 지출, 상대가 더한 공동 일정, 마감하지 않은 지난달, 기한이 3일 안으로 다가온 이체·납부·할 일, 다가오는 월급날, 미리 알림을 켠 일정, 일요일마다 지난주 돌아보기, 그리고 꺼진 폰 알림·앱으로 설치 같은 이 기기 소식이 여기에 모여요."
           />
         ) : (
           <>
@@ -380,6 +386,48 @@ export function BellButton({ rail = false }: { rail?: boolean }) {
                       </button>
                     );
                   })}
+                </div>
+              </div>
+            )}
+            {device.length > 0 && (
+              <div className="field" key="device">
+                <h3 className="sum-h">이 기기</h3>
+                <div className="rows" style={{ ["--inset" as string]: "52px" }}>
+                  {notifyOff && (
+                    <div className="row">
+                      <span className="alert-ic" aria-hidden="true">
+                        <BellOff />
+                      </span>
+                      <div style={{ minWidth: 0 }}>
+                        <div className="t">폰 알림이 꺼져 있어요</div>
+                        <div className="s">일정·월급날·나갈 돈 미리 알림과 아침 요약이 오지 않아요</div>
+                      </div>
+                      <div className="r">
+                        <button type="button" className="btn sm" onClick={() => toApp({ type: "notify-ask" })}>
+                          켜기
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  {install && (
+                    <div className="row">
+                      <span className="alert-ic" aria-hidden="true">
+                        <Smartphone />
+                      </span>
+                      <div style={{ minWidth: 0 }}>
+                        <div className="t">홈 화면에 앱으로 설치</div>
+                        <div className="s">주소창 없이 앱처럼 바로 열려요</div>
+                      </div>
+                      <div className="r" style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                        <button type="button" className="btn sm" onClick={() => void install.install()}>
+                          설치
+                        </button>
+                        <button type="button" className="iconbtn" aria-label="설치 안내 닫기" onClick={install.dismiss}>
+                          <X aria-hidden="true" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}

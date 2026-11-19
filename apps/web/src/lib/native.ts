@@ -1,6 +1,6 @@
 // 폰 앱처럼 느끼게 하는 작은 도구들.
 
-import { useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import type { WidgetCalendar } from "./calendar";
 import type { Reminder } from "./reminders";
 import type { ThemeChoice } from "./theme";
@@ -122,6 +122,64 @@ const noSubscribe = () => () => {};
 /** 화면용 inApp — 미리 그린 HTML(앱 밖으로 본다)과 첫 그림이 어긋나지 않게 */
 export function useInApp(): boolean {
   return useSyncExternalStore(noSubscribe, inApp, () => false);
+}
+
+/** 앱의 폰 알림 허용 여부 — 앱이 "ourmoney-notify" 로 알려 준다(열 때·앱으로 돌아올 때마다 다시 묻는다). 아직 모르면 null */
+export function useNotifyOn(enabled: boolean): boolean | null {
+  const [on, setOn] = useState<boolean | null>(null);
+  useEffect(() => {
+    if (!enabled) return;
+    const got = (e: Event) => setOn((e as CustomEvent).detail === true);
+    const ask = () => toApp({ type: "notify-status" });
+    window.addEventListener("ourmoney-notify", got);
+    window.addEventListener("ourmoney-resume", ask);
+    ask();
+    return () => {
+      window.removeEventListener("ourmoney-notify", got);
+      window.removeEventListener("ourmoney-resume", ask);
+    };
+  }, [enabled]);
+  return on;
+}
+
+/* 홈 화면에 앱으로 설치 (PWA). 크롬이 설치할 수 있다고 알리는 신호(beforeinstallprompt)는 페이지를 열자마자 한 번 오므로
+   화면이 그려지기 전에 받아 둔다. 크롬의 기본 설치 막대는 막고 종(알림 모음, components/Bell)에서 권한다. */
+type InstallEvent = Event & { prompt: () => Promise<void> };
+const INSTALL_DISMISSED = "our-money-install-dismissed";
+let installEvt: InstallEvent | null = null;
+const installSubs = new Set<() => void>();
+const setInstall = (e: InstallEvent | null) => {
+  installEvt = e;
+  installSubs.forEach((f) => f());
+};
+if (typeof window !== "undefined") {
+  window.addEventListener("beforeinstallprompt", (e) => {
+    e.preventDefault();
+    let dismissed = false;
+    try {
+      dismissed = localStorage.getItem(INSTALL_DISMISSED) === "1";
+    } catch {}
+    if (!dismissed && !isStandalone()) setInstall(e as InstallEvent);
+  });
+  window.addEventListener("appinstalled", () => setInstall(null));
+}
+const subscribeInstall = (f: () => void) => {
+  installSubs.add(f);
+  return () => installSubs.delete(f);
+};
+
+/** 앱으로 설치할 수 있으면 { install, dismiss }, 아니면 null (설치했거나, 안 한다고 했거나, 신호를 주지 않는 브라우저·앱) */
+export function useInstall(): { install: () => Promise<void>; dismiss: () => void } | null {
+  const evt = useSyncExternalStore(subscribeInstall, () => installEvt, () => null);
+  if (!evt) return null;
+  const dismiss = () => {
+    try {
+      localStorage.setItem(INSTALL_DISMISSED, "1");
+    } catch {}
+    setInstall(null);
+  };
+  // 설치 창은 신호 하나에 한 번만 띄울 수 있다 — 고르고 나면 안내를 거둔다
+  return { install: () => evt.prompt().finally(dismiss), dismiss };
 }
 
 /**
