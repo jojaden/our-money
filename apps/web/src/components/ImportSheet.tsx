@@ -26,7 +26,7 @@ export function ImportSheet({ open, onOpenChange }: { open: boolean; onOpenChang
     <Sheet
       open={open}
       onOpenChange={onOpenChange}
-      title="다른 달에서 불러오기"
+      title="다른 달에서 가져오기"
       footer={
         <button
           type="button"

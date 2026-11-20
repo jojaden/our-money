@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useData } from "@/lib/store";
-import { addMonths, allowanceStatus, categoryUse, groupTotals, itemsOf, livingStatus, nameOf, other, periodOf, spendingsIn } from "@/lib/calc";
-import { num, shortDate } from "@/lib/format";
+import { addMonths, allowanceStatus, categoryUse, currentMonth, groupTotals, itemsOf, livingStatus, nameOf, other, periodOf, spendingsIn } from "@/lib/calc";
+import { monthName, num, shortDate } from "@/lib/format";
 import { MonthHeader } from "@/components/MonthHeader";
 import { CategoryIcon, EmptyState, Money } from "@/components/ui";
 import { DailyBars } from "@/components/DailyBars";
@@ -22,6 +22,7 @@ import { useRevealOnce } from "@/components/reveal";
 /** 가계부 탭은 이번 달 요약만 — 날짜별 전체 목록과 필터는 모든 기록(/ledger/all/)에 둔다. 용돈은 홈, 두 사람 정산은 체크에 있다 */
 export default function LedgerPage() {
   const { data, month, today, me } = useData();
+  const which = monthName(month, currentMonth(data.settings.cycle_start, today));
   const s = data.settings;
   const { openSpending } = useSheets();
   usePrimaryAction("지출 기록", "spending", () => openSpending());
@@ -75,7 +76,7 @@ export default function LedgerPage() {
             </div>
             <div className="card">
               {all.length === 0 ? (
-                <EmptyState title="이번 달 기록이 아직 없어요" body="쓴 돈을 적으면 누적 그래프와 분류별 예산이 함께 채워져요." action="지출 기록하기" onAction={() => openSpending()} />
+                <EmptyState title={`${which} 기록이 아직 없어요`} body="쓴 돈을 적으면 누적 그래프와 분류별 예산이 함께 채워져요." action="지출 기록하기" onAction={() => openSpending()} />
               ) : (
                 <>
                   <SpendingDays rows={all} limit={5} />
@@ -125,7 +126,7 @@ export default function LedgerPage() {
           <Slot k="stat">
             <section className="group" aria-labelledby="stat-h">
               <div className="group-head">
-                <h2 id="stat-h">이번 달 기록</h2>
+                <h2 id="stat-h">{which} 기록</h2>
               </div>
               <StatTiles rows={all} period={periodOf(month, s.cycle_start)} today={today} saving={groupTotals(itemsOf(data, month)).saving} />
             </section>

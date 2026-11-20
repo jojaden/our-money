@@ -6,7 +6,8 @@ import { ChevronLeft } from "lucide-react";
 import type { Owner, PayKind } from "@/lib/types";
 import { PAY_KIND_LABEL } from "@/lib/types";
 import { useData } from "@/lib/store";
-import { nameOf, spendingsIn, sum } from "@/lib/calc";
+import { currentMonth, nameOf, spendingsIn, sum } from "@/lib/calc";
+import { monthName } from "@/lib/format";
 import { leaveDetail } from "@/lib/navigationMotion";
 import { MonthHeader } from "@/components/MonthHeader";
 import { EmptyState, Money } from "@/components/ui";
@@ -22,7 +23,8 @@ const ORIGIN = { home: { label: "홈", href: "/" }, ledger: { label: "가계부"
 
 /** 모든 기록 — 가계부 탭의 "모든 기록 보기", 홈의 "전체 보기", 알림의 "확인할 지출"(?review=1)에서 들어온다 */
 export default function AllSpendingsPage() {
-  const { data, month } = useData();
+  const { data, month, today } = useData();
+  const which = monthName(month, currentMonth(data.settings.cycle_start, today));
   const s = data.settings;
   const router = useRouter();
   const q = useSearchParams();
@@ -87,11 +89,11 @@ export default function AllSpendingsPage() {
             {rows.length === 0 ? (
               <div style={{ marginTop: 12 }}>
                 {all.length === 0 ? (
-                  <EmptyState title="이번 달 기록이 아직 없어요" action="지출 기록하기" onAction={() => openSpending()} />
+                  <EmptyState title={`${which} 기록이 아직 없어요`} action="지출 기록하기" onAction={() => openSpending()} />
                 ) : (
                   <EmptyState
                     title="이 조건에 맞는 기록이 없어요"
-                    body={`이번 달 기록 ${all.length}건 중에는 없어요.`}
+                    body={`${which} 기록 ${all.length}건 중에는 없어요.`}
                     action="거르기 지우기"
                     onAction={() => {
                       setKind("all");

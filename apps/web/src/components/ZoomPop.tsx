@@ -3,13 +3,10 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
-import { still } from "./Morph";
+import { still, tokens } from "./Morph";
 import { useBackToClose, useLayer } from "./ui";
 
-/** 커지기·줄어들기 (ms) — 열 때는 서랍 박자, 닫을 때는 조금 빠르게 */
-const OPEN_MS = 420;
-const CLOSE_MS = 260;
-const EASE = "cubic-bezier(0.32, 0.72, 0, 1)";
+// 커지기·줄어들기 — 열 때는 서랍 박자(dur-tab), 닫을 때는 조금 빠르게(dur-swap), 곡선은 ease-drawer (토큰에서 읽는다)
 
 /**
  * 누른 글자 자리에서 화면 가운데로 점점 커지며 뜨는 창 (docs/design-system/components/Calendar "요약 창").
@@ -57,17 +54,19 @@ export function ZoomPop({
       el.focus({ preventScroll: true });
       const t = delta();
       if (t && !still()) {
-        el.animate([{ transform: t, opacity: 0 }, { transform: "none", opacity: 1 }], { duration: OPEN_MS, easing: EASE });
-        veil.current?.animate([{ opacity: 0 }, { opacity: 1 }], { duration: OPEN_MS, easing: "ease" });
+        const k = tokens();
+        el.animate([{ transform: t, opacity: 0 }, { transform: "none", opacity: 1 }], { duration: k.move, easing: k.drawer });
+        veil.current?.animate([{ opacity: 0 }, { opacity: 1 }], { duration: k.move, easing: k.out });
       }
       return;
     }
     if (!shown) return;
     // 움직임 줄이기면 길이 0 — 끝나면(onfinish) 내린다
     const t = delta();
-    const ms = still() ? 0 : CLOSE_MS;
-    const a = el.animate(t ? [{ transform: "none", opacity: 1 }, { transform: t, opacity: 0 }] : [{ opacity: 1 }, { opacity: 0 }], { duration: ms, easing: EASE, fill: "forwards" });
-    const b = veil.current?.animate([{ opacity: 1 }, { opacity: 0 }], { duration: ms, easing: "ease", fill: "forwards" });
+    const k = tokens();
+    const ms = still() ? 0 : k.swap;
+    const a = el.animate(t ? [{ transform: "none", opacity: 1 }, { transform: t, opacity: 0 }] : [{ opacity: 1 }, { opacity: 0 }], { duration: ms, easing: k.drawer, fill: "forwards" });
+    const b = veil.current?.animate([{ opacity: 1 }, { opacity: 0 }], { duration: ms, easing: k.out, fill: "forwards" });
     a.onfinish = () => setShown(false);
     return () => {
       a.cancel();

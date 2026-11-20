@@ -43,9 +43,11 @@ export function createMonthMotion() {
     const css = getComputedStyle(document.documentElement);
     const duration = cssTimeMs(css.getPropertyValue("--dur-swap"), 260);
     const easing = css.getPropertyValue("--ease-out").trim() || "ease-out";
+    // 빠지는 쪽은 ease-in 대신 토큰 ease-value (새 곡선을 만들지 않는다)
+    const leave = css.getPropertyValue("--ease-value").trim() || "ease-in-out";
     const shift = Math.min(120, (box as HTMLElement).offsetWidth * 0.3) * dir;
     animations = olds.map((el, i) =>
-      el.animate([from[i], { transform: `translateX(${-shift}px)`, opacity: 0 }], { duration: duration / 2, easing: "ease-in", fill: "forwards" }),
+      el.animate([from[i], { transform: `translateX(${-shift}px)`, opacity: 0 }], { duration: duration / 2, easing: leave, fill: "forwards" }),
     );
     await Promise.all(animations.map((a) => a.finished.catch(() => {})));
     if (request !== generation) return;

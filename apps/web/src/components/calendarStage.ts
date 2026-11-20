@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { still } from "./Morph";
+import { still, tokens } from "./Morph";
 
 /** 모아 보기를 한 번이라도 내려 본 기기 — 그 뒤로는 화살표·살짝 보여 주기를 하지 않는다 */
 const SEEN_KEY = "our-money-cal-more-seen";
@@ -69,7 +69,8 @@ export function useCalendarStage() {
           { transform: "translateY(-96px)", offset: 0.62 },
           { transform: "none" },
         ],
-        { duration: 1500, easing: "cubic-bezier(0.45, 0, 0.2, 1)" },
+        // 1.5초는 올라가기·머물기·내려오기 세 마디를 합친 길이(마디는 offset), 곡선은 토큰 ease-value
+        { duration: 1500, easing: tokens().value },
       );
     }, 700);
     return () => window.clearTimeout(t);

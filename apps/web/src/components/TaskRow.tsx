@@ -68,7 +68,7 @@ export function TaskRow({ task, expandable = false, fromShown = false }: { task:
           {expandable && task.transfer && task.transfer.parts.length > 1 ? (
             <button
               type="button"
-              className="s"
+              className="s parts-toggle"
               style={{ display: "inline-flex", alignItems: "center", gap: 4, border: 0, background: "none", padding: 0, color: "var(--muted)", maxWidth: "100%" }}
               aria-expanded={open}
               onClick={() => flip(() => setOpen((v) => !v))}
