@@ -51,7 +51,8 @@ import java.util.UUID
  *   그 code 만 꺼내 우리 주소에 붙여 연다 — 웹의 supabase-js 가 웹뷰에 남겨 둔 PKCE 값으로 세션을 만든다.
  *   다른 앱이 같은 스킴으로 code 를 가로채도 PKCE 값이 없어 쓸 수 없다.
  * - 웹 → 앱 메시지는 우리 주소(origin)의 맨 위 화면에서 온 것만 받는다 (WebMessageListener).
- *   "card-notice" 는 카드 알림 화면, {"type":"ics","text":…} 는 일정 .ics 를 파일로 만들어 공유 창으로 넘긴다.
+ *   "card-notice" 는 카드 알림 화면, {"type":"ics","text":…} 는 일정 .ics 를, {"type":"csv","text":…} 는 지출 CSV 를 파일로 만들어 공유 창으로 넘긴다
+ *   (웹뷰는 웹의 a.download 내려받기를 하지 못한다).
  *   {"type":"share","text":…} 는 짧은 글(콕 찌르기 등)을 공유 창으로 — 카톡 같은 앱을 사람이 고른다.
  *   결제 알림 맞추기: {"type":"expect"} 이번 달 남은 할 일 받기, {"type":"matches"} 맞춘 것과 확인할 지출을 답장으로 보내기,
  *   {"type":"applied"} 웹이 체크를 마친 것 지우기. 앱으로 돌아올 때마다 웹에 "ourmoney-resume" 를 알려 다시 가져가게 한다.
@@ -83,7 +84,7 @@ class MainActivity : ComponentActivity() {
             settings.allowContentAccess = false
             settings.mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
             // 웹이 앱 안인지, 이 앱이 무엇을 할 수 있는지 알도록 (로그인 돌아올 주소, 카드 알림 메뉴, 일정 공유)
-            settings.userAgentString = "${settings.userAgentString} OurMoneyApp/${BuildConfig.VERSION_NAME} OurMoneyCan/ics,match,widget,remind,share"
+            settings.userAgentString = "${settings.userAgentString} OurMoneyApp/${BuildConfig.VERSION_NAME} OurMoneyCan/ics,csv,match,widget,remind,share"
             webViewClient = ShellClient()
         }
         if (WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)) {
@@ -140,6 +141,7 @@ class MainActivity : ComponentActivity() {
             "notify-ask" -> askNotify()
             "notify-settings" -> openNotifySettings()
             "ics" -> shareIcs(msg.optString("text"))
+            "csv" -> shareCsv(msg.optString("text"))
             "share" -> shareText(msg.optString("text"))
             "calendar" -> CalendarStore.save(this, raw)
             "calendar-clear" -> CalendarStore.clear(this)
@@ -229,22 +231,32 @@ class MainActivity : ComponentActivity() {
      */
     private fun shareIcs(text: String) {
         if (!text.startsWith("BEGIN:VCALENDAR") || text.length > MAX_ICS) return
+        shareFile(text, "our-money-calendar", "ics", ICS, "일정 내보내기")
+    }
+
+    /** 지출 CSV 내보내기: 일정 내보내기와 같은 길(앱이 정한 이름·exports/ 한 파일·읽기만 잠깐). 웹이 만든 머리 줄로 시작하는 글만 받는다 */
+    private fun shareCsv(text: String) {
+        if (!text.removePrefix("\uFEFF").startsWith(CSV_HEAD) || text.length > MAX_ICS) return
+        shareFile(text, "our-money-spendings", "csv", CSV, "지출 내보내기")
+    }
+
+    private fun shareFile(text: String, name: String, ext: String, mime: String, title: String) {
         val dir = File(cacheDir, "exports").apply { mkdirs() }
         dir.listFiles()?.forEach { it.delete() }
-        val file = dir.resolve("our-money-calendar-${UUID.randomUUID().toString().take(8)}.ics")
+        val file = dir.resolve("$name-${UUID.randomUUID().toString().take(8)}.$ext")
         file.writeText(text)
         val uri = FileProvider.getUriForFile(this, "$packageName.files", file)
         val send = Intent(Intent.ACTION_SEND).apply {
-            type = ICS
+            type = mime
             putExtra(Intent.EXTRA_STREAM, uri)
             clipData = ClipData.newRawUri(null, uri)
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
         val open = Intent(Intent.ACTION_VIEW).apply {
-            setDataAndType(uri, ICS)
+            setDataAndType(uri, mime)
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
-        val chooser = Intent.createChooser(send, "일정 내보내기").putExtra(Intent.EXTRA_INITIAL_INTENTS, arrayOf(open))
+        val chooser = Intent.createChooser(send, title).putExtra(Intent.EXTRA_INITIAL_INTENTS, arrayOf(open))
         runCatching { startActivity(chooser) }
     }
 
@@ -302,6 +314,9 @@ class MainActivity : ComponentActivity() {
         /** OAuth code 는 URL 안전 문자만 */
         private val CODE = Regex("^[A-Za-z0-9._~-]{1,512}$")
         private const val ICS = "text/calendar"
+        private const val CSV = "text/csv"
+        /** 웹 settings 의 exportCsv 첫 줄 — 다른 글은 파일로 만들지 않는다 */
+        private const val CSV_HEAD = "\"날짜\",\"금액\",\"분류\","
         /** 일정 수천 개도 넉넉한 크기 — 넘으면 받지 않는다 */
         private const val MAX_ICS = 5_000_000
         private const val MAX_SHARE = 500

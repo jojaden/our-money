@@ -27,6 +27,7 @@ export function inApp(): boolean {
  * 앱에 부탁하기 (앱이 우리 주소에서 온 메시지만 받는다). 앱 밖이면 아무것도 하지 않는다.
  * - "card-notice": 카드 알림 모으기 화면
  * - { type: "ics", text }: 일정 .ics 를 파일로 만들어 공유 창 열기
+ * - { type: "csv", text }: 지출 CSV 를 파일로 만들어 공유 창 열기 — 앱이 "csv" 를 할 수 있을 때만 (appCan)
  * - { type: "share", text }: 짧은 글(콕 찌르기 등)을 공유 창으로 — 앱이 "share" 를 할 수 있을 때만 (appCan)
  * - { type: "expect", items }: 이번 달 남은 할 일 — 결제 알림과 맞춰 보라고 (폰에만 둔다)
  * - { type: "matches" }: 결제 알림으로 맞춘 것과 확인할 지출을 보내 달라고 (답장은 onApp 으로 온다)
@@ -41,6 +42,7 @@ export function toApp(
   message:
     | "card-notice"
     | { type: "ics"; text: string }
+    | { type: "csv"; text: string }
     | { type: "share"; text: string }
     | { type: "expect"; items: AppExpect[] }
     | { type: "matches" }
@@ -113,7 +115,7 @@ export function onApp(fn: (msg: { type: "matches"; items: AppMatch[]; spends: Ap
 }
 
 /** 이 앱이 그 일을 할 수 있나 — 앱이 user agent 에 OurMoneyCan/… 로 알린다 (예전 앱에는 없다) */
-export function appCan(feature: "ics" | "match" | "widget" | "remind" | "share"): boolean {
+export function appCan(feature: "ics" | "csv" | "match" | "widget" | "remind" | "share"): boolean {
   return typeof navigator !== "undefined" && new RegExp(`\\bOurMoneyCan/\\S*\\b${feature}\\b`).test(navigator.userAgent);
 }
 
