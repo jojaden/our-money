@@ -4,9 +4,9 @@ import Link from "next/link";
 import { ArrowRightLeft, Banknote, CalendarClock, CircleAlert, CircleCheck, CircleHelp, TrendingUp } from "lucide-react";
 import { useData } from "@/lib/store";
 import type { Spending } from "@/lib/types";
-import { allowanceStatus, cardBills, livingStatus, nameOf, spendingsIn } from "@/lib/calc";
+import { allowanceStatus, cardBills, currentMonth, livingStatus, nameOf, spendingsIn } from "@/lib/calc";
 import { PAY_KIND_LABEL } from "@/lib/types";
-import { iga, num, ro } from "@/lib/format";
+import { iga, monthName, num, ro } from "@/lib/format";
 import { FirstRun, MonthHeader } from "@/components/MonthHeader";
 import { CategoryIcon, EmptyState, Money } from "@/components/ui";
 import { spendingVisual } from "@/lib/categories";
@@ -285,7 +285,7 @@ export default function Home() {
               </div>
               <div className="card">
                 {recent.length === 0 ? (
-                  <EmptyState title="이번 달 기록이 아직 없어요" body="쓴 돈을 적으면 여기에 최근 것부터 보여요." action="지출 기록하기" onAction={() => openSpending()} />
+                  <EmptyState title={`${monthName(month, currentMonth(data.settings.cycle_start, today))} 기록이 아직 없어요`} body="쓴 돈을 적으면 여기에 최근 것부터 보여요." action="지출 기록하기" onAction={() => openSpending()} />
                 ) : (
                   <div className="rows">
                     {recent.map((r) => (

@@ -20,14 +20,14 @@ type Snap = { h: number; items: Map<Element, Rect> };
 /** 기본: 상자의 자식과 손자 (시트의 칸과 그 안의 줄·도움말) */
 const TRACK = ":scope > *, :scope > * > *";
 
-let T: { move: number; swap: number; drawer: string; out: string } | null = null;
+let T: { move: number; swap: number; press: number; drawer: string; out: string; value: string } | null = null;
 /** 움직임 토큰 (tokens.css 의 dur-tab·dur-swap·ease-drawer·ease-out) — 처음 한 번 읽는다 */
 export function tokens() {
   if (T) return T;
   const css = getComputedStyle(document.documentElement);
   const ms = (n: string, d: number) => cssTimeMs(css.getPropertyValue(n), d);
   const ease = (n: string) => css.getPropertyValue(n).trim() || "ease-out";
-  T = { move: ms("--dur-tab", 420), swap: ms("--dur-swap", 260), drawer: ease("--ease-drawer"), out: ease("--ease-out") };
+  T = { move: ms("--dur-tab", 420), swap: ms("--dur-swap", 260), press: ms("--dur-press", 180), drawer: ease("--ease-drawer"), out: ease("--ease-out"), value: ease("--ease-value") };
   return T;
 }
 

@@ -57,6 +57,11 @@ export function dateWithDay(s: string): string {
   return `${d.getMonth() + 1}월 ${d.getDate()}일 (${WEEK[d.getDay()]})`;
 }
 
+/** 보고 있는 달을 부르는 말 — 지금 달이면 "이번 달", 아니면 "12월" (빈 상태·제목에서 다른 달을 "이번 달"이라 하지 않게) */
+export function monthName(key: string, current: string): string {
+  return key === current ? "이번 달" : monthLabel(key);
+}
+
 export function monthLabel(key: string): string {
   const [y, m] = key.split("-").map(Number);
   const thisYear = new Date().getFullYear();

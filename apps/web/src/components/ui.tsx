@@ -8,7 +8,7 @@ import type { Owner, Settings } from "@/lib/types";
 import { num } from "@/lib/format";
 import { nameOf } from "@/lib/calc";
 import { useStore, type Toast } from "@/lib/store";
-import { Morph, still } from "./Morph";
+import { Morph, still, tokens } from "./Morph";
 import { X } from "lucide-react";
 
 export function Money({ value, className = "", sign = false, animate = false }: { value: number | null | undefined; className?: string; sign?: boolean; animate?: boolean }) {
@@ -318,7 +318,9 @@ export function Sheet({
   }, [open]);
   const nudge = () => {
     if (still()) return;
-    content.current?.animate([{ translate: "0 0" }, { translate: "0 -10px" }, { translate: "0 0" }], { duration: 320, easing: "cubic-bezier(0.3, 0, 0.2, 1)" });
+    // 오르내리는 한 번 — 토큰(dur-swap · ease-value)으로
+    const t = tokens();
+    content.current?.animate([{ translate: "0 0" }, { translate: "0 -10px" }, { translate: "0 0" }], { duration: t.swap, easing: t.value });
   };
   return (
     <Drawer.Root open={open} onOpenChange={onOpenChange} dismissible={!keep}>

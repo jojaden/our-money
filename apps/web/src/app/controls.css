@@ -17,7 +17,13 @@
 /* 시트를 여는 aside(결산 보기·돌아보기)는 버튼 — 링크와 같은 모양 */
 .card-head button.aside, .group-head button.aside { padding: 0; border: 0; background: none; color: var(--faint); font-size: 14.5px; font-family: inherit; white-space: nowrap; cursor: pointer; }
 .card-head a.aside::after, .card-foot a.aside::after, .budget-head a.aside::after, .group-head a.aside::after, .card-head button.aside::after, .group-head button.aside::after { content: ""; width: 7px; height: 7px; margin-left: 2px; border-top: 1.6px solid currentColor; border-right: 1.6px solid currentColor; transform: rotate(45deg); }
+/* 글자 크기(20px 줄)인 aside 링크·버튼은 누르는 자리를 보이지 않게 넓힌다 (24px 이상, ::after 는 화살표라 ::before) */
+.card-head a.aside, .card-foot a.aside, .budget-head a.aside, .group-head a.aside, .card-head button.aside, .group-head button.aside { position: relative; }
+.card-head a.aside::before, .card-foot a.aside::before, .budget-head a.aside::before, .group-head a.aside::before, .card-head button.aside::before, .group-head button.aside::before { content: ""; position: absolute; inset: -10px -8px; }
 .card-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 14px; }
+/* 할 일 줄의 몫 펼치기(보조 글 크기 16px 줄) — 누르는 자리를 28px 로 */
+.row .parts-toggle { position: relative; }
+.row .parts-toggle::after { content: ""; position: absolute; inset: -6px -4px; }
 /* 접는 줄 — 체크의 "✓ 끝낸 4건 · 보기"(끝낸 일을 접어 남은 일만), 플랜의 "월세 · 관리비 · 통신비 외 5개 · 펼치기"(폰에서 묶음 접기) */
 .fold-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 44px; padding: 6px 0; border: 0; background: none; color: var(--faint); font: 500 14.5px/20px var(--font-text); text-align: left; }
 .fold-row.ruled { margin-top: 4px; padding-top: 10px; border-top: 0.6px solid var(--rule); }
@@ -207,6 +213,8 @@ button.row:active, a.row:active { background: var(--well); transform: scale(0.98
 .chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .chips.scroll { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin: 0 calc(var(--pad) * -1); padding: 2px var(--pad); }
 .chips.scroll::-webkit-scrollbar { display: none; }
+/* 시트 본문은 양옆 여백이 --pad(24) 가 아니라 20px — 그만큼만 넓혀야 본문이 옆으로 밀리지 않는다 */
+.sheet-body .chips.scroll { margin-inline: -20px; padding-inline: 20px; }
 .chip {
   display: inline-flex;
   align-items: center;

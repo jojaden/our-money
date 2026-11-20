@@ -3,7 +3,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ChevronRight, type LucideIcon } from "lucide-react";
-import { Morph, still } from "./Morph";
+import { Morph, still, tokens } from "./Morph";
 
 /** 홈 맨 위 알림 하나 — 색은 상태 알약과 같은 네 가지 (docs/design-system/components/Nudges) */
 export interface Nudge {
@@ -99,7 +99,7 @@ function NudgeCard({ n, grow, onOpen }: { n: Nudge; grow: boolean; onOpen?: () =
         { transform: "scale(1.03)", opacity: 1, offset: 0.65 },
         { transform: "none", opacity: 1 },
       ],
-      { duration: 520, easing: "cubic-bezier(0.32, 0.72, 0, 1)" },
+      { duration: tokens().move, easing: tokens().drawer },
     );
   }, []);
   const Icon = n.icon;

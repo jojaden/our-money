@@ -229,7 +229,7 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
   color: var(--muted);
   font-size: 13px;
   font-weight: 600;
-  transition: transform 240ms var(--ease-press), background-color 160ms ease;
+  transition: transform var(--dur-press) var(--ease-press), background-color var(--dur-press) ease;
 }
 .quick button:active { transform: scale(0.94); background: var(--accent-soft); color: var(--accent-ink); }
 
