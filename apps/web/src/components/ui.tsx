@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { CatVisual } from "@/lib/categories";
 import { CatGlyph } from "./CatGlyphs";
 import { Drawer } from "vaul";
@@ -265,6 +265,11 @@ export function Sheet({
 }) {
   useBackToClose(open, onOpenChange);
   const content = useRef<HTMLDivElement>(null);
+  // 연 곳 기억: Drawer.Trigger 없이 open 으로 열어 Radix 가 돌려줄 곳을 모른다 — 열리는 순간의 초점을 잡아 두고, 닫히면(Esc·뒤로 가기·닫기·바깥) 그리로 돌려준다
+  const opener = useRef<HTMLElement | null>(null);
+  useLayoutEffect(() => {
+    if (open) opener.current = document.activeElement instanceof HTMLElement && document.activeElement !== document.body ? document.activeElement : null;
+  }, [open]);
   const nudge = () => {
     if (still()) return;
     content.current?.animate([{ translate: "0 0" }, { translate: "0 -10px" }, { translate: "0 0" }], { duration: 320, easing: "cubic-bezier(0.3, 0, 0.2, 1)" });
@@ -282,6 +287,14 @@ export function Sheet({
           onOpenAutoFocus={(event) => {
             event.preventDefault();
             content.current?.focus({ preventScroll: true });
+          }}
+          onCloseAutoFocus={(event) => {
+            const el = opener.current;
+            opener.current = null;
+            // 연 버튼이 사라졌으면(줄 지우기·메뉴 닫힘) Radix 기본 동작에 맡긴다
+            if (!el?.isConnected) return;
+            event.preventDefault();
+            el.focus({ preventScroll: true });
           }}
         >
           <div className="sheet-handle" aria-hidden="true" />
