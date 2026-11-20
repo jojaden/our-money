@@ -69,10 +69,10 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
 /* Slot 안 감싸개(흔드는 동안 inert 만 켠다) — 상자를 만들지 않는다. 옮기기는 폰·태블릿만이라 데스크톱에서는 들어가는 버튼도 없다 */
 .slot-body { display: contents; }
 @media (min-width: 1024px) { .grid > .arrange-enter { display: none; } }
-/* 폰에서는 열을 풀고 한 줄에 세운다. 카드 자리는 Slot 의 --o (사람마다 꾹 눌러 옮긴 순서, components/Arrange) */
+/* 폰에서는 열을 풀고 한 줄에 세운다. 카드는 Arrange 가 사람마다 꾹 눌러 옮긴 순서대로 DOM 에 그린다(보이는 순서 = Tab 순서) */
 @media (max-width: 1023px) {
   .col { display: contents; }
-  .slot { order: var(--o); -webkit-touch-callout: none; }
+  .slot { -webkit-touch-callout: none; }
 }
 
 /* ---------- 카드 옮기기 (Arrange · Slot) — 애플 홈 화면의 앱 옮기기처럼 ----------
