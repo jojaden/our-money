@@ -183,7 +183,7 @@ export interface WidgetCalendar {
   up: WidgetUp[];
 }
 
-const dotOf = (m: Mark): WidgetDot => (m.kind === "event" ? (m.event?.created_by ?? "joint") : m.kind === "payday" ? (m.owner === "b" ? "b" : "a") : "out");
+const dotOf = (m: Mark): WidgetDot => (m.kind === "event" ? (m.event?.owner ?? "joint") : m.kind === "payday" ? (m.owner === "b" ? "b" : "a") : "out");
 
 /** 안드로이드 앱의 홈 화면 달력 위젯이 그릴 것 (위젯은 로그인이 없어 웹이 앱을 열어 둔 동안 넘긴다) */
 export function widgetCalendar(data: Data, today: string): WidgetCalendar {

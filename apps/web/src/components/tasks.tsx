@@ -44,6 +44,8 @@ export interface Task {
   payday?: string;
   /** 이체: 결제일이 월급날보다 빨라서 지난 월급에서 미리 옮겨야 함 */
   early?: boolean;
+  /** 보조 줄과 따로 끝까지 보여 줄 경고 (보조 줄은 한 줄에서 잘릴 수 있다) */
+  warn?: string;
   done: boolean;
   doneBy: Person | null;
   person: Person | "joint";
@@ -144,7 +146,8 @@ function build(
       title: `${accName(t.from)} → ${accName(t.to)}`,
       from: accName(t.from),
       to: accName(t.to),
-      sub: early ? `${names(t.parts)} · 결제일 ${shortDate(pay!)}이 월급날보다 빨라요` : names(t.parts),
+      sub: names(t.parts),
+      warn: early ? `결제일 ${shortDate(pay!)}이 월급날보다 빨라요` : undefined,
       amount: t.amount,
       due: pay ?? payday,
       payday,
