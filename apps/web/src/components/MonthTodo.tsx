@@ -103,9 +103,13 @@ export function MonthTodo({ month, onOpenEvent, hold, className = "" }: { month:
                       return (
                         <HoldMenu key={`${e.id}${o.start}`} label={`${e.title} 메뉴`} actions={hold.forEvent(o)}>
                         <button type="button" className={`row ${past ? "past" : ""}`} onClick={() => onOpenEvent(e)}>
-                          <span className={`date-lead ${e.owner}`} aria-hidden="true">
-                            <b>{d.getDate()}</b>
-                            <small>{WEEK[d.getDay()]}</small>
+                          <span className={`date-lead ${e.owner}`}>
+                            <b aria-hidden="true">{d.getDate()}</b>
+                            <small aria-hidden="true">{WEEK[d.getDay()]}</small>
+                            {/* 화면 읽기에는 날짜를 글로 (보이는 숫자·요일은 줄여 쓴 것) */}
+                            <span className="sr-only">
+                              {d.getMonth() + 1}월 {d.getDate()}일 {WEEK[d.getDay()]}요일,
+                            </span>
                           </span>
                           <div style={{ minWidth: 0 }}>
                             <div className="t">{e.title}</div>

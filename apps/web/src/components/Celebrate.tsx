@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ArrowRight } from "lucide-react";
 import { haptic } from "@/lib/native";
+import { useLayer } from "./ui";
 
 const SEEN = "om-celebrated";
 const BEADS = Array.from({ length: 16 }, (_, i) => {
@@ -43,6 +44,8 @@ export function Celebrate({
   const [leaving, setLeaving] = useState(false);
   const root = useRef<HTMLDivElement>(null);
   const n = useRef<HTMLSpanElement>(null);
+  // 떠 있는 동안 뒤는 inert, 닫으면 띄우기 전 초점 자리로 (마지막 체크로 줄이 빠졌으면 목록이 옮겨 둔 자리)
+  useLayer(open, root);
 
   useEffect(() => {
     if (!done) return;

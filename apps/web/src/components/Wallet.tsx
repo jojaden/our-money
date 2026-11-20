@@ -11,7 +11,7 @@ import { dDay, monthLabel, num, parseYmd, shortDate, ymd } from "@/lib/format";
 import { haptic } from "@/lib/native";
 import { cssTimeMs } from "@/lib/motion";
 import { spendingVisual } from "@/lib/categories";
-import { CategoryIcon, useBackToClose } from "./ui";
+import { CategoryIcon, useBackToClose, useLayer } from "./ui";
 import { useSheets } from "./Shell";
 import { useTasks } from "./tasks";
 
@@ -146,6 +146,9 @@ function PassDetail({ p, from, onClose, onEdit }: { p: PassInfo; from: DOMRect; 
   const a = p.account;
   const card = useRef<HTMLButtonElement>(null);
   const closeBtn = useRef<HTMLButtonElement>(null);
+  const root = useRef<HTMLDivElement>(null);
+  // 열린 동안 뒤(화면·하단 메뉴)는 inert — aria-modal 인데 Tab 이 뒤로 빠지지 않게
+  useLayer(true, root);
   const [leaving, setLeaving] = useState(false);
   const reduce = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
@@ -401,6 +404,7 @@ function PassDetail({ p, from, onClose, onEdit }: { p: PassInfo; from: DOMRect; 
   const art = passArt(a, p.mix);
   return createPortal(
     <div
+      ref={root}
       className={`pass-detail ${leaving ? "leaving" : ""}`}
       role="dialog"
       aria-modal="true"
