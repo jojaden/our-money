@@ -76,7 +76,7 @@ private class Pal(private val theme: String) {
     val accentInk = c(0xFF5C5000, 0xFFF2DC6A) // accent-ink
     val sunday = c(0xFFC9202E, 0xFFFF5B63) // negative
     val saturday = c(0xFF3563C9, 0xFF6F9BFF) // saturday
-    val positive = c(0xFF367940, 0xFF5FC77A) // positive
+    val positive = c(0xFF32713B, 0xFF5FC77A) // positive
     /** 바탕(surface)·나눔선(rule) — 모서리·밤 색을 런처가 고르도록 drawable 로 */
     val bg = when (theme) {
         "dark" -> R.drawable.widget_bg_dark

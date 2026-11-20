@@ -84,7 +84,7 @@
 }
 /* 종: 새 알림 수는 오른쪽 위 빨간 알약 (나타날 때 한 번 튐) */
 .bell { position: relative; }
-.bell .badge { position: absolute; top: -3px; right: -3px; display: grid; place-items: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: var(--radius-chip); background: var(--negative); box-shadow: 0 0 0 2px var(--ground); color: var(--on-dark); font: 700 11px/1 var(--font-display); animation: badge-in var(--dur-pop) var(--ease-pop) both; }
+.bell .badge { position: absolute; top: -3px; right: -3px; display: grid; place-items: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: var(--radius-chip); background: var(--negative); box-shadow: 0 0 0 2px var(--ground); color: var(--on-negative); font: 700 11px/1 var(--font-display); animation: badge-in var(--dur-pop) var(--ease-pop) both; }
 @keyframes badge-in { from { opacity: 0; transform: scale(0.6); } }
 .sq {
   display: grid;

@@ -225,7 +225,8 @@ button.row:active, a.row:active { background: var(--well); transform: scale(0.98
   color: var(--accent-ink);
   box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--accent-ink) 30%, transparent);
 }
-.chip .count { opacity: 0.7; font-variant-numeric: tabular-nums; }
+.chip .count { color: var(--faint); font-variant-numeric: tabular-nums; }
+.chip:is([aria-pressed="true"], [aria-checked="true"]) .count { color: inherit; }
 .chip .chip-logo { flex: none; width: 18px; height: 18px; margin-left: -4px; border-radius: var(--radius-logo); }
 .chip-sep { flex: none; align-self: center; width: 1px; height: 20px; background: var(--border); }
 
@@ -389,7 +390,7 @@ button.row:active, a.row:active { background: var(--well); transform: scale(0.98
   background: var(--surface);
   outline: none;
 }
-.sheet-handle { flex: none; width: 36px; height: 5px; margin: 8px auto 2px; border-radius: var(--radius-chip); background: var(--border); }
+.sheet-handle { flex: none; width: 36px; height: 5px; margin: 8px auto 2px; border-radius: var(--radius-chip); background: var(--control); }
 .sheet-head { display: flex; flex: none; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 20px 4px; }
 .sheet-head h2 { font: 700 22px/28px var(--font-text); letter-spacing: -0.02em; }
 /* 적던 내용을 지키는 동안의 닫기(×): 제목은 왼쪽, 삭제·닫기는 오른쪽에 붙여 둔다 */
