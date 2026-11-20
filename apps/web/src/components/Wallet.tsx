@@ -112,7 +112,8 @@ export function Wallet({ onAdd, onEdit }: { onAdd: () => void; onEdit: (a: Accou
                 className={`pass ${art.className}`}
                 style={art.style}
                 data-pass={p.account.id}
-                aria-label={`${p.account.name}, ${p.account.institution || nameOf(s, p.account.owner)}, ${p.amount ? `이번 달 ${p.right}` : p.right}`}
+                // 주인은 그림(반쪽 동전)으로만 보이므로 이름에 늘 넣는다. 기관은 있으면
+                aria-label={`${p.account.name}, ${nameOf(s, p.account.owner)}${p.account.institution ? `, ${p.account.institution}` : ""}, ${p.amount ? `이번 달 ${p.right}` : p.right}`}
                 onClick={(e) => setOpen({ id: p.account.id, from: e.currentTarget.getBoundingClientRect() })}
                 {...follow(false)}
               >

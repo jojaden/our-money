@@ -50,6 +50,13 @@ async function shareEvent(o: Occurrence, s: Settings, app: boolean, today: strin
   }
 }
 
+/** 일정 공유 — 꾹 누르기 메뉴와 일정 시트가 같이 쓴다 (누른 그 순간에 불러야 공유 창이 열린다) */
+export function useShareEvent() {
+  const { data, today, toast } = useData();
+  const app = useInApp();
+  return (o: Occurrence) => void shareEvent(o, data.settings, app, today, toast);
+}
+
 const doneAction = (done: boolean, run: () => void): HoldAction => ({ label: done ? "완료 취소" : "완료", icon: done ? Undo2 : Check, run });
 
 /**

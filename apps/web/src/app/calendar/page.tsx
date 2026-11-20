@@ -376,7 +376,20 @@ function CalendarMonth() {
       >
         {popKind === "events" ? <MonthEvents marks={monthMarks} onOpenEvent={(e) => openEvent(e)} /> : <SpendingDays rows={monthSpendings} />}
       </ZoomPop>
-      <EventSheet key={sheet.key} open={sheet.open} event={sheet.event} from={sheet.from} date={sheet.date} draft={sheet.draft} onOpenChange={closeEvent} />
+      <EventSheet
+        key={sheet.key}
+        open={sheet.open}
+        event={sheet.event}
+        from={sheet.from}
+        date={sheet.date}
+        draft={sheet.draft}
+        onOpenChange={closeEvent}
+        // 시트의 복사: 이 시트를 닫고(뒤로 가기 기록이 빠진 뒤) 같은 내용의 새 시트. 날짜 패널에서 왔으면 새 시트를 닫을 때 패널로 돌아간다
+        onCopy={(from) => {
+          afterSheet(() => setSheet((x) => ({ open: true, key: x.key + 1, date: from.start_date, from })));
+          setSheet((x) => ({ ...x, open: false }));
+        }}
+      />
     </>
   );
 }
