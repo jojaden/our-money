@@ -37,6 +37,7 @@ export function CelebrateWatch() {
     <Celebrate
       done={tasks.length > 0 && left === 0 && month === currentMonth(data.settings.cycle_start, today)}
       play={play}
+      finished={tasks.length > 0 && left === 0}
       month={month}
       label={monthLabel(month)}
       chips={[

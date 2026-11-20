@@ -44,7 +44,7 @@ function csv(rows: (string | number)[][]) {
 }
 
 export default function SettingsPage() {
-  const { data, month, upsert, toast, auth, me, setMe, reload, exportSpendings, setMyName, pending } = useData();
+  const { data, month, upsert, toast, auth, me, setMe, reload, exportSpendings, setMyName, unsent } = useData();
   const s = data.settings;
   const router = useRouter();
   const q = useSearchParams().get("s");
@@ -201,7 +201,9 @@ export default function SettingsPage() {
 
   // 로그아웃하면 이 기기에 보관한 저장이 지워지니, 남아 있으면 먼저 묻는다
   const logout = () => {
-    if (pending > 0 && !window.confirm(`보내지 못한 저장 ${pending}건이 있어요. 로그아웃하면 이 기기에서 지워져요. 로그아웃할까요?`)) return;
+    // pending 은 몇 번 실패한 뒤에야 오르므로, 보내는 중인 것까지 센다 (방금 저장하고 바로 로그아웃해도 묻게)
+    const n = unsent();
+    if (n > 0 && !window.confirm(`아직 보내지 못한 저장 ${n}건이 있어요. 로그아웃하면 이 기기에서 지워져요. 로그아웃할까요?`)) return;
     void signOut();
   };
 
@@ -548,18 +550,21 @@ export default function SettingsPage() {
                   </div>
                 ))}
               </div>
-              <div className="card-head" style={{ marginBottom: 0, alignItems: "center" }}>
-                <span>{notifyOn ? "폰 알림이 켜져 있어요" : "폰 알림이 꺼져 있어요"}</span>
-                {notifyOn ? (
-                  <button type="button" className="btn secondary sm" onClick={() => toApp({ type: "notify-settings" })}>
-                    알림 종류 고르기
-                  </button>
-                ) : (
-                  <button type="button" className="btn sm" onClick={() => toApp({ type: "notify-ask" })}>
-                    알림 켜기
-                  </button>
-                )}
-              </div>
+              {/* 앱이 아직 답하지 않았으면(null) 켜짐·꺼짐을 말하지 않고 줄을 두지 않는다 (위 요약 글과 같게) */}
+              {notifyOn !== null && (
+                <div className="card-head" style={{ marginBottom: 0, alignItems: "center" }}>
+                  <span>{notifyOn ? "폰 알림이 켜져 있어요" : "폰 알림이 꺼져 있어요"}</span>
+                  {notifyOn ? (
+                    <button type="button" className="btn secondary sm" onClick={() => toApp({ type: "notify-settings" })}>
+                      알림 종류 고르기
+                    </button>
+                  ) : (
+                    <button type="button" className="btn sm" onClick={() => toApp({ type: "notify-ask" })}>
+                      알림 켜기
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           </section>
         )}
