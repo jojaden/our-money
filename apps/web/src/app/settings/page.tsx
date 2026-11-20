@@ -69,6 +69,9 @@ export default function SettingsPage() {
   };
   const [acc, setAcc] = useState<{ open: boolean; account?: Account; kind?: AccountKind }>({ open: false });
   const [cat, setCat] = useState<{ open: boolean; category?: Category }>({ open: false });
+  // 예시 데이터 초기화는 바꿔 둔 것을 되돌릴 수 없게 지우므로 한 번 묻는다 (질문 한 줄 + 닫기 · 초기화)
+  const [askReset, setAskReset] = useState(false);
+  const resetBtn = useRef<HTMLButtonElement>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [historyKey, setHistoryKey] = useState(0);
   // 열 때마다 처음 상태(모든 일정)로
@@ -181,6 +184,12 @@ export default function SettingsPage() {
         .sort((a, b) => a.date.localeCompare(b.date))
         .map((r) => [r.date, r.amount, catName(r.category_id), PAY_KIND_LABEL[r.pay_kind], accName(r.account_id), nameOf(s, r.owner), nameOf(s, r.paid_by), r.memo]),
     ]);
+    // 웹뷰는 a.download 내려받기를 못 한다 — 앱이 파일로 만들어 공유 창을 연다(MainActivity, 첫 줄로 확인)
+    if (app) {
+      if (appCan("csv")) toApp({ type: "csv", text: "﻿" + body });
+      else toast("이 앱 버전에서는 파일로 내보낼 수 없어요. 앱을 새로 받거나 브라우저에서 내보내 주세요", undefined, { error: true });
+      return;
+    }
     const blob = new Blob(["﻿" + body], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -568,17 +577,40 @@ export default function SettingsPage() {
                   <Seg label="지금 사용하는 사람" value={me} onChange={setMe} options={[{ value: "a", label: nameOf(s, "a") }, { value: "b", label: nameOf(s, "b") }]} />
                 </div>
                 <div className="card-foot" style={{ justifyContent: "flex-start", flexWrap: "wrap" }}>
-                  <button
-                    type="button"
-                    className="btn secondary sm"
-                    onClick={async () => {
-                      resetDemo();
-                      await reload();
-                      toast("예시 데이터로 되돌렸어요");
-                    }}
-                  >
+                  <button ref={resetBtn} type="button" className="btn secondary sm" aria-expanded={askReset} onClick={() => setAskReset(true)}>
                     <RotateCcw aria-hidden="true" /> 예시 데이터로 초기화
                   </button>
+                  {askReset && (
+                    <div role="group" aria-labelledby="reset-q" style={{ display: "flex", flexBasis: "100%", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
+                      <p id="reset-q" className="help" style={{ flexBasis: "100%", margin: 0 }}>
+                        이 브라우저에서 바꿔 둔 예시 데이터를 모두 지우고 처음 예시로 되돌릴까요? 되돌릴 수 없어요.
+                      </p>
+                      <button
+                        type="button"
+                        className="btn ghost sm"
+                        autoFocus
+                        onClick={() => {
+                          setAskReset(false);
+                          resetBtn.current?.focus();
+                        }}
+                      >
+                        닫기
+                      </button>
+                      <button
+                        type="button"
+                        className="btn danger sm"
+                        onClick={async () => {
+                          setAskReset(false);
+                          resetDemo();
+                          await reload();
+                          toast("예시 데이터로 되돌렸어요");
+                          resetBtn.current?.focus();
+                        }}
+                      >
+                        예시 데이터로 초기화
+                      </button>
+                    </div>
+                  )}
                   <button type="button" className="btn secondary sm desk-only" onClick={() => void exportCsv()}>
                     <Download aria-hidden="true" /> 지출 CSV 내보내기
                   </button>
