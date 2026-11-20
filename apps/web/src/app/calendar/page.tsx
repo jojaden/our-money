@@ -221,10 +221,18 @@ function CalendarMonth() {
   const [moreTab, setMoreTab] = useState<"month" | "dday">("month");
   const { more, page, hint, fresh, openMore } = useCalendarStage();
   const [sheet, setSheet] = useState<{ open: boolean; key: number; event?: CalEvent; date: string; draft?: QuickDraft; from?: CalEvent }>({ open: false, key: 0, date: day });
+  // 달을 넘겨도 화면은 그대로라(Shell PageMotion) 고른 날·날짜 패널은 달이 바뀔 때 여기서 맞춘다 — 다른 달 날짜를 눌러 넘어왔으면(carried) 그 날
+  const [shownMonth, setShownMonth] = useState(month);
+  if (shownMonth !== month) {
+    setShownMonth(month);
+    const c = carried && carried.date.slice(0, 7) === month ? carried : null;
+    setPicked(c ? c.date : null);
+    setPanelOpen(Boolean(c?.openDay));
+  }
   useEffect(() => {
     carried = null;
     resetSummary();
-  }, []);
+  }, [month]);
   // 볼 것이 없는 날은 고르기만 한다. 일정은 아래 "일정 추가"(고른 날짜)로 더한다
   const hasDay = (date: string) => Boolean((inMonth(date) ? marks : marksIn(data, date, date)).get(date)?.length) || data.spendings.some((x) => x.date === date);
   const pick = (date: string, openDay: boolean) => {

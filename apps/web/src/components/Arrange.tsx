@@ -1,10 +1,11 @@
 "use client";
 
-import { createContext, useContext, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { Children, cloneElement, createContext, isValidElement, useContext, useEffect, useLayoutEffect, useRef, useState, type ReactElement, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import type { ArrangePage } from "@/lib/types";
 import { useData } from "@/lib/store";
+import { useMatch } from "@/lib/media";
 import { haptic } from "@/lib/native";
 import { still } from "./Morph";
 import { useBackToClose } from "./ui";
@@ -66,7 +67,6 @@ export function Slot({ k, children }: { k: string; children: React.ReactNode }) 
   const at = shown.findIndex((c) => c.k === k);
   const title = shown[at]?.title ?? "카드";
   const style = {
-    "--o": i + 1,
     // 애플 홈 화면처럼 카드마다 0.24~0.33초 박자, 시작점은 음수 지연으로 흩뜨린다
     "--jd": `${(0.24 + (h % 10) * 0.01).toFixed(2)}s`,
     "--jl": `-${(((h >>> 4) % 8) * 0.09).toFixed(2)}s`,
@@ -90,6 +90,26 @@ export function Slot({ k, children }: { k: string; children: React.ReactNode }) 
       </div>
     </div>
   );
+}
+
+/**
+ * 폰에서 그릴 차례: 열(.col) 안의 것을 한 줄로 펴고, 카드(Slot)가 아닌 것(마감 안내·알림)은 맨 위에 두던 순서 그대로, 카드는 order 순.
+ * 열이 달라도 key 가 겹치지 않게 카드는 이름(k)으로, 나머지는 열·자리로 다시 붙인다.
+ */
+function flatten(children: ReactNode, order: string[]): ReactElement[] {
+  const lead: ReactElement[] = [];
+  const cards: ReactElement<{ k: string }>[] = [];
+  Children.toArray(children).forEach((col, ci) => {
+    const isCol = isValidElement<{ className?: string; children?: ReactNode }>(col) && typeof col.type === "string" && /\bcol\b/.test(col.props.className ?? "");
+    const inner = isCol ? Children.toArray((col as ReactElement<{ children?: ReactNode }>).props.children) : [col];
+    inner.forEach((el, i) => {
+      if (!isValidElement(el)) return;
+      if (el.type === Slot) cards.push(cloneElement(el as ReactElement<{ k: string }>, { key: `slot:${(el.props as { k: string }).k}` }));
+      else lead.push(cloneElement(el, { key: `lead:${ci}:${el.key ?? i}` }));
+    });
+  });
+  cards.sort((a, b) => order.indexOf(a.props.k) - order.indexOf(b.props.k));
+  return [...lead, ...cards];
 }
 
 interface Press {
@@ -133,6 +153,8 @@ interface Drag {
 export function Arrange({ page, defaults, children }: { page: ArrangePage; defaults: string[]; children: React.ReactNode }) {
   const { cardOrder, setCardOrder } = useData();
   const order = normalize(cardOrder[page], defaults);
+  // 폰·태블릿: 열(.col) 감싸개를 풀고 카드를 저장된 순서대로 그린다 — 보이는 순서 = DOM 순서(Tab·화면 읽기). 데스크톱 두 열은 그대로
+  const phone = useMatch(PHONE);
   const [editing, setEditing] = useState(false);
   const grid = useRef<HTMLDivElement>(null);
   const press = useRef<Press | null>(null);
@@ -152,7 +174,7 @@ export function Arrange({ page, defaults, children }: { page: ArrangePage; defau
   /** 옮겼다는 알림(화면 읽기) */
   const [said, setSaid] = useState("");
   /** 위로·아래로로 옮긴 카드 — 새 자리가 화면 밖이면 굴려 보인다 */
-  const stepped = useRef<string | null>(null);
+  const stepped = useRef<{ k: string; dir: -1 | 1 } | null>(null);
   /** "카드 순서 바꾸기"(키보드)로 들어왔으면 첫 카드 버튼으로 초점을 옮기고, 끝내면 그 버튼으로 돌려준다 */
   const enterBtn = useRef<HTMLButtonElement>(null);
   const viaKey = useRef<"in" | "out" | null>(null);
@@ -213,9 +235,14 @@ export function Arrange({ page, defaults, children }: { page: ArrangePage; defau
       .map((s) => ({ k: s.dataset.card!, title: s.querySelector("h2, h3")?.textContent?.trim() || "카드" }))
       .sort((a, b) => order.indexOf(a.k) - order.indexOf(b.k));
     setShown(list);
-    const k = stepped.current;
+    const st = stepped.current;
     stepped.current = null;
-    if (k) g.querySelector(`[data-card="${k}"]`)?.scrollIntoView({ block: "nearest", behavior: still() ? "auto" : "smooth" });
+    if (st) {
+      const slot = g.querySelector(`[data-card="${st.k}"]`);
+      slot?.scrollIntoView({ block: "nearest", behavior: still() ? "auto" : "smooth" });
+      // 폰에서는 카드가 DOM 에서 실제로 자리를 옮기므로(옮긴 노드는 초점을 잃을 수 있다) 누른 버튼으로 초점을 다시 둔다
+      slot?.querySelector<HTMLElement>(`.slot-move button:${st.dir < 0 ? "first" : "last"}-child`)?.focus({ preventScroll: true });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- order 는 key 로 바뀜을 본다
   }, [editing, key]);
 
@@ -244,7 +271,7 @@ export function Arrange({ page, defaults, children }: { page: ArrangePage; defau
     let n = 0;
     const next = order.map((x) => (seen.includes(x) ? moved[n++] : x));
     haptic(6);
-    stepped.current = k;
+    stepped.current = { k, dir };
     setSaid(`${shown[i].title} — ${seen.length}개 중 ${j + 1}번째로 옮겼어요`);
     void setCardOrder(page, next);
   };
@@ -456,7 +483,7 @@ export function Arrange({ page, defaults, children }: { page: ArrangePage; defau
             카드 순서 바꾸기
           </button>
         )}
-        {children}
+        {phone ? flatten(children, order) : children}
       </div>
       {editing &&
         createPortal(

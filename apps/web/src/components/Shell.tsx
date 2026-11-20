@@ -303,7 +303,8 @@ function PageMotion({ path, children }: { path: string; children: React.ReactNod
   return (
     <div
       ref={box}
-      key={`${path}|${month}`}
+      // 달을 넘겨도 화면은 그대로 두고 값만 바꾼다(지난 달 값에서 이어 가기) — 달마다 비울 상태는 그 컴포넌트가 month 로 비운다
+      key={path}
       className="page-enter"
       style={{ touchAction: "pan-y" }}
       onPointerDown={onDown}
