@@ -83,7 +83,8 @@ function fromToday(day: string, today: string): string {
 }
 
 /**
- * 일정 한 줄 (애플 캘린더 목록처럼): 왼쪽 시간 칸 → 입력한 사람 색 막대 → 제목·부가 정보 → 금액·D-day.
+ * 일정 한 줄 (애플 캘린더 목록처럼): 왼쪽 시간 칸 → 누구 일정(owner) 색 막대 → 제목·부가 정보 → 금액·D-day.
+ * 막대 색은 달력 칸과 같은 뜻(공동·현빈·예진)이고, 개인 일정은 부가 정보에 "현빈 일정"으로 글로도 적는다.
  * 할 일이면 맨 끝 동그라미로 끝낸다. 줄을 누르면 고치기.
  */
 function EventRow({ m, onOpen }: { m: Mark; onOpen: () => void }) {
@@ -104,7 +105,7 @@ function EventRow({ m, onOpen }: { m: Mark; onOpen: () => void }) {
     e.note,
   ].filter(Boolean).join(" · ");
   return (
-    <div className={`ev-row ${e.created_by ?? ""} ${done ? "done" : ""}`}>
+    <div className={`ev-row ${e.owner} ${done ? "done" : ""}`}>
       <button type="button" className="ev-open" onClick={onOpen}>
         <span className="ev-time">
           {from || to ? (
@@ -218,7 +219,7 @@ function CalendarMonth() {
   useFirstHint("hold", "일정·할 일 줄을 꾹 누르면 수정·복사·공유 메뉴가 나와요", panelOpen);
   const returnPanel = useRef(false);
   const [moreTab, setMoreTab] = useState<"month" | "dday">("month");
-  const { more, page, hint, openMore } = useCalendarStage();
+  const { more, page, hint, fresh, openMore } = useCalendarStage();
   const [sheet, setSheet] = useState<{ open: boolean; key: number; event?: CalEvent; date: string; draft?: QuickDraft; from?: CalEvent }>({ open: false, key: 0, date: day });
   useEffect(() => {
     carried = null;
@@ -334,7 +335,7 @@ function CalendarMonth() {
         </section>
       </div>
       {hint && (
-        <button type="button" className="cal-down" aria-label="아래로 내려 모아 보기" onClick={openMore}>
+        <button type="button" className={`cal-down ${fresh ? "fresh" : ""}`} aria-label="아래로 내려 모아 보기" onClick={openMore}>
           <ChevronDown aria-hidden="true" />
         </button>
       )}

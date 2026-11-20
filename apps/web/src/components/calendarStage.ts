@@ -150,5 +150,6 @@ export function useCalendarStage() {
 
   const openMore = () => more.current?.scrollIntoView({ behavior: still() ? "auto" : "smooth", block: "start" });
 
-  return { more, page, hint: !open && !seen, openMore };
+  // 아래 화살표는 달력만 보일 때 늘 둔다(본 뒤에도 아래 내용의 단서). 통통 튀는 것은 처음 왔을 때만
+  return { more, page, hint: !open, fresh: !seen, openMore };
 }

@@ -381,7 +381,7 @@ function PassDetail({ p, from, onClose, onEdit }: { p: PassInfo; from: DOMRect; 
                   </span>
                   <span className="mid">
                     <span className="t">{t.transfer?.to === a.id ? `${t.from} → 여기` : `여기 → ${t.to}`}</span>
-                    <span className="s">{t.done ? "옮겼어요" : t.sub}</span>
+                    <span className="s">{t.done ? "옮겼어요" : [t.sub, t.warn].filter(Boolean).join(" · ")}</span>
                   </span>
                   <span className="r">
                     <b>{num(t.amount)}원</b>

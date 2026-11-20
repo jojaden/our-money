@@ -77,8 +77,10 @@ export function TaskRow({ task, expandable = false, fromShown = false }: { task:
               <ChevronDown aria-hidden="true" width={14} height={14} style={{ flex: "none", transform: open ? "rotate(180deg)" : undefined, transition: "transform 200ms var(--ease-out)" }} />
             </button>
           ) : (
-            <div className="s">{task.sub}</div>
+            // 좁은 폰(320px)에서도 끝까지 읽히게 줄을 바꾼다
+            <div className="s wrap">{task.sub}</div>
           )}
+          {task.warn && !task.done && <div className="s warn">{task.warn}</div>}
         </div>
         <div className="r">
           {editable ? (
