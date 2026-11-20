@@ -48,6 +48,8 @@ interface Store {
   batch: (ops: Op[]) => Promise<boolean>;
   /** 보내지 못하고 폰에 보관 중인 저장 수 (연결되면 자동으로 보낸다). 보내는 중인 것은 세지 않는다 */
   pending: number;
+  /** 아직 서버가 받았다고 하지 않은 저장 수 (보내는 중 + 보관 중) — 로그아웃 전에 묻는 데 쓴다 */
+  unsent: () => number;
   startMonth: (month: string, opts?: { from?: string | null; oneOffs?: boolean }) => Promise<boolean>;
   toggleCheck: (c: Omit<Check, "done_at" | "done_by">, done: boolean) => Promise<void>;
   togglePaid: (item: MonthItem) => Promise<void>;
@@ -712,6 +714,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     remove,
     batch,
     pending,
+    unsent: () => outbox.current.length,
     startMonth,
     toggleCheck,
     togglePaid,

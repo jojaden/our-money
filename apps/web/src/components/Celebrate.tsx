@@ -26,6 +26,7 @@ const BEADS = Array.from({ length: 16 }, (_, i) => {
 export function Celebrate({
   done,
   play = 0,
+  finished,
   month,
   label,
   chips,
@@ -35,6 +36,8 @@ export function Celebrate({
   done: boolean;
   /** 직접 끝낸 순간마다 늘어나는 수 — 늘면 띄운다 */
   play?: number;
+  /** 지금도 그달을 다 끝낸 상태인가 — 체크 저장이 거절돼(OM409 등) 다시 읽은 내용에 남은 일이 생기면 false */
+  finished: boolean;
   month: string;
   label: string;
   chips: { name: string; count: number }[];
@@ -46,6 +49,12 @@ export function Celebrate({
   const n = useRef<HTMLSpanElement>(null);
   // 떠 있는 동안 뒤는 inert, 닫으면 띄우기 전 초점 자리로 (마지막 체크로 줄이 빠졌으면 목록이 옮겨 둔 자리)
   useLayer(open, root);
+  // 체크는 화면에 먼저 반영하고 저장하므로, 저장이 거절되면 "다 끝냄"이 거둬진다 — 띄우기 전이면 띄우지 않고, 떠 있으면 닫아 오류 알림을 덮지 않는다
+  const still = useRef(finished);
+  useEffect(() => {
+    still.current = finished;
+  }, [finished]);
+  if (!finished && open && !leaving) setLeaving(true);
 
   useEffect(() => {
     if (!done) return;
@@ -56,6 +65,7 @@ export function Celebrate({
     if (seen === month) return;
     // 마지막 체크 원이 튀는 것을 본 다음에 띄운다
     const t = setTimeout(() => {
+      if (!still.current) return;
       try {
         localStorage.setItem(SEEN, month);
       } catch {}
@@ -69,6 +79,7 @@ export function Celebrate({
   useEffect(() => {
     if (!play) return;
     const t = setTimeout(() => {
+      if (!still.current) return;
       try {
         localStorage.setItem(SEEN, month);
       } catch {}
