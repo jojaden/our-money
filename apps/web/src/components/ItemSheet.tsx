@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { ChevronDown, Plus, Trash2 } from "lucide-react";
 import type { Account, Group, Method, Month, MonthItem, Owner, Person, PlanItem } from "@/lib/types";
 import { GROUP_LABEL, METHOD_LABEL } from "@/lib/types";
@@ -164,6 +164,8 @@ export function ItemSheet({
   // 나가는 곳 목록의 "카드·통장 넣기": 어느 칸(한 곳·사람 몫)에서 열었는지 — 넣고 나면 그 칸에 골라 둔다
   const [adding, setAdding] = useState(false);
   const [addTarget, setAddTarget] = useState<"one" | Person>("one");
+  // 저장을 눌러 봤는지 — 그 뒤로 틀린 칸 아래에 이유를 보여 준다 (저장 버튼은 끄지 않는다)
+  const [tried, setTried] = useState(false);
 
   // 열 때만 채운다 — 그리는 도중에 바꿔, 위에 겹친 지갑 시트에서 카드를 넣어 data 가 바뀌어도 적던 내용이 그대로 남는다
   const [wasOpen, setWasOpen] = useState(false);
@@ -193,6 +195,7 @@ export function ItemSheet({
       setStartM(plan?.start_month ?? month);
       setEndM(plan?.end_month ?? "");
       setAdding(false);
+      setTried(false);
       setInitial(null);
     }
   }
@@ -246,17 +249,29 @@ export function ItemSheet({
         : null;
   // 이번 달만 바꿀 때 나눠 내기를 켜거나 끄면(공동 → 한 사람으로 바꿔도) 다음 달에 한 사람 몫만 넘어간다
   const splitError = item && !forward && splitOn !== paired ? "나눠 내기를 켜고 끄는 건 ‘다음 달부터도 적용’을 켰을 때만 돼요" : null;
-  const valid =
-    name.trim().length > 0 &&
-    amount > 0 &&
-    (splitOn
-      ? parts.a.amount > 0 && parts.b.amount > 0 && parts.a.amount + parts.b.amount === amount && sourceOk(parts.a) && sourceOk(parts.b)
-      : sourceOk(source)) &&
-    !periodError &&
-    !splitError;
+  // 칸마다 틀린 이유 (저장을 눌러 본 뒤에만 보인다)
+  const nameError = name.trim().length === 0 ? "이름을 적어 주세요" : null;
+  const amountError = amount > 0 ? null : "매달 금액을 적어 주세요";
+  const partsError =
+    splitOn && amount > 0 && !(parts.a.amount > 0 && parts.b.amount > 0 && parts.a.amount + parts.b.amount === amount)
+      ? `두 사람 몫을 모두 적고, 더하면 매달 금액 ${num(amount)}원이 되게 해 주세요`
+      : null;
+  const sourceError = (x: Source) => (sourceOk(x) ? null : "카드를 골라 주세요");
+  const valid = !nameError && !amountError && !partsError && (splitOn ? !sourceError(parts.a) && !sourceError(parts.b) : !sourceError(source)) && !periodError && !splitError;
+  const shown = (e: string | null) => (tried ? e : null);
+  const sheetBody = useRef<HTMLDivElement>(null);
 
   const save = async () => {
-    if (!valid) return;
+    if (!valid) {
+      // 꺼 두지 않고, 누르면 틀린 칸 아래에 이유를 보이고 첫 칸으로 초점을 옮긴다
+      setTried(true);
+      requestAnimationFrame(() => {
+        const el = sheetBody.current?.closest(".sheet")?.querySelector<HTMLElement>('[aria-invalid="true"], [role="alert"]');
+        el?.scrollIntoView({ block: "center" });
+        if (el?.matches("input, select")) el.focus({ preventScroll: true });
+      });
+      return;
+    }
     const common = { group, name: name.trim(), due_day: dueDay, note: note.trim() };
     const pairId = splitOn ? (paired ? item!.pair_id! : newId("pair")) : null;
     // 저장할 줄: 나눠 내면 두 사람 몫 두 줄, 아니면 한 줄. 나눠 내기를 끄면 a 몫 줄을 공동 항목으로 되돌리고 b 몫 줄은 뺀다
@@ -323,17 +338,20 @@ export function ItemSheet({
     toast(later ? `저장했어요 · ${monthLabel(startM)}부터 들어가요` : forward ? "저장했어요 · 다음 달부터도 적용" : "이번 달만 바꿨어요");
   };
 
+  // 빼기: 나눠 낸 항목은 두 사람 몫을 함께 뺀다. "다음 달부터도 적용"이 켜져 있고 플랜 항목이 있으면 다음 달부터도 끈다
+  const delRows = item ? (paired ? [ia!, ib!] : [item]) : [];
+  const delPlans = delRows.flatMap((r) => {
+    const p = r.plan_item_id ? data.plan_items.find((x) => x.id === r.plan_item_id) : undefined;
+    return p ? [p] : [];
+  });
+  const delForward = forward && delPlans.length > 0;
   const del = async () => {
     if (!item) return;
-    // 나눠 낸 항목은 두 사람 몫을 함께 뺀다
-    const rows = paired ? [ia!, ib!] : [item];
-    const plans = rows.flatMap((r) => {
-      const p = r.plan_item_id ? data.plan_items.find((x) => x.id === r.plan_item_id) : undefined;
-      return p ? [p] : [];
-    });
+    const rows = delRows;
+    const plans = delPlans;
     onOpenChange(false);
     // 이번 달에서 빼기와 다음 달부터 끄기를 한 트랜잭션으로
-    const off = forward && plans.length > 0;
+    const off = delForward;
     if (!(await batch([deleteOp("month_items", rows.map((r) => r.id)), ...(off ? [upsertOp("plan_items", plans.map((p) => ({ ...p, active: false })))] : [])]))) return;
     toast(off ? "이번 달과 다음 달부터 뺐어요" : "이번 달에서 뺐어요", () => {
       void batch([...(plans.length ? [upsertOp("plan_items", plans)] : []), upsertOp("month_items", rows)]);
@@ -367,17 +385,18 @@ export function ItemSheet({
       headerAction={
         item && (
           <button type="button" className="btn danger sm" onClick={() => void del()}>
-            <Trash2 aria-hidden="true" /> 빼기
+            {/* 범위는 맨 아래 "다음 달부터도 적용"이 정한다 — 버튼 글에도 적는다 */}
+            <Trash2 aria-hidden="true" /> {delForward ? "다음 달부터도 빼기" : "이번 달만 빼기"}
           </button>
         )
       }
       footer={
-        <button type="button" className="btn block" disabled={!valid} onClick={() => void save()}>
+        <button type="button" className="btn block" onClick={() => void save()}>
           저장
         </button>
       }
     >
-      <div className="field">
+      <div className="field" ref={sheetBody}>
         <span className="label">종류</span>
         <Seg
           label="종류"
@@ -388,12 +407,31 @@ export function ItemSheet({
       </div>
       <div className="field">
         <label htmlFor="it-name">이름</label>
-        <input id="it-name" className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="예: 월세, 실손보험, 적금" maxLength={30} />
+        <input
+          id="it-name"
+          className="input"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="예: 월세, 실손보험, 적금"
+          maxLength={30}
+          aria-invalid={shown(nameError) ? true : undefined}
+          aria-describedby={shown(nameError) ? "it-name-err" : undefined}
+        />
+        {shown(nameError) && (
+          <p className="help error" id="it-name-err">
+            {nameError}
+          </p>
+        )}
       </div>
       <div className="inline-fields field">
         <div className="field">
           <label htmlFor="it-amount">{splitOn ? "매달 금액 (합계)" : "매달 금액"}</label>
-          <AmountInput id="it-amount" value={amount} onChange={setTotal} />
+          <AmountInput id="it-amount" value={amount} onChange={setTotal} error={shown(amountError) ? "it-amount-err" : undefined} />
+          {shown(amountError) && (
+            <p className="help error" id="it-amount-err">
+              {amountError}
+            </p>
+          )}
         </div>
         <div className="field" style={{ marginTop: 0 }}>
           <label htmlFor="it-due">{group === "living" || group === "allowance" ? "이체일 (선택)" : "결제·이체일"}</label>
@@ -433,8 +471,13 @@ export function ItemSheet({
             <div className="split-head">
               <PersonGlyph owner={p} />
               <label htmlFor={`it-amt-${p}`}>{nameOf(s, p)} 몫</label>
-              <AmountInput id={`it-amt-${p}`} value={parts[p].amount} onChange={(v) => setShare(p, v)} />
+              <AmountInput id={`it-amt-${p}`} value={parts[p].amount} onChange={(v) => setShare(p, v)} error={shown(partsError) ? "it-parts-err" : undefined} />
             </div>
+            {p === "b" && shown(partsError) && (
+              <p className="help error" id="it-parts-err">
+                {partsError}
+              </p>
+            )}
             <SourcePicker
               id={`it-src-${p}`}
               label={sourceLabel}
@@ -445,10 +488,14 @@ export function ItemSheet({
               saving={group === "saving"}
               onAdd={() => openAdd(p)}
             />
+            {shown(sourceError(parts[p])) && <p className="help error">{nameOf(s, p)} 몫: {sourceError(parts[p])}</p>}
           </div>
         ))
       ) : (
-        <SourcePicker id="it-src" label={sourceLabel} value={source} onChange={setSource} accounts={wallet} person={payer} saving={group === "saving"} onAdd={() => openAdd("one")} />
+        <>
+          <SourcePicker id="it-src" label={sourceLabel} value={source} onChange={setSource} accounts={wallet} person={payer} saving={group === "saving"} onAdd={() => openAdd("one")} />
+          {shown(sourceError(source)) && <p className="help error">{sourceError(source)}</p>}
+        </>
       )}
       {group === "saving" && (
         <div className="inline-fields field">

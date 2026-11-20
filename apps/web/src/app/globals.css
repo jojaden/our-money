@@ -144,8 +144,9 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
   .kpi-sub .sep { display: none; }
   .kpi-sub .clause { display: block; }
 }
-.split-note { display: none; }
-@media (min-width: 640px) { .split-note { display: block; } }
+/* 플랜 공동 항목 줄의 "각자 … / …"는 좁은 폰에서 숨긴다(몫은 펼치면 보임). SplitBar 아래 한 줄(.split-note)은 늘 보인다 — 이름을 나눠 둔다 */
+.split-each { display: none; }
+@media (min-width: 640px) { .split-each { display: block; } }
 
 /* ---------- 버킷 점·범례 ---------- */
 
