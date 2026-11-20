@@ -360,7 +360,6 @@ export function SpendingSheet({ open, onOpenChange, editing }: { open: boolean; 
           inputMode="numeric"
           autoComplete="off"
           placeholder="0"
-          autoFocus={!editing}
           enterKeyHint="done"
           value={amount ? num(amount) : ""}
           onChange={(e) => setCapped(Number(e.target.value.replace(/[^\d]/g, "")) || 0)}
