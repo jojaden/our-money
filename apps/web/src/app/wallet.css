@@ -157,6 +157,8 @@ button.pass:focus-visible .face { outline: 2px solid var(--accent-ink); outline-
 .form-row input, .form-row select { width: 100%; min-width: 0; height: 48px; padding: 0; border: 0; background: none; color: var(--text); font: 500 16px/20px var(--font-text); text-align: right; text-align-last: right; outline: none; }
 .form-row input::placeholder { color: var(--faint); opacity: 0.7; }
 .form-row:focus-within > span { color: var(--accent-ink); }
+/* 칸 자체에 링이 없으니(outline: none) 적는 줄 전체에 링을 둘러 어디에 적는지 보이게 한다 — 이름표 색만으로는 거의 안 보인다 */
+.form-row:has(> :is(input, select, textarea):focus-visible) { border-radius: var(--radius-control); box-shadow: inset 0 0 0 2px var(--accent-ink); }
 /* 카드사·은행 고르기: 적는 동안 맞는 이름을 칩으로 */
 .form-suggest { display: flex; gap: 6px; padding: 2px 16px 12px; overflow-x: auto; scrollbar-width: none; }
 .form-suggest::-webkit-scrollbar { display: none; }
@@ -186,6 +188,7 @@ button.pass:focus-visible .face { outline: 2px solid var(--accent-ink); outline-
 .ap-chev { flex: none; width: 20px; height: 20px; color: var(--faint); }
 /* 2단계: 어느 은행·카드사 — 찾기 + 로고 격자(묶음별) */
 .ap-search { display: flex; align-items: center; gap: 8px; height: 48px; padding: 0 14px; border-radius: var(--radius-control); background: var(--well); color: var(--faint); }
+.ap-search:focus-within { box-shadow: 0 0 0 2px var(--accent-ink); }
 .ap-search svg { flex: none; width: 18px; height: 18px; }
 .ap-search input { flex: 1; min-width: 0; height: 100%; border: 0; background: none; color: var(--text); font: 500 16px/20px var(--font-text); outline: none; }
 .ap-group { margin: 18px 2px 8px; color: var(--muted); font: 600 13px/18px var(--font-text); }
@@ -204,7 +207,8 @@ button.pass:focus-visible .face { outline: 2px solid var(--accent-ink); outline-
 .ap-summary .r { flex: none; color: var(--accent-ink); font: 600 14px/20px var(--font-text); }
 .add-pass .ap-group + .ap-tight { margin-top: 0; }
 /* 이름 칸 바로 아래: 이 이름이 어디에 나오는지 */
-.add-pass .form-help { margin: -6px 0 0; padding: 0 16px 10px; color: var(--faint); font: 400 12.5px/18px var(--font-text); }
+/* 위 줄의 초점 링(안쪽 2px)이 글자에 걸리지 않을 만큼만 당겨 붙인다 */
+.add-pass .form-help { margin: -2px 0 0; padding: 0 16px 10px; color: var(--faint); font: 400 12.5px/18px var(--font-text); }
 
 @media (prefers-reduced-motion: reduce) {
   .pass .face, .glass-btn, .pass-preview, .flipper, .ptile .tonal, .swatch { transition: none; }

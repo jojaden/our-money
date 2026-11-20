@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import type { ArrangePage } from "@/lib/types";
 import { useData } from "@/lib/store";
 import { haptic } from "@/lib/native";
@@ -41,16 +42,29 @@ function hash(k: string): number {
   return h;
 }
 
-const OrderCtx = createContext<string[]>([]);
+/** 흔드는 동안 보이는 카드(보이는 순서)와 그 이름 — 위로·아래로 버튼이 쓴다 */
+interface Shown {
+  k: string;
+  title: string;
+}
+const OrderCtx = createContext<{ order: string[]; editing: boolean; shown: Shown[]; move: (k: string, dir: -1 | 1) => void }>({
+  order: [],
+  editing: false,
+  shown: [],
+  move: () => {},
+});
 
 /**
- * 옮길 수 있는 카드 하나. 폰에서는 order 로 자리를 잡고(--o), 흔들리는 동안은 안쪽을 누를 수 없다.
+ * 옮길 수 있는 카드 하나. 폰에서는 order 로 자리를 잡고(--o), 흔들리는 동안은 안쪽을 누를 수도 Tab 으로 갈 수도 없다(inert).
+ * 흔드는 동안 오른쪽 위에 위로·아래로 버튼을 둔다 — 끌기 대신 누르기·키보드로 옮기는 길.
  * 내용이 없으면 Slot 도 두지 않는다(빈 칸이 간격을 차지하지 않게).
  */
 export function Slot({ k, children }: { k: string; children: React.ReactNode }) {
-  const order = useContext(OrderCtx);
+  const { order, editing, shown, move } = useContext(OrderCtx);
   const i = order.indexOf(k);
   const h = hash(k);
+  const at = shown.findIndex((c) => c.k === k);
+  const title = shown[at]?.title ?? "카드";
   const style = {
     "--o": i + 1,
     // 애플 홈 화면처럼 카드마다 0.24~0.33초 박자, 시작점은 음수 지연으로 흩뜨린다
@@ -59,7 +73,21 @@ export function Slot({ k, children }: { k: string; children: React.ReactNode }) 
   } as React.CSSProperties;
   return (
     <div className="slot" data-card={k} data-j={i % 2} style={style}>
-      {children}
+      {editing && at >= 0 && (
+        // 꾹 누르기로 집히지 않게(data-no-arrange). 끝에서는 disabled 대신 aria-disabled — 초점이 그대로 남는다
+        <div className="slot-move" data-no-arrange="">
+          <button type="button" aria-label={`${title} 위로`} aria-disabled={at === 0} onClick={() => move(k, -1)}>
+            <ChevronUp aria-hidden="true" />
+          </button>
+          <button type="button" aria-label={`${title} 아래로`} aria-disabled={at === shown.length - 1} onClick={() => move(k, 1)}>
+            <ChevronDown aria-hidden="true" />
+          </button>
+        </div>
+      )}
+      {/* 늘 같은 감싸개(display: contents)에 inert 만 바꾼다 — 조건부로 감싸면 카드가 다시 마운트된다 */}
+      <div className="slot-body" inert={editing}>
+        {children}
+      </div>
     </div>
   );
 }
@@ -119,13 +147,34 @@ export function Arrange({ page, defaults, children }: { page: ArrangePage; defau
     latest.current = { editing, order, save: setCardOrder };
   });
   useBackToClose(editing, setEditing);
+  /** 흔드는 동안 보이는 카드와 이름(보이는 순서) */
+  const [shown, setShown] = useState<Shown[]>([]);
+  /** 옮겼다는 알림(화면 읽기) */
+  const [said, setSaid] = useState("");
+  /** 위로·아래로로 옮긴 카드 — 새 자리가 화면 밖이면 굴려 보인다 */
+  const stepped = useRef<string | null>(null);
+  /** "카드 순서 바꾸기"(키보드)로 들어왔으면 첫 카드 버튼으로 초점을 옮기고, 끝내면 그 버튼으로 돌려준다 */
+  const enterBtn = useRef<HTMLButtonElement>(null);
+  const viaKey = useRef<"in" | "out" | null>(null);
 
   // 흔드는 동안: 달 넘기기 쓸기·하단 메뉴를 멈춘다(shell.css)
   useEffect(() => {
     const root = document.documentElement;
+    // 하단 메뉴는 투명하게 비키므로 Tab 에서도 뺀다
+    const nav = document.querySelector(".navbar");
     if (editing) root.dataset.arranging = "";
     else delete root.dataset.arranging;
-    return () => void delete root.dataset.arranging;
+    nav?.toggleAttribute("inert", editing);
+    if (!editing) return;
+    const esc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setEditing(false);
+    };
+    document.addEventListener("keydown", esc);
+    return () => {
+      delete root.dataset.arranging;
+      nav?.removeAttribute("inert");
+      document.removeEventListener("keydown", esc);
+    };
   }, [editing]);
 
   /** 든 카드를 off(px) 떨어진 곳에서 제자리로 내려앉히며 누른 곳을 중심으로 원래 크기로 키운다 */
@@ -155,8 +204,52 @@ export function Arrange({ page, defaults, children }: { page: ArrangePage; defau
     }
   }, [editing]);
 
-  // 새 순서가 그려진 뒤: 비켜 있던 카드는 놓기 직전 자리에서 새 제자리로 미끄러지고, 든 카드는 놓은 곳에서 새 자리로 내려앉는다
+  // 흔드는 동안 보이는 카드를 보이는 순서로 잰다(없는 카드는 order 에 있어도 빠진다). 이름은 카드 제목에서
   const key = order.join("|");
+  useLayoutEffect(() => {
+    const g = grid.current;
+    if (!editing || !g) return;
+    const list = [...g.querySelectorAll<HTMLElement>("[data-card]")]
+      .map((s) => ({ k: s.dataset.card!, title: s.querySelector("h2, h3")?.textContent?.trim() || "카드" }))
+      .sort((a, b) => order.indexOf(a.k) - order.indexOf(b.k));
+    setShown(list);
+    const k = stepped.current;
+    stepped.current = null;
+    if (k) g.querySelector(`[data-card="${k}"]`)?.scrollIntoView({ block: "nearest", behavior: still() ? "auto" : "smooth" });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- order 는 key 로 바뀜을 본다
+  }, [editing, key]);
+
+  // 키보드로 들어왔으면 버튼이 그려진 뒤 첫 카드의 "아래로"에 초점을 둔다
+  useLayoutEffect(() => {
+    if (viaKey.current !== "in" || !shown[0]) return;
+    viaKey.current = "out";
+    grid.current?.querySelector<HTMLElement>(`[data-card="${shown[0].k}"] .slot-move button:last-child`)?.focus();
+  }, [shown]);
+
+  // 키보드로 들어왔으면 끝낼 때 "카드 순서 바꾸기"로 초점을 돌려준다
+  useLayoutEffect(() => {
+    if (editing || viaKey.current !== "out") return;
+    viaKey.current = null;
+    enterBtn.current?.focus();
+  }, [editing]);
+
+  /** 위로·아래로: 보이는 카드끼리 자리를 바꿔 전체 순서(지금 없는 카드 포함)에 끼워 넣는다 */
+  const move = (k: string, dir: -1 | 1) => {
+    const seen = shown.map((c) => c.k);
+    const i = seen.indexOf(k);
+    const j = i + dir;
+    if (i < 0 || j < 0 || j >= seen.length) return;
+    const moved = [...seen];
+    [moved[i], moved[j]] = [moved[j], moved[i]];
+    let n = 0;
+    const next = order.map((x) => (seen.includes(x) ? moved[n++] : x));
+    haptic(6);
+    stepped.current = k;
+    setSaid(`${shown[i].title} — ${seen.length}개 중 ${j + 1}번째로 옮겼어요`);
+    void setCardOrder(page, next);
+  };
+
+  // 새 순서가 그려진 뒤: 비켜 있던 카드는 놓기 직전 자리에서 새 제자리로 미끄러지고, 든 카드는 놓은 곳에서 새 자리로 내려앉는다
   useLayoutEffect(() => {
     const l = landing.current;
     if (!l) return;
@@ -337,7 +430,7 @@ export function Arrange({ page, defaults, children }: { page: ArrangePage; defau
   };
 
   return (
-    <OrderCtx.Provider value={order}>
+    <OrderCtx.Provider value={{ order, editing, shown, move }}>
       <div
         ref={grid}
         className={`grid ${editing ? "arranging" : ""}`}
@@ -347,6 +440,22 @@ export function Arrange({ page, defaults, children }: { page: ArrangePage; defau
           if (press.current || editing) e.preventDefault();
         }}
       >
+        {/* 끌기 대신 옮기는 길: 키보드·화면 읽기로 초점이 오면 보인다 (폰·태블릿만) */}
+        {!editing && (
+          <button
+            ref={enterBtn}
+            type="button"
+            className="btn ghost sm arrange-enter"
+            onClick={() => {
+              if (!matchMedia(PHONE).matches) return;
+              viaKey.current = "in";
+              setSaid("");
+              setEditing(true);
+            }}
+          >
+            카드 순서 바꾸기
+          </button>
+        )}
         {children}
       </div>
       {editing &&
@@ -355,7 +464,10 @@ export function Arrange({ page, defaults, children }: { page: ArrangePage; defau
             <button type="button" className="btn ghost" onClick={() => void setCardOrder(page, null)} disabled={!cardOrder[page]}>
               처음 순서
             </button>
-            <span className="arrange-hint">카드를 끌어 옮겨요</span>
+            <span className="arrange-hint">끌거나 화살표로 옮겨요</span>
+            <span className="sr-only" role="status">
+              {said}
+            </span>
             <button type="button" className="btn sm" onClick={() => setEditing(false)}>
               완료
             </button>

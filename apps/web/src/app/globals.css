@@ -66,6 +66,9 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
   .span-12 { grid-column: 1 / -1; }
   .col { display: grid; gap: 16px; align-content: start; }
 }
+/* Slot 안 감싸개(흔드는 동안 inert 만 켠다) — 상자를 만들지 않는다. 옮기기는 폰·태블릿만이라 데스크톱에서는 들어가는 버튼도 없다 */
+.slot-body { display: contents; }
+@media (min-width: 1024px) { .grid > .arrange-enter { display: none; } }
 /* 폰에서는 열을 풀고 한 줄에 세운다. 카드 자리는 Slot 의 --o (사람마다 꾹 눌러 옮긴 순서, components/Arrange) */
 @media (max-width: 1023px) {
   .col { display: contents; }
@@ -86,6 +89,16 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
   }
   .arranging .slot[data-j="1"] { animation-name: jiggle-b; animation-direction: alternate; }
   .arranging .slot > * { pointer-events: none; }
+  /* 위로·아래로(끌기 대신 누르기·키보드로 옮기는 길): 카드 오른쪽 위에 떠서 카드와 함께 흔들린다 */
+  .arranging .slot { position: relative; }
+  .arranging .slot > .slot-move { position: absolute; top: -6px; right: 4px; z-index: 2; display: flex; gap: 6px; pointer-events: auto; }
+  .slot-move button { display: grid; place-items: center; width: 40px; height: 40px; padding: 0; border: 0; border-radius: var(--radius-chip); background: var(--surface); box-shadow: var(--shadow-float); color: var(--text); }
+  .slot-move button[aria-disabled="true"] { color: var(--faint); cursor: default; }
+  .slot-move svg { width: 20px; height: 20px; stroke-width: 2.2; }
+  .slot-move button:focus-visible { outline-offset: 2px; border-radius: var(--radius-chip); }
+  /* "카드 순서 바꾸기": 초점이 왔을 때만 맨 위에 보인다 (건너뛰기 링크처럼) */
+  .arrange-enter { justify-self: start; }
+  .arrange-enter:not(:focus) { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   /* 든 카드: 누른 곳(transform-origin)으로 모이며 --lift 비율로 작아진다. 놓으면 .landing 이 원래 크기로 키운다 */
   .slot.lifted { position: relative; z-index: 6; scale: var(--lift, 0.6); filter: var(--shadow-lift); animation: none; transition: scale var(--dur-tab) var(--ease-drawer); }
   .slot.landing { position: relative; z-index: 6; animation: none; transition: translate var(--dur-tab) var(--ease-drawer), scale var(--dur-tab) var(--ease-drawer); }
