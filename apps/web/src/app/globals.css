@@ -185,7 +185,7 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
   align-items: baseline;
   gap: 6px;
   padding: 4px 0 12px;
-  border-bottom: 2px solid var(--border);
+  border-bottom: 2px solid var(--control);
   transition: border-color 200ms ease;
 }
 .cap-hint { margin: 4px 0 0; color: var(--negative); font: 500 13px/18px var(--font-text); text-align: center; }
@@ -202,7 +202,7 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
   letter-spacing: -0.03em;
   font-variant-numeric: tabular-nums;
 }
-.bigamount input::placeholder { color: var(--border); }
+.bigamount input::placeholder { color: var(--faint); }
 .bigamount .unit { font-size: 22px; font-weight: 600; color: var(--muted); }
 .sheet-lead { margin: 0 0 4px; color: var(--muted); font: 500 14px/20px var(--font-text); }
 .quick { display: flex; gap: 8px; margin-top: 10px; }
@@ -304,7 +304,11 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
   color: var(--text);
   transition: background-color var(--dur-press) ease;
 }
-.cal-day.out { opacity: 0.35; }
+/* 다른 달 칸: 통째로 투명하게 하면 칠한 일정 글자가 2:1 아래로 떨어진다 → 바탕을 빼고 글자·칠만 옅은 토큰으로 (글자 3:1 이상) */
+.cal-day.out { background: transparent; }
+.cal-day.out :is(.n, .cal-item, .amt, .cal-over) { color: var(--faint); }
+.cal-day.out .cal-item.fill { background: var(--who-soft); }
+.cal-day.out .cal-item:is(.hol, .sp) { background: var(--well); }
 .cal-day .n { display: grid; flex: none; place-items: center; width: var(--cal-num); height: var(--cal-num); border-radius: 50%; font: 600 13px/1 var(--font-display); font-variant-numeric: tabular-nums; }
 .cal-day.today .n { background: var(--primary); color: var(--on-primary); }
 .cal-day.picked { background: var(--accent-soft); box-shadow: inset 0 0 0 1.5px var(--accent-ink); }
