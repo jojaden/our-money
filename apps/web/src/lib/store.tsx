@@ -15,10 +15,12 @@ type Auth =
   | { state: "not-member"; email: string }
   | { state: "member"; email: string };
 
-interface Toast {
+export interface Toast {
   id: number;
   text: string;
   undo?: () => void;
+  /** 실패 알림: 저절로 사라지지 않고 닫을 때까지 남는다 */
+  error?: boolean;
 }
 
 interface Store {
@@ -58,7 +60,7 @@ interface Store {
   /** 한 화면의 카드 순서를 바꾼다. null 이면 처음 순서로 */
   setCardOrder: (page: ArrangePage, keys: string[] | null) => Promise<void>;
   toasts: Toast[];
-  toast: (text: string, undo?: () => void) => void;
+  toast: (text: string, undo?: () => void, opts?: { error?: boolean }) => void;
   dismissToast: (id: number) => void;
 }
 
@@ -217,10 +219,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const toastSeq = useRef(0);
   const repo = useMemo(() => (typeof window === "undefined" ? null : getRepo()), []);
 
-  const toast = useCallback((text: string, undo?: () => void) => {
+  // 사라지는 시간은 토스트가 센다(Toasts) — 손가락·초점이 올라가 있는 동안 멈추고, 실패는 닫을 때까지 남는다
+  const toast = useCallback((text: string, undo?: () => void, opts?: { error?: boolean }) => {
     const id = ++toastSeq.current;
-    setToasts((t) => [...t.slice(-2), { id, text, undo }]);
-    window.setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), undo ? 5000 : 2600);
+    setToasts((t) => [...t.slice(-2), { id, text, undo, error: opts?.error }]);
   }, []);
   const dismissToast = useCallback((id: number) => setToasts((t) => t.filter((x) => x.id !== id)), []);
 
@@ -417,7 +419,6 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const waiters = useRef(new Map<number, { resolve: () => void; reject: (e: unknown) => void }>());
   const seq = useRef(0);
   const flushing = useRef(false);
-  const parkedToast = useRef(0);
   const persist = useCallback(() => {
     setPending((n) => (outbox.current.length === 0 ? 0 : n > 0 ? outbox.current.length : n));
     if (!hasSupabase) return;
@@ -434,7 +435,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       try {
         const rows = (await repo.loadTable(table, { spendingsFrom: spendingsFrom.current })) as unknown as { id: string }[];
         setData((d) => (d ? applyOpsLocal({ ...d, [table]: rows }, outbox.current.flatMap((p) => p.ops), table) : d));
-        if (rows.some((r) => ids.includes(r.id))) toast("지우지 못했어요. 로그인 상태를 확인해 주세요");
+        if (rows.some((r) => ids.includes(r.id))) toast("지우지 못했어요. 로그인 상태를 확인해 주세요", undefined, { error: true });
       } catch {}
     },
     [repo, toast],
@@ -486,10 +487,6 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
               continue;
             }
             // 3번 다 실패: 보관해 두고 멈춘다. 다음 저장·연결 복구·앱 복귀 때 다시 시도
-            if (Date.now() - parkedToast.current > 60_000) {
-              parkedToast.current = Date.now();
-              toast("연결이 불안정해요. 저장할 내용을 폰에 보관했다가 연결되면 보낼게요");
-            }
             setPending(outbox.current.length);
             for (const p of outbox.current) {
               waiters.current.get(p.seq)?.resolve();
@@ -500,12 +497,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           done(e);
           const tables = [...new Set(head.ops.map((o) => o.table))];
           if (e instanceof ConflictError) {
-            toast("다른 폰에서 먼저 바꿨어요. 최신 내용으로 다시 불러왔어요");
+            toast("다른 폰에서 먼저 바꿔서 이 저장은 하지 못했어요. 최신 내용을 불러왔으니 확인하고 다시 저장해 주세요", undefined, { error: true });
             for (const t of tables) await reload(t);
           } else {
             // 서버의 영어 오류 글은 콘솔에만 (사람에게는 무엇을 하면 되는지만)
             console.warn("저장 거절", e);
-            toast("저장하지 못했어요. 바꾼 내용을 확인하고 다시 저장해 주세요");
+            toast("저장하지 못했어요. 바꾼 내용을 확인하고 다시 저장해 주세요", undefined, { error: true });
             await reload();
           }
         }
@@ -583,7 +580,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       try {
         await repo.updateMyName(me, next);
       } catch (e) {
-        toast(`이름을 바꾸지 못했어요: ${e instanceof Error ? e.message : e}`);
+        // 서버의 영어 오류 글은 콘솔에만 (사람에게는 무엇을 하면 되는지만)
+        console.warn("이름 바꾸기 거절", e);
+        toast("이름을 바꾸지 못했어요. 연결을 확인하고 다시 저장해 주세요", undefined, { error: true });
         await reload();
         throw e;
       }
