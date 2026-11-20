@@ -38,6 +38,12 @@ export function DailyBars({ rows, month, cycleStart, today }: { rows: { date: st
   })();
   const top = Math.ceil(peak / step) * step;
   const [sel, setSel] = useState<number | null>(null);
+  // 달을 넘기면(화면은 그대로) 고른 막대를 비운다 — 다른 달의 같은 자리를 가리키지 않게
+  const [selMonth, setSelMonth] = useState(month);
+  if (selMonth !== month) {
+    setSelMonth(month);
+    setSel(null);
+  }
   const grown = useRevealOnce("daily");
   const shown = sel !== null ? days[sel] : null;
   const label = (s: string) => {

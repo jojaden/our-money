@@ -1,7 +1,7 @@
 "use client";
 
 import { Component, createContext, createRef, useContext, useLayoutEffect, type ReactNode } from "react";
-import { cssTimeMs } from "@/lib/motion";
+import { cssTimeMs, monthSwap } from "@/lib/motion";
 
 /**
  * 안의 칸이 바뀔 때 스르륵 이어지게 하는 상자 (docs/design-system 움직임 "칸 바뀌기").
@@ -70,7 +70,8 @@ export class Morph extends Component<{ children: ReactNode; className?: string; 
 
   getSnapshotBeforeUpdate(): Snap | null {
     const box = this.box.current;
-    if (!box || still()) return null;
+    // 달 교체는 화면 전체가 좌우로 바뀌는 움직임이 맡는다 — 칸 넣고 빼기·따라 굴리기를 겹치지 않는다
+    if (!box || still() || monthSwap.now) return null;
     const b = box.getBoundingClientRect();
     const items = new Map<Element, Rect>();
     for (const el of this.items()) {

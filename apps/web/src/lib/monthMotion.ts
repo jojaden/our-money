@@ -1,5 +1,5 @@
 import { flushSync } from "react-dom";
-import { cssTimeMs } from "./motion";
+import { cssTimeMs, monthSwap } from "./motion";
 
 /**
  * 달을 넘길 때 움직이는 것 — 머리(.page-head)는 제자리에 두고 그 아래 내용만.
@@ -11,6 +11,25 @@ export function monthTargets(box: Element | null): HTMLElement[] {
   const marked = box.querySelectorAll<HTMLElement>("[data-month-slide]");
   if (marked.length) return [...marked];
   return ([...box.children] as HTMLElement[]).filter((c) => !c.classList.contains("page-head"));
+}
+
+/** 화면을 다시 만들지 않으므로(Shell PageMotion key 에 달이 없음) 손가락 끌기가 남긴 인라인 자리·투명도를 새 달에서 지운다 */
+function clearDrag() {
+  for (const el of monthTargets(document.querySelector(".page-enter"))) {
+    el.style.removeProperty("transform");
+    el.style.removeProperty("opacity");
+    el.style.removeProperty("transition");
+  }
+}
+/** 새 달 그리기 — Morph 가 칸 바뀜으로 움직이지 않게 표시하고, 끌기 흔적을 지운다 */
+function swap(update: () => void) {
+  monthSwap.now = true;
+  try {
+    flushSync(update);
+  } finally {
+    monthSwap.now = false;
+  }
+  clearDrag();
 }
 
 /**
@@ -37,7 +56,7 @@ export function createMonthMotion() {
     cancel();
     const request = generation;
     if (!box || !olds.length || matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      update();
+      swap(update);
       return;
     }
     const css = getComputedStyle(document.documentElement);
@@ -52,7 +71,7 @@ export function createMonthMotion() {
     await Promise.all(animations.map((a) => a.finished.catch(() => {})));
     if (request !== generation) return;
     if (!box.isConnected) { cancel(); return; }
-    flushSync(update);
+    swap(update);
     animations.forEach((a) => a.cancel());
     animations = monthTargets(document.querySelector(".page-enter")).map((el) =>
       el.animate([{ transform: `translateX(${shift}px)`, opacity: 0 }, { transform: "translateX(0)", opacity: 1 }], { duration, easing }),
