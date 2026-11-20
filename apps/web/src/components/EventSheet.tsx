@@ -1,15 +1,16 @@
 "use client";
 
 import { useLayoutEffect, useRef, useState } from "react";
-import { Clock, Trash2, X } from "lucide-react";
+import { Clock, Copy, Share, Trash2, X } from "lucide-react";
 import type { CalEvent, Owner, Repeat } from "@/lib/types";
 import { REPEAT_LABEL } from "@/lib/types";
 import { useData } from "@/lib/store";
 import { nameOf } from "@/lib/calc";
 import { eul, ro } from "@/lib/format";
-import { findTime, timeText, type TimeHit } from "@/lib/calendar";
+import { addDays, findTime, occurrences, timeText, type TimeHit } from "@/lib/calendar";
 import { AmountInput, MAX_GOAL, Seg, Sheet, Toggle } from "./ui";
 import type { QuickDraft } from "./QuickAdd";
+import { useShareEvent } from "./holdActions";
 
 /** 무엇을 만드나 — 맨 위에서 고르면 그에 맞는 칸만 나온다 */
 type Kind = "todo" | "event" | "dday";
@@ -75,8 +76,9 @@ function kindOf(e?: CalEvent): Kind {
  * 다시 쓰면 바꾼다("9시까지"는 끝 시간만). 오전·오후를 안 쓰면 시트를 연 지금에 맞춘다(지난 시각이면 오후).
  * 열 때마다 새 key 로 그려서 입력이 그 일정(또는 고른 날짜)에서 시작한다.
  */
-export function EventSheet({ open, onOpenChange, event, from, date, draft }: { open: boolean; onOpenChange: (v: boolean) => void; event?: CalEvent; /** 복사: 이 일정과 같은 내용으로 새로 만든다 (저장하면 새 id) */ from?: CalEvent; date: string; /** 바로 쓰기에 쓰던 제목·시간 (새로 만들 때) */ draft?: QuickDraft }) {
-  const { data, upsert, remove, toast } = useData();
+export function EventSheet({ open, onOpenChange, event, from, date, draft, onCopy }: { open: boolean; onOpenChange: (v: boolean) => void; event?: CalEvent; /** 복사: 이 일정과 같은 내용으로 새로 만든다 (저장하면 새 id) */ from?: CalEvent; date: string; /** 바로 쓰기에 쓰던 제목·시간 (새로 만들 때) */ draft?: QuickDraft; /** 고치기 시트의 "복사": 이 시트를 닫고 같은 내용의 새 시트를 연다 */ onCopy?: (e: CalEvent) => void }) {
+  const { data, today, upsert, remove, toast } = useData();
+  const share = useShareEvent();
   // 처음 값: 고치기면 그 일정, 복사면 베낄 일정 (저장할 때 id·rev 는 event 에서만 가져오므로 복사는 새 일정이 된다)
   const base = event ?? from;
   const s = data.settings;
@@ -397,6 +399,34 @@ export function EventSheet({ open, onOpenChange, event, from, date, draft }: { o
         <label htmlFor="ev-note">메모</label>
         <input id="ev-note" className="input" value={note} onChange={(e) => setNote(e.target.value)} placeholder={kind === "todo" ? "예: 홈택스에서 신고, 위택스로 납부" : "예: 장소, 준비물"} maxLength={500} />
       </div>
+
+      {/* 꾹 누르기 메뉴에만 있던 일(복사·공유)을 시트에도 — 키보드·화면 읽기·꾹 누르기를 모르는 사람의 길. 저장한 내용을 쓰므로 고치던 중에는 막는다 */}
+      {event && (
+        <div className="field">
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            {onCopy && (
+              <button type="button" className="btn secondary sm" disabled={dirty} aria-describedby={dirty ? "ev-more-help" : undefined} onClick={() => onCopy(event)}>
+                <Copy aria-hidden="true" /> 복사
+              </button>
+            )}
+            <button
+              type="button"
+              className="btn secondary sm"
+              disabled={dirty}
+              aria-describedby={dirty ? "ev-more-help" : undefined}
+              // 반복 일정은 처음 날짜가 아니라 오늘부터 가장 가까운 회차를 보낸다 (없으면 처음 날짜)
+              onClick={() => share(occurrences(event, today, addDays(today, 400))[0] ?? { event, start: event.start_date, end: event.end_date ?? event.start_date })}
+            >
+              <Share aria-hidden="true" /> 공유
+            </button>
+          </div>
+          {dirty && (
+            <p className="help" id="ev-more-help">
+              고친 내용을 저장한 뒤 복사·공유할 수 있어요.
+            </p>
+          )}
+        </div>
+      )}
     </Sheet>
   );
 }
