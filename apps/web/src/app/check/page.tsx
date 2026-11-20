@@ -414,7 +414,7 @@ export default function CheckPage() {
               foot={
                 <div className="card-foot">
                   <span />
-                  <Link href="/calendar" className="aside s">
+                  <Link href="/calendar" className="aside">
                     달력에서 보기
                   </Link>
                 </div>

@@ -8,7 +8,7 @@ import { useData } from "@/lib/store";
 import { nameOf } from "@/lib/calc";
 import { eul, ro } from "@/lib/format";
 import { addDays, findTime, occurrences, timeText, type TimeHit } from "@/lib/calendar";
-import { AmountInput, MAX_GOAL, Seg, Sheet, Toggle } from "./ui";
+import { AmountInput, MAX_GOAL, radioKeys, radioTab, Seg, Sheet, Toggle } from "./ui";
 import type { QuickDraft } from "./QuickAdd";
 import { useShareEvent } from "./holdActions";
 
@@ -386,9 +386,9 @@ export function EventSheet({ open, onOpenChange, event, from, date, draft, onCop
 
       <div className="field">
         <span className="label">미리 알림 (앱)</span>
-        <div className="chips" role="radiogroup" aria-label="미리 알림">
-          {REMIND.map((r) => (
-            <button key={r.value} type="button" className="chip" role="radio" aria-checked={remind === r.value} onClick={() => setRemind(r.value)}>
+        <div className="chips" role="radiogroup" aria-label="미리 알림" onKeyDown={radioKeys}>
+          {REMIND.map((r, i) => (
+            <button key={r.value} type="button" className="chip" role="radio" aria-checked={remind === r.value} tabIndex={radioTab(remind === r.value, i, REMIND.some((x) => x.value === remind))} onClick={() => setRemind(r.value)}>
               {r.label}
             </button>
           ))}
