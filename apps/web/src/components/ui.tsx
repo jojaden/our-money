@@ -202,6 +202,33 @@ export function Chips<T extends string>({ value, options, onChange, label }: { v
 /** 열린 창마다 기록에 남기는 번호 — 겹쳐 연 창(상세 위의 시트)에서 뒤로 가기가 맨 위 하나만 닫게 */
 let layerSeq = 0;
 
+/**
+ * 시트가 아닌 겹(지갑 상세·축하·달력 요약 창)이 열린 동안: 겹 바깥(겹의 조상마다 그 형제)을 inert 로 막아 Tab·화면 읽기가 뒤로 빠지지 않게 하고,
+ * 닫히면 막은 것을 풀고 초점이 겹 안이나 BODY 에 남아 있으면 연 곳(열 때 초점이 있던 곳)으로 돌려준다.
+ * 이미 inert 인 것은 건드리지 않고, 알림(토스트)은 막지 않는다(되돌리기를 누를 수 있게).
+ */
+export function useLayer(open: boolean, layer: React.RefObject<HTMLElement | null>) {
+  useLayoutEffect(() => {
+    const el = layer.current;
+    if (!open || !el) return;
+    const at = document.activeElement;
+    const opener = at instanceof HTMLElement && at !== document.body && !el.contains(at) ? at : null;
+    const made: HTMLElement[] = [];
+    for (let n: HTMLElement = el; n.parentElement && n !== document.body; n = n.parentElement) {
+      for (const sib of n.parentElement.children) {
+        if (sib === n || !(sib instanceof HTMLElement) || sib.inert || sib.matches(".toasts, script, style")) continue;
+        sib.setAttribute("inert", "");
+        made.push(sib);
+      }
+    }
+    return () => {
+      for (const s of made) s.removeAttribute("inert");
+      const now = document.activeElement;
+      if (opener?.isConnected && (!now || now === document.body || el.contains(now))) opener.focus({ preventScroll: true });
+    };
+  }, [open, layer]);
+}
+
 export function useBackToClose(open: boolean, onOpenChange: (v: boolean) => void) {
   const pushed = useRef(false);
   const layer = useRef(0);

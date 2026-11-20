@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, BellRing, Check, ChevronDown, ChevronRight, CircleCheck, Clock, Target } from "lucide-react";
 import { useData } from "@/lib/store";
 import { currentMonth, nameOf, other, periodOf } from "@/lib/calc";
@@ -30,17 +30,38 @@ function Rows({ tasks, expandable, fromShown }: { tasks: Task[]; expandable?: bo
   const sorted = [...tasks].sort(byUrgency);
   const done = sorted.filter((t) => t.done).length;
   const shown = open ? sorted : sorted.filter((t) => !t.done);
+  // 키보드로 체크하면 그 줄이 목록에서 빠지며 초점이 BODY 로 떨어진다 — 같은 자리(다음 줄)의 체크, 없으면 "끝낸 N건" 줄로 옮긴다
+  const list = useRef<HTMLDivElement>(null);
+  const fold = useRef<HTMLButtonElement>(null);
+  const checked = useRef<{ i: number; t: number } | null>(null);
+  const keys = shown.map((t) => t.key).join("|");
+  useLayoutEffect(() => {
+    const c = checked.current;
+    checked.current = null;
+    const a = document.activeElement;
+    if (!c || (a && a !== document.body) || performance.now() - c.t > 2000) return;
+    const checks = [...(list.current?.querySelectorAll<HTMLElement>(":scope > .row .check") ?? [])];
+    (checks[Math.min(c.i, checks.length - 1)] ?? fold.current)?.focus({ preventScroll: true });
+  }, [keys]);
   return (
     <>
       {shown.length > 0 && (
-        <div className="rows" style={{ ["--inset" as string]: "40px" }}>
+        <div
+          ref={list}
+          className="rows"
+          style={{ ["--inset" as string]: "40px" }}
+          onClickCapture={(e) => {
+            const row = (e.target as Element).closest(".check")?.closest(".row");
+            if (row && list.current) checked.current = { i: [...list.current.querySelectorAll(":scope > .row")].indexOf(row), t: performance.now() };
+          }}
+        >
           {shown.map((t) => (
             <TaskRow key={t.key} task={t} expandable={expandable} fromShown={fromShown} />
           ))}
         </div>
       )}
       {done > 0 && (
-        <button type="button" className={`fold-row${shown.length > 0 ? " ruled" : ""}`} aria-expanded={open} onClick={() => flip(() => setOpen((v) => !v))}>
+        <button ref={fold} type="button" className={`fold-row${shown.length > 0 ? " ruled" : ""}`} aria-expanded={open} onClick={() => flip(() => setOpen((v) => !v))}>
           <span className="fold-t">
             <Check aria-hidden="true" />
             {done === sorted.length ? `모두 끝냈어요 · ${done}건` : `끝낸 ${done}건`}

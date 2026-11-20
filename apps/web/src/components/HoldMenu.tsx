@@ -284,6 +284,12 @@ function HoldLayer({ place, open, actions, label, onClose, onGone }: { place: Pl
   }, [place]);
 
   const onMenuKey = (e: React.KeyboardEvent) => {
+    // 메뉴 줄은 화살표로 옮기고(APG 메뉴), Tab 이면 닫는다 — 흐린 막 뒤의 화면으로 빠지지 않게. 초점은 닫힐 때 그 줄로 돌아간다
+    if (e.key === "Tab") {
+      e.preventDefault();
+      cb.current.onClose();
+      return;
+    }
     if (e.key !== "ArrowDown" && e.key !== "ArrowUp" && e.key !== "Home" && e.key !== "End") return;
     e.preventDefault();
     const list = [...(menu.current?.querySelectorAll<HTMLElement>("[role=menuitem]") ?? [])];
@@ -317,6 +323,7 @@ function HoldLayer({ place, open, actions, label, onClose, onGone }: { place: Pl
             key={a.label}
             type="button"
             role="menuitem"
+            tabIndex={-1}
             data-hold-i={i}
             className={`${a.danger ? "danger" : ""} ${i === safe && i > 0 ? "split" : ""} ${hot === i ? "hot" : ""}`}
             onClick={() => pick(a)}

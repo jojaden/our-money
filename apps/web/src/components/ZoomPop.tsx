@@ -4,7 +4,7 @@ import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { still } from "./Morph";
-import { useBackToClose } from "./ui";
+import { useBackToClose, useLayer } from "./ui";
 
 /** 커지기·줄어들기 (ms) — 열 때는 서랍 박자, 닫을 때는 조금 빠르게 */
 const OPEN_MS = 420;
@@ -35,6 +35,8 @@ export function ZoomPop({
   const veil = useRef<HTMLDivElement>(null);
   const titleId = useId();
   useBackToClose(open, onOpenChange);
+  // 열린 동안 뒤 화면은 inert — Tab 이 뒤로 빠져 Esc 로 닫지 못하게 되는 일을 막는다
+  useLayer(open, veil);
   if (open && !shown) setShown(true);
 
   // 누른 글자 가운데에서 창 가운데까지의 거리와 크기 비율
