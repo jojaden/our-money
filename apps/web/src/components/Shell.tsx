@@ -170,7 +170,8 @@ function Nav() {
               onMore={more}
             />
           )}
-          <button type="button" className="fab-btn" aria-label={shown?.label} onClick={runPrimary}>
+          {/* 바로 쓰기를 펼친 동안은 투명해지므로 탭 순서에서도 뺀다 (접힌 글자 버튼과 같은 방식) */}
+          <button type="button" className="fab-btn" aria-label={shown?.label} tabIndex={quick && composing ? -1 : undefined} onClick={runPrimary}>
             {shown && (
               <span className="fab-icon" key={shown.icon}>
                 <PrimaryIcon icon={shown.icon} />

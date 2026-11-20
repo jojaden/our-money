@@ -198,6 +198,8 @@
 .fab-btn { display: grid; flex: none; place-items: center; width: var(--nav-h); height: 100%; margin-left: auto; padding: 0; border: 0; background: none; color: inherit; transition: width var(--dur-tab) var(--ease-drawer); }
 .fab svg { width: 26px; height: 26px; stroke-width: 2; }
 .fab:has(> .fab-btn:active) { transform: scale(0.94); }
+/* 캡슐이 overflow: hidden 이라 바깥 링은 잘린다 — 안쪽에 그린다 */
+.fab-btn:focus-visible, .fab-prompt:focus-visible { outline-offset: -2px; border-radius: var(--radius-chip); }
 /* 탭마다 주된 일이 다르면 아이콘이 살짝 커지며 바뀐다 (지출 기록 + / 일정 추가 달력+) */
 .fab-icon { display: grid; place-items: center; animation: fab-icon-in var(--dur-tab) var(--ease-pop) both; }
 .fab-icon > svg { grid-area: 1 / 1; transition: opacity var(--dur-tab) ease, scale var(--dur-tab) var(--ease-pop); }
