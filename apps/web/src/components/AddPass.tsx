@@ -10,7 +10,7 @@ import { eul } from "@/lib/format";
 import { haptic } from "@/lib/native";
 import { BANKS, CARD_ISSUERS, canonicalInstitution, logoOf, suggestInstitutions } from "@/lib/institutions";
 import { InstLogo, InstMark, passArt } from "./pass";
-import { PersonGlyph, Sheet, useBackToClose } from "./ui";
+import { PersonGlyph, radioKeys, radioTab, Sheet, useBackToClose } from "./ui";
 
 function newId(prefix: string) {
   return `${prefix}-${typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID().slice(0, 8) : Date.now().toString(36)}`;
@@ -314,9 +314,9 @@ export function AddPass({
           <div className="form-group">
             <div className="form-row">
               <span id="ap-owner">누구 것</span>
-              <div className="owner-pills" role="radiogroup" aria-labelledby="ap-owner">
-                {owners.map((o) => (
-                  <button key={o} type="button" role="radio" aria-checked={owner === o} className="chip" onClick={() => setOwner(o)}>
+              <div className="owner-pills" role="radiogroup" aria-labelledby="ap-owner" onKeyDown={radioKeys}>
+                {owners.map((o, i) => (
+                  <button key={o} type="button" role="radio" aria-checked={owner === o} tabIndex={radioTab(owner === o, i, owners.includes(owner))} className="chip" onClick={() => setOwner(o)}>
                     <PersonGlyph owner={o} />
                     {nameOf(s, o)}
                   </button>
@@ -439,12 +439,12 @@ export function AddPass({
                 </label>
                 <div className="form-row wide">
                   <span id="ap-color">색</span>
-                  <div className="swatches" role="radiogroup" aria-labelledby="ap-color">
-                    <button type="button" role="radio" aria-checked={color === null} className="swatch auto" aria-label="자동: 이번 달 쓴 버킷 색" onClick={() => setColor(null)}>
+                  <div className="swatches" role="radiogroup" aria-labelledby="ap-color" onKeyDown={radioKeys}>
+                    <button type="button" role="radio" aria-checked={color === null} tabIndex={color === null ? 0 : -1} className="swatch auto" aria-label="자동: 이번 달 쓴 버킷 색" onClick={() => setColor(null)}>
                       자동
                     </button>
                     {PASS_COLORS.map((c) => (
-                      <button key={c} type="button" role="radio" aria-checked={color === c} className="swatch" aria-label={PASS_COLOR_LABEL[c]} style={{ ["--pt" as string]: `var(--pass-${c})` }} onClick={() => setColor(c)} />
+                      <button key={c} type="button" role="radio" aria-checked={color === c} tabIndex={color === c ? 0 : -1} className="swatch" aria-label={PASS_COLOR_LABEL[c]} style={{ ["--pt" as string]: `var(--pass-${c})` }} onClick={() => setColor(c)} />
                     ))}
                   </div>
                 </div>

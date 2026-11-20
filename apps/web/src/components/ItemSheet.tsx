@@ -10,7 +10,7 @@ import { monthRow, nameOf, partnerOf, ratioA, split as splitBy } from "@/lib/cal
 import { monthLabel, num } from "@/lib/format";
 import { logoOf } from "@/lib/institutions";
 import { AddPass } from "./AddPass";
-import { AmountInput, MAX_GOAL, PersonGlyph, Seg, Sheet, Toggle } from "./ui";
+import { AmountInput, MAX_GOAL, PersonGlyph, radioKeys, radioTab, Seg, Sheet, Toggle } from "./ui";
 
 function newId(prefix: string) {
   return `${prefix}-${typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID().slice(0, 8) : Date.now().toString(36)}`;
@@ -80,11 +80,11 @@ function SourcePicker({
       <span className="label" id={id}>
         {label}
       </span>
-      <div className="chips src-chips" role="radiogroup" aria-labelledby={id}>
-        {list.map((a) => {
+      <div className="chips src-chips" role="radiogroup" aria-labelledby={id} onKeyDown={radioKeys}>
+        {list.map((a, i) => {
           const logo = logoOf(a.institution);
           return (
-            <button key={a.id} type="button" role="radio" aria-checked={picked === a.id} className="chip" onClick={() => pick(a)}>
+            <button key={a.id} type="button" role="radio" aria-checked={picked === a.id} tabIndex={radioTab(picked === a.id, i, list.some((x) => x.id === picked))} className="chip" onClick={() => pick(a)}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               {logo && <img className="chip-logo" src={logo} alt="" width={18} height={18} />}
               {a.name}

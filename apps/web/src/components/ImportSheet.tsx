@@ -5,7 +5,7 @@ import { fresh, useData } from "@/lib/store";
 import { itemsOf, missingFromMonth } from "@/lib/calc";
 import { GROUP_LABEL } from "@/lib/types";
 import { monthLabel } from "@/lib/format";
-import { Money, Sheet, Toggle, Who } from "./ui";
+import { Money, radioKeys, radioTab, Sheet, Toggle, Who } from "./ui";
 
 /** 다른 달 플랜에서 이 달에 빠진 항목만 골라 가져온다. 이미 있는 항목은 건드리지 않는다. */
 export function ImportSheet({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
@@ -49,9 +49,9 @@ export function ImportSheet({ open, onOpenChange }: { open: boolean; onOpenChang
         <>
           <div className="field">
             <span className="label">어느 달에서 가져올까요</span>
-            <div className="chips" role="radiogroup" aria-label="가져올 달">
-              {others.map((id) => (
-                <button key={id} type="button" className="chip" role="radio" aria-checked={from === id} onClick={() => setFrom(id)}>
+            <div className="chips" role="radiogroup" aria-label="가져올 달" onKeyDown={radioKeys}>
+              {others.map((id, i) => (
+                <button key={id} type="button" className="chip" role="radio" aria-checked={from === id} tabIndex={radioTab(from === id, i, others.includes(from ?? ""))} onClick={() => setFrom(id)}>
                   {monthLabel(id)} <span className="count">{itemsOf(data, id).length}</span>
                 </button>
               ))}

@@ -9,7 +9,7 @@ import { allowanceStatus, installmentShare, livingStatus, monthOf, nameOf, share
 import { categoryVisual, guessFromMemo, presetsOf, type Preset } from "@/lib/categories";
 import { num, parseYmd, rase, ymd } from "@/lib/format";
 import { haptic } from "@/lib/native";
-import { afterSheet, CategoryIcon, MAX_SPENDING, Seg, Sheet } from "./ui";
+import { afterSheet, CategoryIcon, MAX_SPENDING, radioKeys, radioTab, Seg, Sheet } from "./ui";
 import { still, tokens } from "./Morph";
 import { MiniCard } from "./pass";
 
@@ -422,14 +422,15 @@ export function SpendingSheet({ open, onOpenChange, editing }: { open: boolean; 
           분류
           {autoCat && category && <span className="auto-tag">메모 보고 자동으로 골랐어요</span>}
         </span>
-        <div className="chips" role="radiogroup" aria-label="분류">
-          {categories.map((c) => (
+        <div className="chips" role="radiogroup" aria-label="분류" onKeyDown={radioKeys}>
+          {categories.map((c, i) => (
             <button
               key={c.id}
               type="button"
               className="chip"
               role="radio"
               aria-checked={category === c.id}
+              tabIndex={radioTab(category === c.id, i, categories.some((x) => x.id === category))}
               onClick={() => {
                 setCategory(category === c.id ? null : c.id);
                 setAutoCat(false);
@@ -457,9 +458,9 @@ export function SpendingSheet({ open, onOpenChange, editing }: { open: boolean; 
           ]}
         />
         {accountOptions.length > 0 && (
-          <div className="chips" role="radiogroup" aria-label={payKind === "card" ? "카드" : "계좌"}>
-            {accountOptions.map((o) => (
-              <button key={o.value} type="button" className="chip" role="radio" aria-checked={(account ?? MINE) === o.value} onClick={() => changeAccount(o.value)}>
+          <div className="chips" role="radiogroup" aria-label={payKind === "card" ? "카드" : "계좌"} onKeyDown={radioKeys}>
+            {accountOptions.map((o, i) => (
+              <button key={o.value} type="button" className="chip" role="radio" aria-checked={(account ?? MINE) === o.value} tabIndex={radioTab((account ?? MINE) === o.value, i, accountOptions.some((x) => x.value === (account ?? MINE)))} onClick={() => changeAccount(o.value)}>
                 {o.card && <MiniCard account={o.card} />}
                 {o.label}
               </button>
@@ -472,9 +473,9 @@ export function SpendingSheet({ open, onOpenChange, editing }: { open: boolean; 
       {payKind === "card" && cards.length > 0 && (
         <div className="field">
           <span className="label">할부</span>
-          <div className="chips scroll" role="radiogroup" aria-label="할부 개월">
+          <div className="chips scroll" role="radiogroup" aria-label="할부 개월" onKeyDown={radioKeys}>
             {[...new Set([...INSTALLMENTS, months])].sort((a, b) => a - b).map((n) => (
-              <button key={n} type="button" className="chip" role="radio" aria-checked={months === n} onClick={() => setMonths(n)}>
+              <button key={n} type="button" className="chip" role="radio" aria-checked={months === n} tabIndex={months === n ? 0 : -1} onClick={() => setMonths(n)}>
                 {n === 1 ? "일시불" : `${n}개월`}
               </button>
             ))}

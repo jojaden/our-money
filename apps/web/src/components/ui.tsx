@@ -155,14 +155,33 @@ export function Toggle({ on, onChange, label, disabled }: { on: boolean; onChang
   return <button type="button" role="switch" aria-checked={on} aria-label={label} className="toggle" disabled={disabled} onClick={() => onChange(!on)} />;
 }
 
+/**
+ * 라디오 묶음 키보드(APG): 묶음은 Tab 한 번(고른 보기, 없으면 첫 보기 — radioTab), 안에서는 ←→↑↓·Home·End 로 옮기며 고른다(radioKeys).
+ * 묶음 div 에 onKeyDown={radioKeys}, 보기마다 tabIndex={radioTab(고름, 순번, 고른 것이 있나)}.
+ */
+const RADIO_STEP: Record<string, number> = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 };
+export function radioKeys(e: React.KeyboardEvent<HTMLElement>) {
+  const step = RADIO_STEP[e.key];
+  if (!step && e.key !== "Home" && e.key !== "End") return;
+  const list = [...e.currentTarget.querySelectorAll<HTMLButtonElement>('[role="radio"]:not(:disabled)')];
+  const i = list.indexOf(document.activeElement as HTMLButtonElement);
+  if (i < 0) return;
+  e.preventDefault();
+  const next = list[e.key === "Home" ? 0 : e.key === "End" ? list.length - 1 : (i + step + list.length) % list.length];
+  next.focus();
+  next.click();
+}
+export const radioTab = (on: boolean, i: number, any: boolean) => (on || (!any && i === 0) ? 0 : -1);
+
 export function Seg<T extends string>({ value, options, onChange, label }: { value: T; options: { value: T; label: string }[]; onChange: (v: T) => void; label: string }) {
   const idx = Math.max(0, options.findIndex((o) => o.value === value));
   const n = options.length;
+  const any = options.some((o) => o.value === value);
   return (
-    <div className="seg" role="radiogroup" aria-label={label}>
+    <div className="seg" role="radiogroup" aria-label={label} onKeyDown={radioKeys}>
       <span className="thumb" aria-hidden="true" style={{ width: `calc((100% - 6px) / ${n})`, transform: `translateX(${idx * 100}%)` }} />
-      {options.map((o) => (
-        <button key={o.value} type="button" role="radio" aria-checked={value === o.value} onClick={() => onChange(o.value)}>
+      {options.map((o, i) => (
+        <button key={o.value} type="button" role="radio" aria-checked={value === o.value} tabIndex={radioTab(value === o.value, i, any)} onClick={() => onChange(o.value)}>
           {o.label}
         </button>
       ))}
@@ -185,9 +204,9 @@ export function TextTabs<T extends string>({ value, options, onChange, label }: 
 
 export function Chips<T extends string>({ value, options, onChange, label }: { value: T | null; options: { value: T; label: string }[]; onChange: (v: T) => void; label: string }) {
   return (
-    <div className="chips" role="radiogroup" aria-label={label}>
-      {options.map((o) => (
-        <button key={o.value} type="button" className="chip" role="radio" aria-checked={value === o.value} onClick={() => onChange(o.value)}>
+    <div className="chips" role="radiogroup" aria-label={label} onKeyDown={radioKeys}>
+      {options.map((o, i) => (
+        <button key={o.value} type="button" className="chip" role="radio" aria-checked={value === o.value} tabIndex={radioTab(value === o.value, i, options.some((x) => x.value === value))} onClick={() => onChange(o.value)}>
           {o.label}
         </button>
       ))}

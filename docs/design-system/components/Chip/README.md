@@ -12,6 +12,10 @@
 ## 쓰는 쪽이 줄 것
 - 칩 이름, 고름 상태(`aria-pressed`), 필요하면 앞 표시
 
+
+## 키보드
+- 하나만 고르는 묶음(`radiogroup`)은 Tab 한 번으로 들어갑니다 — 고른 보기(없으면 첫 보기)만 탭 정지이고, 안에서는 ←→↑↓·Home·End 로 옮기며 바로 고릅니다(APG 라디오). 묶음에 `onKeyDown={radioKeys}`, 보기마다 `tabIndex={radioTab(…)}`(`components/ui.tsx`).
+
 ## 하지 말 것
 - 고른 칩을 `primary`로 꽉 채우지 않습니다. 꽉 찬 노랑은 누르는 버튼의 모양입니다.
 - 기간처럼 범위를 고르는 데는 칩 대신 TextTabs를 씁니다.
