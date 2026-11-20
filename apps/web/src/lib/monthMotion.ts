@@ -64,10 +64,13 @@ export function createMonthMotion() {
     const easing = css.getPropertyValue("--ease-out").trim() || "ease-out";
     // 빠지는 쪽은 ease-in 대신 토큰 ease-value (새 곡선을 만들지 않는다)
     const leave = css.getPropertyValue("--ease-value").trim() || "ease-in-out";
-    const shift = Math.min(120, (box as HTMLElement).offsetWidth * 0.3) * dir;
-    animations = olds.map((el, i) =>
-      el.animate([from[i], { transform: `translateX(${-shift}px)`, opacity: 0 }], { duration: duration / 2, easing: leave, fill: "forwards" }),
-    );
+    // 좌우 바뀜 거리는 토큰 하나(slide-x) — README "화면 안 좌우 바뀜"
+    const shift = (parseFloat(css.getPropertyValue("--slide-x")) || 28) * dir;
+    // 손가락으로 끌던 자리(x)에서 넘기는 쪽으로 slide-x 만큼 더 가며 빠진다 — 거리가 짧아도 끌던 자리에서 가운데로 되돌아오지 않게
+    animations = olds.map((el, i) => {
+      const x = new DOMMatrixReadOnly(from[i].transform).m41;
+      return el.animate([from[i], { transform: `translateX(${x - shift}px)`, opacity: 0 }], { duration: duration / 2, easing: leave, fill: "forwards" });
+    });
     await Promise.all(animations.map((a) => a.finished.catch(() => {})));
     if (request !== generation) return;
     if (!box.isConnected) { cancel(); return; }

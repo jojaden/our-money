@@ -20,14 +20,14 @@ type Snap = { h: number; items: Map<Element, Rect> };
 /** 기본: 상자의 자식과 손자 (시트의 칸과 그 안의 줄·도움말) */
 const TRACK = ":scope > *, :scope > * > *";
 
-let T: { move: number; swap: number; press: number; drawer: string; out: string; value: string } | null = null;
+let T: { move: number; swap: number; press: number; drawer: string; out: string; value: string; slide: number } | null = null;
 /** 움직임 토큰 (tokens.css 의 dur-tab·dur-swap·ease-drawer·ease-out) — 처음 한 번 읽는다 */
 export function tokens() {
   if (T) return T;
   const css = getComputedStyle(document.documentElement);
   const ms = (n: string, d: number) => cssTimeMs(css.getPropertyValue(n), d);
   const ease = (n: string) => css.getPropertyValue(n).trim() || "ease-out";
-  T = { move: ms("--dur-tab", 420), swap: ms("--dur-swap", 260), press: ms("--dur-press", 180), drawer: ease("--ease-drawer"), out: ease("--ease-out"), value: ease("--ease-value") };
+  T = { move: ms("--dur-tab", 420), swap: ms("--dur-swap", 260), press: ms("--dur-press", 180), drawer: ease("--ease-drawer"), out: ease("--ease-out"), value: ease("--ease-value"), slide: parseFloat(css.getPropertyValue("--slide-x")) || 28 };
   return T;
 }
 
@@ -226,9 +226,10 @@ export function useMorphFlip() {
   };
 }
 
-/** 화면이 통째로 바뀔 때(달력 ↔ 모아 보기) 새 화면이 그 방향에서 밀려 들어온다 — 달 넘기기와 같은 28px·dur-tab·ease-drawer */
+/** 화면이 통째로 바뀔 때 새 화면이 그 방향에서 밀려 들어온다 — 달 넘기기와 같은 slide-x·dur-swap·ease-out.
+ *  (달력 ↔ 기간 모아 보기는 주소가 바뀌어 PageTransition 이 화면을 새로 그리므로 지금은 페이지 이동 전환이 맡는다) */
 export function slideIn(els: Iterable<Element>, dir: 1 | -1) {
   if (still()) return;
   const t = tokens();
-  for (const el of els) el.animate([{ opacity: 0, transform: `translateX(${28 * dir}px)` }, { opacity: 1, transform: "none" }], { duration: t.move, easing: t.drawer });
+  for (const el of els) el.animate([{ opacity: 0, transform: `translateX(${t.slide * dir}px)` }, { opacity: 1, transform: "none" }], { duration: t.swap, easing: t.out });
 }
