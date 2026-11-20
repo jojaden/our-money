@@ -426,17 +426,22 @@ export function AmountInput({
   id,
   placeholder = "0",
   max = MAX_AMOUNT,
+  error,
 }: {
   value: number;
   onChange: (n: number) => void;
   id?: string;
   placeholder?: string;
   max?: number;
+  /** 틀렸을 때 이유 글의 id — 있으면 aria-invalid 로 알리고 그 글을 읽게 한다 */
+  error?: string;
 }) {
   return (
     <input
       id={id}
       className="input amount"
+      aria-invalid={error ? true : undefined}
+      aria-describedby={error}
       inputMode="numeric"
       autoComplete="off"
       placeholder={placeholder}

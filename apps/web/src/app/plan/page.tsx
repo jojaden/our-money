@@ -116,7 +116,7 @@ export default function PlanPage() {
                     </div>
                     <div className="r">
                       <Money value={p ? i.amount + p.amount : i.amount} />
-                      {!p && i.payer === "joint" && <div className="s split-note">각자 {num(Math.round(i.amount * rA))} / {num(i.amount - Math.round(i.amount * rA))}</div>}
+                      {!p && i.payer === "joint" && <div className="s split-each">각자 {num(Math.round(i.amount * rA))} / {num(i.amount - Math.round(i.amount * rA))}</div>}
                     </div>
                   </button>
                 );
