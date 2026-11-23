@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Bell, CalendarDays, ChevronDown, Clock, Coins, Copy, Hourglass, NotebookPen, Pin, Repeat as RepeatIcon, Share, Trash2, UsersRound } from "lucide-react";
 import type { CalEvent, Owner, Repeat } from "@/lib/types";
 import { REPEAT_LABEL } from "@/lib/types";
@@ -13,6 +13,7 @@ import { AmountInput, MAX_GOAL, radioKeys, radioTab, Seg, Sheet, Toggle } from "
 import type { QuickDraft } from "./QuickAdd";
 import { useShareEvent } from "./holdActions";
 import { TimePanel } from "./TimeWheel";
+import { still, tokens } from "./Morph";
 
 /** 무엇을 만드나 — 맨 위에서 고르면 그에 맞는 칸만 나온다 */
 type Kind = "todo" | "event" | "dday";
@@ -231,11 +232,21 @@ export function EventSheet({ open, onOpenChange, event, from, date, draft, onCop
 
   /** 펼친 줄 하나 (한 번에 하나만) — 고치던 내용(dirty)에는 넣지 않는다 */
   const [unfold, setUnfold] = useState<"date" | "time" | "remind" | null>(null);
-  const toggle = (k: "date" | "time" | "remind") => {
-    // 시간 줄을 처음 펼치면 다음 정시부터 — 펼친 것이 곧 시간을 정하겠다는 뜻
-    if (k === "time" && unfold !== "time" && !startTime && !endTime) setStartTime(nextHour(now));
-    setUnfold((u) => (u === k ? null : k));
-  };
+  const toggle = (k: "date" | "time" | "remind") => setUnfold((u) => (u === k ? null : k));
+  // 펼친 칸이 시트 아래로 숨지 않게 — 높이가 다 자란 뒤(Morph, dur-tab) 그 칸의 아래 끝이 보이도록 시트 본문을 올린다(줄 머리는 넘기지 않게)
+  useEffect(() => {
+    if (!unfold) return;
+    const t = window.setTimeout(() => {
+      const item = document.getElementById(`ev-${unfold}-panel`)?.parentElement;
+      const body = item?.closest(".sheet-body");
+      if (!item || !body) return;
+      const b = body.getBoundingClientRect();
+      const r = item.getBoundingClientRect();
+      const dy = Math.min(r.bottom - b.bottom + 8, r.top - b.top);
+      if (dy > 0) body.scrollBy({ top: dy, behavior: still() ? "auto" : "smooth" });
+    }, tokens().move + 40);
+    return () => window.clearTimeout(t);
+  }, [unfold]);
   const timeLen = startTime && endTime && !isRange ? toMin(endTime) - toMin(startTime) : 0;
   const timeValue = startTime || endTime ? `${timeText({ start_time: startTime || null, end_time: endTime || null })}${timeLen > 0 ? ` · ${durationText(timeLen)}` : ""}` : "하루 종일";
   const remindLabel = REMIND.find((r) => r.value === remind)!.label;
@@ -267,6 +278,7 @@ export function EventSheet({ open, onOpenChange, event, from, date, draft, onCop
       </div>
 
       <div className="field">
+        <label htmlFor="ev-title">제목</label>
         <div className={`title-field ${live ? "has-time" : ""}`}>
           {live && (
             <span className="title-mirror" aria-hidden="true">
@@ -280,7 +292,7 @@ export function EventSheet({ open, onOpenChange, event, from, date, draft, onCop
               </span>
             </span>
           )}
-          <input ref={titleRef} id="ev-title" className="input" aria-label="제목" value={title} onChange={(e) => setTitle(timed && !(e.nativeEvent as InputEvent).isComposing ? take(e.target) : e.target.value)}
+          <input ref={titleRef} id="ev-title" className="input" value={title} onChange={(e) => setTitle(timed && !(e.nativeEvent as InputEvent).isComposing ? take(e.target) : e.target.value)}
             onCompositionEnd={(e) => timed && setTitle(take(e.currentTarget))}
             onScroll={syncMirror} onSelect={syncMirror} placeholder={k.hint} maxLength={40} />
         </div>
@@ -356,9 +368,11 @@ export function EventSheet({ open, onOpenChange, event, from, date, draft, onCop
                     setEndTime(b);
                   }}
                 />
+                {/* 늘 두어 시간을 정해도 패널 높이가 바뀌지 않게 (하루 종일이면 눌러도 할 일이 없어 막는다) */}
                 <button
                   type="button"
                   className="btn ghost sm"
+                  disabled={!startTime && !endTime}
                   onClick={() => {
                     setStartTime("");
                     setEndTime("");
@@ -470,7 +484,10 @@ export function EventSheet({ open, onOpenChange, event, from, date, draft, onCop
         <div className="prop-item">
           <div className="prop-row">
             <NotebookPen aria-hidden="true" />
-            <input id="ev-note" className="input wide" aria-label="메모" value={note} onChange={(e) => setNote(e.target.value)} placeholder={kind === "todo" ? "메모 (예: 홈택스에서 신고, 위택스로 납부)" : "메모 (예: 장소, 준비물)"} maxLength={500} />
+            <label className="k" htmlFor="ev-note">
+              메모
+            </label>
+            <input id="ev-note" className="input" value={note} onChange={(e) => setNote(e.target.value)} placeholder={kind === "todo" ? "예: 홈택스에서 신고" : "예: 장소, 준비물"} maxLength={500} />
           </div>
         </div>
       </div>

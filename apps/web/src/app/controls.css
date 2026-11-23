@@ -475,7 +475,9 @@ button.row:active, a.row:active { background: var(--well); transform: scale(0.98
 .time-ends button:active { scale: 0.96; }
 .time-ends button:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: 2px; }
 .time-ends .k { color: var(--muted); font: 500 13px/18px var(--font-text); }
-.time-ends .v { font: 700 18px/24px var(--font-text); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.time-ends .v { font: 700 18px/24px var(--font-text); font-variant-numeric: tabular-nums; text-wrap: balance; }
+/* 아직 정하지 않은 시각: 바퀴가 보여 주는 제안을 흐리게 (돌리거나 가운데 칸을 누르면 정해진다) */
+.time-ends .v.none { color: var(--faint); }
 .time-ends .d { color: var(--faint); font: 500 12.5px/16px var(--font-text); }
 /* 고른 칸 = 바퀴가 고치는 칸: 옅은 노랑 + 안쪽 선(칩·고른 칸과 같은 말) */
 .time-ends button[aria-checked="true"] { background: var(--accent-soft); box-shadow: inset 0 0 0 2px var(--accent-ink); }
@@ -551,7 +553,7 @@ button.prop-row:focus-visible { outline: 2px solid var(--accent-ink); outline-of
 .prop-row > svg { justify-self: center; width: 20px; height: 20px; color: var(--muted); }
 .prop-row .k { font: 500 16px/22px var(--font-text); white-space: nowrap; }
 .prop-row .v { display: inline-flex; justify-self: end; align-items: center; gap: 4px; min-width: 0; color: var(--muted); font: 600 15px/20px var(--font-text); text-align: end; }
-.prop-row .v > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.prop-row .v > span { text-wrap: balance; }
 /* 기본값이 아닌 값(시간을 정함·반복함)은 고른 색으로 — 한눈에 무엇을 바꿨는지 */
 .prop-row .v.set { color: var(--accent-ink); }
 .prop-row .chev { flex: none; width: 18px; height: 18px; color: var(--faint); transition: rotate var(--dur-press) var(--ease-out); }
@@ -559,7 +561,7 @@ button.prop-row:focus-visible { outline: 2px solid var(--accent-ink); outline-of
 .prop-row > .seg, .prop-row > .toggle, .prop-row > .amount-wrap { justify-self: end; }
 .prop-row > .seg { width: min(100%, 228px); }
 .prop-row > .seg button { height: 32px; font-size: 14px; }
-.prop-row > .wide { grid-column: 2 / -1; margin-block: 6px; }
+.prop-row > .input { margin-block: 6px; }
 .prop-row .sub { display: block; color: var(--faint); font: 500 12.5px/17px var(--font-text); }
 .prop-panel { display: grid; gap: 12px; padding: 2px 0 18px; }
 .field + .prop-rows { margin-top: 14px; }
