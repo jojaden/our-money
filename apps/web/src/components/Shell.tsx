@@ -134,7 +134,17 @@ function Nav() {
       {/* 폰: 떠 있는 다섯 칸 캡슐 + 따로 뜬 원형 버튼(그 화면의 주된 일). 버튼이 없는 화면은 버튼이 줄어들며 캡슐이 그 자리까지 넓어진다 */}
       <div className={`navbar ${primary ? "" : "solo"}`}>
         <nav className={`tabbar ${at < 0 ? "none" : ""}`} aria-label="주요 메뉴" style={{ ["--i" as string]: Math.max(0, at) }}>
-          <span className="tab-pill" aria-hidden="true" />
+          {/* 알약 안에 같은 다섯 칸을 진한 색으로 한 겹 더 두고 알약과 반대로 움직인다 — 진한 글자가 알약 가장자리를 따라 바뀐다 (transform 만) */}
+          <span className="tab-pill" aria-hidden="true">
+            <span className="tab-ink">
+              {TABS.map(({ href, label, icon: Icon }) => (
+                <span key={href} className="tab">
+                  <Icon />
+                  {label}
+                </span>
+              ))}
+            </span>
+          </span>
           {TABS.map(({ href, label, icon: Icon }) => (
             <Link
               key={href}

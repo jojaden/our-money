@@ -39,12 +39,18 @@ export function DailyBars({ rows, month, cycleStart, today }: { rows: { date: st
   const top = Math.ceil(peak / step) * step;
   const [sel, setSel] = useState<number | null>(null);
   // 달을 넘기면(화면은 그대로) 고른 막대를 비운다 — 다른 달의 같은 자리를 가리키지 않게
+  const grown = useRevealOnce("daily");
+  // 0 에서 처음 자라는 동안만 dur-ring — 달을 넘기면(화면은 그대로) 값 바뀜(dur-value)으로
+  const [firstGrow, setFirstGrow] = useState(!grown);
   const [selMonth, setSelMonth] = useState(month);
   if (selMonth !== month) {
     setSelMonth(month);
     setSel(null);
+    setFirstGrow(false);
   }
-  const grown = useRevealOnce("daily");
+  // 막대 높이(0~1). 쓴 날은 보이게 3% 이상, 앞으로 올 날은 null(3px 자리 표시)
+  const bars = days.map((d) => (d.future ? null : d.amount > 0 ? Math.max(0.03, d.amount / top) : 0));
+  // 달을 넘겨도 화면을 새로 그리지 않으므로(PageMotion) 막대는 지난 달 높이에서 CSS 전환으로 이어 간다
   const shown = sel !== null ? days[sel] : null;
   const label = (s: string) => {
     const d = parseYmd(s);
@@ -85,19 +91,20 @@ export function DailyBars({ rows, month, cycleStart, today }: { rows: { date: st
             <i>평균</i>
           </div>
         )}
-        <div className={`daily-bars ${grown ? "" : "flat"}`}>
+        {/* 0 에서 처음 자랄 때만 dur-ring·ease-out, 값이 바뀔 때는 dur-value·ease-value (cards.css) */}
+        <div className={`daily-bars ${grown ? "" : "flat"} ${firstGrow ? "grow" : ""}`}>
           {days.map((d, i) => (
             <button
               key={d.date}
               type="button"
-              className={`db ${d.future ? "future" : ""} ${d.date === today ? "today" : ""} ${sel === i ? "sel" : ""}`}
+              className={`db ${bars[i] === null ? "future" : ""} ${d.date === today ? "today" : ""} ${sel === i ? "sel" : ""}`}
               aria-label={`${label(d.date)} ${num(d.amount)}원`}
               onMouseEnter={() => setSel(i)}
               onFocus={() => setSel(i)}
               onBlur={() => setSel(null)}
               onClick={() => setSel(sel === i ? null : i)}
             >
-              <span style={{ height: d.amount > 0 ? `${Math.max(3, (d.amount / top) * 100)}%` : 0 }} />
+              <span style={{ ["--h" as string]: bars[i] ?? 0 }} />
             </button>
           ))}
         </div>
