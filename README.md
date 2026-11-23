@@ -6,7 +6,7 @@
 
 **부부 두 사람의 월급 배분 → 이체 체크 → 지출 기록 → 일정까지, 한 달을 한 앱으로**
 
-![version](https://img.shields.io/badge/version-v0.8.2-f5df4d?style=flat-square&labelColor=222326)
+![version](https://img.shields.io/badge/version-v0.8.3-f5df4d?style=flat-square&labelColor=222326)
 ![Next.js](https://img.shields.io/badge/Next.js_16-PWA-222326?style=flat-square)
 ![Supabase](https://img.shields.io/badge/Supabase-Postgres_·_RLS_·_Realtime-939597?style=flat-square&labelColor=222326)
 ![Kotlin](https://img.shields.io/badge/Kotlin_Multiplatform-Android-939597?style=flat-square&labelColor=222326)
@@ -151,7 +151,7 @@ quadrantChart
 
 ```mermaid
 timeline
-  title 21일, 12번의 릴리스
+  title 21일, 13번의 릴리스
   11.03 : v0.1.0 플랜 · 체크 · 가계부 · 구글 로그인 · 실시간
   11.05 : v0.2.0 디자인 시스템 · 지갑 · rev 충돌 막기
   11.06 : v0.3.0 할부 · 실제로 낸 금액 · 달 마무리 · 변경 이력 · 안드로이드 하이브리드
@@ -164,6 +164,7 @@ timeline
   11.20 : v0.8.0 적던 내용 지키기 · 키보드·화면 읽기 손질(초점·카드 옮기기·라디오) · 글자 대비 · 알림 되돌리기 · 앱 CSV 공유 · 달 넘기기 다듬기
   11.23 : v0.8.1 하단 메뉴 알약을 따라 바뀌는 글자 · 하루 막대 부드럽게
   11.23 : v0.8.2 일정 추가 직후 옆으로 밀면 모아 보기로 내려가던 달력 버그
+  11.23 : v0.8.3 앱 안 시간 바퀴·얼마나 칩, 요약 줄로 다시 짠 일정 시트
 ```
 
 ## 기술
