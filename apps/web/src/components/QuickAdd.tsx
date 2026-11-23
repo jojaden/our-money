@@ -1,15 +1,16 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { Clock, X } from "lucide-react";
-import { timeText } from "@/lib/calendar";
+import { cutTime, findTime, timeText, type TimeHit } from "@/lib/calendar";
 import { useBackToClose } from "./ui";
 
-/** 바로 쓰기에 쓰던 것 — 제목과 시간(비면 하루 종일) */
+/** 바로 쓰기에 쓰던 것 — 제목과 시간(비면 하루 종일), 제목에서 "3시~5시"처럼 뗀 끝 시간 */
 export interface QuickDraft {
   title: string;
   time: string;
+  end?: string;
 }
 
 /**
@@ -38,7 +39,34 @@ export function QuickAdd({
 }) {
   const input = useRef<HTMLInputElement>(null);
   const timeInput = useRef<HTMLInputElement>(null);
+  const mirror = useRef<HTMLSpanElement>(null);
+  const caret = useRef<number | null>(null);
+  /** 오전·오후를 안 쓴 시간을 정할 기준 (막대를 그린 때) */
+  const [now] = useState(() => new Date());
   useBackToClose(open, onOpenChange);
+
+  // 제목 속 시간 — 일정 시트와 같은 규칙: 카드로 감싸 보여 주고, 띄어 쓰거나 카드를 누르면 제목에서 떼어 시간 알약으로
+  const live = findTime(draft.title, now);
+  const takeTime = (title: string, hit: TimeHit) => {
+    const cut = cutTime(title, hit);
+    caret.current = cut.at;
+    // "9시까지"처럼 끝만 쓰면 시작 시간이 없어 알약에 넣지 않는다(추가할 때 제목에서 뗀다)
+    onDraft({ title: cut.text, time: hit.start ?? draft.time, end: hit.start ? (hit.until ?? "") : draft.end });
+  };
+  const change = (el: HTMLInputElement, composing: boolean) => {
+    const hit = composing ? null : findTime(el.value, now);
+    if (hit?.closed && hit.start) takeTime(el.value, hit);
+    else onDraft({ ...draft, title: el.value });
+  };
+  const syncMirror = () => {
+    if (mirror.current && input.current) mirror.current.style.transform = `translateX(${-input.current.scrollLeft}px)`;
+  };
+  useLayoutEffect(() => {
+    const el = input.current;
+    if (el && caret.current !== null) el.setSelectionRange(caret.current, caret.current);
+    caret.current = null;
+    syncMirror();
+  }, [draft.title]);
 
   // 막대 밖을 누르면 접기만 한다 — 그 누름이 뒤의 날짜를 고르거나 날짜 창을 열지 않게 바로 뒤 클릭 한 번을 삼킨다. 접히면 키보드도 내린다
   useEffect(() => {
@@ -85,17 +113,34 @@ export function QuickAdd({
           if (e.key === "Escape") onOpenChange(false);
         }}
       >
-        <input
-          ref={input}
-          className="input"
-          value={draft.title}
-          onChange={(e) => onDraft({ ...draft, title: e.target.value })}
-          placeholder={hint}
-          aria-label="일정 제목"
-          enterKeyHint="done"
-          autoComplete="off"
-          maxLength={40}
-        />
+        <div className={`time-title ${live?.start ? "has-time" : ""}`}>
+          {live?.start && (
+            <span className="title-mirror" aria-hidden="true">
+              <span ref={mirror}>
+                <span>{draft.title.slice(0, live.index)}</span>
+                {/* 누르면 시간 알약으로 (포인터 전용 — 키보드는 띄어 쓰기). 입력칸 초점은 그대로 */}
+                <mark onPointerDown={(e) => e.preventDefault()} onClick={() => takeTime(draft.title, live)}>
+                  {live.text}
+                </mark>
+                <span>{draft.title.slice(live.end)}</span>
+              </span>
+            </span>
+          )}
+          <input
+            ref={input}
+            className="input"
+            value={draft.title}
+            onChange={(e) => change(e.target, (e.nativeEvent as InputEvent).isComposing)}
+            onCompositionEnd={(e) => change(e.currentTarget, false)}
+            onScroll={syncMirror}
+            onSelect={syncMirror}
+            placeholder={hint}
+            aria-label="일정 제목"
+            enterKeyHint="done"
+            autoComplete="off"
+            maxLength={40}
+          />
+        </div>
         <div className="fab-compose-row">
           {/* 시간 알약: 누르면 폰의 시간 고르기가 뜨고, 고르면 "오후 3:30" — × 로 지운다(비면 하루 종일) */}
           <div className={`fab-time ${draft.time ? "has" : ""}`}>
@@ -112,14 +157,14 @@ export function QuickAdd({
               }}
             >
               <Clock aria-hidden="true" />
-              {draft.time ? timeText({ start_time: draft.time, end_time: null }) : "시간"}
+              {draft.time ? timeText({ start_time: draft.time, end_time: draft.end || null }) : "시간"}
             </button>
             {draft.time && (
-              <button type="button" className="fab-time-clear" aria-label="시간 지우기" onClick={() => onDraft({ ...draft, time: "" })}>
+              <button type="button" className="fab-time-clear" aria-label="시간 지우기" onClick={() => onDraft({ ...draft, time: "", end: "" })}>
                 <X aria-hidden="true" />
               </button>
             )}
-            <input ref={timeInput} type="time" tabIndex={-1} aria-label="시간" value={draft.time} onChange={(e) => onDraft({ ...draft, time: e.target.value })} />
+            <input ref={timeInput} type="time" tabIndex={-1} aria-label="시간" value={draft.time} onChange={(e) => onDraft({ ...draft, time: e.target.value, end: "" })} />
           </div>
           <button type="button" className="btn ghost" onClick={onMore}>
             자세히

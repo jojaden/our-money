@@ -406,6 +406,13 @@ function clockAt(text: string, pos: number, nowMin: number, inherit?: string): {
 }
 
 /** 제목 속 시간 하나 — index~end 가 그 글자. closed: 뒤에 빈칸이 와서(띄어 써서) 시간 칸으로 옮길 때 */
+/** 제목에서 찾은 시간 글자를 떼어 낸 제목과, 떼어 낸 자리(커서를 둘 곳) — 일정 시트·바로 쓰기가 같이 쓴다 */
+export function cutTime(text: string, hit: TimeHit): { text: string; at: number } {
+  const before = text.slice(0, hit.index).trimEnd();
+  const head = before ? `${before} ` : "";
+  return { text: head + text.slice(hit.end).trimStart(), at: head.length };
+}
+
 export interface TimeHit {
   index: number;
   end: number;

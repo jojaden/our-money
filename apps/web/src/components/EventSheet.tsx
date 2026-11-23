@@ -7,7 +7,7 @@ import { REPEAT_LABEL } from "@/lib/types";
 import { useData } from "@/lib/store";
 import { nameOf } from "@/lib/calc";
 import { eul, ro } from "@/lib/format";
-import { addDays, findTime, occurrences, timeText, type TimeHit } from "@/lib/calendar";
+import { addDays, cutTime, findTime, occurrences, timeText, type TimeHit } from "@/lib/calendar";
 import { AmountInput, MAX_GOAL, radioKeys, radioTab, Seg, Sheet, Toggle } from "./ui";
 import type { QuickDraft } from "./QuickAdd";
 import { useShareEvent } from "./holdActions";
@@ -57,7 +57,7 @@ export function quickEvent(draft: QuickDraft, date: string, now = new Date()): C
     remind_days: null,
     amount: null,
     start_time: draft.time || (h?.start ?? null),
-    end_time: draft.time ? null : (h?.until ?? null),
+    end_time: draft.time ? draft.end || null : (h?.until ?? null),
   };
 }
 
@@ -95,7 +95,7 @@ export function EventSheet({ open, onOpenChange, event, from, date, draft, onCop
   const [amount, setAmount] = useState(base?.amount ?? 0);
   const [note, setNote] = useState(base?.note ?? "");
   const [startTime, setStartTime] = useState(base?.start_time ?? draft?.time ?? "");
-  const [endTime, setEndTime] = useState(base?.end_time ?? "");
+  const [endTime, setEndTime] = useState(base?.end_time ?? draft?.end ?? "");
   /** 오전·오후를 안 쓴 시간을 정할 기준 (시트를 연 때) */
   const [now] = useState(() => new Date());
   // 적던 내용이 있는지: 열 때마다 새 key 로 그리므로 첫 그리기의 값이 연 순간의 값. 새로 만들 때는 제목을 적었으면
@@ -149,14 +149,23 @@ export function EventSheet({ open, onOpenChange, event, from, date, draft, onCop
     if (typed === null || !/^(?:\d{0,2}\s*분?|반)$/.test(typed)) lastAt.current = null;
     const hit = findTime(v, now);
     if (hit?.closed) {
-      const before = v.slice(0, hit.index).trimEnd();
-      const head = before ? `${before} ` : "";
-      v = head + v.slice(hit.end).trimStart();
-      caret.current = head.length;
+      const cut = cutTime(v, hit);
+      v = cut.text;
+      caret.current = cut.at;
       applyTime(hit);
-      lastAt.current = { at: head.length, field: hit.start ? "start" : "end" };
+      lastAt.current = { at: cut.at, field: hit.start ? "start" : "end" };
     }
     return v;
+  };
+
+  /** 카드(제목 속 시간)를 누르면 띄어 쓴 것처럼 바로 시간 칸으로 옮긴다 — 입력칸의 초점은 그대로 */
+  const takeLive = () => {
+    if (!live) return;
+    const cut = cutTime(title, live);
+    caret.current = cut.at;
+    applyTime(live);
+    lastAt.current = { at: cut.at, field: live.start ? "start" : "end" };
+    setTitle(cut.text);
   };
 
   // 고쳐 쓴 제목의 커서 자리, 카드 그림(뒤에 깐 글)의 가로 위치를 입력칸에 맞춘다
@@ -242,9 +251,12 @@ export function EventSheet({ open, onOpenChange, event, from, date, draft, onCop
           {live && (
             <span className="title-mirror" aria-hidden="true">
               <span ref={mirrorRef}>
-                {title.slice(0, live.index)}
-                <mark>{live.text}</mark>
-                {title.slice(live.end)}
+                <span>{title.slice(0, live.index)}</span>
+                {/* 누르면 시간으로 넣는다(포인터 전용 — 키보드는 띄어 쓰기). 누를 때 입력칸 초점을 빼앗지 않는다 */}
+                <mark onPointerDown={(e) => e.preventDefault()} onClick={takeLive}>
+                  {live.text}
+                </mark>
+                <span>{title.slice(live.end)}</span>
               </span>
             </span>
           )}
@@ -254,7 +266,7 @@ export function EventSheet({ open, onOpenChange, event, from, date, draft, onCop
         </div>
         {live ? (
           <p className="help" role="status">
-            띄어 쓰면 {ro(timeText({ start_time: live.start, end_time: live.until }))} 시간에 넣어요
+            띄어 쓰거나 시간을 누르면 {ro(timeText({ start_time: live.start, end_time: live.until }))} 시간에 넣어요
           </p>
         ) : (
           timed &&
