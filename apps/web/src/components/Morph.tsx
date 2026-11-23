@@ -40,10 +40,15 @@ const rel = (r: DOMRect, b: DOMRect): Rect => ({ x: r.left - b.left, y: r.top - 
  *   누른 줄(펼치기·접기 버튼)이 화면 위로 넘어가도록 내리지는 않는다. 화면 안쪽은 위쪽 막대 아래 ~ 하단 메뉴 위.
  * quick: 자리 옮기기·상자 높이를 dur-tab 대신 dur-swap 으로 (짧은 목록을 빨리 펼치기)
  */
+/** 누른 뒤 이 안에 생긴 높이 바뀜만 "누른 것의 결과"로 본다 (ms) */
+const FOLLOW_MS = 1000;
+
 export class Morph extends Component<{ children: ReactNode; className?: string; track?: string; enter?: boolean; follow?: boolean; quick?: boolean }, object, Snap | null> {
   private box = createRef<HTMLDivElement>();
   /** 마지막으로 누른 곳 (follow) — 펼치기·접기 버튼 */
   private anchor: Element | null = null;
+  /** 이 상자 안을 마지막으로 누른 때(포인터·Enter·Space) — follow 는 방금 누른 바뀜에만 */
+  private pressedAt = -Infinity;
   /** 자리 옮기기·높이 — 다음에 바뀌면 지금 보이는 자리에서 다시 시작한다 */
   private moves: Animation[] = [];
 
@@ -93,7 +98,9 @@ export class Morph extends Component<{ children: ReactNode; className?: string; 
     // 자리는 모두 먼저 잰다 (바깥 칸 움직임을 걸면 안쪽 칸 자리가 같이 바뀌어 보인다)
     const b = box.getBoundingClientRect();
     const move = this.props.quick ? t.swap : t.move;
-    if (this.props.follow && Math.abs(b.height - snap.h) > 1) this.follow(b, b.height > snap.h);
+    // 따라 굴리기는 이 상자 안을 방금 눌러 펼치고 접은 때만 — 다른 곳(일정 시트·바로 쓰기)에서 더하거나 다른 폰에서 바뀌어 높이가 바뀐 것으로는 굴리지 않는다
+    // (달력 첫 화면에서 아래 모아 보기의 할 일 카드가 커지며 굴림 요청이 남아, 다음 옆 밀기에 모아 보기로 내려가던 버그)
+    if (this.props.follow && performance.now() - this.pressedAt < FOLLOW_MS && Math.abs(b.height - snap.h) > 1) this.follow(b, b.height > snap.h);
     const now = this.items().map((el) => [el, el.getBoundingClientRect()] as const);
     const moved = new Map<Element, [number, number]>();
     const fresh: Element[] = [];
@@ -199,6 +206,16 @@ export class Morph extends Component<{ children: ReactNode; className?: string; 
           this.props.follow
             ? (e) => {
                 this.anchor = e.target as Element;
+                this.pressedAt = performance.now();
+              }
+            : undefined
+        }
+        onKeyDownCapture={
+          this.props.follow
+            ? (e) => {
+                if (e.key !== "Enter" && e.key !== " ") return;
+                this.anchor = e.target as Element;
+                this.pressedAt = performance.now();
               }
             : undefined
         }
