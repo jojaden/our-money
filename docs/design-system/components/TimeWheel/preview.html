@@ -1,0 +1,43 @@
+<!-- @dsCard group="Controls" height=420 subtitle="시작 → 끝 · 바퀴 세 줄 · 얼마나" -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alan+Sans:wght@300..900&family=Noto+Sans+KR:wght@400..800&display=swap">
+<style>
+  body { margin: 0; background: var(--surface); color: var(--text); font-family: var(--font-text); word-break: keep-all; -webkit-font-smoothing: antialiased; }
+  .stage { display: grid; gap: 14px; max-width: 350px; padding: 20px; }
+  .ends { position: relative; display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+  .ends button { display: grid; gap: 2px; min-height: 68px; padding: 10px 14px; border: 0; border-radius: var(--radius-control); background: var(--well); color: var(--text); text-align: start; cursor: pointer; }
+  .ends button[aria-checked="true"] { background: var(--accent-soft); box-shadow: inset 0 0 0 2px var(--accent-ink); }
+  .ends .k { color: var(--muted); font: 500 13px/18px var(--font-text); }
+  .ends [aria-checked="true"] .k { color: var(--accent-ink); font-weight: 600; }
+  .ends .v { font: 700 18px/24px var(--font-text); }
+  .ends .d { color: var(--faint); font: 500 12.5px/16px var(--font-text); }
+  .ends i { position: absolute; top: 50%; left: 50%; translate: -50% -50%; color: var(--faint); font-style: normal; }
+  .wheels { position: relative; display: grid; grid-template-columns: 1.15fr 1fr 1fr; height: calc(var(--wheel-row) * 5); }
+  .wheels::before { content: ""; position: absolute; inset-inline: 0; top: calc(var(--wheel-row) * 2); height: var(--wheel-row); border-radius: var(--radius-small); background: var(--well); }
+  .col { position: relative; }
+  .wheel { position: relative; height: calc(var(--wheel-row) * 5); padding-block: calc(var(--wheel-row) * 2); overflow-y: auto; scroll-snap-type: y mandatory; scrollbar-width: none; mask-image: linear-gradient(to bottom, transparent, #000 34%, #000 66%, transparent); box-sizing: border-box; }
+  .wheel div { display: grid; place-items: center; height: var(--wheel-row); scroll-snap-align: center; color: var(--faint); font: 500 19px/1 var(--font-display); font-variant-numeric: tabular-nums; scale: 0.86; }
+  .wheel div.on { color: var(--text); font-weight: 700; scale: 1; }
+  .col.unit .wheel div { padding-inline-end: 26px; }
+  .col b { position: absolute; top: calc(var(--wheel-row) * 2); right: 14%; display: grid; place-items: center; height: var(--wheel-row); color: var(--muted); font: 600 15px/1 var(--font-text); }
+  .label { color: var(--muted); font: 500 14.5px/20px var(--font-text); }
+  .chips { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; }
+  .chips span { flex: none; display: inline-flex; align-items: center; height: 38px; padding: 0 14px; border-radius: var(--radius-chip); background: var(--well); color: var(--muted); font: 600 14.5px/1 var(--font-text); }
+  .chips span.on { background: var(--accent-soft); color: var(--accent-ink); box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--accent-ink) 30%, transparent); }
+</style>
+<div class="stage">
+  <div class="ends" role="radiogroup" aria-label="고칠 시각">
+    <button type="button" role="radio" aria-checked="true"><span class="k">시작</span><span class="v">오후 3시</span></button>
+    <i aria-hidden="true">→</i>
+    <button type="button" role="radio" aria-checked="false"><span class="k">끝</span><span class="v">오후 4시</span><span class="d">1시간</span></button>
+  </div>
+  <div class="wheels">
+    <div class="col"><div class="wheel" data-start="1"><div>오전</div><div class="on">오후</div></div></div>
+    <div class="col unit"><div class="wheel" data-start="2"><div>1</div><div>2</div><div class="on">3</div><div>4</div><div>5</div><div>6</div></div><b>시</b></div>
+    <div class="col unit"><div class="wheel" data-start="0"><div class="on">00</div><div>05</div><div>10</div><div>15</div><div>20</div></div><b>분</b></div>
+  </div>
+  <span class="label">얼마나</span>
+  <div class="chips"><span>끝 없음</span><span>30분</span><span class="on">1시간</span><span>1시간 30분</span><span>2시간</span></div>
+</div>
+<script>
+  for (const w of document.querySelectorAll(".wheel")) w.scrollTop = Number(w.dataset.start) * 40;
+</script>

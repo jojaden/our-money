@@ -453,11 +453,129 @@ button.row:active, a.row:active { background: var(--well); transform: scale(0.98
 /* 안쪽 여백만큼 바깥으로 당겨 글자 자리는 그대로, 바탕은 한 번에 칠한다 (그림자로 넓히면 가장자리에 옅은 줄이 남는다) */
 .title-mirror mark { margin: 0 -6px; padding: 6px; border-radius: 10px; background: color-mix(in srgb, var(--accent) 20%, var(--surface)); color: var(--accent-ink); animation: time-card-in var(--dur-press) var(--ease-out); pointer-events: auto; cursor: pointer; }
 @keyframes time-card-in { from { background-color: transparent; color: var(--text); } }
-.time-chip { display: inline-flex; justify-self: start; width: fit-content; align-items: center; gap: 6px; height: 32px; padding: 0 4px 0 12px; border-radius: var(--radius-chip); background: var(--accent-soft); color: var(--accent-ink); font: 600 14.5px/1 var(--font-text); }
-.time-chip > svg { width: 16px; height: 16px; }
-.time-chip button { display: grid; place-items: center; width: 28px; height: 28px; border: 0; border-radius: var(--radius-chip); background: none; color: inherit; }
-.time-chip button svg { width: 15px; height: 15px; }
 @media (prefers-reduced-motion: reduce) { .title-mirror mark { animation: none; } }
+
+/* ---------- 시간 고르기 (TimeWheel): 시작 → 끝 두 칸 · 바퀴 세 줄(오전·오후 | 시 | 분) · 얼마나 칩 ---------- */
+
+.time-panel { display: grid; gap: 14px; }
+.time-ends { position: relative; display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+.time-ends button {
+  display: grid;
+  align-content: center;
+  gap: 2px;
+  min-height: 68px;
+  padding: 10px 14px;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: var(--well);
+  color: var(--text);
+  text-align: start;
+  transition: background-color var(--dur-press) ease, box-shadow var(--dur-press) ease, scale var(--dur-press) var(--ease-out);
+}
+.time-ends button:active { scale: 0.96; }
+.time-ends button:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: 2px; }
+.time-ends .k { color: var(--muted); font: 500 13px/18px var(--font-text); }
+.time-ends .v { font: 700 18px/24px var(--font-text); font-variant-numeric: tabular-nums; text-wrap: balance; }
+/* 아직 정하지 않은 시각: 바퀴가 보여 주는 제안을 흐리게 (돌리거나 가운데 칸을 누르면 정해진다) */
+.time-ends .v.none { color: var(--faint); }
+.time-ends .d { color: var(--faint); font: 500 12.5px/16px var(--font-text); }
+/* 고른 칸 = 바퀴가 고치는 칸: 옅은 노랑 + 안쪽 선(칩·고른 칸과 같은 말) */
+.time-ends button[aria-checked="true"] { background: var(--accent-soft); box-shadow: inset 0 0 0 2px var(--accent-ink); }
+.time-ends button[aria-checked="true"] .k { color: var(--accent-ink); font-weight: 600; }
+.time-ends-arrow { position: absolute; top: 50%; left: 50%; width: 16px; height: 16px; translate: -50% -50%; color: var(--faint); pointer-events: none; }
+
+/* 바퀴: 다섯 칸이 보이고 가운데 띠(well)에 멈춘 칸이 값. 위아래는 흐려진다 */
+.wheels { position: relative; display: grid; grid-template-columns: 1.15fr 1fr 1fr; height: calc(var(--wheel-row) * 5); }
+.wheels::before { content: ""; position: absolute; inset-inline: 0; top: calc(var(--wheel-row) * 2); height: var(--wheel-row); border-radius: var(--radius-small); background: var(--well); pointer-events: none; }
+.wheel-col { position: relative; min-width: 0; }
+.wheel {
+  height: calc(var(--wheel-row) * 5);
+  padding-block: calc(var(--wheel-row) * 2);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scroll-snap-type: y mandatory;
+  scrollbar-width: none;
+  touch-action: pan-y;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+  mask-image: linear-gradient(to bottom, transparent, #000 34%, #000 66%, transparent);
+}
+.wheel::-webkit-scrollbar { display: none; }
+/* 흐림(mask)이 테두리도 지우므로 포커스 링은 줄 상자에 */
+.wheel-col:has(> .wheel:focus-visible)::after { content: ""; position: absolute; inset: 0; border-radius: var(--radius-small); box-shadow: inset 0 0 0 2px var(--accent-ink); pointer-events: none; }
+.wheel-item {
+  display: grid;
+  place-items: center;
+  height: var(--wheel-row);
+  scroll-snap-align: center;
+  color: var(--faint);
+  font: 500 19px/1 var(--font-display);
+  font-variant-numeric: tabular-nums;
+  scale: 0.86;
+  cursor: pointer;
+  user-select: none;
+  transition: scale 120ms var(--ease-out), color 120ms ease;
+}
+.wheel-item[data-on] { color: var(--text); font-weight: 700; scale: 1; }
+/* "시"·"분" 은 돌지 않고 가운데 띠에 붙어 있다 — 어느 줄이 시고 분인지 늘 보인다 */
+.wheel-col:has(.wheel-unit) .wheel-item { padding-inline-end: 26px; }
+.wheel-unit { position: absolute; top: calc(var(--wheel-row) * 2); inset-inline-end: 14%; display: grid; place-items: center; height: var(--wheel-row); color: var(--muted); font: 600 15px/1 var(--font-text); pointer-events: none; }
+.time-lengths { display: grid; gap: 8px; }
+.time-lengths .label { color: var(--muted); font: 500 14.5px/20px var(--font-text); }
+.chip:disabled { opacity: 0.4; }
+@media (prefers-reduced-motion: reduce) { .wheel-item, .time-ends button { transition: none; } }
+
+/* ---------- 요약 줄 (일정 시트): 아이콘 · 이름 · 지금 값. 고르는 칸은 누르면 그 자리에서 펼친다 ---------- */
+
+.prop-rows { display: grid; }
+.prop-rows + .prop-rows { margin-top: 22px; }
+.prop-item { position: relative; }
+/* 줄 사이 선은 아이콘 뒤(이름 글자 앞)부터 — 목록 줄과 같은 들여쓰기 규칙 */
+.prop-item + .prop-item::before { content: ""; position: absolute; top: 0; inset-inline: 38px 0; height: 0.6px; background: var(--rule); }
+.prop-row {
+  display: grid;
+  grid-template-columns: 24px auto minmax(0, 1fr);
+  align-items: center;
+  column-gap: 14px;
+  width: 100%;
+  min-height: var(--prop-row);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  text-align: start;
+}
+button.prop-row { margin-inline: -8px; width: calc(100% + 16px); padding-inline: 8px; border-radius: var(--radius-small); transition: background-color var(--dur-press) ease; -webkit-tap-highlight-color: transparent; }
+button.prop-row:active { background: var(--well); }
+button.prop-row:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: -2px; }
+@media (hover: hover) { button.prop-row:hover { background: var(--raised); } }
+.prop-row > svg { justify-self: center; width: 20px; height: 20px; color: var(--muted); }
+.prop-row .k { font: 500 16px/22px var(--font-text); white-space: nowrap; }
+.prop-row .v { display: inline-flex; justify-self: end; align-items: center; gap: 4px; min-width: 0; color: var(--muted); font: 600 15px/20px var(--font-text); text-align: end; }
+.prop-row .v > span { text-wrap: balance; }
+/* 기본값이 아닌 값(시간을 정함·반복함)은 고른 색으로 — 한눈에 무엇을 바꿨는지 */
+.prop-row .v.set { color: var(--accent-ink); }
+.prop-row .chev { flex: none; width: 18px; height: 18px; color: var(--faint); transition: rotate var(--dur-press) var(--ease-out); }
+.prop-row[aria-expanded="true"] .chev { rotate: 180deg; }
+.prop-row > .seg, .prop-row > .toggle, .prop-row > .amount-wrap { justify-self: end; }
+.prop-row > .seg { width: min(100%, 228px); }
+.prop-row > .seg button { height: 32px; font-size: 14px; }
+.prop-row > .input { margin-block: 6px; }
+.prop-row .sub { display: block; color: var(--faint); font: 500 12.5px/17px var(--font-text); }
+.prop-panel { display: grid; gap: 12px; padding: 2px 0 18px; }
+.field + .prop-rows { margin-top: 14px; }
+.prop-rows + .field { margin-top: 22px; }
+.prop-item > .prop-note { margin: -6px 0 12px; padding-inline-start: 38px; color: var(--faint); font-size: 12.5px; }
+.prop-item > .prop-note.error { color: var(--negative); }
+.prop-row.sw { grid-template-columns: 24px minmax(0, 1fr) auto; padding-block: 8px; }
+.prop-row.sw .k { white-space: normal; }
+.prop-row .amount-wrap { width: 168px; }
+.prop-panel > .btn.ghost { justify-self: start; }
+.prop-panel .inline-fields > .field { margin-top: 0; }
+.prop-panel .help { color: var(--faint); font-size: 12.5px; }
+.prop-panel .help.error { color: var(--negative); }
+@media (prefers-reduced-motion: reduce) { .prop-row .chev { transition: none; } }
 
 /* ---------- 칸 바뀌기 (Morph): 높이가 따라가는 동안만 넘친 칸을 자른다. 포커스 링은 남긴다 ---------- */
 

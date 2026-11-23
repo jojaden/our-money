@@ -1,16 +1,19 @@
 "use client";
 
-import { useLayoutEffect, useRef, useState } from "react";
-import { Clock, Copy, Share, Trash2, X } from "lucide-react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { Bell, CalendarDays, ChevronDown, Clock, Coins, Copy, Hourglass, NotebookPen, Pin, Repeat as RepeatIcon, Share, Trash2, UsersRound } from "lucide-react";
 import type { CalEvent, Owner, Repeat } from "@/lib/types";
 import { REPEAT_LABEL } from "@/lib/types";
 import { useData } from "@/lib/store";
 import { nameOf } from "@/lib/calc";
-import { eul, ro } from "@/lib/format";
+import { dateWithDay, eul, parseYmd, ro } from "@/lib/format";
 import { addDays, cutTime, findTime, occurrences, timeText, type TimeHit } from "@/lib/calendar";
+import { durationText, nextHour, toMin } from "@/lib/clock";
 import { AmountInput, MAX_GOAL, radioKeys, radioTab, Seg, Sheet, Toggle } from "./ui";
 import type { QuickDraft } from "./QuickAdd";
 import { useShareEvent } from "./holdActions";
+import { TimePanel } from "./TimeWheel";
+import { still, tokens } from "./Morph";
 
 /** 무엇을 만드나 — 맨 위에서 고르면 그에 맞는 칸만 나온다 */
 type Kind = "todo" | "event" | "dday";
@@ -59,6 +62,17 @@ export function quickEvent(draft: QuickDraft, date: string, now = new Date()): C
     start_time: draft.time || (h?.start ?? null),
     end_time: draft.time ? draft.end || null : (h?.until ?? null),
   };
+}
+
+/** 날짜 줄의 값: "11월 23일 (월)", 기간이면 "11월 23일~25일 · 3일" */
+function dateValue(start: string, end: string, ranged: boolean): string {
+  if (!ranged) return dateWithDay(start);
+  if (!end) return `${dateWithDay(start)}부터`;
+  const a = parseYmd(start);
+  const b = parseYmd(end);
+  const days = Math.round((b.getTime() - a.getTime()) / 86_400_000) + 1;
+  const to = a.getMonth() === b.getMonth() ? `${b.getDate()}일` : `${b.getMonth() + 1}월 ${b.getDate()}일`;
+  return `${a.getMonth() + 1}월 ${a.getDate()}일~${to}${days > 0 ? ` · ${days}일` : ""}`;
 }
 
 function kindOf(e?: CalEvent): Kind {
@@ -216,6 +230,27 @@ export function EventSheet({ open, onOpenChange, event, from, date, draft, onCop
     toast(backup.repeat !== "none" ? `반복하는 ${what} 모두 지웠어요` : `${what} 지웠어요`, () => void upsert("events", [backup]));
   };
 
+  /** 펼친 줄 하나 (한 번에 하나만) — 고치던 내용(dirty)에는 넣지 않는다 */
+  const [unfold, setUnfold] = useState<"date" | "time" | "remind" | null>(null);
+  const toggle = (k: "date" | "time" | "remind") => setUnfold((u) => (u === k ? null : k));
+  // 펼친 칸이 시트 아래로 숨지 않게 — 높이가 다 자란 뒤(Morph, dur-tab) 그 칸의 아래 끝이 보이도록 시트 본문을 올린다(줄 머리는 넘기지 않게)
+  useEffect(() => {
+    if (!unfold) return;
+    const t = window.setTimeout(() => {
+      const item = document.getElementById(`ev-${unfold}-panel`)?.parentElement;
+      const body = item?.closest(".sheet-body");
+      if (!item || !body) return;
+      const b = body.getBoundingClientRect();
+      const r = item.getBoundingClientRect();
+      const dy = Math.min(r.bottom - b.bottom + 8, r.top - b.top);
+      if (dy > 0) body.scrollBy({ top: dy, behavior: still() ? "auto" : "smooth" });
+    }, tokens().move + 40);
+    return () => window.clearTimeout(t);
+  }, [unfold]);
+  const timeLen = startTime && endTime && !isRange ? toMin(endTime) - toMin(startTime) : 0;
+  const timeValue = startTime || endTime ? `${timeText({ start_time: startTime || null, end_time: endTime || null })}${timeLen > 0 ? ` · ${durationText(timeLen)}` : ""}` : "하루 종일";
+  const remindLabel = REMIND.find((r) => r.value === remind)!.label;
+
   return (
     <Sheet
       open={open}
@@ -240,9 +275,6 @@ export function EventSheet({ open, onOpenChange, event, from, date, draft, onCop
     >
       <div className="field">
         <Seg label="무엇을 만들까요" value={kind} onChange={setKind} options={KIND.map((x) => ({ value: x.value, label: x.label }))} />
-        <p className="help" key={kind}>
-          {k.help}
-        </p>
       </div>
 
       <div className="field">
@@ -264,152 +296,200 @@ export function EventSheet({ open, onOpenChange, event, from, date, draft, onCop
             onCompositionEnd={(e) => timed && setTitle(take(e.currentTarget))}
             onScroll={syncMirror} onSelect={syncMirror} placeholder={k.hint} maxLength={40} />
         </div>
-        {live ? (
-          <p className="help" role="status">
-            띄어 쓰거나 시간을 누르면 {ro(timeText({ start_time: live.start, end_time: live.until }))} 시간에 넣어요
-          </p>
-        ) : (
-          timed &&
-          (startTime || endTime) && (
-            <div className="time-chip">
-              <Clock aria-hidden="true" />
-              {timeText({ start_time: startTime || null, end_time: endTime || null })}
-              <button
-                type="button"
-                aria-label="시간 지우기"
-                onClick={() => {
-                  setStartTime("");
-                  setEndTime("");
-                }}
-              >
-                <X aria-hidden="true" />
-              </button>
-            </div>
-          )
-        )}
+        <p className="help" role="status">
+          {live ? `띄어 쓰거나 시간을 누르면 ${ro(timeText({ start_time: live.start, end_time: live.until }))} 시간에 넣어요` : k.help}
+        </p>
       </div>
 
-      <div className="field">
-        {kind !== "dday" && (
-          <span className="label" key={kind}>
-            {kind === "todo" ? "언제까지" : "언제"}
-          </span>
-        )}
-        {kind !== "dday" && (
-          <Seg
-            label="하루 또는 기간"
-            value={ranged ? "range" : "day"}
-            onChange={(v) => setRanged(v === "range")}
-            options={[
-              { value: "day", label: "하루" },
-              { value: "range", label: kind === "todo" ? "기간 (신고·납부 기간)" : "기간" },
-            ]}
-          />
-        )}
-        <div className="inline-fields">
-          <div className="field" style={{ marginTop: 0 }}>
-            <label htmlFor="ev-start">{isRange ? "시작" : "날짜"}</label>
-            <input id="ev-start" type="date" className="input" value={start} onChange={(e) => e.target.value && setStart(e.target.value)} />
-          </div>
-          {isRange && (
-            <div className="field" style={{ marginTop: 0 }}>
-              <label htmlFor="ev-end">끝 (그날까지)</label>
-              <input id="ev-end" type="date" className="input" value={end} min={start} onChange={(e) => setEnd(e.target.value)} />
+      {/* 언제: 날짜 · 시간 · 반복 */}
+      <div className="prop-rows">
+        <div className="prop-item">
+          <button type="button" className="prop-row" aria-expanded={unfold === "date"} aria-controls="ev-date-panel" onClick={() => toggle("date")}>
+            <CalendarDays aria-hidden="true" />
+            <span className="k">{kind === "todo" ? "기한" : "날짜"}</span>
+            <span className={`v ${isRange ? "set" : ""}`}>
+              <span>{dateValue(start, end, isRange)}</span>
+              <ChevronDown className="chev" aria-hidden="true" />
+            </span>
+          </button>
+          {unfold === "date" && (
+            <div className="prop-panel" id="ev-date-panel">
+              {kind !== "dday" && (
+                <Seg
+                  label="하루 또는 기간"
+                  value={ranged ? "range" : "day"}
+                  onChange={(v) => setRanged(v === "range")}
+                  options={[
+                    { value: "day", label: "하루" },
+                    { value: "range", label: kind === "todo" ? "기간 (신고·납부 기간)" : "기간" },
+                  ]}
+                />
+              )}
+              <div className="inline-fields">
+                <div className="field">
+                  <label htmlFor="ev-start">{isRange ? "시작" : "날짜"}</label>
+                  <input id="ev-start" type="date" className="input" value={start} onChange={(e) => e.target.value && setStart(e.target.value)} />
+                </div>
+                {isRange && (
+                  <div className="field">
+                    <label htmlFor="ev-end">끝 (그날까지)</label>
+                    <input id="ev-end" type="date" className="input" value={end} min={start} onChange={(e) => setEnd(e.target.value)} />
+                  </div>
+                )}
+              </div>
             </div>
           )}
-        </div>
-        {endBad && (
-          <p className="help" role="alert">
-            끝 날은 시작 날보다 앞일 수 없어요
-          </p>
-        )}
-      </div>
-
-      {timed && (
-        <div className="field">
-          <span className="label">시간 (비우면 하루 종일)</span>
-          <div className="inline-fields">
-            <div className="field" style={{ marginTop: 0 }}>
-              <label htmlFor="ev-start-time">{isRange ? "첫날 시작" : "시작"}</label>
-              <input id="ev-start-time" type="time" className="input" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
-            </div>
-            <div className="field" style={{ marginTop: 0 }}>
-              <label htmlFor="ev-end-time">{isRange ? "끝 날 끝" : "끝"}</label>
-              <input id="ev-end-time" type="time" className="input" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
-            </div>
-          </div>
-          {timeBad && (
-            <p className="help" role="alert">
-              끝 시간은 시작 시간보다 앞일 수 없어요
+          {endBad && (
+            <p className="help error prop-note" role="alert">
+              끝 날은 시작 날보다 앞일 수 없어요
             </p>
           )}
         </div>
-      )}
 
-      <div className="field">
-        <span className="label">반복</span>
-        <Seg label="반복" value={repeat} onChange={setRepeat} options={(["none", "monthly", "yearly"] as Repeat[]).map((r) => ({ value: r, label: REPEAT_LABEL[r] }))} />
-        {kind === "todo" && repeat === "yearly" && <p className="help">1년에 두 번 내는 세금(재산세 등)은 매년 할 일을 두 개 만들어요. 반복하면 회차마다 따로 체크해요.</p>}
-        {kind === "dday" && repeat === "none" && <p className="help">기념일은 매년으로 두면 해마다 다시 세요.</p>}
-      </div>
-
-      <div className="field">
-        <span className="label">누구</span>
-        <Seg
-          label="누구"
-          value={owner}
-          onChange={setOwner}
-          options={[
-            { value: "joint", label: "공동" },
-            { value: "a", label: nameOf(s, "a") },
-            { value: "b", label: nameOf(s, "b") },
-          ]}
-        />
-      </div>
-
-      {kind === "todo" && (
-        <>
-          <div className="inline-fields field">
-            <div className="field">
-              <label htmlFor="ev-amount">낼 돈 (선택)</label>
-              <AmountInput id="ev-amount" value={amount} onChange={setAmount} max={MAX_GOAL} />
-            </div>
-          </div>
-          <div className="field">
-            <div className="switchrow">
-              <div>
-                <div className="t">D-day 세기</div>
-                <div className="s">D-day 목록에도 남은 날을 보여 줘요</div>
-              </div>
-              <Toggle on={dday} onChange={setDday} label="D-day 세기" />
-            </div>
-            {isRange && (
-              <div className="switchrow">
-                <div>
-                  <div className="t">기간 동안 알림 모음에 고정</div>
-                  <div className="s">예: 5월 내내 종 알림 맨 위에 &quot;양도소득세 신고 기간&quot;</div>
-                </div>
-                <Toggle on={pin} onChange={setPin} label="기간 동안 알림 모음에 고정" />
+        {timed && (
+          <div className="prop-item">
+            <button type="button" className="prop-row" aria-expanded={unfold === "time"} aria-controls="ev-time-panel" onClick={() => toggle("time")}>
+              <Clock aria-hidden="true" />
+              <span className="k">시간</span>
+              <span className={`v ${startTime || endTime ? "set" : ""}`}>
+                <span>{timeValue}</span>
+                <ChevronDown className="chev" aria-hidden="true" />
+              </span>
+            </button>
+            {unfold === "time" && (
+              <div className="prop-panel" id="ev-time-panel">
+                <TimePanel
+                  start={startTime}
+                  end={endTime}
+                  ranged={isRange}
+                  fallback={nextHour(now)}
+                  onChange={(a, b) => {
+                    setStartTime(a);
+                    setEndTime(b);
+                  }}
+                />
+                {/* 늘 두어 시간을 정해도 패널 높이가 바뀌지 않게 (하루 종일이면 눌러도 할 일이 없어 막는다) */}
+                <button
+                  type="button"
+                  className="btn ghost sm"
+                  disabled={!startTime && !endTime}
+                  onClick={() => {
+                    setStartTime("");
+                    setEndTime("");
+                    setUnfold(null);
+                  }}
+                >
+                  하루 종일로 바꾸기
+                </button>
               </div>
             )}
+            {timeBad && unfold !== "time" && (
+              <p className="help error prop-note" role="alert">
+                끝 시간은 시작 시간보다 앞일 수 없어요
+              </p>
+            )}
           </div>
-        </>
-      )}
+        )}
 
-      <div className="field">
-        <span className="label">미리 알림 (앱)</span>
-        <div className="chips" role="radiogroup" aria-label="미리 알림" onKeyDown={radioKeys}>
-          {REMIND.map((r, i) => (
-            <button key={r.value} type="button" className="chip" role="radio" aria-checked={remind === r.value} tabIndex={radioTab(remind === r.value, i, REMIND.some((x) => x.value === remind))} onClick={() => setRemind(r.value)}>
-              {r.label}
-            </button>
-          ))}
+        <div className="prop-item">
+          <div className="prop-row">
+            <RepeatIcon aria-hidden="true" />
+            <span className="k">반복</span>
+            <Seg label="반복" value={repeat} onChange={setRepeat} options={(["none", "monthly", "yearly"] as Repeat[]).map((r) => ({ value: r, label: REPEAT_LABEL[r] }))} />
+          </div>
+          {kind === "todo" && repeat === "yearly" && <p className="help prop-note">1년에 두 번 내는 세금(재산세 등)은 매년 할 일을 두 개 만들어요. 반복하면 회차마다 따로 체크해요.</p>}
+          {kind === "dday" && repeat === "none" && <p className="help prop-note">기념일은 매년으로 두면 해마다 다시 세요.</p>}
         </div>
       </div>
 
-      <div className="field">
-        <label htmlFor="ev-note">메모</label>
-        <input id="ev-note" className="input" value={note} onChange={(e) => setNote(e.target.value)} placeholder={kind === "todo" ? "예: 홈택스에서 신고, 위택스로 납부" : "예: 장소, 준비물"} maxLength={500} />
+      {/* 누구 · 알림 */}
+      <div className="prop-rows">
+        <div className="prop-item">
+          <div className="prop-row">
+            <UsersRound aria-hidden="true" />
+            <span className="k">누구</span>
+            <Seg
+              label="누구"
+              value={owner}
+              onChange={setOwner}
+              options={[
+                { value: "joint", label: "공동" },
+                { value: "a", label: nameOf(s, "a") },
+                { value: "b", label: nameOf(s, "b") },
+              ]}
+            />
+          </div>
+        </div>
+        <div className="prop-item">
+          <button type="button" className="prop-row" aria-expanded={unfold === "remind"} aria-controls="ev-remind-panel" onClick={() => toggle("remind")}>
+            <Bell aria-hidden="true" />
+            <span className="k">미리 알림</span>
+            <span className={`v ${remind ? "set" : ""}`}>
+              <span>{remindLabel}</span>
+              <ChevronDown className="chev" aria-hidden="true" />
+            </span>
+          </button>
+          {unfold === "remind" && (
+            <div className="prop-panel" id="ev-remind-panel">
+              <div className="chips" role="radiogroup" aria-label="미리 알림" onKeyDown={radioKeys}>
+                {REMIND.map((r, i) => (
+                  <button key={r.value} type="button" className="chip" role="radio" aria-checked={remind === r.value} tabIndex={radioTab(remind === r.value, i, REMIND.some((x) => x.value === remind))} onClick={() => setRemind(r.value)}>
+                    {r.label}
+                  </button>
+                ))}
+              </div>
+              <p className="help">안드로이드 앱이 그날 아침에 알려 줘요</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {kind === "todo" && (
+        <div className="prop-rows">
+          <div className="prop-item">
+            <div className="prop-row">
+              <Coins aria-hidden="true" />
+              <label className="k" htmlFor="ev-amount">
+                낼 돈
+              </label>
+              <div className="amount-wrap">
+                <AmountInput id="ev-amount" value={amount} onChange={setAmount} max={MAX_GOAL} placeholder="선택" />
+              </div>
+            </div>
+          </div>
+          <div className="prop-item">
+            <div className="prop-row sw">
+              <Hourglass aria-hidden="true" />
+              <span className="k">
+                D-day 세기<span className="sub">D-day 목록에도 남은 날을 보여 줘요</span>
+              </span>
+              <Toggle on={dday} onChange={setDday} label="D-day 세기" />
+            </div>
+          </div>
+          {isRange && (
+            <div className="prop-item">
+              <div className="prop-row sw">
+                <Pin aria-hidden="true" />
+                <span className="k">
+                  기간 동안 알림 모음에 고정<span className="sub">예: 5월 내내 종 알림 맨 위에 &quot;양도소득세 신고 기간&quot;</span>
+                </span>
+                <Toggle on={pin} onChange={setPin} label="기간 동안 알림 모음에 고정" />
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className="prop-rows">
+        <div className="prop-item">
+          <div className="prop-row">
+            <NotebookPen aria-hidden="true" />
+            <label className="k" htmlFor="ev-note">
+              메모
+            </label>
+            <input id="ev-note" className="input" value={note} onChange={(e) => setNote(e.target.value)} placeholder={kind === "todo" ? "예: 홈택스에서 신고" : "예: 장소, 준비물"} maxLength={500} />
+          </div>
+        </div>
       </div>
 
       {/* 꾹 누르기 메뉴에만 있던 일(복사·공유)을 시트에도 — 키보드·화면 읽기·꾹 누르기를 모르는 사람의 길. 저장한 내용을 쓰므로 고치던 중에는 막는다 */}

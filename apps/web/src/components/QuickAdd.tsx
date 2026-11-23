@@ -4,7 +4,9 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { Clock, X } from "lucide-react";
 import { cutTime, findTime, timeText, type TimeHit } from "@/lib/calendar";
-import { useBackToClose } from "./ui";
+import { nextHour, toMin } from "@/lib/clock";
+import { Sheet, useBackToClose } from "./ui";
+import { TimePanel } from "./TimeWheel";
 
 /** 바로 쓰기에 쓰던 것 — 제목과 시간(비면 하루 종일), 제목에서 "3시~5시"처럼 뗀 끝 시간 */
 export interface QuickDraft {
@@ -38,7 +40,9 @@ export function QuickAdd({
   onMore: () => void;
 }) {
   const input = useRef<HTMLInputElement>(null);
-  const timeInput = useRef<HTMLInputElement>(null);
+  /** 시간 시트: 열렸나, 그 안에서 고르는 중인 값(완료를 눌러야 알약에 들어간다) */
+  const [picking, setPicking] = useState(false);
+  const [pick, setPick] = useState({ start: "", end: "" });
   const mirror = useRef<HTMLSpanElement>(null);
   const caret = useRef<number | null>(null);
   /** 오전·오후를 안 쓴 시간을 정할 기준 (막대를 그린 때) */
@@ -74,6 +78,8 @@ export function QuickAdd({
       input.current?.blur();
       return;
     }
+    // 시간 시트가 떠 있는 동안은 시트 안 누름이 막대 밖 누름이라 접지 않는다
+    if (picking) return;
     const down = (e: PointerEvent) => {
       if ((e.target as Element).closest(".fab")) return;
       const swallow = (c: MouseEvent) => {
@@ -87,7 +93,7 @@ export function QuickAdd({
     };
     document.addEventListener("pointerdown", down);
     return () => document.removeEventListener("pointerdown", down);
-  }, [open, onOpenChange]);
+  }, [open, onOpenChange, picking]);
 
   // 누른 그 순간에 입력칸으로 옮겨야 폰 키보드가 바로 올라온다 — 펼친 상태를 먼저 그리고(inert 해제) 바로 포커스
   const expand = () => {
@@ -142,18 +148,14 @@ export function QuickAdd({
           />
         </div>
         <div className="fab-compose-row">
-          {/* 시간 알약: 누르면 폰의 시간 고르기가 뜨고, 고르면 "오후 3:30" — × 로 지운다(비면 하루 종일) */}
+          {/* 시간 알약: 누르면 시간 시트(바퀴 + 얼마나)가 뜨고, 고르면 "오후 3시~4시" — × 로 지운다(비면 하루 종일) */}
           <div className={`fab-time ${draft.time ? "has" : ""}`}>
             <button
               type="button"
               className="fab-time-pick"
               onClick={() => {
-                const t = timeInput.current;
-                try {
-                  t?.showPicker();
-                } catch {
-                  t?.focus();
-                }
+                setPick({ start: draft.time || nextHour(new Date()), end: draft.end ?? "" });
+                setPicking(true);
               }}
             >
               <Clock aria-hidden="true" />
@@ -164,7 +166,6 @@ export function QuickAdd({
                 <X aria-hidden="true" />
               </button>
             )}
-            <input ref={timeInput} type="time" tabIndex={-1} aria-label="시간" value={draft.time} onChange={(e) => onDraft({ ...draft, time: e.target.value, end: "" })} />
           </div>
           <button type="button" className="btn ghost" onClick={onMore}>
             자세히
@@ -174,6 +175,38 @@ export function QuickAdd({
           </button>
         </div>
       </form>
+      <Sheet
+        open={picking}
+        onOpenChange={setPicking}
+        title="시간"
+        footer={
+          <>
+            <button
+              type="button"
+              className="btn secondary"
+              onClick={() => {
+                onDraft({ ...draft, time: "", end: "" });
+                setPicking(false);
+              }}
+            >
+              하루 종일
+            </button>
+            <button
+              type="button"
+              className="btn block"
+              disabled={Boolean(pick.end) && toMin(pick.end) < toMin(pick.start)}
+              onClick={() => {
+                onDraft({ ...draft, time: pick.start, end: pick.end });
+                setPicking(false);
+              }}
+            >
+              완료
+            </button>
+          </>
+        }
+      >
+        <TimePanel start={pick.start} end={pick.end} fallback={pick.start} onChange={(start, end) => setPick({ start, end })} />
+      </Sheet>
     </>
   );
 }
