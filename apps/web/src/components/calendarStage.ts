@@ -70,8 +70,10 @@ export function useCalendarStage() {
     const down = (e: PointerEvent) => {
       if (!inNav(e.target)) collapse();
     };
-    const out = (e: FocusEvent) => {
-      if (!inNav(e.relatedTarget)) collapse();
+    // 메뉴 밖으로 포커스가 들어가면 접는다. 메뉴의 focusout 은 쓰지 않는다 — WebKit 은 링크를 눌러도 포커스를 주지 않아
+    // relatedTarget 이 비고, 그러면 탭을 누르는 순간 접혀 이동이 안 된다
+    const into = (e: FocusEvent) => {
+      if (!inNav(e.target)) collapse();
     };
     const key = (e: KeyboardEvent) => {
       if (e.key !== "Escape" || root.dataset.cal !== "peek" || !inNav(document.activeElement)) return;
@@ -80,11 +82,11 @@ export function useCalendarStage() {
     };
     document.addEventListener("pointerdown", down, true);
     document.addEventListener("keydown", key);
-    nav?.addEventListener("focusout", out);
+    document.addEventListener("focusin", into);
     return () => {
       document.removeEventListener("pointerdown", down, true);
       document.removeEventListener("keydown", key);
-      nav?.removeEventListener("focusout", out);
+      document.removeEventListener("focusin", into);
     };
   }, []);
 

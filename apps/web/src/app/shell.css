@@ -351,7 +351,7 @@
   :root:has(.fab.composing) .navbar { z-index: 31; }
 }
 @media (prefers-reduced-transparency: reduce) {
-  .tabbar, .topbar::before, :root[data-cal="focus"] .fab, .nav-peek { background: var(--surface); -webkit-backdrop-filter: none; backdrop-filter: none; }
+  .tabbar, .topbar::before, :root[data-cal="focus"] .fab, :root[data-cal] .nav-peek { background: var(--surface); -webkit-backdrop-filter: none; backdrop-filter: none; }
 }
 
 /* ---------- 데스크톱: 레일 ---------- */

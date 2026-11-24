@@ -169,6 +169,8 @@ function Nav() {
                 if (path === href) {
                   e.preventDefault();
                   window.scrollTo({ top: 0, behavior: "smooth" });
+                  // 달력에서 메뉴만 펼친 채(peek) 달력 칸을 누르면 달력으로 돌아온다는 뜻 — 접는다
+                  if (document.documentElement.dataset.cal === "peek") document.documentElement.dataset.cal = "focus";
                 }
               }}
             >
