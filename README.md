@@ -38,17 +38,55 @@ flowchart LR
 
 ## 화면
 
-| 알림 모음 | 콕 찌르기 | 나눠 내기 | 한 장 결산 | 목표 이정표 |
-|:---:|:---:|:---:|:---:|:---:|
-| <img src="docs/screenshots/bell.jpg" width="160"> | <img src="docs/screenshots/nudge.jpg" width="160"> | <img src="docs/screenshots/split.jpg" width="160"> | <img src="docs/screenshots/report.jpg" width="160"> | <img src="docs/screenshots/goal.jpg" width="160"> |
-| 지난달 마무리 · 지난 것 · 잘 나갔나요? | 상대 월급날 안 옮긴 돈을 알리고 카톡으로도 | 공동 항목을 두 사람 몫으로, 나가는 곳도 따로 | 지난달 쓴 돈 · 구성 · 눈에 띈 것 | 25 · 50 · 75 · 100% 도장 |
+스크린샷은 모두 **어두운 화면**이에요. 밝게 · 어둡게 · 기기 설정 중 고를 수 있어요.
 
-| 달력 날짜 창 | 꾹 누르기 메뉴 | 카드 넣기 | 어두운 화면 |
+### 월급날 · 플랜
+
+| 월급이 나뉘는 곳 | 수입 · 묶음 | 나눠 내기 | 목표 이정표 |
 |:---:|:---:|:---:|:---:|
-| <img src="docs/screenshots/calendar-day.jpg" width="160"> | <img src="docs/screenshots/calendar-hold.jpg" width="160"> | <img src="docs/screenshots/wallet-add.jpg" width="160"> | <img src="docs/screenshots/dark.jpg" width="160"> |
-| 칸에 일정 이름 · 누르면 그날 일정과 쓴 돈 | 줄이 떠오르고 수정 · 복사 · 공유 · 삭제 | 한 번에 하나씩, 카드사를 로고로 | 밝게 · 어둡게 · 기기 설정(기본) |
+| <img src="docs/screenshots/plan-pick.jpg" width="180" alt="월급이 나뉘는 곳"> | <img src="docs/screenshots/plan-items.jpg" width="180" alt="수입 · 묶음"> | <img src="docs/screenshots/split.jpg" width="180" alt="나눠 내기"> | <img src="docs/screenshots/goal.jpg" width="180" alt="목표 이정표"> |
+| 두 사람 수입을 묶음별 막대로, 고정비를 누르면 항목이 펼쳐짐 | 월급 · 기타 수입과 묶음 카드, ＋로 항목 추가 | 공동 항목을 두 사람 몫으로, 나가는 통장도 따로 | 모은 돈과 25 · 50 · 75 · 100% 도장 |
 
-<img src="docs/screenshots/desktop-plan.jpg" width="100%" alt="데스크톱: 플랜">
+### 체크 · 결산
+
+| 이번 달 할 일 | 콕 찌르기 | 납부 · 카드값 · 정산 | 한 장 결산 |
+|:---:|:---:|:---:|:---:|
+| <img src="docs/screenshots/home-todo.jpg" width="180" alt="이번 달 할 일"> | <img src="docs/screenshots/nudge.jpg" width="180" alt="콕 찌르기"> | <img src="docs/screenshots/check-bills.jpg" width="180" alt="납부 · 카드값 · 정산"> | <img src="docs/screenshots/report.jpg" width="180" alt="한 장 결산"> |
+| 홈에서 남은 돈과 급한 일 3건 | 상대 월급날 안 옮긴 돈을 알리고 카톡으로도 | 저축 납입 · 카드값 준비 · 두 사람 정산 | 지난달 쓴 돈 · 구성 · 눈에 띈 것 |
+
+### 가계부
+
+| 하루별 지출 | 모든 기록 | 지출 기록 | 달 고르기 |
+|:---:|:---:|:---:|:---:|
+| <img src="docs/screenshots/ledger-daily.jpg" width="180" alt="하루별 지출"> | <img src="docs/screenshots/ledger-all.jpg" width="180" alt="모든 기록"> | <img src="docs/screenshots/spending.jpg" width="180" alt="지출 기록"> | <img src="docs/screenshots/month-pick.jpg" width="180" alt="달 고르기"> |
+| 누적 ↔ 하루별 막대, 버킷별 남은 예산 | 날짜별 목록, 확인 필요 · 카드 · 현금 거르기 | 자주 쓰는 지출 한 번에 금액 · 분류 · 결제수단 | 지난달 · 다음 달로 옮겨 보기 |
+
+### 달력
+
+| 접힌 메뉴 | 바로 쓰기 | 날짜 창 | 꾹 누르기 메뉴 |
+|:---:|:---:|:---:|:---:|
+| <img src="docs/screenshots/calendar-peek.jpg" width="180" alt="접힌 메뉴"> | <img src="docs/screenshots/calendar-quick.jpg" width="180" alt="바로 쓰기"> | <img src="docs/screenshots/calendar-day.jpg" width="180" alt="날짜 창"> | <img src="docs/screenshots/calendar-hold.jpg" width="180" alt="꾹 누르기 메뉴"> |
+| 달력만 꽉 차게, 동그라미로 메뉴를 다시 펼침 | "치과 3시"를 쓰면 시간 알약으로 | 그날 일정과 쓴 돈 | 줄이 떠오르고 수정 · 복사 · 공유 · 삭제 |
+
+### 일정
+
+| 새 일정 | 시간 바퀴 | 모아 보기 | 기간 모아 보기 |
+|:---:|:---:|:---:|:---:|
+| <img src="docs/screenshots/event.jpg" width="180" alt="새 일정"> | <img src="docs/screenshots/time-wheel.jpg" width="180" alt="시간 바퀴"> | <img src="docs/screenshots/calendar-month.jpg" width="180" alt="모아 보기"> | <img src="docs/screenshots/week.jpg" width="180" alt="기간 모아 보기"> |
+| 제목의 "오후 3시"를 감싸 보여 주고 시간으로 | 오전·오후 · 시 · 분 바퀴와 얼마나 칩 | 이번 달 할 일 · 일정 · D-day | 그 기간 쓴 돈 · 누구 돈 · 분류 |
+
+### 알림 · 설정 · 지갑
+
+| 알림 모음 | 설정 | 지갑 | 카드 열기 | 카드 넣기 |
+|:---:|:---:|:---:|:---:|:---:|
+| <img src="docs/screenshots/bell.jpg" width="144" alt="알림 모음"> | <img src="docs/screenshots/settings.jpg" width="144" alt="설정"> | <img src="docs/screenshots/wallet.jpg" width="144" alt="지갑"> | <img src="docs/screenshots/card.jpg" width="144" alt="카드 열기"> | <img src="docs/screenshots/wallet-add.jpg" width="144" alt="카드 넣기"> |
+| 지난주 쓴 돈 · 지난달 마무리 · 지난 것 | 두 사람 · 분담 · 한 달의 기준 · 예산 · 화면 | 카드 · 통장이 실물처럼 겹친 지갑 | 카드값 · 결제일 · 이번 주 · 최근 사용 | 카드 · 통장 중 고르고 카드사는 로고로 |
+
+### 밝은 화면 · 데스크톱
+
+<img src="docs/screenshots/light.jpg" width="19%" alt="밝은 화면: 홈"> <img src="docs/screenshots/desktop-plan.jpg" width="79%" alt="데스크톱: 플랜">
+
+<img src="docs/screenshots/desktop-home.jpg" width="49%" alt="데스크톱: 홈"> <img src="docs/screenshots/desktop-calendar.jpg" width="49%" alt="데스크톱: 달력">
 
 👉 **[예시 데이터로 직접 써 보기 (사용 안내)](docs/GUIDE.md)**
 
