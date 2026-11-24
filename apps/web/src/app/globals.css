@@ -551,7 +551,8 @@ button, a, [role="button"], .chip, .tab, .seg button, .preset, .db {
   /* 모아 보기가 짧아도(다 끝낸 달·D-day 몇 개) 위쪽이 위 막대 밑까지 올라올 수 있게 한 화면 높이는 둔다 — 그래야 메뉴가 돌아온다 */
   .cal-more { min-height: calc(100svh - var(--topbar-btn) - 12px - env(safe-area-inset-top, 0px)); margin-top: 0; padding-top: 8px; scroll-snap-align: start; }
   /* 달력만 보일 때 세로 끌기는 브라우저 대신 calendarStage 가 받는다(고무줄 저항). 옆으로 넘기기는 그대로 */
-  :root[data-cal="focus"] .cal-page { touch-action: pan-x pinch-zoom; }
+  /* 메뉴만 펼친 peek 도 같다 — 누르는 순간 focus 로 접히지만 touch-action 은 누르기 전 모습으로 정해진다 */
+  :root:is([data-cal="focus"], [data-cal="peek"]) .cal-page { touch-action: pan-x pinch-zoom; }
 }
 @media (min-width: 1024px) {
   .cal-down { display: none; }

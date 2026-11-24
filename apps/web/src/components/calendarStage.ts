@@ -12,8 +12,10 @@ let peeked = false;
 
 /**
  * 달력 화면의 두 칸: 달력(첫 화면) ↔ 모아 보기(아래).
- * - `<html data-cal="focus|open">`: 달력만 보일 때 focus — 폰에서는 하단 메뉴가 숨고 일정 추가 버튼이 가운데로 커진다(shell.css).
+ * - `<html data-cal="focus|peek|open">`: 달력만 보일 때 focus — 폰에서는 하단 메뉴가 숨고 일정 추가 버튼이 가운데로 커진다(shell.css).
  *   모아 보기 위쪽이 화면 가운데를 넘으면 open — 메뉴가 원래대로 돌아온다.
+ *   focus 에서 접힌 메뉴 동그라미(Shell)를 누르면 peek — 달력은 그대로 두고 메뉴만 open 처럼 돌아온다. 메뉴 밖을 누르거나(날짜·달 넘기기 포함),
+ *   포커스가 메뉴 밖으로 나가거나, 메뉴 안에서 Esc 를 누르면 다시 focus. 시간이 지났다고 접지는 않는다.
  * - 달력만 보일 때 위로 끌면 고무줄처럼 버틴다: 손가락의 일부만 따라 올라가고, 놓을 때 충분히 끌었거나 빠르게 튕겼으면
  *   모아 보기로 넘어가고 아니면 제자리로 돌아온다. 끄는 동안은 translate 만 바꾸고 React 상태는 건드리지 않는다.
  * - 아직 모아 보기를 내려 본 적 없는 기기: 아래 반투명 화살표를 두고, 처음 들어오면 화면을 살짝 올려 아래가 더 있다는 것을 보여 준 뒤 되돌린다.
@@ -54,6 +56,37 @@ export function useCalendarStage() {
     return () => {
       io.disconnect();
       delete root.dataset.cal;
+    };
+  }, []);
+
+  // 펼친 메뉴(peek) 접기. pointerdown 이 touchstart 보다 먼저라 고무줄 끌기는 focus 에서 시작한다
+  useEffect(() => {
+    const root = document.documentElement;
+    const nav = document.querySelector<HTMLElement>(".navbar");
+    const inNav = (t: EventTarget | null) => t instanceof Node && Boolean(nav?.contains(t));
+    const collapse = () => {
+      if (root.dataset.cal === "peek") root.dataset.cal = "focus";
+    };
+    const down = (e: PointerEvent) => {
+      if (!inNav(e.target)) collapse();
+    };
+    // 메뉴 밖으로 포커스가 들어가면 접는다. 메뉴의 focusout 은 쓰지 않는다 — WebKit 은 링크를 눌러도 포커스를 주지 않아
+    // relatedTarget 이 비고, 그러면 탭을 누르는 순간 접혀 이동이 안 된다
+    const into = (e: FocusEvent) => {
+      if (!inNav(e.target)) collapse();
+    };
+    const key = (e: KeyboardEvent) => {
+      if (e.key !== "Escape" || root.dataset.cal !== "peek" || !inNav(document.activeElement)) return;
+      collapse();
+      nav?.querySelector<HTMLElement>(".nav-peek")?.focus();
+    };
+    document.addEventListener("pointerdown", down, true);
+    document.addEventListener("keydown", key);
+    document.addEventListener("focusin", into);
+    return () => {
+      document.removeEventListener("pointerdown", down, true);
+      document.removeEventListener("keydown", key);
+      document.removeEventListener("focusin", into);
     };
   }, []);
 
