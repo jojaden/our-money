@@ -114,6 +114,16 @@ function Nav() {
     afterSheet(runPrimary);
     setComposing(false);
   };
+  // 달력 첫 화면(폰)에서 숨은 캡슐을 다시 펼친다 — 모아 보기로 내렸을 때와 같은 모습(data-cal="peek").
+  // 접기는 calendarStage 가 맡는다. 뒤로 가기 기록은 쌓지 않는다(화면을 막는 창이 아니라 메뉴의 한 상태)
+  const tabs = useRef<HTMLElement>(null);
+  const CurrentIcon = TABS[Math.max(0, at)].icon;
+  const peek = () => {
+    const root = document.documentElement;
+    if (root.dataset.cal !== "focus") return;
+    root.dataset.cal = "peek";
+    tabs.current?.querySelector<HTMLElement>('a[aria-current="page"]')?.focus({ preventScroll: true });
+  };
   return (
     <>
       <nav className="rail" aria-label="주요 메뉴">
@@ -133,7 +143,11 @@ function Nav() {
       </nav>
       {/* 폰: 떠 있는 다섯 칸 캡슐 + 따로 뜬 원형 버튼(그 화면의 주된 일). 버튼이 없는 화면은 버튼이 줄어들며 캡슐이 그 자리까지 넓어진다 */}
       <div className={`navbar ${primary ? "" : "solo"}`}>
-        <nav className={`tabbar ${at < 0 ? "none" : ""}`} aria-label="주요 메뉴" style={{ ["--i" as string]: Math.max(0, at) }}>
+        {/* 접힌 메뉴 — 달력만 보일 때(폰)만 보이고, 누르면 캡슐이 다시 올라온다 (shell.css) */}
+        <button type="button" className="nav-peek" aria-label="메뉴 펼치기" aria-expanded={false} aria-controls="tabbar" onClick={peek}>
+          <CurrentIcon aria-hidden="true" />
+        </button>
+        <nav ref={tabs} id="tabbar" className={`tabbar ${at < 0 ? "none" : ""}`} aria-label="주요 메뉴" style={{ ["--i" as string]: Math.max(0, at) }}>
           {/* 알약 안에 같은 다섯 칸을 진한 색으로 한 겹 더 두고 알약과 반대로 움직인다 — 진한 글자가 알약 가장자리를 따라 바뀐다 (transform 만) */}
           <span className="tab-pill" aria-hidden="true">
             <span className="tab-ink">

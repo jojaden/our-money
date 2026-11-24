@@ -229,18 +229,55 @@
 /* 달력 첫 화면(달력만 보일 때, <html data-cal="focus">): 캡슐은 아래로 내려가 숨고, 일정 추가 버튼이 가운데로 옮겨 가며
    얇고 긴 막대(fab-wide-w × fab-wide-h, 하단 메뉴처럼 반투명 바탕)로 늘어난다. 왼쪽은 "11월 17일에 일정 추가" 쓰는 칸 — 쓰고 엔터면 바로 더하고,
    오른쪽 + 는 쓰던 글로 일정 시트를 연다. 모아 보기로 내리면(data-cal="open") 같은 박자로 제자리 동그라미.
-   누를 때 줄어드는 transform 과 겹치지 않게 자리는 translate 로 옮긴다 */
+   누를 때 줄어드는 transform 과 겹치지 않게 자리는 translate 로 옮긴다.
+   막대 왼쪽에는 접힌 메뉴 동그라미(.nav-peek)가 붙어, 둘을 한 묶음(동그라미 + nav-gap + 막대)으로 가운데에 둔다.
+   동그라미를 누르면 data-cal="peek" — 달력은 그대로, 메뉴만 open 과 같은 모습으로 돌아온다(아래 focus 규칙이 모두 빠짐) */
+.nav-peek { display: none; }
 @media (max-width: 1023px) {
+  /* 접힌 메뉴: 막대와 같은 높이·재질. 사라질 때는 dur-swap 절반으로 짧게, 나타날 때는 dur-swap 으로 0.9 에서 (transform·opacity 만) */
+  :root[data-cal] .nav-peek {
+    position: absolute;
+    bottom: calc(var(--fab-clear) - var(--nav-inset)); /* 막대와 같은 줄 (막대는 translate 로 이만큼 올라가 있다) */
+    left: calc(50cqw - (var(--fab-wide-h) + var(--nav-gap) + min(var(--fab-wide-w), 100cqw - var(--fab-wide-h) - var(--nav-gap))) / 2);
+    display: grid;
+    place-items: center;
+    width: var(--fab-wide-h);
+    height: var(--fab-wide-h);
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--surface) 86%, transparent);
+    -webkit-backdrop-filter: blur(22px) saturate(180%);
+    backdrop-filter: blur(22px) saturate(180%);
+    box-shadow: var(--shadow-nav);
+    color: var(--text);
+    opacity: 0;
+    transform: scale(0.9);
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity calc(var(--dur-swap) / 2) var(--ease-out), transform calc(var(--dur-swap) / 2) var(--ease-out), scale var(--dur-press) var(--ease-press), visibility 0s linear calc(var(--dur-swap) / 2);
+  }
+  :root[data-cal="focus"]:not(:has(.fab.composing)) .nav-peek {
+    opacity: 1;
+    transform: none;
+    visibility: visible;
+    pointer-events: auto;
+    transition: opacity var(--dur-swap) var(--ease-out), transform var(--dur-swap) var(--ease-out), scale var(--dur-press) var(--ease-press), visibility 0s;
+  }
+  .nav-peek:active { scale: 0.94; }
+  .nav-peek:focus-visible { border-radius: 50%; }
+  .nav-peek svg { width: 22px; height: 22px; stroke-width: 2; }
   :root[data-cal="focus"] .tabbar { translate: 0 calc(100% + var(--nav-inset) + env(safe-area-inset-bottom, 0px)); opacity: 0; visibility: hidden; pointer-events: none; transition: translate var(--dur-tab) var(--ease-drawer), opacity var(--dur-tab) ease, visibility 0s linear var(--dur-tab); }
   /* 가운데는 하단 메뉴 실제 폭(cqw)으로 잡는다 — 100vw 로 셈하면 스크롤 막대가 있는 창에서 어긋난다 */
   :root[data-cal="focus"] .fab {
-    --w: min(var(--fab-wide-w), 100cqw);
+    --w: min(var(--fab-wide-w), 100cqw - var(--fab-wide-h) - var(--nav-gap));
+    --beside: calc((var(--fab-wide-h) + var(--nav-gap)) / 2); /* 묶음 가운데를 맞추려고 동그라미 몫의 절반만큼 오른쪽으로 */
     position: relative;
     align-self: flex-end; /* 펼칠 때 위로 커진다 */
     width: var(--w);
     height: var(--fab-wide-h);
     margin-left: calc(var(--nav-h) - var(--w)); /* 왼쪽으로만 늘어나 줄에서 차지하는 자리는 동그라미 그대로 — 숨는 캡슐이 눌리지 않게 */
-    translate: calc(var(--w) / 2 - 50cqw) calc(var(--nav-inset) - var(--fab-clear)); /* 위(달력 마지막 줄)·아래(화면 끝) 여백을 fab-clear 로 같게 */
+    translate: calc(var(--w) / 2 - 50cqw + var(--beside)) calc(var(--nav-inset) - var(--fab-clear)); /* 위(달력 마지막 줄)·아래(화면 끝) 여백을 fab-clear 로 같게 */
     border-radius: calc(var(--fab-wide-h) / 2);
     background: color-mix(in srgb, var(--surface) 86%, transparent);
     -webkit-backdrop-filter: blur(22px) saturate(180%);
@@ -284,6 +321,7 @@
   }
   :root[data-cal="focus"] .fab.composing {
     --w: 100cqw;
+    --beside: 0px; /* 펼치면 동그라미는 흐려지고 막대가 메뉴 폭 전체를 쓴다 */
     height: var(--fab-compose-h);
     border-radius: var(--radius-card);
     background: var(--surface);
@@ -313,7 +351,7 @@
   :root:has(.fab.composing) .navbar { z-index: 31; }
 }
 @media (prefers-reduced-transparency: reduce) {
-  .tabbar, .topbar::before, :root[data-cal="focus"] .fab { background: var(--surface); -webkit-backdrop-filter: none; backdrop-filter: none; }
+  .tabbar, .topbar::before, :root[data-cal="focus"] .fab, .nav-peek { background: var(--surface); -webkit-backdrop-filter: none; backdrop-filter: none; }
 }
 
 /* ---------- 데스크톱: 레일 ---------- */
