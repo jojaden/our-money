@@ -239,6 +239,12 @@ button.row:active, a.row:active { background: var(--well); transform: scale(0.98
   transition: background-color var(--dur-press) ease, color var(--dur-press) ease, box-shadow var(--dur-press) ease, transform var(--dur-press) var(--ease-press);
 }
 .chip:active { transform: scale(0.95); }
+/* 입력 추천 (Suggest): 입력칸 바로 아래 한 줄, 넘치면 가로로 넘긴다. 고르는 칩(.chip)과 헷갈리지 않게 바탕 대신 테두리 */
+.suggest { display: flex; gap: 6px; margin-top: 8px; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; }
+.suggest::-webkit-scrollbar { display: none; }
+.suggest-chip { flex: none; max-width: 75%; height: var(--suggest-h); padding: 0 12px; overflow: hidden; border: 0; border-radius: var(--radius-chip); background: var(--surface); box-shadow: inset 0 0 0 1px var(--border); color: var(--text); font: 600 14px/var(--suggest-h) var(--font-text); white-space: nowrap; text-overflow: ellipsis; transition: transform var(--dur-press) var(--ease-press); }
+.suggest-chip:active { transform: scale(0.95); }
+@media (hover: hover) { .suggest-chip:hover { background: var(--well); } }
 .chip[aria-pressed="true"], .chip[aria-checked="true"] {
   background: var(--accent-soft);
   color: var(--accent-ink);

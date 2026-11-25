@@ -328,6 +328,8 @@
   }
   :root[data-cal="focus"] .fab.composing :is(.fab-prompt, .fab-btn) { opacity: 0; pointer-events: none; }
   :root[data-cal="focus"] .fab.composing .fab-compose { opacity: 1; pointer-events: auto; transition-delay: 60ms; }
+  /* 입력 추천이 뜨면 막대가 추천 줄만큼 높아진다 (Suggest) */
+  :root[data-cal="focus"] .fab.composing:has(.suggest) { height: calc(var(--fab-compose-h) + var(--suggest-h) + 8px); }
   .fab-compose .input { scale: 0.55; opacity: 0; transition: scale var(--dur-tab) var(--ease-pop), opacity var(--dur-press) ease, background-color var(--dur-press) ease, box-shadow var(--dur-press) ease; }
   .fab.composing .fab-compose .input { scale: 1; opacity: 1; transition-delay: 90ms, 90ms, 0s, 0s; }
   .fab-compose-row { display: flex; align-items: center; gap: 4px; opacity: 0; translate: 0 6px; transition: opacity var(--dur-press) ease, translate var(--dur-tab) var(--ease-drawer); }

@@ -10,6 +10,8 @@ import { monthRow, nameOf, partnerOf, ratioA, split as splitBy } from "@/lib/cal
 import { monthLabel, num } from "@/lib/format";
 import { logoOf } from "@/lib/institutions";
 import { MAX_PAYEE } from "@/lib/payee";
+import { itemNames, itemNotes, itemPayees, suggest } from "@/lib/suggest";
+import { Suggest } from "./Suggest";
 import { AddPass } from "./AddPass";
 import { AmountInput, MAX_GOAL, PersonGlyph, radioKeys, radioTab, Seg, Sheet, Toggle } from "./ui";
 
@@ -389,6 +391,24 @@ export function ItemSheet({
   };
   const even = splitBy(amount, rA);
 
+  // 입력 추천. 이름은 새로 넣을 때만 — 이번 달에 이미 있는 이름은 빼고, 고르면 그 항목의 종류·금액·누구·나가는 곳·날짜·받는 곳·메모까지
+  const nameIdeas = item ? [] : suggest(itemNames(data), name, { exclude: data.month_items.filter((i) => i.month === month).map((i) => i.name) });
+  const pickName = (x: MonthItem | PlanItem) => {
+    const dm: Method = x.group === "living" || x.group === "allowance" ? "manual" : "account_auto";
+    setName(x.name);
+    setGroup(x.group);
+    if (amount === 0) setTotal(x.amount);
+    setPayer(x.payer);
+    setSplit(false);
+    setSource(sourceOf(x, dm));
+    setDueDay(x.due_day);
+    setToAcc(x.to_account_id ?? null);
+    setToName(x.to_name ?? "");
+    if (!note.trim()) setNote(x.note);
+  };
+  const payeeIdeas = suggest(itemPayees(data), toName);
+  const noteIdeas = suggest(itemNotes(data), note);
+
   return (
     <Sheet
       open={open}
@@ -420,16 +440,19 @@ export function ItemSheet({
       </div>
       <div className="field">
         <label htmlFor="it-name">이름</label>
-        <input
-          id="it-name"
-          className="input"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="예: 월세, 실손보험, 적금"
-          maxLength={30}
-          aria-invalid={shown(nameError) ? true : undefined}
-          aria-describedby={shown(nameError) ? "it-name-err" : undefined}
-        />
+        <Suggest items={nameIdeas} onPick={(x) => pickName(x.item)} label="이름 추천">
+          <input
+            id="it-name"
+            className="input"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="예: 월세, 실손보험, 적금"
+            maxLength={30}
+            autoComplete="off"
+            aria-invalid={shown(nameError) ? true : undefined}
+            aria-describedby={shown(nameError) ? "it-name-err" : undefined}
+          />
+        </Suggest>
         {shown(nameError) && (
           <p className="help error" id="it-name-err">
             {nameError}
@@ -541,8 +564,17 @@ export function ItemSheet({
               })}
             </div>
           )}
+          <Suggest
+            items={payeeIdeas}
+            onPick={(x) => {
+              setToName(x.text);
+              setToAcc(null);
+            }}
+            label="받는 곳 추천"
+          >
           <input
             className="input"
+            autoComplete="off"
             style={{ marginTop: toBanks.length > 0 ? 8 : 0 }}
             aria-label="받는 곳 직접 적기"
             value={toName}
@@ -553,6 +585,7 @@ export function ItemSheet({
             placeholder={toBanks.length > 0 ? "또는 직접 적기 (예: 관리사무소 · 국민 123-45-678901)" : "예: 관리사무소 · 국민 123-45-678901"}
             maxLength={MAX_PAYEE}
           />
+          </Suggest>
           <p className="help">계좌번호를 적어 두면 체크에서 눌러 복사할 수 있어요.</p>
         </div>
       )}
@@ -570,7 +603,9 @@ export function ItemSheet({
       )}
       <div className="field">
         <label htmlFor="it-note">메모</label>
-        <input id="it-note" className="input" value={note} onChange={(e) => setNote(e.target.value)} placeholder="예: 급여통장에서 연금저축으로 자동이체" maxLength={60} />
+        <Suggest items={noteIdeas} onPick={(x) => setNote(x.text)} label="메모 추천">
+          <input id="it-note" className="input" value={note} onChange={(e) => setNote(e.target.value)} placeholder="예: 급여통장에서 연금저축으로 자동이체" maxLength={60} autoComplete="off" />
+        </Suggest>
       </div>
       <div className="field">
         <div className="switchrow">

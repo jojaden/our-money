@@ -7,6 +7,8 @@ import { REVIEW_LABEL } from "@/lib/types";
 import { useData } from "@/lib/store";
 import { allowanceStatus, installmentShare, livingStatus, monthOf, nameOf, sharedMonthOf } from "@/lib/calc";
 import { categoryVisual, guessFromMemo, presetsOf, type Preset } from "@/lib/categories";
+import { spendingMemos, suggest } from "@/lib/suggest";
+import { Suggest } from "./Suggest";
 import { num, parseYmd, rase, ymd } from "@/lib/format";
 import { haptic } from "@/lib/native";
 import { afterSheet, CategoryIcon, MAX_SPENDING, radioKeys, radioTab, Seg, Sheet } from "./ui";
@@ -174,7 +176,7 @@ export function SpendingSheet({ open, onOpenChange, editing }: { open: boolean; 
     }
   };
 
-  const usePreset = (p: Preset) => {
+  const applyPreset = (p: Preset) => {
     setFromPreset(true);
     setMemo(p.memo);
     setAmount(p.amount);
@@ -188,6 +190,16 @@ export function SpendingSheet({ open, onOpenChange, editing }: { open: boolean; 
     setOwner(o);
     setAutoOwner(o === "joint");
     setTouched({ category: false, owner: false, pay: false });
+  };
+
+  // 메모 추천: 새로 쓸 때만. 고르면 그때 분류·결제수단·누구 돈까지, 금액은 아직 안 적었을 때만
+  const memoIdeas = editing ? [] : suggest(spendingMemos(data), memo);
+  const pickMemo = (sp: Spending) => {
+    const typed = amount;
+    applyPreset({ memo: sp.memo.trim(), category_id: sp.category_id, pay_kind: sp.pay_kind, account_id: sp.account_id, owner: sp.owner, amount: sp.amount, count: 1 });
+    // 자주 쓰는 지출 버튼으로 쓴 기록(source preset)은 아니다
+    setFromPreset(false);
+    if (typed > 0) setAmount(typed);
   };
 
   const changeKind = (k: PayKind) => {
@@ -394,7 +406,7 @@ export function SpendingSheet({ open, onOpenChange, editing }: { open: boolean; 
             {presets.map((p) => {
               const cat = data.categories.find((c) => c.id === p.category_id);
               return (
-                <button key={p.memo} type="button" className="preset" onClick={() => usePreset(p)}>
+                <button key={p.memo} type="button" className="preset" onClick={() => applyPreset(p)}>
                   <CategoryIcon visual={categoryVisual(cat?.name)} size="sm" />
                   <span>
                     <span className="t" style={{ display: "block" }}>
@@ -413,7 +425,9 @@ export function SpendingSheet({ open, onOpenChange, editing }: { open: boolean; 
 
       <div className="field" style={{ marginTop: 22 }}>
         <label htmlFor="sp-memo">어디에 썼나요</label>
-        <input id="sp-memo" className="input" placeholder="예: 이마트, 배달의민족, 커피" value={memo} onChange={(e) => onMemo(e.target.value)} maxLength={60} autoComplete="off" enterKeyHint="done" />
+        <Suggest items={memoIdeas} onPick={(x) => pickMemo(x.item)} label="메모 추천">
+          <input id="sp-memo" className="input" placeholder="예: 이마트, 배달의민족, 커피" value={memo} onChange={(e) => onMemo(e.target.value)} maxLength={60} autoComplete="off" enterKeyHint="done" />
+        </Suggest>
       </div>
 
       <div className="field">

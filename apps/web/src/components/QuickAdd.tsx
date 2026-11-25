@@ -7,12 +7,18 @@ import { cutTime, findTime, timeText, type TimeHit } from "@/lib/calendar";
 import { nextHour, toMin } from "@/lib/clock";
 import { Sheet, useBackToClose } from "./ui";
 import { TimePanel } from "./TimeWheel";
+import { Suggest } from "./Suggest";
+import type { CalEvent } from "@/lib/types";
+import { useData } from "@/lib/store";
+import { eventTitles, suggest } from "@/lib/suggest";
 
 /** 바로 쓰기에 쓰던 것 — 제목과 시간(비면 하루 종일), 제목에서 "3시~5시"처럼 뗀 끝 시간 */
 export interface QuickDraft {
   title: string;
   time: string;
   end?: string;
+  /** 제목 추천에서 고른 지난 일정 — 제목이 그대로면 종류·누구·알림·금액을 따른다 (quickEvent, 일정 시트) */
+  from?: CalEvent;
 }
 
 /**
@@ -101,6 +107,13 @@ export function QuickAdd({
     input.current?.focus({ preventScroll: true });
   };
   const title = draft.title.trim();
+  // 제목 추천: 고르면 그 일정의 시간까지 (없으면 고른 시간 그대로)
+  const { data } = useData();
+  const ideas = suggest(eventTitles(data), draft.title, { limit: 4 });
+  const pickIdea = (e: CalEvent) => {
+    caret.current = e.title.length;
+    onDraft({ title: e.title, time: e.start_time ?? draft.time, end: e.start_time ? (e.end_time ?? "") : draft.end, from: e });
+  };
 
   return (
     <>
@@ -119,6 +132,7 @@ export function QuickAdd({
           if (e.key === "Escape") onOpenChange(false);
         }}
       >
+        <Suggest items={ideas} onPick={(x) => pickIdea(x.item)} label="제목 추천">
         <div className={`time-title ${live?.start ? "has-time" : ""}`}>
           {live?.start && (
             <span className="title-mirror" aria-hidden="true">
@@ -147,6 +161,7 @@ export function QuickAdd({
             maxLength={40}
           />
         </div>
+        </Suggest>
         <div className="fab-compose-row">
           {/* 시간 알약: 누르면 시간 시트(바퀴 + 얼마나)가 뜨고, 고르면 "오후 3시~4시" — × 로 지운다(비면 하루 종일) */}
           <div className={`fab-time ${draft.time ? "has" : ""}`}>
