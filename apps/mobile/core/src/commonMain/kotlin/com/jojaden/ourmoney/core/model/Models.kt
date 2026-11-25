@@ -143,6 +143,9 @@ data class PlanItem(
     @SerialName("end_month") val endMonth: String? = null,
     /** 공동 항목을 나눠 낼 때 두 사람 몫(payer A·B) 두 줄을 묶는 값 (migrations/016) */
     @SerialName("pair_id") val pairId: String? = null,
+    /** 받는 곳 (migrations/020): 지갑의 내 통장 또는 글. 화면에만 쓰고 이체 계산에는 쓰지 않는다 */
+    @SerialName("to_account_id") val toAccountId: String? = null,
+    @SerialName("to_name") val toName: String = "",
     @SerialName("created_at") val createdAt: String? = null,
     /** 서버가 채우는 칸 (migrations/004). rev 는 읽은 그대로 돌려보낸다 — 다른 기기가 그사이 고쳤으면 저장 거절 */
     val rev: Int? = null,
@@ -194,6 +197,9 @@ data class MonthItem(
     @SerialName("paid_amount") val paidAmount: Long? = null,
     /** 공동 항목을 나눠 낼 때 두 사람 몫(payer A·B) 두 줄을 묶는 값 (migrations/016) */
     @SerialName("pair_id") val pairId: String? = null,
+    /** 받는 곳 (migrations/020): 지갑의 내 통장 또는 글. 화면에만 쓰고 이체 계산에는 쓰지 않는다 */
+    @SerialName("to_account_id") val toAccountId: String? = null,
+    @SerialName("to_name") val toName: String = "",
     @SerialName("created_at") val createdAt: String? = null,
     /** 서버가 채우는 칸 (migrations/004). rev 는 읽은 그대로 돌려보낸다 — 다른 기기가 그사이 고쳤으면 저장 거절 */
     val rev: Int? = null,

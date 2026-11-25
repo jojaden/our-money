@@ -34,6 +34,8 @@ const FIELD: Record<string, string> = {
   account_id: "계좌·카드",
   card_id: "카드",
   billing_account_id: "결제 계좌",
+  to_account_id: "받는 곳",
+  to_name: "받는 곳",
   owner: "누구 돈",
   payer: "누구 돈",
   pay_kind: "결제수단",
@@ -85,7 +87,7 @@ function value(data: Data, key: string, v: unknown): string {
   if (v == null || v === "") return "없음";
   if (MONEY.has(key) && typeof v === "number") return `${num(v)}원`;
   if (key === "category_id") return data.categories.find((c) => c.id === v)?.name ?? "지운 분류";
-  if (key === "account_id" || key === "card_id" || key === "billing_account_id") return data.accounts.find((a) => a.id === v)?.name ?? "지운 카드·통장";
+  if (key === "account_id" || key === "card_id" || key === "billing_account_id" || key === "to_account_id") return data.accounts.find((a) => a.id === v)?.name ?? "지운 카드·통장";
   if (key === "owner" || key === "payer") return nameOf(data.settings, v as Owner);
   if (key === "pay_kind") return PAY_KIND_LABEL[v as keyof typeof PAY_KIND_LABEL] ?? String(v);
   if (key === "method") return METHOD_LABEL[v as keyof typeof METHOD_LABEL] ?? String(v);

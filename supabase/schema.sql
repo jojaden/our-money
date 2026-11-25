@@ -2,7 +2,7 @@
 --
 -- 새 Supabase 프로젝트의 SQL Editor 에 전체를 붙여넣고 한 번 실행한다.
 -- 이미 쓰고 있는 DB 는 이 파일을 다시 돌리지 말고 supabase/migrations/ 의 새 파일만 번호 순서대로 실행한다
--- (CHANGELOG 의 "DB 이전" 줄). 이 파일은 migrations 019 까지 반영한 최종 모양이다(칸 순서는 운영 DB 와 다를 수 있다).
+-- (CHANGELOG 의 "DB 이전" 줄). 이 파일은 migrations 020 까지 반영한 최종 모양이다(칸 순서는 운영 DB 와 다를 수 있다).
 -- 마지막의 members INSERT 두 줄은 두 사람의 구글 이메일로 바꿔서 실행한다.
 --
 -- 차례
@@ -226,6 +226,9 @@ create table public.plan_items (
   account_id text constraint plan_items_account_fk references public.accounts(id) on delete set null,
   method text not null check (method in ('card_auto', 'account_auto', 'manual', 'cash')),
   card_id text constraint plan_items_card_fk references public.accounts(id) on delete set null,
+  -- 받는 곳: 내 통장이거나 글 (화면에만, 이체 계산에는 쓰지 않는다)
+  to_account_id text constraint plan_items_to_account_fk references public.accounts(id) on delete set null,
+  to_name text not null default '',
   due_day int check (due_day between 1 and 31),
   start_month text check (start_month ~ '^[0-9]{4}-[0-9]{2}$'),
   end_month text check (end_month ~ '^[0-9]{4}-[0-9]{2}$'),
@@ -243,9 +246,12 @@ create table public.plan_items (
   constraint plan_items_goal_range check (coalesce(goal_amount, 0) between 0 and 10000000000 and coalesce(goal_start, 0) between 0 and 10000000000),
   constraint plan_items_text_len check (char_length(btrim(name)) between 1 and 40 and char_length(note) <= 500),
   constraint plan_items_pair_shape check (pair_id is null or (char_length(pair_id) between 1 and 40 and payer in ('a', 'b'))),
+  constraint plan_items_to_name_len check (char_length(to_name) <= 60),
   constraint plan_items_rev_range check (rev between 1 and 1000000000)
 );
 comment on column public.plan_items.pair_id is '공동 항목을 나눠 낼 때 두 사람 몫(payer a·b) 두 줄을 묶는 값 (migrations/016)';
+comment on column public.plan_items.to_account_id is '받는 곳: 지갑의 내 통장 (migrations/020). 화면에만 보이고 이체 계산에는 쓰지 않는다';
+comment on column public.plan_items.to_name is '받는 곳: 받는 사람·은행·계좌번호 글 (migrations/020)';
 
 -- ---------- 월 ----------
 create table public.months (
@@ -280,6 +286,8 @@ create table public.month_items (
   account_id text constraint month_items_account_fk references public.accounts(id) on delete set null,
   method text not null check (method in ('card_auto', 'account_auto', 'manual', 'cash')),
   card_id text constraint month_items_card_fk references public.accounts(id) on delete set null,
+  to_account_id text constraint month_items_to_account_fk references public.accounts(id) on delete set null,
+  to_name text not null default '',
   due_day int check (due_day between 1 and 31),
   sort int not null default 0,
   note text not null default '',
@@ -295,15 +303,19 @@ create table public.month_items (
   constraint month_items_amount_range check (amount between 0 and 1000000000 and coalesce(paid_amount, 0) <= 1000000000),
   constraint month_items_text_len check (char_length(btrim(name)) between 1 and 40 and char_length(note) <= 500),
   constraint month_items_pair_shape check (pair_id is null or (char_length(pair_id) between 1 and 40 and payer in ('a', 'b'))),
+  constraint month_items_to_name_len check (char_length(to_name) <= 60),
   constraint month_items_rev_range check (rev between 1 and 1000000000)
 );
 comment on column public.month_items.pair_id is '공동 항목을 나눠 낼 때 두 사람 몫(payer a·b) 두 줄을 묶는 값 (migrations/016)';
+comment on column public.month_items.to_account_id is '받는 곳: 지갑의 내 통장 (migrations/020). 화면에만 보이고 이체 계산에는 쓰지 않는다';
+comment on column public.month_items.to_name is '받는 곳: 받는 사람·은행·계좌번호 글 (migrations/020)';
 create index month_items_month on public.month_items (month);
 create index month_items_plan on public.month_items (plan_item_id) where plan_item_id is not null;
 -- 계좌·카드를 지우면 외래키(on delete set null)가 month_items 를 찾아 비운다. 달마다 쌓이므로 인덱스를 둔다
 -- (plan_items·accounts·settings 는 수십 줄이라 두지 않는다)
 create index month_items_account on public.month_items (account_id) where account_id is not null;
 create index month_items_card on public.month_items (card_id) where card_id is not null;
+create index month_items_to_account on public.month_items (to_account_id) where to_account_id is not null;
 
 -- ---------- 이체·카드값·정산·할 일 완료 체크 ----------
 -- 할 일(events.todo)을 끝낸 기록은 kind 'event' 로 회차마다 따로 남는다

@@ -598,6 +598,8 @@ export function snapshotItems(month: string, plan: PlanItem[]): MonthItem[] {
       sort: p.sort,
       note: p.note,
       pair_id: p.pair_id ?? null,
+      to_account_id: p.to_account_id ?? null,
+      to_name: p.to_name ?? "",
       paid: false,
       paid_at: null,
       paid_by: null,

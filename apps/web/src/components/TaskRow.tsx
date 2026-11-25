@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowRight, ChevronDown } from "lucide-react";
+import { ArrowRight, ChevronDown, Copy } from "lucide-react";
 import { useData } from "@/lib/store";
 import { nameOf } from "@/lib/calc";
 import { CheckButton, Money } from "./ui";
@@ -10,12 +10,22 @@ import { PaidAmountSheet } from "./PaidAmountSheet";
 import { asking, dueState, dueText, waiting, type Task } from "./tasks";
 import { useMorphFlip } from "./Morph";
 import { shortDate } from "@/lib/format";
+import { accountNumberRun } from "@/lib/payee";
 
 /** fromShown: 카드 머리가 이미 "OO 급여통장에서"를 말할 때 이체 줄은 도착 계좌만 쓴다 */
 export function TaskRow({ task, expandable = false, fromShown = false }: { task: Task; expandable?: boolean; fromShown?: boolean }) {
-  const { data, today } = useData();
+  const { data, today, toast } = useData();
   const s = data.settings;
   const [open, setOpen] = useState(false);
+  // 받는 곳 계좌번호 복사 — 직접 이체할 때 은행 앱에 붙여 넣는다
+  const copyPayee = async (number: string) => {
+    try {
+      await navigator.clipboard.writeText(number);
+      toast("계좌번호를 복사했어요");
+    } catch {
+      toast("이 기기에서는 복사가 안 돼요", undefined, { error: true });
+    }
+  };
   // 나눠 낸 몫 펼치기는 이 줄만 다시 그리므로 바깥 Morph(체크 카드·월급날)에 바뀐다고 알린다
   const flip = useMorphFlip();
   const [editing, setEditing] = useState(false);
@@ -80,6 +90,18 @@ export function TaskRow({ task, expandable = false, fromShown = false }: { task:
             // 좁은 폰(320px)에서도 끝까지 읽히게 줄을 바꾼다
             <div className="s wrap">{task.sub}</div>
           )}
+          {task.payee && (
+            <div className="s payee">
+              <ArrowRight aria-label="받는 곳" />
+              <PayeeText text={task.payee.text} />
+              {task.payee.copy && !task.done && (
+                <button type="button" className="payee-copy" aria-label={`${task.payee.text} 계좌번호 복사`} onClick={() => void copyPayee(task.payee!.copy!)}>
+                  <Copy aria-hidden="true" />
+                  복사
+                </button>
+              )}
+            </div>
+          )}
           {task.warn && !task.done && <div className="s warn">{task.warn}</div>}
         </div>
         <div className="r">
@@ -112,5 +134,19 @@ export function TaskRow({ task, expandable = false, fromShown = false }: { task:
       )}
       {task.item && task.kind === "pay" && <PaidAmountSheet key={session} open={editing} onOpenChange={setEditing} item={task.item} />}
     </>
+  );
+}
+
+/** 받는 곳 글 — 계좌번호 조각은 줄을 바꿔도 끊기지 않게 */
+function PayeeText({ text }: { text: string }) {
+  const run = accountNumberRun(text);
+  if (!run) return <span>{text}</span>;
+  const at = text.indexOf(run);
+  return (
+    <span>
+      {text.slice(0, at)}
+      <span className="nowrap">{run}</span>
+      {text.slice(at + run.length)}
+    </span>
   );
 }

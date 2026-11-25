@@ -95,6 +95,12 @@ interface ItemFields extends Meta {
    * 줄마다 금액·나가는 곳·납부 확인을 따로 가진다. 화면은 두 줄을 공동 항목 하나로 보여 준다 — pairOf()
    */
   pair_id?: string | null;
+  /**
+   * 받는 곳 (migrations/020): 지갑의 내 통장 또는 글(받는 사람·은행·계좌번호). 둘 중 하나만 쓴다.
+   * 화면에만 보이고 이체 계산(account_id 기준)에는 쓰지 않는다 — payeeOf()
+   */
+  to_account_id?: string | null;
+  to_name?: string;
 }
 
 /** 매달 반복되는 플랜 항목 (템플릿) */

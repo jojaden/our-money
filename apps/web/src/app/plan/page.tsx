@@ -8,6 +8,7 @@ import { GROUP_LABEL, METHOD_LABEL } from "@/lib/types";
 import { blankMonth, useData } from "@/lib/store";
 import { goalProgress, groupTotals, incomeOf, itemRows, itemsOf, lanes, monthRow, nameOf, ratioA } from "@/lib/calc";
 import { monthLabel, num } from "@/lib/format";
+import { payeeOf } from "@/lib/payee";
 import { FirstRun, MonthHeader } from "@/components/MonthHeader";
 import { EmptyState, Money, Who } from "@/components/ui";
 import { SplitBar } from "@/components/SplitBar";
@@ -98,6 +99,8 @@ export default function PlanPage() {
                 const whereOf = (x: typeof i) => (x.method === "card_auto" ? accName(x.card_id) : accName(x.account_id));
                 // 나눠 내면 사람마다 나가는 곳 ("현빈 급여통장 · 예진 공동 신용카드"), 아니면 방식 · 나가는 곳
                 const how = p ? [whereOf(i) ?? METHOD_LABEL[i.method], whereOf(p) ?? METHOD_LABEL[p.method]] : [METHOD_LABEL[i.method], whereOf(i)];
+                // 받는 곳 (카드 자동결제는 카드사로 나가니 없다)
+                const to = i.method !== "card_auto" || (p && p.method !== "card_auto") ? payeeOf(i, data.accounts) : null;
                 return (
                   <button type="button" className="row" key={i.id} onClick={() => setSheet({ open: true, item: i })}>
                     <Who owner={p ? "joint" : i.payer} s={s} size="sm" />
@@ -107,6 +110,8 @@ export default function PlanPage() {
                         {[i.due_day ? `${i.due_day}일` : null, ...how].filter(Boolean).join(" · ")}
                         {!i.plan_item_id ? " · 이번 달만" : periodText(data.plan_items.find((x) => x.id === i.plan_item_id))}
                       </div>
+                      {/* 받는 곳은 한 줄 따로 (앞줄에 붙이면 폰에서 잘린다) */}
+                      {to && <div className="s">→ {to.text}</div>}
                       {/* 나눠 내면 사람마다 금액이 달라 폰에서도 한 줄 더 */}
                       {p && (
                         <div className="s num">

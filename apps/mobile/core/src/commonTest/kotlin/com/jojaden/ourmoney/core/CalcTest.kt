@@ -225,6 +225,17 @@ class CalcTest {
         assertEquals(700_000, data.livingStatus("2026-11", "2026-11-03").budget)
     }
 
+    @Test fun payee_is_copied_to_month_and_does_not_change_transfers() {
+        // 받는 곳은 새 달 항목에 그대로 넘어가고, 옮길 돈은 나가는 곳(account_id) 기준 그대로
+        val rent = PlanItem("rent", Group.FIXED, "월세", 1_000_000, Owner.JOINT, "acc-joint", Method.MANUAL, toName = "집주인 · 테스트은행 000-0000-0000")
+        val save = PlanItem("save", Group.SAVING, "적금", 200_000, Owner.A, "acc-joint", Method.ACCOUNT_AUTO, toAccountId = "acc-save")
+        val items = snapshotItems("2026-11", listOf(rent, save))
+        assertEquals(listOf("집주인 · 테스트은행 000-0000-0000", ""), items.map { it.toName })
+        assertEquals(listOf(null, "acc-save"), items.map { it.toAccountId })
+        val key = { xs: List<MonthItem> -> transfersOf(settings, month, xs, accounts).transfers.map { Triple(it.from, it.to, it.amount) } }
+        assertEquals(key(items.map { it.copy(toAccountId = null, toName = "") }), key(items))
+    }
+
     @Test fun split_saving_goal_counts_both_shares() {
         val pa = PlanItem("sv-a", Group.SAVING, "여행 적금", 200_000, Owner.A, "acc-joint", Method.ACCOUNT_AUTO, pairId = "pr-2", goalAmount = 1_000_000, goalStart = 100_000)
         val pb = PlanItem("sv-b", Group.SAVING, "여행 적금", 100_000, Owner.B, "acc-joint", Method.ACCOUNT_AUTO, pairId = "pr-2", goalAmount = 1_000_000, goalStart = 100_000)
