@@ -130,17 +130,20 @@ export function EventSheet({ open, onOpenChange, event, from, date, draft, onCop
   /** 방금 시간을 뗀 자리 — 바로 이어 "40분 "·"반 "을 쓰면 그 시간의 분을 고친다 ("5시 40분") */
   const lastAt = useRef<{ at: number; field: "start" | "end" } | null>(null);
 
-  // 제목 추천: 새로 만들 때만 (고치는 일정의 다른 칸을 바꾸지 않게). 고르면 그 일정의 종류·시간·누구·알림·금액까지 — 날짜·반복은 그대로
-  const titleIdeas = event ? [] : suggest(eventTitles(data), title);
+  // 제목 추천: 새로 만들 때만 (고치는 일정의 다른 칸을 바꾸지 않게). 고르면 그 일정의 종류·누구, 있었으면 시간·알림·금액까지 — 날짜·반복은 그대로
+  const titleIdeas = event ? [] : suggest(eventTitles(data), title, { keepExact: true });
   const pickTitle = (e: CalEvent) => {
     setTitle(e.title);
     setKind(kindOf(e));
     setOwner(e.owner);
     setDday(e.todo ? e.dday : false);
-    setRemind(e.remind_days == null ? "" : String(e.remind_days));
-    setAmount(e.amount ?? 0);
-    setStartTime(e.start_time ?? "");
-    setEndTime(e.end_time ?? "");
+    // 지난 일정에 없던 값(시간·알림·금액)은 이미 고른 것을 지우지 않는다
+    if (e.remind_days != null) setRemind(String(e.remind_days));
+    if (e.amount) setAmount(e.amount);
+    if (e.start_time) {
+      setStartTime(e.start_time);
+      setEndTime(e.end_time ?? "");
+    }
   };
 
   const k = KIND.find((x) => x.value === kind)!;

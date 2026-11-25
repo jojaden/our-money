@@ -61,7 +61,7 @@ export function QuickAdd({
     const cut = cutTime(title, hit);
     caret.current = cut.at;
     // "9시까지"처럼 끝만 쓰면 시작 시간이 없어 알약에 넣지 않는다(추가할 때 제목에서 뗀다)
-    onDraft({ title: cut.text, time: hit.start ?? draft.time, end: hit.start ? (hit.until ?? "") : draft.end });
+    onDraft({ ...draft, title: cut.text, time: hit.start ?? draft.time, end: hit.start ? (hit.until ?? "") : draft.end });
   };
   const change = (el: HTMLInputElement, composing: boolean) => {
     const hit = composing ? null : findTime(el.value, now);
@@ -109,7 +109,7 @@ export function QuickAdd({
   const title = draft.title.trim();
   // 제목 추천: 고르면 그 일정의 시간까지 (없으면 고른 시간 그대로)
   const { data } = useData();
-  const ideas = suggest(eventTitles(data), draft.title, { limit: 4 });
+  const ideas = suggest(eventTitles(data), draft.title, { limit: 4, keepExact: true });
   const pickIdea = (e: CalEvent) => {
     caret.current = e.title.length;
     onDraft({ title: e.title, time: e.start_time ?? draft.time, end: e.start_time ? (e.end_time ?? "") : draft.end, from: e });

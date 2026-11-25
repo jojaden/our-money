@@ -31,4 +31,6 @@ test("많이 쓴 것 → 최근 것, 친 글과 같은 글·이미 있는 글은
   assert.deepEqual(suggest(seen, "치과").map((s) => s.text), ["치과 정기검진"]);
   assert.deepEqual(suggest(seen, "치", { exclude: ["치킨"] }).map((s) => s.text), ["치과", "치과 정기검진"]);
   assert.deepEqual(suggest(seen, " "), []);
+  // 끝까지 친 글도 칩으로 (고르면 지난 값까지 채우는 칸) — 맨 앞에
+  assert.deepEqual(suggest(seen, "치과", { keepExact: true }).map((s) => s.text), ["치과", "치과 정기검진"]);
 });

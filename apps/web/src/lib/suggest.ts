@@ -63,17 +63,18 @@ export interface Suggestion<T> {
 }
 
 /**
- * 친 글자에 맞는 추천: 맞는 정도(앞에서부터가 먼저) → 많이 쓴 순 → 최근 순. 친 글과 똑같은 글은 뺀다(이미 다 쳤다).
+ * 친 글자에 맞는 추천: 맞는 정도(똑같은 글 → 앞에서부터 → 낱말 앞 → 초성) → 많이 쓴 순 → 최근 순.
+ * 친 글과 똑같은 글은 keepExact 일 때만 남긴다 — 고르면 지난 값까지 채우는 칸은 끝까지 쳐도 칩을 눌러 채울 수 있게.
  * exclude 는 이미 있는 것이라 다시 권하지 않을 글.
  */
-export function suggest<T>(seen: Seen<T>[], typed: string, opts: { limit?: number; exclude?: Iterable<string> } = {}): Suggestion<T>[] {
+export function suggest<T>(seen: Seen<T>[], typed: string, opts: { limit?: number; exclude?: Iterable<string>; keepExact?: boolean } = {}): Suggestion<T>[] {
   const t = typed.trim();
   if (!t) return [];
   const skip = new Set([...(opts.exclude ?? [])].map((x) => x.trim()));
   const groups = new Map<string, { last: Seen<T>; count: number }>();
   for (const s of seen) {
     const text = s.text.trim();
-    if (!text || text === t || skip.has(text)) continue;
+    if (!text || (text === t && !opts.keepExact) || skip.has(text)) continue;
     const g = groups.get(text);
     if (!g) groups.set(text, { last: s, count: 1 });
     else {
@@ -82,8 +83,8 @@ export function suggest<T>(seen: Seen<T>[], typed: string, opts: { limit?: numbe
     }
   }
   return [...groups.entries()]
-    .map(([text, g]) => ({ text, g, rank: matchRank(text, t) }))
-    .filter((x) => x.rank >= 0)
+    .map(([text, g]) => ({ text, g, rank: text === t ? -0.5 : matchRank(text, t) }))
+    .filter((x) => x.rank !== -1)
     .sort((a, b) => a.rank - b.rank || b.g.count - a.g.count || b.g.last.at.localeCompare(a.g.last.at))
     .slice(0, opts.limit ?? 5)
     .map(({ text, g }) => ({ text, item: g.last.item, count: g.count }));

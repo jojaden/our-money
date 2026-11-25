@@ -391,8 +391,14 @@ export function ItemSheet({
   };
   const even = splitBy(amount, rA);
 
-  // 입력 추천. 이름은 새로 넣을 때만 — 이번 달에 이미 있는 이름은 빼고, 고르면 그 항목의 종류·금액·누구·나가는 곳·날짜·받는 곳·메모까지
-  const nameIdeas = item ? [] : suggest(itemNames(data), name, { exclude: data.month_items.filter((i) => i.month === month).map((i) => i.name) });
+  // 입력 추천. 이름은 새로 넣을 때만 — 이번 달에 있거나 켜져 있는 플랜 항목 이름은 빼고(같은 항목이 둘 생긴다: 끈 항목·이번 달만 넣었던 항목을 권한다),
+  // 고르면 그 항목의 종류·금액·누구·나가는 곳·날짜·받는 곳·메모까지
+  const nameIdeas = item
+    ? []
+    : suggest(itemNames(data), name, {
+        keepExact: true,
+        exclude: [...data.month_items.filter((i) => i.month === month).map((i) => i.name), ...data.plan_items.filter((p) => p.active).map((p) => p.name)],
+      });
   const pickName = (x: MonthItem | PlanItem) => {
     const dm: Method = x.group === "living" || x.group === "allowance" ? "manual" : "account_auto";
     setName(x.name);

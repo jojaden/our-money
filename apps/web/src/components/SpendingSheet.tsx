@@ -193,7 +193,7 @@ export function SpendingSheet({ open, onOpenChange, editing }: { open: boolean; 
   };
 
   // 메모 추천: 새로 쓸 때만. 고르면 그때 분류·결제수단·누구 돈까지, 금액은 아직 안 적었을 때만
-  const memoIdeas = editing ? [] : suggest(spendingMemos(data), memo);
+  const memoIdeas = editing ? [] : suggest(spendingMemos(data), memo, { keepExact: true });
   const pickMemo = (sp: Spending) => {
     const typed = amount;
     applyPreset({ memo: sp.memo.trim(), category_id: sp.category_id, pay_kind: sp.pay_kind, account_id: sp.account_id, owner: sp.owner, amount: sp.amount, count: 1 });
