@@ -1,0 +1,21 @@
+<!-- @dsCard group="Controls" height=150 subtitle="입력 추천: 친 글자에 맞는 지난 기록을 입력칸 아래 칩 한 줄로" -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alan+Sans:wght@300..900&family=Noto+Sans+KR:wght@400..800&display=swap">
+<style>
+  body { margin: 0; background: var(--surface); color: var(--text); font-family: var(--font-text); word-break: keep-all; -webkit-font-smoothing: antialiased; }
+  .stage { padding: 20px; }
+  .input { box-sizing: border-box; width: 100%; height: var(--control-height); padding: 0 16px; border: 0; border-radius: var(--radius-control); background: var(--well); color: var(--text); font: 500 16px var(--font-text); }
+  .suggest { display: flex; gap: 6px; margin-top: 8px; overflow-x: auto; scrollbar-width: none; }
+  .suggest-chip { flex: none; max-width: 75%; height: var(--suggest-h); padding: 0 12px; overflow: hidden; border: 0; border-radius: var(--radius-chip); background: var(--surface); box-shadow: inset 0 0 0 1px var(--border); color: var(--text); font: 600 14px/var(--suggest-h) var(--font-text); white-space: nowrap; text-overflow: ellipsis; cursor: pointer; transition: transform var(--dur-press) var(--ease-press); }
+  .suggest-chip:active { transform: scale(0.95); }
+  .suggest-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  @media (hover: hover) { .suggest-chip:hover { background: var(--well); } }
+  @media (prefers-reduced-motion: reduce) { .suggest-chip { transition: none; } }
+</style>
+<div class="stage">
+  <input class="input" value="치" aria-label="일정 제목">
+  <div class="suggest" role="group" aria-label="제목 추천">
+    <button type="button" class="suggest-chip">치과</button>
+    <button type="button" class="suggest-chip">치과 정기검진</button>
+    <button type="button" class="suggest-chip">치킨 모임</button>
+  </div>
+</div>

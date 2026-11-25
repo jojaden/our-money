@@ -14,6 +14,8 @@ import type { QuickDraft } from "./QuickAdd";
 import { useShareEvent } from "./holdActions";
 import { TimePanel } from "./TimeWheel";
 import { still, tokens } from "./Morph";
+import { Suggest } from "./Suggest";
+import { eventTitles, suggest } from "@/lib/suggest";
 
 /** 무엇을 만드나 — 맨 위에서 고르면 그에 맞는 칸만 나온다 */
 type Kind = "todo" | "event" | "dday";
@@ -39,6 +41,7 @@ function newId() {
 
 /**
  * 바로 쓰기(달력 첫 화면 아래 막대)로 더하는 일정 하나 — 시트 없이 그 날짜에 "일정"으로 넣는다.
+ * 제목 추천에서 고른 지난 일정이 있으면 그 종류·누구·알림·금액을 따른다.
  * 시간을 골랐으면 그 시간, 아니면 제목 속 시간을 시트와 같은 규칙으로 떼어 넣는다("치과 3시 반" → 치과, 15:30). 떼면 제목이 비면 그대로 둔다.
  */
 export function quickEvent(draft: QuickDraft, date: string, now = new Date()): CalEvent {
@@ -46,6 +49,8 @@ export function quickEvent(draft: QuickDraft, date: string, now = new Date()): C
   const hit = draft.time ? null : findTime(t, now);
   const rest = hit ? `${t.slice(0, hit.index)} ${t.slice(hit.end)}`.replace(/\s+/g, " ").trim() : "";
   const h = hit && rest ? hit : null;
+  // 제목 추천에서 고른 일정이면 그 종류·누구·알림·금액 (제목을 바꿨으면 버린다)
+  const tpl = draft.from && draft.from.title === t ? draft.from : null;
   return {
     id: newId(),
     title: h ? rest : t,
@@ -53,12 +58,12 @@ export function quickEvent(draft: QuickDraft, date: string, now = new Date()): C
     start_date: date,
     end_date: null,
     repeat: "none",
-    owner: "joint",
-    todo: false,
-    dday: false,
+    owner: tpl?.owner ?? "joint",
+    todo: tpl?.todo ?? false,
+    dday: tpl?.dday ?? false,
     pin: false,
-    remind_days: null,
-    amount: null,
+    remind_days: tpl?.remind_days ?? null,
+    amount: tpl?.amount ?? null,
     start_time: draft.time || (h?.start ?? null),
     end_time: draft.time ? draft.end || null : (h?.until ?? null),
   };
@@ -95,18 +100,20 @@ export function EventSheet({ open, onOpenChange, event, from, date, draft, onCop
   const share = useShareEvent();
   // 처음 값: 고치기면 그 일정, 복사면 베낄 일정 (저장할 때 id·rev 는 event 에서만 가져오므로 복사는 새 일정이 된다)
   const base = event ?? from;
+  // 바로 쓰기에서 추천을 골라 왔으면 그 일정의 종류·누구·알림·금액으로 시작한다 (제목을 바꿨으면 버린다)
+  const tpl = base ?? (draft?.from && draft.from.title === draft.title.trim() ? draft.from : undefined);
   const s = data.settings;
-  const [kind, setKind] = useState<Kind>(kindOf(base));
+  const [kind, setKind] = useState<Kind>(kindOf(tpl));
   const [title, setTitle] = useState(base?.title ?? draft?.title ?? "");
   const [ranged, setRanged] = useState(Boolean(base?.end_date));
   const [start, setStart] = useState(base?.start_date ?? date);
   const [end, setEnd] = useState(base?.end_date ?? "");
   const [repeat, setRepeat] = useState<Repeat>(base?.repeat ?? "none");
-  const [owner, setOwner] = useState<Owner>(base?.owner ?? "joint");
-  const [dday, setDday] = useState(base?.todo ? base.dday : false);
+  const [owner, setOwner] = useState<Owner>(tpl?.owner ?? "joint");
+  const [dday, setDday] = useState(tpl?.todo ? tpl.dday : false);
   const [pin, setPin] = useState(base?.pin ?? false);
-  const [remind, setRemind] = useState(base?.remind_days == null ? "" : String(base.remind_days));
-  const [amount, setAmount] = useState(base?.amount ?? 0);
+  const [remind, setRemind] = useState(tpl?.remind_days == null ? "" : String(tpl.remind_days));
+  const [amount, setAmount] = useState(tpl?.amount ?? 0);
   const [note, setNote] = useState(base?.note ?? "");
   const [startTime, setStartTime] = useState(base?.start_time ?? draft?.time ?? "");
   const [endTime, setEndTime] = useState(base?.end_time ?? draft?.end ?? "");
@@ -122,6 +129,22 @@ export function EventSheet({ open, onOpenChange, event, from, date, draft, onCop
   const caret = useRef<number | null>(null);
   /** 방금 시간을 뗀 자리 — 바로 이어 "40분 "·"반 "을 쓰면 그 시간의 분을 고친다 ("5시 40분") */
   const lastAt = useRef<{ at: number; field: "start" | "end" } | null>(null);
+
+  // 제목 추천: 새로 만들 때만 (고치는 일정의 다른 칸을 바꾸지 않게). 고르면 그 일정의 종류·누구, 있었으면 시간·알림·금액까지 — 날짜·반복은 그대로
+  const titleIdeas = event ? [] : suggest(eventTitles(data), title, { keepExact: true });
+  const pickTitle = (e: CalEvent) => {
+    setTitle(e.title);
+    setKind(kindOf(e));
+    setOwner(e.owner);
+    setDday(e.todo ? e.dday : false);
+    // 지난 일정에 없던 값(시간·알림·금액)은 이미 고른 것을 지우지 않는다
+    if (e.remind_days != null) setRemind(String(e.remind_days));
+    if (e.amount) setAmount(e.amount);
+    if (e.start_time) {
+      setStartTime(e.start_time);
+      setEndTime(e.end_time ?? "");
+    }
+  };
 
   const k = KIND.find((x) => x.value === kind)!;
   const isRange = kind !== "dday" && ranged;
@@ -279,6 +302,7 @@ export function EventSheet({ open, onOpenChange, event, from, date, draft, onCop
 
       <div className="field">
         <label htmlFor="ev-title">제목</label>
+        <Suggest items={titleIdeas} onPick={(x) => pickTitle(x.item)} label="제목 추천">
         <div className={`title-field ${live ? "has-time" : ""}`}>
           {live && (
             <span className="title-mirror" aria-hidden="true">
@@ -294,8 +318,9 @@ export function EventSheet({ open, onOpenChange, event, from, date, draft, onCop
           )}
           <input ref={titleRef} id="ev-title" className="input" value={title} onChange={(e) => setTitle(timed && !(e.nativeEvent as InputEvent).isComposing ? take(e.target) : e.target.value)}
             onCompositionEnd={(e) => timed && setTitle(take(e.currentTarget))}
-            onScroll={syncMirror} onSelect={syncMirror} placeholder={k.hint} maxLength={40} />
+            onScroll={syncMirror} onSelect={syncMirror} placeholder={k.hint} maxLength={40} autoComplete="off" />
         </div>
+        </Suggest>
         <p className="help" role="status">
           {live ? `띄어 쓰거나 시간을 누르면 ${ro(timeText({ start_time: live.start, end_time: live.until }))} 시간에 넣어요` : k.help}
         </p>
