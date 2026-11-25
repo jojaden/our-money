@@ -9,6 +9,7 @@ import { deleteOp, upsertOp, type Op } from "@/lib/repo";
 import { monthRow, nameOf, partnerOf, ratioA, split as splitBy } from "@/lib/calc";
 import { monthLabel, num } from "@/lib/format";
 import { logoOf } from "@/lib/institutions";
+import { MAX_PAYEE } from "@/lib/payee";
 import { AddPass } from "./AddPass";
 import { AmountInput, MAX_GOAL, PersonGlyph, radioKeys, radioTab, Seg, Sheet, Toggle } from "./ui";
 
@@ -153,6 +154,9 @@ export function ItemSheet({
   // 합계를 직접 적었는지: 적었으면 한 사람 몫을 바꿀 때 나머지가 상대 몫, 아니면(몫부터 적으면) 합계가 두 몫의 합
   const [totalLed, setTotalLed] = useState(false);
   const [dueDay, setDueDay] = useState<number | null>(null);
+  // 받는 곳: 내 통장(toAcc) 또는 글(toName) — 하나를 고르면 다른 하나는 비운다
+  const [toAcc, setToAcc] = useState<string | null>(null);
+  const [toName, setToName] = useState("");
   const [note, setNote] = useState("");
   const [goal, setGoal] = useState(0);
   const [goalStart, setGoalStart] = useState(0);
@@ -187,6 +191,8 @@ export function ItemSheet({
         b: { ...sourceOf(ib ?? item, dm), amount: ib?.amount ?? 0 },
       });
       setDueDay(item?.due_day ?? null);
+      setToAcc(item?.to_account_id ?? null);
+      setToName(item?.to_name ?? "");
       setNote(item?.note ?? "");
       setGoal(plan?.goal_amount ?? 0);
       setGoalStart(plan?.goal_start ?? 0);
@@ -200,11 +206,14 @@ export function ItemSheet({
     }
   }
   // 적던 내용이 있는지: 연 순간의 값과 비교 (다시 불러오기로 바뀌지 않게 채운 바로 다음 그리기에서 한 번 찍어 둔다)
-  const form = JSON.stringify([name, group, amount, payer, source, split, parts, dueDay, note, goal, goalStart, forward, ranged, startM, endM]);
+  const form = JSON.stringify([name, group, amount, payer, source, split, parts, dueDay, toAcc, toName, note, goal, goalStart, forward, ranged, startM, endM]);
   if (open && wasOpen && initial === null) setInitial(form);
   const dirty = initial !== null && form !== initial;
 
   const splitOn = payer === "joint" && split;
+  // 받는 곳은 고정비가 통장에서 나갈 때만 (카드 자동결제는 카드사로 나간다. 생활비·용돈·저축은 나가는 통장이 곧 도착 계좌).
+  // 나눠 내면 한 사람이라도 통장이면
+  const payeeOn = group === "fixed" && (splitOn ? parts.a.method !== "card_auto" || parts.b.method !== "card_auto" : source.method !== "card_auto");
   // 이미 있는 항목에서 나눠 내기를 켜고 끄는 건 다음 달부터도 적용할 때만 (이번 달만 바꾸면 다음 달에 한 사람 몫만 넘어간다)
   const splitLocked = Boolean(item) && !forward;
   const toggleSplit = (on: boolean) => {
@@ -272,7 +281,8 @@ export function ItemSheet({
       });
       return;
     }
-    const common = { group, name: name.trim(), due_day: dueDay, note: note.trim() };
+    // 받는 곳은 두 사람 몫 줄에 똑같이 (받는 곳은 하나)
+    const common = { group, name: name.trim(), due_day: dueDay, note: note.trim(), to_account_id: payeeOn ? toAcc : null, to_name: payeeOn && !toAcc ? toName.trim() : "" };
     const pairId = splitOn ? (paired ? item!.pair_id! : newId("pair")) : null;
     // 저장할 줄: 나눠 내면 두 사람 몫 두 줄, 아니면 한 줄. 나눠 내기를 끄면 a 몫 줄을 공동 항목으로 되돌리고 b 몫 줄은 뺀다
     const lines: { prev?: MonthItem; payer: Owner; amount: number; src: Source }[] = splitOn
@@ -364,6 +374,9 @@ export function ItemSheet({
     { value: "b", label: nameOf(s, "b") },
   ];
   const sourceLabel = group === "saving" ? "어디에 모아요" : "어디서 나가요";
+  // 받는 곳으로 고를 수 있는 내 통장: 나가는 통장은 뺀다
+  const fromIds = new Set((splitOn ? [parts.a.account_id, parts.b.account_id] : [source.account_id]).filter(Boolean));
+  const toBanks = wallet.filter((a) => a.kind === "bank" && (!fromIds.has(a.id) || a.id === toAcc));
   const openAdd = (target: "one" | Person) => {
     setAddTarget(target);
     setAdding(true);
@@ -496,6 +509,52 @@ export function ItemSheet({
           <SourcePicker id="it-src" label={sourceLabel} value={source} onChange={setSource} accounts={wallet} person={payer} saving={group === "saving"} onAdd={() => openAdd("one")} />
           {shown(sourceError(source)) && <p className="help error">{sourceError(source)}</p>}
         </>
+      )}
+      {payeeOn && (
+        <div className="field">
+          <span className="label" id="it-to">
+            어디로 보내요 (선택)
+          </span>
+          {toBanks.length > 0 && (
+            <div className="chips src-chips" role="radiogroup" aria-labelledby="it-to" onKeyDown={radioKeys}>
+              {toBanks.map((a, i) => {
+                const logo = logoOf(a.institution);
+                return (
+                  <button
+                    key={a.id}
+                    type="button"
+                    role="radio"
+                    aria-checked={toAcc === a.id}
+                    tabIndex={radioTab(toAcc === a.id, i, toBanks.some((x) => x.id === toAcc))}
+                    className="chip"
+                    // 한 번 더 누르면 고른 것을 푼다
+                    onClick={() => {
+                      setToAcc(toAcc === a.id ? null : a.id);
+                      setToName("");
+                    }}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    {logo && <img className="chip-logo" src={logo} alt="" width={18} height={18} />}
+                    {a.name}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+          <input
+            className="input"
+            style={{ marginTop: toBanks.length > 0 ? 8 : 0 }}
+            aria-label="받는 곳 직접 적기"
+            value={toName}
+            onChange={(e) => {
+              setToName(e.target.value);
+              if (e.target.value) setToAcc(null);
+            }}
+            placeholder={toBanks.length > 0 ? "또는 직접 적기 (예: 관리사무소 · 국민 123-45-678901)" : "예: 관리사무소 · 국민 123-45-678901"}
+            maxLength={MAX_PAYEE}
+          />
+          <p className="help">계좌번호를 적어 두면 체크에서 눌러 복사할 수 있어요.</p>
+        </div>
       )}
       {group === "saving" && (
         <div className="inline-fields field">

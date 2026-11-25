@@ -26,6 +26,7 @@ import {
 import { num, parseYmd, shortDate } from "@/lib/format";
 import { eventTodos, timeText, type EventTodo } from "@/lib/calendar";
 import { useData } from "@/lib/store";
+import { payeeOf } from "@/lib/payee";
 
 export type TaskKind = "transfer" | "pay" | "card" | "settle" | "event";
 
@@ -44,6 +45,8 @@ export interface Task {
   payday?: string;
   /** 이체: 결제일이 월급날보다 빨라서 지난 월급에서 미리 옮겨야 함 */
   early?: boolean;
+  /** 납부: 받는 곳 (copy 는 복사할 계좌번호) */
+  payee?: { text: string; copy: string | null } | null;
   /** 보조 줄과 따로 끝까지 보여 줄 경고 (보조 줄은 한 줄에서 잘릴 수 있다) */
   warn?: string;
   done: boolean;
@@ -170,6 +173,7 @@ function build(
       // 실제로 낸 금액이 플랜과 다르면 플랜 금액을 앞에 남긴다
       // 나눠 내는 공동 항목은 각자 자기 몫을 체크한다
       sub: `${paid !== i.amount ? `플랜 ${num(i.amount)}원 · ` : ""}${i.pair_id ? `공동 · ${nameOf(s, i.payer)} 몫` : nameOf(s, i.payer)} · ${METHOD_LABEL[i.method]} · ${via}`,
+      payee: i.method === "card_auto" ? null : payeeOf(i, data.accounts),
       amount: paid,
       due: i.due_day ? dateInMonth(month, i.due_day, s.cycle_start) : null,
       done: i.paid,

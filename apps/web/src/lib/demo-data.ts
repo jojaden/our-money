@@ -66,8 +66,8 @@ const item = (id: string, p: Partial<PlanItem> & Pick<PlanItem, "group" | "name"
 
 const plan: PlanItem[] = [
   item("pi-rent", { group: "fixed", name: "월세", amount: 1_100_000, payer: "joint", method: "account_auto", account_id: "acc-fixed", due_day: 27 }),
-  item("pi-mgmt", { group: "fixed", name: "관리비", amount: 230_000, payer: "joint", method: "account_auto", account_id: "acc-fixed", due_day: 30 }),
-  item("pi-parents", { group: "fixed", name: "양가 부모님 용돈", amount: 300_000, payer: "joint", method: "manual", account_id: "acc-fixed", due_day: 5 }),
+  item("pi-mgmt", { group: "fixed", name: "관리비", amount: 230_000, payer: "joint", method: "account_auto", account_id: "acc-fixed", due_day: 30, to_name: "관리사무소 · 예시은행 000-000-000000" }),
+  item("pi-parents", { group: "fixed", name: "양가 부모님 용돈", amount: 300_000, payer: "joint", method: "manual", account_id: "acc-fixed", due_day: 5, to_name: "부모님 · 예시은행 0000-00-0000000" }),
   item("pi-phone", { group: "fixed", name: "통신비 2회선", amount: 98_000, payer: "joint", method: "card_auto", card_id: "card-joint", due_day: 3 }),
   item("pi-net", { group: "fixed", name: "인터넷·TV", amount: 33_000, payer: "joint", method: "card_auto", card_id: "card-joint", due_day: 20 }),
   item("pi-subs", { group: "fixed", name: "넷플릭스·유튜브", amount: 31_900, payer: "joint", method: "card_auto", card_id: "card-joint", due_day: 12 }),

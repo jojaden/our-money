@@ -410,7 +410,7 @@ fun snapshotItems(month: String, plan: List<PlanItem>): List<MonthItem> = plan.f
     MonthItem(
         id = "$month:${p.id}", month = month, planItemId = p.id, group = p.group, name = p.name, amount = p.amount,
         payer = p.payer, accountId = p.accountId, method = p.method, cardId = p.cardId, dueDay = p.dueDay,
-        sort = p.sort, note = p.note, pairId = p.pairId,
+        sort = p.sort, note = p.note, pairId = p.pairId, toAccountId = p.toAccountId, toName = p.toName,
     )
 }
 
