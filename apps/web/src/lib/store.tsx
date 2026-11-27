@@ -344,6 +344,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   // 이 기기 저장본이 있으면 서버를 기다리지 않고 바로 그린다 (그리기 전에 — 로딩 화면이 스치지 않게).
   // 계정 확인과 최신 내용 받기는 그 뒤에 함께 시작하고, 다른 계정이거나 로그아웃이면 지운다
   const savedEmail = useRef<string | null>(null);
+  /** 화면에 그린 데이터가 있는지 (있으면 계정 확인 때 달력 데이터를 또 받지 않는다) */
+  const drawn = useRef(false);
+  useEffect(() => {
+    drawn.current = data !== null;
+  }, [data]);
   useLayoutEffect(() => {
     if (!repo || !hasSupabase) return;
     const snap = readSnapshot();
@@ -371,10 +376,29 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }
     let alive = true;
     let retry: number | undefined;
+    // 확인은 한 번에 하나씩. 도는 동안 또 불리면(로그인·로그아웃) 끝난 뒤 한 번 더 — 같은 요청을 겹쳐 보내지 않게
+    let running = false;
+    let again = false;
     const check = async () => {
+      if (running) {
+        again = true;
+        return;
+      }
+      running = true;
+      try {
+        do {
+          again = false;
+          await checkOnce();
+        } while (again && alive);
+      } finally {
+        running = false;
+      }
+    };
+    const checkOnce = async () => {
       let res: Awaited<ReturnType<typeof currentMember>>;
       try {
-        res = await currentMember();
+        // 아직 그린 것이 없으면 달력 첫 화면 데이터도 계정 확인과 함께 받는다 (021)
+        res = await currentMember(savedEmail.current === null && !drawn.current);
       } catch (e) {
         // 연결이 안 돼 확인하지 못함: 로그인 상태는 그대로 두고, 5초 뒤·연결이 돌아오면 다시 확인한다
         if (!alive) return;
@@ -396,12 +420,20 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       if (!res) setAuth({ state: "signed-out" });
       else if (!res.member) setAuth({ state: "not-member", email: res.email });
       else {
+        const early = res.early;
+        if (early) {
+          setData((cur) => cur ?? applyOpsLocal(early, outbox.current.flatMap((p) => p.ops)));
+          setLoaded((l) => l ?? "calendar");
+          setMonthState((m) => m || openingMonth(early, today));
+        }
         setMeState(res.member.person);
         setAuth({ state: "member", email: res.email });
       }
     };
-    void check();
-    const sub = supabase()?.auth.onAuthStateChange(() => void check());
+    // 처음 확인은 구독하자마자 오는 INITIAL_SESSION 으로. 한 시간마다의 토큰 갱신은 계정이 바뀐 것이 아니라 다시 확인하지 않는다
+    const sub = supabase()?.auth.onAuthStateChange((event) => {
+      if (event !== "TOKEN_REFRESHED") void check();
+    });
     const online = () => void check();
     window.addEventListener("online", online);
     return () => {
@@ -410,7 +442,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       sub?.data.subscription.unsubscribe();
       window.removeEventListener("online", online);
     };
-  }, [repo]);
+  }, [repo, today]);
 
   // 데이터 로드와 실시간 동기화: 처음엔 전체, 그다음엔 바뀐 테이블만. 저장본으로 열었으면 계정 확인과 함께 바로 시작한다
   const live = auth.state === "member" ? auth.email : auth.state === "demo" ? "demo" : null;

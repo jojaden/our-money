@@ -2,11 +2,11 @@
 --
 -- 새 Supabase 프로젝트의 SQL Editor 에 전체를 붙여넣고 한 번 실행한다.
 -- 이미 쓰고 있는 DB 는 이 파일을 다시 돌리지 말고 supabase/migrations/ 의 새 파일만 번호 순서대로 실행한다
--- (CHANGELOG 의 "DB 이전" 줄). 이 파일은 migrations 020 까지 반영한 최종 모양이다(칸 순서는 운영 DB 와 다를 수 있다).
+-- (CHANGELOG 의 "DB 이전" 줄). 이 파일은 migrations 021 까지 반영한 최종 모양이다(칸 순서는 운영 DB 와 다를 수 있다).
 -- 마지막의 members INSERT 두 줄은 두 사람의 구글 이메일로 바꿔서 실행한다.
 --
 -- 차례
---   1. 멤버와 로그인 계정   members · users · is_member() · current_person() · ensure_user()
+--   1. 멤버와 로그인 계정   members · users · is_member() · current_person() · ensure_user() · bootstrap()
 --   2. 데이터 표           accounts · settings · plan_items · months · month_items · checks · categories · spendings · events · nudges
 --   3. 바뀐 기록           history
 --   4. 줄마다 붙는 트리거    stamp_row(rev·누가 언제) · log_change(기록) · guard_bulk(대량 사고 방지)
@@ -123,6 +123,31 @@ begin
   values (uid, mail, p, left(coalesce(inherited, split_part(mail, '@', 1)), 20))
   returning * into u;
   return u;
+end $$;
+
+-- 앱 시작 한 번에: 계정 묶기와 달력 첫 화면 데이터를 서버 왕복 한 번으로 (021)
+-- 멤버가 아니면 null. 멤버면 { person, settings, users, events, checks } — 달력 첫 화면에 그리는 표만.
+-- calendar = false 면 표는 빼고 person 만 (이 기기 저장본으로 이미 그린 뒤의 확인).
+-- security invoker: 표는 부른 사람의 RLS 로 읽는다. ensure_user() 가 같은 트랜잭션에서 계정을 묶은 뒤라 처음 로그인에도 보인다.
+create or replace function public.bootstrap(calendar boolean default true) returns jsonb
+language plpgsql security invoker set search_path = public as $$
+declare
+  u public.users;
+begin
+  select * into u from public.ensure_user();
+  if u.id is null then
+    return null;
+  end if;
+  if not calendar then
+    return jsonb_build_object('person', u.person);
+  end if;
+  return jsonb_build_object(
+    'person', u.person,
+    'settings', (select to_jsonb(s) from public.settings s where s.id = 1),
+    'users', coalesce((select jsonb_agg(to_jsonb(x) order by x.id) from public.users x), '[]'::jsonb),
+    'events', coalesce((select jsonb_agg(to_jsonb(x) order by x.id) from public.events x), '[]'::jsonb),
+    'checks', coalesce((select jsonb_agg(to_jsonb(x) order by x.id) from public.checks x), '[]'::jsonb)
+  );
 end $$;
 
 -- 이메일을 바꾸면(사람이 다른 구글 계정으로 바뀜) 묶인 계정을 푼다
@@ -736,6 +761,8 @@ revoke execute on function public.current_person() from public, anon;
 grant execute on function public.current_person() to authenticated;
 revoke execute on function public.ensure_user() from public, anon;
 grant execute on function public.ensure_user() to authenticated;
+revoke execute on function public.bootstrap(boolean) from public, anon;
+grant execute on function public.bootstrap(boolean) to authenticated;
 revoke execute on function public.apply_batch(jsonb) from public, anon;
 grant execute on function public.apply_batch(jsonb) to authenticated;
 revoke execute on function public.stamp_row() from public, anon, authenticated;

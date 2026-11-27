@@ -547,7 +547,20 @@ export function resetDemo() {
 
 /* ---------- 로그인 ---------- */
 
-export async function currentMember(): Promise<{ email: string; member: Member | null } | null> {
+/** bootstrap() 이 돌려주는 것 (migrations/021) */
+interface Boot {
+  person: Person;
+  settings?: Data["settings"] | null;
+  users?: User[];
+  events?: Data["events"];
+  checks?: Data["checks"];
+}
+
+/**
+ * 로그인한 계정이 멤버인지. calendar 면 달력 첫 화면 데이터(early: settings·users·events·checks, 나머지 표는 빈 목록)도 같이 받는다 —
+ * 021 의 bootstrap() 하나로 계정 묶기와 함께 서버 왕복 한 번에. 021 전이면 예전처럼 members 확인 + ensure_user.
+ */
+export async function currentMember(calendar = false): Promise<{ email: string; member: Member | null; early?: Data } | null> {
   const db = supabase();
   if (!db) return null;
   const { data, error: sessionError } = await db.auth.getSession();
@@ -555,7 +568,18 @@ export async function currentMember(): Promise<{ email: string; member: Member |
   if (sessionError && isAuthRetryableFetchError(sessionError)) throw new RetryableError(sessionError.message);
   const email = data.session?.user.email;
   if (!email) return null;
-  // 멤버 줄 확인과 계정 묶기(ensure_user, 아래 설명)를 한 번에 보낸다 — 서버 왕복을 하나 줄인다.
+  const boot = await db.rpc("bootstrap", { calendar });
+  if (!boot.error) {
+    const b = boot.data as Boot | null;
+    if (!b?.person) return { email, member: null };
+    const member: Member = { email, person: b.person };
+    if (!calendar) return { email, member };
+    const lists = Object.fromEntries(LIST_TABLES.map((t) => [t, []])) as unknown as Omit<Data, "settings">;
+    return { email, member, early: { ...lists, settings: b.settings ?? defaultSettings(), users: b.users ?? [], events: b.events ?? [], checks: b.checks ?? [] } };
+  }
+  // 연결 문제는 다시 시도. 함수가 없는 등 그 밖의 오류는 아래 예전 방식으로
+  if (toError(boot.error, boot.status) instanceof RetryableError) throw toError(boot.error, boot.status);
+  // 021 전: 멤버 줄 확인과 계정 묶기(ensure_user, 아래 설명)를 한 번에 보낸다 — 서버 왕복을 하나 줄인다.
   // ensure_user 는 멤버가 아니면 아무것도 바꾸지 않고 null 이다.
   // 연결 문제로 확인하지 못한 것을 "멤버가 아님"으로 보지 않는다 (오류를 던져서 다시 시도하게)
   const [first, ensured] = await Promise.all([db.from("members").select("email, person").eq("email", email.toLowerCase()).maybeSingle(), db.rpc("ensure_user")]);
