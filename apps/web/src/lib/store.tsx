@@ -133,7 +133,10 @@ interface Snapshot {
 function readSnapshot(): Snapshot | null {
   try {
     const v = JSON.parse(localStorage.getItem(SNAPSHOT_KEY) ?? "null") as Partial<Snapshot> | null;
-    return v && typeof v.email === "string" && (v.person === "a" || v.person === "b") && v.data?.settings && Array.isArray(v.data.events) ? (v as Snapshot) : null;
+    // 표가 새로 생기기 전에 남긴 저장본은 버린다 (없는 표를 읽다 멈추지 않게)
+    return v && typeof v.email === "string" && (v.person === "a" || v.person === "b") && v.data?.settings && LIST_TABLES.every((t) => Array.isArray(v.data?.[t]))
+      ? (v as Snapshot)
+      : null;
   } catch {
     return null;
   }
@@ -284,6 +287,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   );
   const lastFull = useRef(0);
   const outbox = useRef<Pending[]>([]);
+  /** 서버가 받은 저장(받은 순서 번호와 서버 줄) — 그사이 나갔던 전체 불러오기가 늦게 와서 덮지 않게 다시 얹는다 */
+  const landed = useRef<{ n: number; ops: Op[] }[]>([]);
+  const landedN = useRef(0);
   /** 지금 로그인한 멤버 계정 (멤버가 아니거나 로그아웃이면 null) */
   const authEmail = useRef<string | null>(null);
   const [pending, setPending] = useState(0);
@@ -301,8 +307,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           );
           return;
         }
+        const from = spendingsFrom.current;
+        const since = landedN.current;
         const d = await repo.load({
-          spendingsFrom: spendingsFrom.current,
+          spendingsFrom: from,
           // 아직 그린 것이 없으면(처음 로그인) 달력 표가 오는 대로 달력부터 그린다. 이미 있으면(저장본·지난 불러오기) 그대로 둔다
           first: (early) => {
             setData((cur) => cur ?? applyOpsLocal(early, outbox.current.flatMap((p) => p.ops)));
@@ -311,8 +319,15 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           },
         });
         lastFull.current = Date.now();
-        // 아직 보내지 못한 저장은 다시 얹는다 (서버 내용으로 덮어 입력이 사라지지 않게)
-        setData(applyOpsLocal(d, outbox.current.flatMap((p) => p.ops)));
+        // 받는 동안 서버가 받은 저장과 아직 보내지 못한 저장은 다시 얹는다 (늦게 온 옛 내용으로 덮어 입력이 사라지지 않게)
+        const late = landed.current.filter((x) => x.n > since).flatMap((x) => x.ops);
+        setData((cur) => {
+          const next = applyOpsLocal(d, [...late, ...outbox.current.flatMap((p) => p.ops)]);
+          // 받는 동안 더 앞선 기간의 지출을 따로 받았으면(옛 달을 보던 중) 그 기간은 그대로 둔다
+          if (!cur || spendingsFrom.current >= from) return next;
+          const have = new Set(next.spendings.map((x) => x.id));
+          return { ...next, spendings: [...next.spendings, ...cur.spendings.filter((x) => x.date < from && !have.has(x.id))] };
+        });
         setLoaded("full");
         setError(null);
         setMonthState((m) => m || openingMonth(d, today));
@@ -355,13 +370,17 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     let alive = true;
+    let retry: number | undefined;
     const check = async () => {
       let res: Awaited<ReturnType<typeof currentMember>>;
       try {
         res = await currentMember();
       } catch (e) {
-        // 연결이 안 돼 확인하지 못함: 로그인 상태는 그대로 두고, 연결이 돌아오면 다시 확인한다
-        if (alive) setError(`연결할 수 없어요. 인터넷 연결을 확인해 주세요 (${e instanceof Error ? e.message : e})`);
+        // 연결이 안 돼 확인하지 못함: 로그인 상태는 그대로 두고, 5초 뒤·연결이 돌아오면 다시 확인한다
+        if (!alive) return;
+        setError(`연결할 수 없어요. 인터넷 연결을 확인해 주세요 (${e instanceof Error ? e.message : e})`);
+        window.clearTimeout(retry);
+        retry = window.setTimeout(() => void check(), 5000);
         return;
       }
       if (!alive) return;
@@ -387,6 +406,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     window.addEventListener("online", online);
     return () => {
       alive = false;
+      window.clearTimeout(retry);
       sub?.data.subscription.unsubscribe();
       window.removeEventListener("online", online);
     };
@@ -407,14 +427,16 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       window.clearTimeout(timer);
       timer = window.setTimeout(() => void reload(c.table), 200);
     });
-    // 앱으로 돌아왔을 때: 실시간 연결이 끊겼을 수 있으니 30초 이상 지났으면 전체를 다시
+    // 앱으로·연결이 돌아왔을 때: 실시간 연결이 끊겼을 수 있으니 30초 이상 지났으면(처음 받기가 실패했으면) 전체를 다시
     const onFocus = () => {
       if (Date.now() - lastFull.current > 30_000) void reload();
     };
     window.addEventListener("focus", onFocus);
+    window.addEventListener("online", onFocus);
     return () => {
       unsub();
       window.removeEventListener("focus", onFocus);
+      window.removeEventListener("online", onFocus);
       window.clearTimeout(timer);
     };
   }, [repo, live, reload]);
@@ -562,6 +584,13 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         };
         try {
           const results = await repo.apply(sent);
+          // 서버가 받은 줄을 남긴다 (그사이 나간 전체 불러오기가 이것보다 옛 내용이면 다시 얹도록, 최근 100건만)
+          const got = results.flatMap((res, i): Op[] => {
+            const o = sent[i];
+            if (o?.op === "upsert") return res.rows?.length ? [{ ...o, rows: res.rows }] : [];
+            return o ? [o] : [];
+          });
+          landed.current = [...landed.current.slice(-99), { n: ++landedN.current, ops: got }];
           results.forEach((res, i) => {
             const o = sent[i];
             if (o?.op === "upsert" && res.rows) {

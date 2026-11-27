@@ -151,7 +151,7 @@ const ICON = { payday: Wallet, event: CalendarDays, dday: Heart };
  */
 export function BellButton({ rail = false }: { rail?: boolean }) {
   const router = useRouter();
-  const { data, today } = useData();
+  const { data, today, loaded } = useData();
   const a = useAlerts();
   // 지난달을 아직 마감하지 않았으면 맨 위에 (홈 카드에서 "나중에"를 눌러도 여기엔 남는다)
   const close = usePendingClose();
@@ -166,8 +166,8 @@ export function BellButton({ rail = false }: { rail?: boolean }) {
   const unseen = keys.filter((k) => !seen.has(k)).length;
 
   const show = () => {
-    // 지금 있는 것만 남겨 쌓이지 않게
-    const now = new Set(keys);
+    // 지금 있는 것만 남겨 쌓이지 않게 — 달력 표만 먼저 온 동안은 아직 없는 알림을 지우지 않게 본 것에 더한다
+    const now = new Set(loaded === "calendar" ? [...seen, ...keys] : keys);
     setSeen(now);
     try {
       localStorage.setItem(SEEN_KEY, JSON.stringify([...now]));
