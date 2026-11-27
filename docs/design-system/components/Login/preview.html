@@ -20,10 +20,10 @@
   .coin.a { --p: var(--a); --q: var(--a-ink); left: 0; }
   .coin.b { --p: var(--b); --q: var(--b-ink); left: 70px; overflow: hidden; }
   .coin.a, .coin.b {
-    background: radial-gradient(circle at 34% 30%, color-mix(in srgb, var(--p) 22%, var(--surface)) 0%, color-mix(in srgb, var(--p) 58%, var(--surface)) 42%, color-mix(in srgb, var(--p) 88%, var(--surface)) 100%);
+    background: radial-gradient(circle at 34% 30%, color-mix(in srgb, var(--p) 22%, var(--coin-glint)) 0%, color-mix(in srgb, var(--p) 58%, var(--coin-glint)) 42%, color-mix(in srgb, var(--p) 88%, var(--coin-glint)) 100%);
     box-shadow: inset -8px -12px 20px color-mix(in srgb, var(--q) 14%, transparent), 0 16px 26px -12px color-mix(in srgb, var(--p) 60%, transparent);
   }
-  .lens { position: absolute; top: 0; left: -70px; width: 104px; height: 104px; border-radius: 50%; background: radial-gradient(circle at 50% 40%, var(--surface) 55%, color-mix(in srgb, var(--b) 10%, var(--surface)) 100%); }
+  .lens { position: absolute; top: 0; left: -70px; width: 104px; height: 104px; border-radius: 50%; background: radial-gradient(circle at 50% 40%, var(--coin-glint) 55%, color-mix(in srgb, var(--b) 10%, var(--coin-glint)) 100%); }
   .floor { position: absolute; left: 50%; top: 200px; width: 176px; height: 22px; margin-left: -88px; border-radius: 50%; background: radial-gradient(closest-side, color-mix(in srgb, var(--text) 15%, transparent), transparent); animation: shade var(--dur-breathe) var(--ease-breathe) infinite; }
   .obj { position: absolute; border-radius: 50%; background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--g-allowance) 22%, var(--surface)) 0%, color-mix(in srgb, var(--g-allowance) 70%, var(--surface)) 40%, var(--g-allowance) 78%, color-mix(in srgb, var(--g-allowance) 70%, var(--warning)) 100%); box-shadow: inset 0 0 0 4px color-mix(in srgb, var(--surface) 30%, transparent); }
   .obj.far { left: -24px; top: 40px; width: 80px; height: 80px; filter: blur(5px); opacity: .8; }

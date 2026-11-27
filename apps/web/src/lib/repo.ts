@@ -1,7 +1,7 @@
 // 저장소: Supabase 가 설정되어 있으면 Supabase, 아니면 브라우저 저장소의 데모 데이터.
 // 두 구현 모두 같은 테이블 단위 연산만 제공한다.
 
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { createClient, isAuthRetryableFetchError, type SupabaseClient } from "@supabase/supabase-js";
 import type { CardOrder, Data, HistoryRow, Member, Person, Row, Spending, TableName, User } from "./types";
 import { buildDemoData } from "./demo-data";
 import { inApp, toApp } from "./native";
@@ -47,7 +47,15 @@ export type Change =
 export interface LoadOpts {
   /** 이 날짜(YYYY-MM-DD)부터의 지출만 불러온다. 지출만 계속 쌓이는 테이블이라 기간으로 자른다. */
   spendingsFrom?: string;
+  /** 달력을 그릴 표(CALENDAR_TABLES)가 먼저 오면 그것만으로 한 번 부른다 (나머지 표는 빈 목록). 전부 오면 load 가 끝난다 */
+  first?: (d: Data) => void;
 }
+
+/** 달력 첫 화면에 먼저 필요한 표 — 일정과 그 할 일 체크, 이름. 돈 표시(월급날·카드값·쓴 돈)는 나머지가 오면 채워진다 */
+export const CALENDAR_TABLES = ["users", "events", "checks"] as const satisfies readonly TableName[];
+
+/** 이 기기에 저장해 둔 지난 내용 (다음에 열 때 바로 그리고 뒤에서 최신으로). 로그아웃하면 지운다 */
+export const SNAPSHOT_KEY = "our-money-snapshot";
 
 export interface Repo {
   mode: "demo" | "supabase";
@@ -172,9 +180,20 @@ class SupabaseRepo implements Repo {
   }
 
   async load(opts?: LoadOpts): Promise<Data> {
-    const [settings, ...lists] = await Promise.all([this.settings(), ...LIST_TABLES.map((t) => this.list(t, opts))]);
-    const data = Object.fromEntries(LIST_TABLES.map((t, i) => [t, lists[i]])) as Omit<Data, "settings">;
-    return { ...data, settings };
+    // 모든 표를 한꺼번에 보내고, 달력 표가 먼저 오면 그것만으로 먼저 그리게 한다
+    const settings = this.settings();
+    const lists = LIST_TABLES.map((t) => this.list(t, opts));
+    const build = (s: Data["settings"], ls: unknown[]) => ({ ...(Object.fromEntries(LIST_TABLES.map((t, i) => [t, ls[i]])) as Omit<Data, "settings">), settings: s });
+    if (opts?.first) {
+      const early = new Set<string>(CALENDAR_TABLES);
+      const first = opts.first;
+      Promise.all([settings, ...lists.map((p, i) => (early.has(LIST_TABLES[i]) ? p : []))]).then(
+        ([s, ...ls]) => first(build(s, ls)),
+        () => {}, // 실패는 아래 전체 쪽이 알린다
+      );
+    }
+    const [s, ...ls] = await Promise.all([settings, ...lists]);
+    return build(s, ls);
   }
 
   async loadTable<T extends TableName>(table: T, opts?: LoadOpts) {
@@ -531,11 +550,16 @@ export function resetDemo() {
 export async function currentMember(): Promise<{ email: string; member: Member | null } | null> {
   const db = supabase();
   if (!db) return null;
-  const { data } = await db.auth.getSession();
+  const { data, error: sessionError } = await db.auth.getSession();
+  // 만료된 로그인을 연결 문제로 갱신하지 못한 것은 로그아웃이 아니다 (이 기기 저장본을 지우지 않게 다시 시도)
+  if (sessionError && isAuthRetryableFetchError(sessionError)) throw new RetryableError(sessionError.message);
   const email = data.session?.user.email;
   if (!email) return null;
+  // 멤버 줄 확인과 계정 묶기(ensure_user, 아래 설명)를 한 번에 보낸다 — 서버 왕복을 하나 줄인다.
+  // ensure_user 는 멤버가 아니면 아무것도 바꾸지 않고 null 이다.
   // 연결 문제로 확인하지 못한 것을 "멤버가 아님"으로 보지 않는다 (오류를 던져서 다시 시도하게)
-  let { data: row, error } = await db.from("members").select("email, person").eq("email", email.toLowerCase()).maybeSingle();
+  const [first, ensured] = await Promise.all([db.from("members").select("email, person").eq("email", email.toLowerCase()).maybeSingle(), db.rpc("ensure_user")]);
+  let { data: row, error } = first;
   if (error) throw toError(error);
   // 002 마이그레이션 전(대문자로 저장된 이메일)에도 로그인되게
   if (!row) ({ data: row, error } = await db.from("members").select("email, person").ilike("email", email).maybeSingle());
@@ -545,7 +569,7 @@ export async function currentMember(): Promise<{ email: string; member: Member |
   // 이메일이 같아도 이미 다른 계정이 묶여 있거나, 구글로 확인된 계정이 아니면 null → 멤버가 아니다.
   // (행을 돌려주는 함수의 null 은 PostgREST 가 모든 칸이 null 인 객체로 주므로 id 로 본다)
   // 003 전이라 함수가 없으면(오류) 예전처럼 members 줄만으로 판단한다.
-  const { data: user, error: rpcError } = await db.rpc("ensure_user");
+  const { data: user, error: rpcError } = ensured;
   if (rpcError && toError(rpcError) instanceof RetryableError) throw toError(rpcError);
   if (!rpcError && !(user as { id?: string } | null)?.id) return { email, member: null };
   return { email, member: row as Member };
@@ -565,6 +589,7 @@ export async function signOut() {
   // 이 기기에 남은 보내지 못한 저장도 지운다 (다음에 로그인하는 다른 계정으로 보내지 않게)
   try {
     localStorage.removeItem("our-money-outbox");
+    localStorage.removeItem(SNAPSHOT_KEY);
   } catch {}
   // 안드로이드 앱이면 홈 화면 달력 위젯의 일정과 예약한 폰 알림도 지운다
   toApp({ type: "calendar-clear" });

@@ -212,8 +212,10 @@ function Nav() {
   );
 }
 
-function Gate({ children }: { children: React.ReactNode }) {
-  const { auth, data, error, reload } = useStore();
+function Gate({ path, children }: { path: string; children: React.ReactNode }) {
+  const { auth, data, loaded, error, reload } = useStore();
+  // 처음 로그인에 달력 표만 먼저 왔으면 달력 화면만 그린다 (다른 화면은 나머지가 올 때까지 로딩)
+  const ready = Boolean(data) && (loaded !== "calendar" || path === "/calendar");
 
   if (auth.state === "signed-out") {
     return (
@@ -244,7 +246,7 @@ function Gate({ children }: { children: React.ReactNode }) {
       />
     );
   }
-  if (error && !data) {
+  if (error && !ready) {
     return (
       <StageScreen
         title={auth.state === "loading" ? "연결할 수 없어요" : "데이터를 불러오지 못했어요"}
@@ -254,7 +256,7 @@ function Gate({ children }: { children: React.ReactNode }) {
       />
     );
   }
-  if (!data) return <LoadingScreen />;
+  if (!ready) return <LoadingScreen />;
   return <>{children}</>;
 }
 
@@ -458,7 +460,9 @@ function Frame({ children }: { children: React.ReactNode }) {
   const [primary, setPrimary] = useState<Primary | null>(null);
   const openMonths = useCallback((o?: { range?: Range }) => setMonths((x) => ({ open: true, key: x.key + 1, range: o?.range })), []);
   const path = norm(usePathname() ?? "/");
-  const { data } = useStore();
+  const { data, loaded } = useStore();
+  // 달력 표만 먼저 온 동안은 화면 밖의 일(시트·축하·폰 위젯·알림 맞추기)을 미룬다 — 빈 표로 계산해 위젯·알림을 비우지 않게
+  const all = Boolean(data) && loaded !== "calendar";
   const app = useInApp();
   const { dark, choice } = useTheme();
   const router = useRouter();
@@ -492,7 +496,7 @@ function Frame({ children }: { children: React.ReactNode }) {
         <PrimaryNow.Provider value={primary}>
           <div className={data ? "shell" : undefined}>
             {data && <Nav />}
-            <Gate>
+            <Gate path={path}>
               <main className={`canvas ${path === "/" ? "home" : ""}`}>
                 {/* 위쪽 막대가 주소의 기간을 읽어서 Suspense 안에 둔다 (정적 내보내기) */}
                 <Suspense fallback={null}>
@@ -502,20 +506,20 @@ function Frame({ children }: { children: React.ReactNode }) {
                   <PageTransition><PageMotion path={path}>{children}</PageMotion></PageTransition>
                 </Suspense>
               </main>
-              {data && <SpendingSheet open={sheet.open} editing={sheet.editing} onOpenChange={(open) => setSheet((s) => ({ ...s, open }))} />}
+              {all && <SpendingSheet open={sheet.open} editing={sheet.editing} onOpenChange={(open) => setSheet((s) => ({ ...s, open }))} />}
               {/* 그달 체크를 모두 끝낸 순간 100% 축하 — 어느 화면에서 끝내든 */}
-              {data && <CelebrateWatch />}
+              {all && <CelebrateWatch />}
               {/* 상대가 공동 일정을 더하면 토스트 (켜져 있을 때) */}
-              {data && <PartnerWatch />}
-              {data && <MonthSheet key={months.key} open={months.open} range={months.range} onOpenChange={(open) => setMonths((x) => ({ ...x, open }))} />}
+              {all && <PartnerWatch />}
+              {all && <MonthSheet key={months.key} open={months.open} range={months.range} onOpenChange={(open) => setMonths((x) => ({ ...x, open }))} />}
               {/* 내 월급날 그날 처음 열면 한 번: 동전 알갱이·진동·토스트 */}
-              {data && <PaydayCheer />}
-              {/* 안드로이드 앱: 결제 알림으로 맞춘 고정비·이체를 체크 */}
-              {data && app && <NoticeSync />}
+              {all && <PaydayCheer />}
+              {/* 안드로이드 앱: 결제 알림으로 맞춘 고정비·이체를 체크 — 서버 최신 내용으로만(저장본으로는 이미 적힌 지출을 못 보고 또 적을 수 있다) */}
+              {loaded === "full" && app && <NoticeSync />}
               {/* 안드로이드 앱: 홈 화면 달력 위젯에 달력 요약 넘기기, 위젯을 누르면 달력으로 */}
-              {data && app && appCan("widget") && <CalendarSync />}
+              {all && app && appCan("widget") && <CalendarSync />}
               {/* 안드로이드 앱: 일정 미리 알림 · 월급날 · 나갈 돈 전날 폰 알림 */}
-              {data && app && appCan("remind") && <ReminderSync />}
+              {all && app && appCan("remind") && <ReminderSync />}
             </Gate>
           </div>
           <Toasts />
