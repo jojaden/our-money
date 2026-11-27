@@ -1,8 +1,8 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { ArrangePage, CardOrder, Check, Data, HistoryRow, Month, MonthItem, Person, Row, Spending, TableName } from "./types";
-import { getRepo, hasSupabase, currentMember, supabase, LIST_TABLES, ConflictError, RetryableError, upsertOp, deleteOp, type Change, type Op } from "./repo";
+import { getRepo, hasSupabase, currentMember, supabase, LIST_TABLES, SNAPSHOT_KEY, ConflictError, RetryableError, upsertOp, deleteOp, type Change, type Op } from "./repo";
 import { addMonths, currentMonth, itemsFromMonth, latestMonthBefore, monthRow, periodOf, snapshotItems, withUserNames } from "./calc";
 import { createMonthMotion } from "./monthMotion";
 import { haptic } from "./native";
@@ -13,7 +13,16 @@ type Auth =
   | { state: "demo" }
   | { state: "signed-out" }
   | { state: "not-member"; email: string }
-  | { state: "member"; email: string };
+  /** saved: 이 기기 저장본으로 먼저 연 것 — 서버에서 계정을 확인하기 전 (그동안 저장은 보내지 않고 모아 둔다) */
+  | { state: "member"; email: string; saved?: boolean };
+
+/**
+ * 데이터가 어디까지 왔는지.
+ * calendar = 처음 로그인(저장본 없음)에 달력 표(CALENDAR_TABLES)만 먼저 온 것 — 달력 화면만 그린다.
+ * saved = 이 기기에 저장해 둔 지난 내용 — 모든 화면을 그리되, 저절로 쓰는 일(새 달 만들기·결제 알림 기록)은 하지 않는다.
+ * full = 서버에서 전부 받은 것.
+ */
+export type Loaded = "calendar" | "saved" | "full";
 
 export interface Toast {
   id: number;
@@ -26,6 +35,7 @@ export interface Toast {
 interface Store {
   auth: Auth;
   data: Data | null;
+  loaded: Loaded | null;
   error: string | null;
   me: Person;
   setMe: (p: Person) => void;
@@ -104,6 +114,44 @@ function todayStr() {
 
 const ME_KEY = "our-money-me";
 const MONTH_KEY = "our-money-month";
+
+/** 처음 보여 줄 달: 이 탭에서 보던 달, 없으면 오늘이 든 가계부 달 */
+function openingMonth(d: Data, today: string): string {
+  let saved: string | null = null;
+  try {
+    saved = sessionStorage.getItem(MONTH_KEY);
+  } catch {}
+  return saved ?? currentMonth(d.settings.cycle_start, today);
+}
+
+/** 이 기기 저장본: 마지막으로 서버에서 전부 받은 내용(+ 보내기 전 저장). 계정이 같을 때만 쓴다 */
+interface Snapshot {
+  email: string;
+  person: Person;
+  data: Data;
+}
+function readSnapshot(): Snapshot | null {
+  try {
+    const v = JSON.parse(localStorage.getItem(SNAPSHOT_KEY) ?? "null") as Partial<Snapshot> | null;
+    // 표가 새로 생기기 전에 남긴 저장본은 버린다 (없는 표를 읽다 멈추지 않게)
+    return v && typeof v.email === "string" && (v.person === "a" || v.person === "b") && v.data?.settings && LIST_TABLES.every((t) => Array.isArray(v.data?.[t]))
+      ? (v as Snapshot)
+      : null;
+  } catch {
+    return null;
+  }
+}
+function writeSnapshot(v: Snapshot | null) {
+  try {
+    if (v) localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(v));
+    else localStorage.removeItem(SNAPSHOT_KEY);
+  } catch {
+    // 저장소가 가득 찼거나 막혔으면 다음 열 때 서버에서 받는다
+    try {
+      localStorage.removeItem(SNAPSHOT_KEY);
+    } catch {}
+  }
+}
 
 function applyLocal<T extends TableName>(d: Data, table: T, rows: Row<T>[], ignoreDuplicates?: boolean): Data {
   if (table === "settings") return { ...d, settings: { ...d.settings, ...(rows[0] as Data["settings"]) } };
@@ -210,6 +258,7 @@ function writeLocalOrder(v: LocalOrder | null) {
 export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [auth, setAuth] = useState<Auth>({ state: "loading" });
   const [data, setData] = useState<Data | null>(null);
+  const [loaded, setLoaded] = useState<Loaded | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [me, setMeState] = useState<Person>("a");
   // 서버에 아직 없는 카드 순서 (보내는 중이거나 못 보낸 것). 있으면 서버 순서보다 앞선다
@@ -238,6 +287,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   );
   const lastFull = useRef(0);
   const outbox = useRef<Pending[]>([]);
+  /** 서버가 받은 저장(받은 순서 번호와 서버 줄) — 그사이 나갔던 전체 불러오기가 늦게 와서 덮지 않게 다시 얹는다 */
+  const landed = useRef<{ n: number; ops: Op[] }[]>([]);
+  const landedN = useRef(0);
   /** 지금 로그인한 멤버 계정 (멤버가 아니거나 로그아웃이면 null) */
   const authEmail = useRef<string | null>(null);
   const [pending, setPending] = useState(0);
@@ -255,19 +307,30 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           );
           return;
         }
-        const d = await repo.load({ spendingsFrom: spendingsFrom.current });
-        lastFull.current = Date.now();
-        // 아직 보내지 못한 저장은 다시 얹는다 (서버 내용으로 덮어 입력이 사라지지 않게)
-        setData(applyOpsLocal(d, outbox.current.flatMap((p) => p.ops)));
-        setError(null);
-        setMonthState((m) => {
-          if (m) return m;
-          let saved: string | null = null;
-          try {
-            saved = sessionStorage.getItem(MONTH_KEY);
-          } catch {}
-          return saved ?? currentMonth(d.settings.cycle_start, today);
+        const from = spendingsFrom.current;
+        const since = landedN.current;
+        const d = await repo.load({
+          spendingsFrom: from,
+          // 아직 그린 것이 없으면(처음 로그인) 달력 표가 오는 대로 달력부터 그린다. 이미 있으면(저장본·지난 불러오기) 그대로 둔다
+          first: (early) => {
+            setData((cur) => cur ?? applyOpsLocal(early, outbox.current.flatMap((p) => p.ops)));
+            setLoaded((l) => l ?? "calendar");
+            setMonthState((m) => m || openingMonth(early, today));
+          },
         });
+        lastFull.current = Date.now();
+        // 받는 동안 서버가 받은 저장과 아직 보내지 못한 저장은 다시 얹는다 (늦게 온 옛 내용으로 덮어 입력이 사라지지 않게)
+        const late = landed.current.filter((x) => x.n > since).flatMap((x) => x.ops);
+        setData((cur) => {
+          const next = applyOpsLocal(d, [...late, ...outbox.current.flatMap((p) => p.ops)]);
+          // 받는 동안 더 앞선 기간의 지출을 따로 받았으면(옛 달을 보던 중) 그 기간은 그대로 둔다
+          if (!cur || spendingsFrom.current >= from) return next;
+          const have = new Set(next.spendings.map((x) => x.id));
+          return { ...next, spendings: [...next.spendings, ...cur.spendings.filter((x) => x.date < from && !have.has(x.id))] };
+        });
+        setLoaded("full");
+        setError(null);
+        setMonthState((m) => m || openingMonth(d, today));
       } catch (e) {
         setError(e instanceof Error ? e.message : String(e));
       }
@@ -277,6 +340,28 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const exportSpendings = useCallback(async () => (repo ? repo.exportSpendings() : []), [repo]);
   const loadHistory = useCallback(async (before: number | null) => (repo ? repo.history(before) : []), [repo]);
+
+  // 이 기기 저장본이 있으면 서버를 기다리지 않고 바로 그린다 (그리기 전에 — 로딩 화면이 스치지 않게).
+  // 계정 확인과 최신 내용 받기는 그 뒤에 함께 시작하고, 다른 계정이거나 로그아웃이면 지운다
+  const savedEmail = useRef<string | null>(null);
+  /** 화면에 그린 데이터가 있는지 (있으면 계정 확인 때 달력 데이터를 또 받지 않는다) */
+  const drawn = useRef(false);
+  useEffect(() => {
+    drawn.current = data !== null;
+  }, [data]);
+  useLayoutEffect(() => {
+    if (!repo || !hasSupabase) return;
+    const snap = readSnapshot();
+    if (!snap) return;
+    savedEmail.current = snap.email;
+    authEmail.current = snap.email;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- 미리 그린 HTML 과 맞추려고 첫 그리기 직후(칠하기 전)에 기기 저장본을 한 번 읽는다
+    setMeState(snap.person);
+    setData(snap.data);
+    setLoaded("saved");
+    setMonthState((m) => m || openingMonth(snap.data, today));
+    setAuth({ state: "member", email: snap.email, saved: true });
+  }, [repo, today]);
 
   // 로그인 상태
   useEffect(() => {
@@ -290,39 +375,79 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     let alive = true;
+    let retry: number | undefined;
+    // 확인은 한 번에 하나씩. 도는 동안 또 불리면(로그인·로그아웃) 끝난 뒤 한 번 더 — 같은 요청을 겹쳐 보내지 않게
+    let running = false;
+    let again = false;
     const check = async () => {
+      if (running) {
+        again = true;
+        return;
+      }
+      running = true;
+      try {
+        do {
+          again = false;
+          await checkOnce();
+        } while (again && alive);
+      } finally {
+        running = false;
+      }
+    };
+    const checkOnce = async () => {
       let res: Awaited<ReturnType<typeof currentMember>>;
       try {
-        res = await currentMember();
+        // 아직 그린 것이 없으면 달력 첫 화면 데이터도 계정 확인과 함께 받는다 (021)
+        res = await currentMember(savedEmail.current === null && !drawn.current);
       } catch (e) {
-        // 연결이 안 돼 확인하지 못함: 로그인 상태는 그대로 두고, 연결이 돌아오면 다시 확인한다
-        if (alive) setError(`연결할 수 없어요. 인터넷 연결을 확인해 주세요 (${e instanceof Error ? e.message : e})`);
+        // 연결이 안 돼 확인하지 못함: 로그인 상태는 그대로 두고, 5초 뒤·연결이 돌아오면 다시 확인한다
+        if (!alive) return;
+        setError(`연결할 수 없어요. 인터넷 연결을 확인해 주세요 (${e instanceof Error ? e.message : e})`);
+        window.clearTimeout(retry);
+        retry = window.setTimeout(() => void check(), 5000);
         return;
       }
       if (!alive) return;
       setError(null);
+      // 로그아웃·멤버 아님·다른 계정이면 저장본과 그린 내용을 지운다
+      if (!res || !res.member || (savedEmail.current !== null && savedEmail.current !== res.email)) {
+        writeSnapshot(null);
+        setData(null);
+        setLoaded(null);
+      }
+      savedEmail.current = null;
       if (!res || !res.member) authEmail.current = null;
       if (!res) setAuth({ state: "signed-out" });
       else if (!res.member) setAuth({ state: "not-member", email: res.email });
       else {
+        const early = res.early;
+        if (early) {
+          setData((cur) => cur ?? applyOpsLocal(early, outbox.current.flatMap((p) => p.ops)));
+          setLoaded((l) => l ?? "calendar");
+          setMonthState((m) => m || openingMonth(early, today));
+        }
         setMeState(res.member.person);
         setAuth({ state: "member", email: res.email });
       }
     };
-    void check();
-    const sub = supabase()?.auth.onAuthStateChange(() => void check());
+    // 처음 확인은 구독하자마자 오는 INITIAL_SESSION 으로. 한 시간마다의 토큰 갱신은 계정이 바뀐 것이 아니라 다시 확인하지 않는다
+    const sub = supabase()?.auth.onAuthStateChange((event) => {
+      if (event !== "TOKEN_REFRESHED") void check();
+    });
     const online = () => void check();
     window.addEventListener("online", online);
     return () => {
       alive = false;
+      window.clearTimeout(retry);
       sub?.data.subscription.unsubscribe();
       window.removeEventListener("online", online);
     };
-  }, [repo]);
+  }, [repo, today]);
 
-  // 데이터 로드와 실시간 동기화: 처음엔 전체, 그다음엔 바뀐 테이블만
+  // 데이터 로드와 실시간 동기화: 처음엔 전체, 그다음엔 바뀐 테이블만. 저장본으로 열었으면 계정 확인과 함께 바로 시작한다
+  const live = auth.state === "member" ? auth.email : auth.state === "demo" ? "demo" : null;
   useEffect(() => {
-    if (!repo || (auth.state !== "demo" && auth.state !== "member")) return;
+    if (!repo || !live) return;
     void reload();
     let timer: number | undefined;
     const unsub = repo.subscribe((c) => {
@@ -334,17 +459,27 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       window.clearTimeout(timer);
       timer = window.setTimeout(() => void reload(c.table), 200);
     });
-    // 앱으로 돌아왔을 때: 실시간 연결이 끊겼을 수 있으니 30초 이상 지났으면 전체를 다시
+    // 앱으로·연결이 돌아왔을 때: 실시간 연결이 끊겼을 수 있으니 30초 이상 지났으면(처음 받기가 실패했으면) 전체를 다시
     const onFocus = () => {
       if (Date.now() - lastFull.current > 30_000) void reload();
     };
     window.addEventListener("focus", onFocus);
+    window.addEventListener("online", onFocus);
     return () => {
       unsub();
       window.removeEventListener("focus", onFocus);
+      window.removeEventListener("online", onFocus);
       window.clearTimeout(timer);
     };
-  }, [repo, auth.state, reload]);
+  }, [repo, live, reload]);
+
+  // 서버에서 전부 받은 뒤의 내용을 이 기기에 남긴다 (바뀔 때마다, 몰아서 1초 뒤에)
+  const snapEmail = auth.state === "member" && !auth.saved && loaded === "full" ? auth.email : null;
+  useEffect(() => {
+    if (!hasSupabase || !snapEmail || !data) return;
+    const t = window.setTimeout(() => writeSnapshot({ email: snapEmail, person: me, data }), 1000);
+    return () => window.clearTimeout(t);
+  }, [snapEmail, me, data]);
 
   // 불러온 범위보다 이전을 보면 그 기간 지출만 더 불러온다
   const loadSpendingsFrom = useCallback(
@@ -421,6 +556,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const waiters = useRef(new Map<number, { resolve: () => void; reject: (e: unknown) => void }>());
   const seq = useRef(0);
   const flushing = useRef(false);
+  /** 서버에서 계정을 확인했는지 — 저장본으로 연 동안(확인 전)은 보내지 않고 모아 둔다 */
+  const verified = useRef(false);
   const persist = useCallback(() => {
     setPending((n) => (outbox.current.length === 0 ? 0 : n > 0 ? outbox.current.length : n));
     if (!hasSupabase) return;
@@ -445,6 +582,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const flush = useCallback(async () => {
     if (!repo || flushing.current) return;
+    if (hasSupabase && !verified.current) {
+      // 계정 확인 전: 폰에 모아 두고(화면에는 이미 반영) 확인되면 보낸다 — 기다리는 쪽은 "보관됨"으로 끝낸다
+      for (const p of outbox.current) {
+        waiters.current.get(p.seq)?.resolve();
+        waiters.current.delete(p.seq);
+      }
+      return;
+    }
     flushing.current = true;
     try {
       let attempt = 0;
@@ -471,6 +616,13 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         };
         try {
           const results = await repo.apply(sent);
+          // 서버가 받은 줄을 남긴다 (그사이 나간 전체 불러오기가 이것보다 옛 내용이면 다시 얹도록, 최근 100건만)
+          const got = results.flatMap((res, i): Op[] => {
+            const o = sent[i];
+            if (o?.op === "upsert") return res.rows?.length ? [{ ...o, rows: res.rows }] : [];
+            return o ? [o] : [];
+          });
+          landed.current = [...landed.current.slice(-99), { n: ++landedN.current, ops: got }];
           results.forEach((res, i) => {
             const o = sent[i];
             if (o?.op === "upsert" && res.rows) {
@@ -540,6 +692,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   // 보관해 둔 저장: 로그인한 같은 계정이면 이어서 보내고, 연결이 돌아오면·앱으로 돌아오면 다시 시도
   useEffect(() => {
+    verified.current = auth.state === "member" && !auth.saved;
     if (!repo || auth.state !== "member") return;
     authEmail.current = auth.email;
     try {
@@ -553,6 +706,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         } else localStorage.removeItem(OUTBOX_KEY);
       }
     } catch {}
+    if (auth.saved) return;
     void flush();
     const retry = () => void flush();
     window.addEventListener("online", retry);
@@ -659,7 +813,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   // 새 달이 시작되면 지난 플랜을 그대로 이어받아 자동으로 만든다 (앱을 열 때 한 번)
   const autoStarted = useRef<string | null>(null);
   useEffect(() => {
-    if (!data || (auth.state !== "member" && auth.state !== "demo")) return;
+    // 서버에서 전부 받은 뒤에만 — 달력 표만 왔거나 저장본이면 이미 있는 달을 또 만들 수 있다
+    if (!data || loaded !== "full" || (auth.state !== "member" && auth.state !== "demo")) return;
     const cur = currentMonth(data.settings.cycle_start, today);
     if (autoStarted.current === cur || monthRow(data, cur)) return;
     const from = latestMonthBefore(data, cur);
@@ -670,7 +825,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       const label = (k: string) => `${Number(k.slice(5))}월`;
       toast(`${label(cur)}이 시작돼서 ${label(from)} 플랜을 그대로 이어받았어요`);
     });
-  }, [data, auth.state, today, startMonth, toast]);
+  }, [data, loaded, auth.state, today, startMonth, toast]);
 
   const toggleCheck = useCallback(
     async (c: Omit<Check, "done_at" | "done_by">, done: boolean) => {
@@ -700,6 +855,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const value: Store = {
     auth,
     data: view,
+    loaded,
     error,
     me,
     setMe,

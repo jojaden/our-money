@@ -79,11 +79,11 @@ export function StageScreen({
 }
 
 /**
- * 처음 데이터를 받는 동안. 1초 안에 끝나면 무대만 보이고 동전·글은 뜨지 않는다(깜빡임 방지, CSS 지연).
- * 8초가 넘으면 설명을 "연결이 느려요"로 바꾼다.
+ * 처음 데이터를 받는 동안 (이 기기 저장본이 없을 때만 — 처음 로그인, 달력 밖 화면이 나머지를 기다릴 때).
+ * 바탕·상태 막대는 앱과 같은 ground 라 화면이 바뀌어도 색이 튀지 않는다. 0.6초 안에 끝나면 빈 바탕만 스친다(CSS 지연).
+ * 8초가 넘으면 "연결이 느려요" 한 줄을 더한다.
  */
 export function LoadingScreen() {
-  useWarmBar();
   const [slow, setSlow] = useState(false);
   useEffect(() => {
     const t = setTimeout(() => setSlow(true), 8000);
@@ -93,8 +93,8 @@ export function LoadingScreen() {
     <main className="stage-screen loading" role="status" aria-live="polite">
       <Scene motion="meet" />
       <div className="copy">
-        <h1>가계부를 펼치는 중이에요</h1>
-        <p>{slow ? "연결이 느려요. 조금만 기다려 주세요" : "두 사람의 기록을 맞추고 있어요"}</p>
+        <h1>우리 집 기록을 불러오고 있어요</h1>
+        {slow && <p>연결이 느려요. 조금만 기다려 주세요</p>}
       </div>
     </main>
   );
